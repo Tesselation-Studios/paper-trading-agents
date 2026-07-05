@@ -22,3 +22,15 @@ venv/
 
 # Logs
 *.log
+
+# Trader workspace runtime state (not version-controlled)
+traders/*/memory/
+traders/*/strategy_notes/
+traders/*/MEMORY.md
+traders/*/TOOLS.md
+traders/*/USER.md
+traders/*/BOOTSTRAP.md
+traders/*/REPLAY.md
+traders/*/TICK_REQUEST.md
+traders/*/IDENTITY.md
+traders/*/heartbeat-state.json
