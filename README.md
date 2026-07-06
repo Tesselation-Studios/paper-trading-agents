@@ -1,3 +1,7 @@
+> ⚠️ **DEPRECATED** — This repo has been consolidated into the canonical [paper-trading-rebuild](https://github.com/Tesselation-Studios/paper-trading-rebuild) monorepo.
+> All agent personas, configs, and heartbeat routines now live under `agents/trader-*/` there.
+> This repo is read-only and will receive no further updates.
+
 # Paper Trading Agents
 
 Agent personas, strategy configurations, and heartbeat routines for the paper trading competition.
