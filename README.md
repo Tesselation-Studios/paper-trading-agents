@@ -1,45 +1,41 @@
-> ⚠️ **DEPRECATED** — This repo has been consolidated into the canonical [paper-trading-rebuild](https://github.com/Tesselation-Studios/paper-trading-rebuild) monorepo.
-> All agent personas, configs, and heartbeat routines now live under `agents/trader-*/` there.
-> This repo is read-only and will receive no further updates.
+# Trading Agent Prompts
 
-# Paper Trading Agents
+> **Canonical repo for all trader agent files.** Consolidation of `paper-trading-prompts` + `paper-trading-agents`.
+> Part of the `Tesselation-Studios/paper-trading-rebuild` ecosystem.
 
-Agent personas, strategy configurations, and heartbeat routines for the paper trading competition.
-
-## Traders
-
-| Trader | Firm | Strategy | Model |
-|--------|------|----------|-------|
-| Zara Chen | Kairos Capital | HMM regime-filtered momentum | deepseek-v4-flash → deepseek-v4-pro |
-| Edmund Whitfield | Aldridge & Partners | Fundamental value | deepseek-v4-flash → deepseek-v4-pro |
-| Stan Hoolihan | Stonks Capital | Community-driven momentum | deepseek-v4-flash → deepseek-v4-pro |
+---
 
 ## Structure
 
 ```
 traders/
-  kairos/         — Zara Chen, momentum trader
-    AGENTS.md      — Personality, decision framework, data bus commands
-    HEARTBEAT.md   — Heartbeat cadence and daily routine
-    SOUL.md        — Core identity and strategy rules
-    config.yaml    — Strategy parameters (thresholds, weights, limits)
-  aldridge/        — Edmund Whitfield, value investor
-    AGENTS.md
-    HEARTBEAT.md
-    SOUL.md
-    config.yaml
-  stonks/          — Stan Hoolihan, community momentum
-    AGENTS.md
-    HEARTBEAT.md
-    SOUL.md
-    config.yaml
+├── kairos/       — Momentum + ML trader (Zara Chen)
+├── aldridge/     — Value + fundamentals trader (Edmund Whitfield)
+└── stonks/       — Social/sentiment trader (Stan "the Man" Hoolihan)
+
+Each trader has:
+  AGENTS.md       — Core strategy, behavior rules, tick workflow
+  HEARTBEAT.md    — Daily reflection log (three-step process)
+  SOUL.md         — Persona, identity, narrative voice
+  IDENTITY.md     — Metadata, brand, relationship to other traders
+  TOOLS.md        — Available tools and CLI references
+  MEMORY.md       — Persistent learnings, market observations
+  prompt.txt      — Pre-assembled trading prompt template
+  config.yaml     — Signal engine parameters and thresholds
+  skills/         — Reusable skill files (reflection, strategy, etc.)
 ```
 
-## Engine Integration
+## Repos
 
-The paper-trading-teams engine reads trader configurations from this repo.
-See `paper-trading-teams/src/agents_repo.py` for the integration layer.
+| Repo | Purpose |
+|------|---------|
+| `paper-trading-rebuild` | System architecture, learning loop, COMPETITION.md |
+| **`paper-trading-agents`** ← you are here | Trader agent files (AGENTS.md, prompts, HEARTBEAT.md, skills) |
 
-Trader heartbeat code loads AGENTS.md, HEARTBEAT.md, and SOUL.md as startup
-context. Strategy parameters in config.yaml feed into risk gates, position
-sizing, and conviction thresholds.
+## Branch Strategy
+
+- `main` — production prompts for real traders
+- `branches/<trader>/experiment-*` — virtual trader variants
+- `branches/<trader>/sweep-YYYY-MM-DD` — nightly sweep results
+
+See `paper-trading-rebuild/COMPETITION.md §C2.6` for full branching details.
