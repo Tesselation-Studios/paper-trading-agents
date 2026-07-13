@@ -1,0 +1,11 @@
+{
+  "core_tickers": ["SPY", "AAPL", "MSFT", "NVDA", "META", "GOOGL", "AMZN", "TSLA"],
+  "watchlist": [],
+  "meta": {
+    "description": "Watchlist = scout tickers to test risk-free in nightly replay.",
+    "max_watchlist": 5,
+    "core_description": "Core tickers always replayed as benchmark.",
+    "last_updated": "2026-07-13",
+    "update_cadence": "Traders update during HISTORICAL mode after research"
+  }
+}
