@@ -1,0 +1,1 @@
+# Paper Trading Agents\n\nAgent prompts, strategies, personalities, and self-evolution state.\nTraders own this repo — they read their prompts from here and commit strategy changes.\n\nSee [paper-trading-teams](https://github.com/casper-bot-wodinga/paper-trading-teams) for the engine code.\n

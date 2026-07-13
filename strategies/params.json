@@ -1,0 +1,51 @@
+{
+  "params": {
+    "momentum_threshold": 0.55,
+    "momentum_lookback": 20,
+    "momentum_decay": 0.85,
+    "rsi_oversold": 30.0,
+    "rsi_overbought": 70.0,
+    "bollinger_std": 2.0,
+    "volume_threshold": 0.6,
+    "vol_regime_threshold": 0.25,
+    "vol_reduction_multiplier": 0.7,
+    "base_size_pct": 0.15,
+    "conviction_multiplier": 1.5,
+    "max_positions": 5,
+    "stop_loss_pct": 0.05,
+    "take_profit_pct": 0.15,
+    "trailing_stop_pct": 0.03,
+    "weight_trending_up": 1.0,
+    "weight_trending_down": 0.5,
+    "weight_mean_reverting": 0.8,
+    "weight_high_volatility": 0.4
+  },
+  "meta": {
+    "version": "1.0",
+    "source": "signals.py:SignalParams defaults",
+    "last_updated": "2026-07-13",
+    "optimization": "gradient_descent + nightly_sweep",
+    "bounds_source": "signals.py:SignalParams._BOUNDS"
+  },
+  "bounds": {
+    "momentum_threshold": [0.3, 0.9],
+    "momentum_lookback": [5, 60],
+    "momentum_decay": [0.5, 0.99],
+    "rsi_oversold": [15, 40],
+    "rsi_overbought": [60, 85],
+    "bollinger_std": [1.0, 3.0],
+    "volume_threshold": [0.3, 3.0],
+    "vol_regime_threshold": [0.1, 0.5],
+    "vol_reduction_multiplier": [0.3, 1.0],
+    "base_size_pct": [0.05, 0.30],
+    "conviction_multiplier": [1.0, 3.0],
+    "max_positions": [1, 10],
+    "stop_loss_pct": [0.02, 0.10],
+    "take_profit_pct": [0.05, 0.30],
+    "trailing_stop_pct": [0.01, 0.08],
+    "weight_trending_up": [0.2, 2.0],
+    "weight_trending_down": [0.0, 1.5],
+    "weight_mean_reverting": [0.2, 2.0],
+    "weight_high_volatility": [0.0, 1.0]
+  }
+}
