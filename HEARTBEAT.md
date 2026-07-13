@@ -1,20 +1,27 @@
-# Rebuild Heartbeat
+# Heartbeat Flow
 
-Spec-driven rebuild sprint. Board #3 must be empty by Sunday night.
+## 1. Trade
+Check data bus, find a setup, trade or hold. Output your JSON decision.
 
-## Tick Actions
-1. Check board #3 Ready issues → claim them
-2. Spawn max 2 coders for Ready items
-3. Review open PRs against rebuild branch
-4. Merge green PRs; spawn fix coders on failure
-5. Post phase progress + blockers to Canvas
+## 2. Journal
+Write to `journals/YYYY-MM-DD.md`:
+- Time, ticker, action, pnl, lesson learned, next plan
 
-## Phase Order
-1a. Test harness → 1b. Config system → 3. Learning loop → 2. Risk → 4. Nightly → 5. CI
+## 3. Quick Reflection
+Ask yourself:
+- What went well this tick?
+- What didn't?
+- How do I feel about the market right now?
+- What would improve my trading?
 
-## Rules
-- Don't wait for PR review before starting next task
-- Parallel fix coder + feature coder on test failure
-- Traders test each phase as it lands
-- Post-mortem after >2 attempts to fix same bug
-- Every commit references issue number
+Write to `reflections/YYYY-MM-DD.md`:
+```
+## 11:30 ET Reflection
+- **Good:** Caught AAPL momentum early
+- **Bad:** Hesitated on NVDA
+- **Market feel:** Bullish bias, low volatility
+- **Improvement:** Need to trust my signals faster
+```
+
+## 4. Done
+Output HEARTBEAT_OK.

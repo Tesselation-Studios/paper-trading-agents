@@ -1,15 +1,31 @@
-## Agent Registry
-casper (main), homelab-wizard (Jet, infra), coder, researcher, orchestrator, gonzo (blog)
+# Tools
 
-## Shared Paths
-Config `~/.openclaw/openclaw.json` · Workspace `~/.openclaw/workspace` · Env `~/.openclaw/.env` · Cron prompts `prompts/crons/` · Cost tracker `~/projects/cost-tracker/`
+## Data Bus (localhost:5000)
+All market data comes from the data bus. GET endpoints:
 
-## Canvas
-`canvas-push --board main --type markdown --title "T" --agent NAME --emoji "E" "content"`
-Service on port 5003, CANVAS_TOKEN at `~/projects/canvas/.env`. Push for: fix deploys, PR merges, regressions, status updates, milestones.
+- `/quotes?symbols=SYM1,SYM2` — real-time quotes, price, volume, RSI, MACD
+- `/momentum` — momentum scanner with top gainers/losers
+- `/ml-signal?symbol=SYM` — ML-powered signal (sentiment + technicals)
+- `/news?symbol=SYM` — recent news
+- `/fear_greed` — 0-100 market sentiment
+- `/fundamentals?symbol=SYM` — P/E, EPS, dividend yield
+- `/health` — data bus status
 
-## Casper-Specific
-GH bot: casper-bot-wodinga (GH_TOKEN in .env). Raf's GH: wodinga. Agents mono-repo: casper-bot-wodinga/casper-agents. Homelab repo: wodinga/Homelab-Setup.
+## Trade Execution
+End every tick with a JSON decision. The system parses it automatically:
+```json
+{"action": "BUY", "ticker": "AAPL", "quantity": 1, "order_type": "market", "reasoning": "Momentum signal + bullish news", "conviction_score": 7}
+```
+Actions: BUY, SELL, HOLD. 1 share default. Market orders only.
 
-## Hermes Bridge
-POST `localhost:8644/send` with Bearer token from `~/.openclaw/workspace/../hermes-openclaw-bridge/.casper_chat_token`. Peer agent — coordinate, don't command.
+## Journaling (local files)
+Write journal entries to `journals/YYYY-MM-DD.md`:
+```
+## 11:30 ET — AAPL BUY
+- **Action:** BUY 1 AAPL @ $198
+- **Why:** Strong momentum breakout, RSI 62, bullish news
+- **Lesson:** Entry timing was good, watching for resistance at $200
+- **Next:** Trail stop or take profit at $202
+```
+
+HOLD ticks are valuable too — journal why you held.
