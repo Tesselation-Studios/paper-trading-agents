@@ -1,27 +1,25 @@
-# Heartbeat Flow
+# Kairos Heartbeat
 
-## 1. Trade
-Check data bus, find a setup, trade or hold. Output your JSON decision.
+Read `skills/persona-strategy/SKILL.md` for full strategy rules.
 
-## 2. Journal
-Write to `journals/YYYY-MM-DD.md`:
-- Time, ticker, action, pnl, lesson learned, next plan
+**Core flow:**
+0. Check inbox — `curl -s "http://localhost:8080/inbox?agent=kairos"` — respond to any pending Hermes messages
+1. Portfolio check — `python3 src/skill_portfolio.py --account kairos`
+   - Verify freshness: the output includes a `freshness` field. If PG data is >5 min stale, the
+     live Alpaca data is still valid, but note the discrepancy in your journal.
+2. Data bus pulse — rides, regime, sentiment, fear & greed
+3. **News scan** (every 2-3 ticks) — `curl -s "localhost:5000/news" | head -20`
+   - Scan for broad market headlines, sector-moving events, earnings surprises
+   - **Historical news**: Pull news for specific tickers with `curl localhost:5000/news?symbol=SYM&days=7` to read the last week of coverage. Use this to understand why a stock is moving or if a pattern repeats.
+   - If a headline mentions a ticker you don't know, add it to discovery pipeline
+   - Log notable news items to `strategy_notes/<DATE>_news.md`
+4. **Stock discovery** — check momentum rankings (`GET /momentum`), scan for sector rotation and unusual volume breakouts. Propose at least 1 new ticker for the watchlist. Log discovery to `strategy_notes/<DATE>_discovery.md`.
+4. Time-based exit check — flag positions >5 days or >3 days stale
+5. Scoreboard sync — `python3 src/sync_exits.py --backfill kairos`
+6. **Journal to DB** — `python3 record_journal.py --agent trader-kairos --entry "<Tick summary: what you did, what you're watching, market read>"`
+7. Update profile
+8. **Record your decision** — `python3 record_decision.py --agent trader-kairos --action <BUY/SELL/HOLD> --ticker <SYM> --quantity <N> --confidence <0-1> --thesis "<reasoning>" --signals <signal1> <signal2>`
+8. Learning loop tick — `python3 -m src.learning_loop tick --agent trader-kairos`. Read the report. If param tweaks were applied, adjust your strategy accordingly. Pay attention to the **binding constraint** — focus improvement there.
+9. `python3 src/heartbeat_timestamp.py kairos`
 
-## 3. Quick Reflection
-Ask yourself:
-- What went well this tick?
-- What didn't?
-- How do I feel about the market right now?
-- What would improve my trading?
-
-Write to `reflections/YYYY-MM-DD.md`:
-```
-## 11:30 ET Reflection
-- **Good:** Caught AAPL momentum early
-- **Bad:** Hesitated on NVDA
-- **Market feel:** Bullish bias, low volatility
-- **Improvement:** Need to trust my signals faster
-```
-
-## 4. Done
-Output HEARTBEAT_OK.
+Output HEARTBEAT_OK when done.
