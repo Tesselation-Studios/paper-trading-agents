@@ -249,6 +249,195 @@ ALPACA_ALDRIDGE_SECRET=***
 
 ---
 
+## 5. Secrets Management
+
+### What Needs Managing
+
+| Secret | Where It Lives (Terminal Side) | Where It Lives (Agent Side) |
+|--------|-------------------------------|----------------------------|
+| Alpaca API keys (3 traders × 2) | Terminal's environment, never leaves docker.klo | Agents never see them |
+| Terminal per-trader API keys | Terminal's environment (hashed in PG) | OpenClaw gateway .env, MCP runtime injects |
+| PostgreSQL credentials | Terminal's environment / Docker secrets | Not needed by agents |
+| GPU worker addresses | Terminal config (not secret) | Not needed by agents |
+| News source API keys | Terminal's environment | Not needed by agents |
+
+### Phase 1 (Immediate): Docker Secrets via scp
+
+```
+/docker/terminal/
+├── docker-compose.yml
+├── secrets/                     ← .gitignored, never committed
+│   ├── alpaca_kairos_key
+│   ├── alpaca_kairos_secret
+│   ├── alpaca_stonks_key
+│   ├── alpaca_stonks_secret
+│   ├── alpaca_aldridge_key
+│   ├── alpaca_aldridge_secret
+│   ├── terminal_key_kairos
+│   ├── terminal_key_stonks
+│   ├── terminal_key_aldridge
+│   ├── db_password
+│   └── news_api_keys
+└── ...
+```
+
+```yaml
+# docker-compose.yml (excerpt)
+services:
+  terminal:
+    secrets:
+      - alpaca_kairos_key
+      - alpaca_kairos_secret
+      - alpaca_stonks_key
+      - alpaca_stonks_secret
+      - alpaca_aldridge_key
+      - alpaca_aldridge_secret
+      - terminal_key_kairos
+      - terminal_key_stonks
+      - terminal_key_aldridge
+      - db_password
+      - news_api_keys
+
+secrets:
+  alpaca_kairos_key:
+    file: ./secrets/alpaca_kairos_key
+  alpaca_kairos_secret:
+    file: ./secrets/alpaca_kairos_secret
+  # ... one per secret
+  db_password:
+    file: ./secrets/db_password
+```
+
+The Terminal reads secrets from `/run/secrets/*` at startup. Deploy:
+
+```bash
+# Create secrets dir with restricted permissions
+mkdir -p /docker/terminal/secrets
+chmod 700 /docker/terminal/secrets
+
+# Populate (one-time, or on rotation)
+echo -n "pk_xxxxx" > /docker/terminal/secrets/alpaca_kairos_key
+echo -n "sk_xxxxx" > /docker/terminal/secrets/alpaca_kairos_secret
+# ...
+
+# Deploy
+scp -r secrets/ docker.klo:/docker/terminal/
+scp docker-compose.yml docker.klo:/docker/terminal/
+ssh docker.klo "cd /docker/terminal && docker compose up -d"
+```
+
+**Advantages:**
+- Works with existing scp+ssh workflow
+- `docker inspect` doesn't leak file-mounted secrets
+- Agent keys and Alpaca keys are physically separate
+- Quick to set up tonight
+
+**Limitations:**
+- Keys on disk (but on docker.klo's SSD, not .41's slow HDD)
+- No audit trail for access
+- Manual rotation
+
+### Phase 2 (CI/CD in place): GitHub Actions Secrets + Self-Hosted Runner
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy Trading Terminal
+on:
+  push:
+    branches: [main]
+    paths: ['terminal/**']
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, docker-klo]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate .env from secrets
+        run: |
+          cat > .env << 'EOF'
+          ALPACA_KAIROS_KEY=${{ secrets.ALPACA_KAIROS_KEY }}
+          ALPACA_KAIROS_SECRET=${{ secrets.ALPACA_KAIROS_SECRET }}
+          ALPACA_STONKS_KEY=${{ secrets.ALPACA_STONKS_KEY }}
+          ALPACA_STONKS_SECRET=${{ secrets.ALPACA_STONKS_SECRET }}
+          ALPACA_ALDRIDGE_KEY=${{ secrets.ALPACA_ALDRIDGE_KEY }}
+          ALPACA_ALDRIDGE_SECRET=${{ secrets.ALPACA_ALDRIDGE_SECRET }}
+          TRADING_TERMINAL_KEY_KAIROS=${{ secrets.TRADING_TERMINAL_KEY_KAIROS }}
+          TRADING_TERMINAL_KEY_STONKS=${{ secrets.TRADING_TERMINAL_KEY_STONKS }}
+          TRADING_TERMINAL_KEY_ALDRIDGE=${{ secrets.TRADING_TERMINAL_KEY_ALDRIDGE }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          EOF
+      - name: Deploy
+        run: docker compose up -d
+```
+
+Secrets are stored in GitHub repo → Settings → Secrets and variables → Actions. The self-hosted runner on docker.klo pulls them at deploy time — keys never touch developer machines.
+
+**Advantages:**
+- Central secrets management with GitHub UI
+- Auditable (who rotated what, when)
+- No plaintext files on disk (runner injects as env vars)
+- Rotatable without SSH
+
+### How Agent-Side Keys Get to the Terminal
+
+The per-trader Terminal API keys need to exist in **two places**:
+
+1. **Terminal side** (docker.klo): The Terminal has the keys in its secrets file. It hashes them into `trading.trader_api_keys.key_hash` for lookup on each MCP call.
+
+2. **Agent side** (OpenClaw gateway, .41 VM): The same keys are stored in the gateway's environment. The MCP client config references them:
+
+```json
+{
+  "mcpServers": {
+    "trading-terminal": {
+      "transport": "sse",
+      "url": "http://docker.klo:5001/sse",
+      "env": {
+        "TRADING_TERMINAL_KEY": "${TRADING_TERMINAL_KEY_KAIROS}"
+      }
+    }
+  }
+}
+```
+
+The agent **never reads this value**. OpenClaw's MCP runtime injects it into the connection headers. The agent literally cannot see its own key — it just knows "I am connected."
+
+### Key Distribution Flow
+
+```
+                 Generate keys (one-time, or rotate)                         
+                           │                                                  
+            ┌──────────────┴──────────────┐                                
+            ▼                              ▼                                
+┌──────────────────────┐     ┌──────────────────────────┐                  
+│ docker.klo secrets/  │     │ OpenClaw gateway .env    │                  
+│ (via scp or GH run.) │     │ (same keys, manually)    │                  
+│                      │     │                          │                  
+│ Terminal stores:     │     │ Agent config refs:       │                  
+│ • Alpaca keys        │     │ ${TERMINAL_KEY_KAIROS}   │                  
+│ • Terminal keys      │     │                          │                  
+│ • DB creds           │     │ MCP runtime injects      │                  
+│ • News API keys      │     │ into SSE headers         │                  
+└──────────────────────┘     └──────────────────────────┘                  
+        │                              │                                    
+        ▼                              ▼                                    
+  Terminal hashes key       Agent presents key in MCP auth                  
+  → look up trader_id       → Terminal verifies hash match                 
+  → scope all calls         → return scoped data                           
+```
+
+### Rotation Strategy
+
+| Secret | Rotation Cadence | How |
+|--------|-----------------|-----|
+| Alpaca keys | On compromise or quarterly | Regenerate in Alpaca dashboard, update both sides |
+| Terminal API keys | On compromise or quarterly | Generate new key, update docker.klo secrets + OpenClaw gateway .env, restart both |
+| DB password | On compromise | Update docker.klo secrets, update PG user password |
+| News API keys | On rate-limit change | Per-source dashboard, update docker.klo secrets |
+
+Since keys exist in two places (docker.klo + gateway .41), rotation is a coordinated process. Document the steps in the repo's RUNBOOK so you don't lock yourself out.
+
+
 ## 5. MCP Tool Definitions
 
 ### Data Tools (shared across all traders)
