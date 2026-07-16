@@ -1790,6 +1790,68 @@ This means:
 - To change a shared behavior: edit `_base/AGENTS.md`, rerun
 - To change a trader's risk: edit their `overrides.yaml`
 
+### Params & Strategy File Flow
+
+Every agent has three files in their workspace that define their current state:
+
+| File | Purpose | Written By | Read By | Source of Truth |
+|------|---------|------------|---------|-----------------|
+| `params.json` | Current trading params (stop_loss, max_cash, etc.) | tick_cron / Terminal (synced from PG) | Agent every tick | PG (`trading.params`) |
+| `strategy.md` | Current playbook — approach, key levels, watchlist | Agent during nightly maintenance | Agent every tick | Git (committed with rationale) |
+| `journal.md` | Running diary with git commit tags | Agent after every trade | Agent at night, other agents optionally | PG (`trading.journals`) via `record_journal()` |
+
+#### On Every Tick
+
+```
+1. Terminal.get_params(trader) → reads active params from PG
+2. Terminal writes params.json:
+   {
+     "trader": "kairos",
+     "git_commit": "a1b2c3d",
+     "params": {
+       "stop_loss_pct": 5,
+       "max_cash_pct": 0.8,
+       "max_positions": 5,
+       "entry_gate": { "min_confidence": 0.3 },
+       "ml_model": "hmm_spy_v2"
+     }
+   }
+3. Agent reads strategy.md + params.json at start of tick
+4. Agent trades, writes to journal.md with git commit tag
+5. Agent calls record_journal() → PG
+```
+
+#### On Nightly Maintenance
+
+```
+1. Agent reviews today's performance
+2. Updates strategy.md: "Market is choppy. Tightening stops."
+3. Updates params.json: stop_loss_pct: 5 → 3
+4. Commits to git:
+   git add kairos/strategy.md kairos/params.json
+   git commit -m "kairos: tighten stop_loss 5%→3% in CHOPPY regime"
+5. Terminal.set_params({trader: "kairos", params: {stop_loss_pct: 3}})
+6. Terminal writes to PG.params with git_commit field
+7. Next tick: params.json gets the new values
+```
+
+#### Performance Correlation
+
+Every journal entry includes the git commit hash. Over time:
+
+```sql
+-- Which commits produced the best trades?
+SELECT j.metadata->>'git_commit' as commit,
+       AVG(pnl_impact) as avg_pnl,
+       COUNT(*) as trades
+FROM trading.journals j
+WHERE j.metadata->>'git_commit' IS NOT NULL
+GROUP BY commit
+ORDER BY avg_pnl DESC;
+```
+
+This means you can trace any P&L back to the exact strategy.md and params.json that produced it, and roll back underperforming changes with `git revert`.
+
 ### Cron Job Template
 
 Cron jobs themselves are templated — the agent's current params and holdings get filled in each night:
