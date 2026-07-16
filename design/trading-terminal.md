@@ -1208,4 +1208,620 @@ A simple nav bar at the top of the dashboard that lists all available endpoints,
 
 ---
 
+## 17. Agent Work Loop & Competition Mindset
+
+### Design Constraints
+
+From the OpenClaw docs research:
+
+| Mechanism | Best For | Timeout | Task Records | Context |
+|-----------|----------|---------|--------------|---------|
+| **Heartbeat** | Quick periodic checks (inbox, calendar) | ~30 min default | No | Full main session |
+| **Cron (isolated)** | Long-running background work | Up to 48h configurable | Yes | Fresh session per run |
+| **Tasks** | Tracking detached work | N/A (ledger) | Yes | N/A |
+| **Standing Orders** | Persistent instructions in every session | N/A | No | Injected into all sessions |
+
+**Key insight:** Heartbeat is for quick checks. Cron (isolated) is for nightly maintenance. Standing orders are for permanent instructions like "you're in a competition."
+
+### Daily Agent Work Loop
+
+```
+Market Hours (9:30-16:00 ET, Mon-Fri)
+┌──────────────────────────────────────────────────────────────┐
+│  tick_cron.py dispatches agent                               │
+│  → Agent connects to Terminal (MCP)                          │
+│  → Terminal.get_quotes() / get_technical_scan() / etc.       │
+│  → Agent analyzes, forms thesis                              │
+│  → Terminal.record_decision()                                │
+│  → Terminal.submit_order() if trade signal triggers          │
+│  → Terminal.record_journal()                                 │
+│  → Done. Back to waiting for next tick.                      │
+└──────────────────────────────────────────────────────────────┘
+
+After Hours (16:30 ET — isolated cron job per trader, 30 min timeout)
+┌──────────────────────────────────────────────────────────────┐
+│  Cron fires: "Kairos nightly maintenance"                    │
+│  → 1. Trim files                                             │
+│     Check AGENTS.md, HEARTBEAT.md, memory/*.md               │
+│     If any file > 50KB: summarize key info, prune old stuff  │
+│     Target: keep files under 25KB for efficient loading      │
+│                                                              │
+│  → 2. Read other traders' journals                           │
+│     Terminal.get_leaderboard() → see who's winning           │
+│     Terminal.get_journals(trader="stonks") → read their logic │
+│     Form opinions: "Stonks is bullish on X. I disagree."     │
+│                                                              │
+│  → 3. Read news + form opinions                              │
+│     Terminal.get_news() → scan for catalysts                 │
+│     Terminal.watch_symbol() for new discoveries              │
+│                                                              │
+│  → 4. Run discovery scan                                     │
+│     Check momentum/fundamentals/flow for new candidates      │
+│     Add to watchlist                                         │
+│                                                              │
+│  → 5. Review today's performance                             │
+│     What worked? What didn't? Why?                           │
+│     Terminal.record_journal({type: "reflection", ...})       │
+│                                                              │
+│  → 6. Prune / create skills                                  │
+│     Remove unused skills                                     │
+│     Incorporate new skills from simulations                  │
+│     Document learnings in AGENTS.md                          │
+│                                                              │
+│  → 7. Write end-of-day journal                               │
+│     Terminal.record_journal({type: "summary", ...})          │
+│     Include: positions, P&L, lessons, tomorrow's plan        │
+│                                                              │
+│  → Done. Sleep until next market open.                       │
+└──────────────────────────────────────────────────────────────┘
+
+Midnight (00:00 ET — isolated cron job, 2h timeout)
+┌──────────────────────────────────────────────────────────────┐
+│  Cron fires: "GPU parameter optimization"                    │
+│  → Terminal.submit_train_job({model_type: "param_optimizer"})│
+│  → iMac GPU runs overnight                                    │
+│  → Results stored in ml_jobs table                            │
+│  → Available for morning trading                              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Cron Job Schedule
+
+```yaml
+# Nightly maintenance — one per trader, starts at 16:30 ET
+# Market closes at 16:00, 30 min buffer for final ticks
+
+cron "30 16 * * 1-5" → "Kairos nightly maintenance"
+  session: isolated
+  timeout: 30m
+  message: "Run your nightly maintenance routine. Trim files, read journals, read news, review today's performance, prune skills, and write end-of-day journal."
+
+cron "35 16 * * 1-5" → "Stonks nightly maintenance"
+  session: isolated
+  timeout: 30m
+  message: "Run your nightly maintenance routine. ..."
+
+cron "40 16 * * 1-5" → "Aldridge nightly maintenance"
+  session: isolated
+  timeout: 30m
+  message: "Run your nightly maintenance routine. ..."
+
+# Midnight — GPU compute, one slot
+cron "0 0 * * *" → "GPU parameter optimization"
+  session: isolated
+  timeout: 2h
+  message: "Run parameter optimization against today's market data. Use the GPU compute bridge."
+```
+
+Staggered by 5 minutes to avoid all three agents hitting the Terminal's news poller at once.
+
+### Standing Order: Competition Mindset
+
+This is deployed as a **standing order** — injected into every session automatically, not a file the agent reads:
+
+```markdown
+# Standing Order: Competition Mindset
+
+You are in a competition with limited time. Every trade, every journal entry,
+every line of code costs time. Be efficient. Be decisive.
+
+- Keep files under 50KB. If AGENTS.md or HEARTBEAT.md grows too large during
+  your learning period, summarize and prune during nightly maintenance.
+- Don't generate verbose logs. Write what matters.
+- If you're stuck, make a decision and move on. Perfection is the enemy of profit.
+- Prioritize: trades > analysis > journaling > maintenance
+- If you're running out of time, skip maintenance and come back tomorrow.
+```
+
+### How Standing Orders Work in OpenClaw
+
+Standing orders live in a workspace file (typically `AGENTS.md` or a dedicated `STANDING_ORDERS.md`) and are injected into every session — heartbeat, cron, and direct conversation. This means:
+- The competition mindset is always present during trading ticks
+- It's also present during nightly maintenance
+- It's present when reading other traders' journals
+- No need to repeat it in every prompt
+
+### File Maintenance Strategy
+
+| File | Max Size | Action |
+|------|----------|--------|
+| `AGENTS.md` | 50 KB | Summarize sections, remove outdated instructions |
+| `HEARTBEAT.md` | 25 KB | Prune old checklists, keep only active reminders |
+| `memory/YYYY-MM-DD.md` | 25 KB | Each day's file is a single day. Old ones stay. |
+| `MEMORY.md` | 50 KB | Prune outdated entries, keep only what's relevant |
+| `TOOLS.md` | 25 KB | Remove unused tool configs, keep active ones |
+| Journal files | 50 KB | Rotate: daily files, auto-prune after 30 days |
+
+Agents check file sizes during nightly maintenance and flag any that exceed thresholds. The Terminal can also expose a `check_file_sizes()` tool that returns a report of oversized files.
+
+---
+
+## 18. Monitoring & Alerting
+
+### What Happens When Terminal Goes Down at 2am
+
+| Scenario | Detection | Response | Recovery |
+|----------|-----------|----------|----------|
+| Terminal process crash | Docker health check, container restart | Auto-restart (unless-stopped) | ~10s downtime |
+| Terminal unresponsive | Agent MCP connection timeout | Agent falls back to emergency mode | Cron retry on next schedule |
+| PG connection lost | Terminal health check fails | Terminal serves stale cache, queues writes | Retry connection every 5s |
+| GPU worker down | ML Health Monitor detects unhealthy | Terminal returns graceful degradation | Retry every 30s |
+| docker.klo host down | No heartbeat from Terminal | No trading possible — agents detect MCP timeout | Manual recovery |
+| Alpaca API down | submit_order() returns error | Terminal returns error to agent, agent holds | Alpaca SLA |
+| Internet outage | All external APIs fail | Terminal serves cached data, no trading | Wait for reconnect |
+
+### Alerting Channels
+
+| Severity | Condition | Alert Method |
+|----------|-----------|--------------|
+| **Critical** | Terminal process down for > 1 min | Telegram message to you |
+| **Critical** | docker.klo unreachable | Telegram message to you |
+| **High** | PG connection lost > 5 min | Telegram message to you |
+| **High** | GPU worker down at market open | Telegram message to you |
+| **Medium** | Alpaca API errors > 5 in a row | Logged, next-day summary |
+| **Low** | Agent maintenance timeout | Logged in cron run history |
+
+### Alerting Implementation
+
+```yaml
+# In the Terminal's docker-compose.yml
+# Simple health check alerts via a lightweight script
+
+services:
+  terminal:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+
+  # Optional: lightweight alerting container
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        receiver: 'telegram'
+      receivers:
+        - name: 'telegram'
+          telegram_configs:
+            - bot_token: $TELEGRAM_BOT_TOKEN
+              chat_id: $TELEGRAM_CHAT_ID
+              send_resolved: true
+```
+
+For Phase 1, a simpler approach: a cron job on the .41 VM that pings Terminal health every 5 minutes and sends a Telegram message if it's down:
+
+```bash
+# Cron on .41 VM (every 5 min)
+curl -sf http://docker.klo:5001/health || \
+  curl -s -X POST https://api.telegram.org/bot$TOKEN/sendMessage \
+    -d chat_id=$CHAT_ID \
+    -d text="⚠️ Trading Terminal health check failed"
+```
+
+### Graceful Degradation Protocol
+
+When the Terminal is partially or fully unavailable, agents follow this priority:
+
+```
+1. Can I fetch data?  ─Yes→ Trade with reduced confidence
+                      ─No→  ↓
+2. Can I access my    ─Yes→ Analyze existing positions, hold
+   local cache?              ─No→  ↓
+3. Emergency mode:    Do nothing. Wait for Terminal to recover.
+                      Log: "Terminal unavailable. Skipping tick."
+```
+
+---
+
+## 19. Testing Strategy
+
+### Isolation Principle
+
+Every component of the Terminal should be testable in isolation before the full system cutover. Tests must be **containerizable** — run in Docker Compose with zero homelab dependencies.
+
+### Test Layers
+
+| Layer | What | Where |
+|-------|------|-------|
+| **Unit** | Pure logic, no I/O | CI (pytest) |
+| **Integration** | DB queries, API endpoints, gRPC calls | CI (Docker Compose + PG) |
+| **E2E** | Full Terminal + agent dispatch | CI (Docker Compose) |
+| **GPU Smoke** | gRPC health + capabilities | CI (if GPU available) |
+| **Regression** | Known bugs stay fixed | CI (every PR) |
+
+### What to Test
+
+#### 1. MCP Tool Tests
+
+Each tool gets a test harness:
+
+```python
+# test_get_quotes.py
+async def test_get_quotes_returns_ohlcv():
+    result = await client.call_tool("get_quotes", {"symbols": ["SPY"]})
+    assert "symbol" in result
+    assert "open" in result
+    assert "close" in result
+
+async def test_get_quotes_empty_symbols():
+    result = await client.call_tool("get_quotes", {"symbols": []})
+    assert result == []
+
+async def test_get_quotes_unknown_symbol():
+    result = await client.call_tool("get_quotes", {"symbols": ["BOGUS123"]})
+    assert result == []
+```
+
+#### 2. Auth Tests
+
+```python
+async def test_no_key_rejected():
+    with pytest.raises(AuthError):
+        await client.call_tool("get_portfolio")  # no key
+
+async def test_wrong_key_rejected():
+    client.set_key("invalid_key")
+    with pytest.raises(AuthError):
+        await client.call_tool("get_portfolio")
+
+async def test_kairos_cant_see_stonks_portfolio():
+    client.set_key(kairos_key)
+    portfolio = await client.call_tool("get_portfolio")
+    assert portfolio["trader_id"] == "kairos"
+```
+
+#### 3. Execution Engine Tests
+
+```python
+async def test_live_submit_order():
+    # Mock Alpaca API
+    result = await client.call_tool("submit_order", {
+        "symbol": "SPY", "qty": 1, "side": "buy",
+        "type": "market", "time_in_force": "day"
+    })
+    assert result["status"] in ["new", "filled"]
+
+async def test_backtest_submit_order():
+    await client.call_tool("set_mode", {"mode": "backtest"})
+    result = await client.call_tool("submit_order", {
+        "symbol": "SPY", "qty": 1, "side": "buy",
+        "type": "market", "time_in_force": "day"
+    })
+    assert result["is_backtest"] == True
+```
+
+#### 4. GPU Bridge Tests
+
+```python
+async def test_gpu_health_with_mock_worker():
+    # Start a mock gRPC worker
+    result = await client.call_tool("get_gpu_health")
+    assert "status" in result
+
+async def test_gpu_graceful_degradation():
+    # No worker running
+    result = await client.call_tool("get_gpu_health")
+    assert result["status"] == "unhealthy"
+```
+
+#### 5. News Poller Tests
+
+```python
+async def test_watch_symbol_adds_to_queue():
+    await client.call_tool("watch_symbol", {"symbol": "NVDA"})
+    watchlist = await db.query("SELECT * FROM watchlist WHERE symbol = 'NVDA'")
+    assert len(watchlist) == 1
+
+async def test_news_archive_dedup():
+    # Same article fetched twice
+    await poller.fetch_news("NVDA")  # first time
+    await poller.fetch_news("NVDA")  # second time
+    count = await db.query("SELECT COUNT(*) FROM news_archive WHERE symbol = 'NVDA'")
+    assert count == 1  # dedup
+```
+
+### Test Infrastructure
+
+```yaml
+# docker-compose.test.yml
+services:
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trading_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+
+  test-terminal:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - test-db
+    environment:
+      PG_DSN: postgresql://test:test@test-db:5432/trading_test
+      TERMINAL_TEST_MODE: "true"
+      # No real Alpaca keys needed
+
+  test-runner:
+    image: python:3.12-slim
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: pytest tests/ -v --cov=src
+    depends_on:
+      - test-terminal
+```
+
+### CI Pattern
+
+```yaml
+# GitHub Actions — spin up PG + Terminal, run tests against real stack
+# No homelab dependency. No VPN.
+# docker compose -f docker-compose.test.yml up --abort-on-container-exit
+```
+
+### Guardrails (always on)
+
+1. No bare `except: pass`
+2. No hardcoded IPs (192.168.x.x, docker.klo)
+3. No f-string SQL (`execute(f"...")`)
+4. No orphaned secrets in test output
+
+---
+
+## 20. Agent Prompt Templates
+
+### Design Principle
+
+Most of each trader's AGENTS.md is the same — the Terminal tools, the work loop, the competition mindset. Only a few things differ:
+- Their name and identity
+- Their strategy (momentum vs value vs sentiment)
+- Their preferred data sources
+- Their risk parameters
+
+**Template + overrides.** One base template, one small override file per trader.
+
+### Base Template: `traders/_base/AGENTS.md`
+
+This file lives in the repo and gets copied + patched for each trader:
+
+```markdown
+# {{TRADER_NAME}} — {{TRADER_DISPLAY_NAME}}
+
+## Identity
+
+You are a {{STRATEGY_LABEL}} trader. Your strategy is: {{STRATEGY_DESCRIPTION}}
+
+## Tools
+
+You have access to the Trading Terminal MCP server. All data and trading goes through it.
+
+### Data Tools (all traders)
+- `get_quotes(symbols=[...])` — OHLCV + RSI for any symbols
+- `get_macro()` — FOMC, yield curve, GDP, CPI, unemployment
+- `get_sentiment(symbol="...")` — FinBERT probability score
+- `get_sentiment_divergence(symbol="...")` — EN vs ZH sentiment gap
+- `get_flow(symbol="...")` — Unusual options flow
+- `get_insiders(symbol="...")` — SEC Form 4 filings
+- `get_technical_scan(symbol="...")` — Multi-TF RSI/MACD/BB
+- `get_risk(symbol="...")` — VaR, beta, correlation
+- `get_market_regime()` — Current regime (bullish/bearish/choppy)
+- `get_news(filters={...})` — Archived news with filters
+- `get_leaderboard()` — All trader rankings
+
+### Trading Tools (scoped to you)
+- `get_portfolio()` — Your portfolio value, cash, positions, P&L
+- `get_positions()` — Your open positions
+- `submit_order({symbol, qty, side, type, time_in_force})` — Place trade
+- `cancel_order(order_id)` — Cancel pending order
+- `get_orders(status?, limit?)` — Your order history
+- `record_journal({entry_type, title, body})` — Write structured journal
+- `record_decision({ticker, action, rationale, confidence})` — Log decision
+- `watch_symbol(symbol, priority?)` — Add to news poller
+
+### ML / GPU Tools (optional)
+- `get_gpu_health()` — Check if GPU is available
+- `get_gpu_capabilities()` — What models are available
+- `submit_train_job({model_type, symbol, params?})` — Train model
+- `submit_inference_job({model_name, features_json})` — Run inference
+- `get_job_status(job_id)` — Poll job progress
+
+### Historical Tools
+- `get_historical_data({symbol, start, end, interval?})` — OHLCV bars
+- `set_mode(mode)` — "live" or "backtest"
+- `get_mode()` — Current mode
+
+## Daily Work Loop
+
+### Market Hours (9:30-16:00 ET, Mon-Fri)
+
+When dispatched by tick_cron:
+1. Fetch current data: `get_quotes()`, `get_market_regime()`, `get_technical_scan()`
+2. {{ADDITIONAL_DATA_STEPS}}
+3. Analyze positions: `get_portfolio()`, `get_positions()`
+4. Form thesis: buy, sell, hold, or cut
+5. `record_decision()` with your rationale
+6. If trading: `submit_order()`
+7. `record_journal()` with your reasoning
+8. Keep local append-only journal for full stream-of-consciousness
+
+### After Hours (16:30 ET — cron job, 30 min timeout)
+
+1. Trim files if too large
+2. Read other traders' journals via `get_leaderboard()` and `get_journals()`
+3. Read news via `get_news()`
+4. {{MAINTENANCE_STEPS}}
+5. Review today's performance
+6. Write end-of-day journal
+
+## Cash Management
+
+- Maximum position size: {{MAX_POSITION_SIZE_PCT}}% of portfolio
+- Maximum cash deployment: {{MAX_CASH_PCT}}%
+- Stop-loss: {{STOP_LOSS_PCT}}% below entry
+- {{ADDITIONAL_RISK_RULES}}
+
+## Standing Orders
+
+(These are injected by OpenClaw — do not modify)
+- Competition mindset: you're in a competition with limited time
+- Keep files under 50KB
+- Prioritize: trades > analysis > journaling > maintenance
+```
+
+### Trader-Specific Overrides
+
+#### Kairos (Momentum)
+
+```yaml
+# kairos/overrides.yaml
+trader_name: kairos
+trader_display_name: Kairos
+strategy_label: Momentum / ML
+strategy_description: >
+  You use momentum indicators (RSI, MACD, BB) and ML signals (HMM regime)
+  to identify trending stocks. You run a systematic discovery scan on every
+  tick to find new momentum candidates. Your entry gate uses the market
+  regime signal to adjust position sizing.
+additional_data_steps: |
+   2a. Run discovery scan: `get_technical_scan()` for all watched symbols
+   2b. Check ML signals: `get_gpu_health()`, `submit_inference_job()` if available
+maintenance_steps: |
+   4. Run discovery scan for new momentum candidates
+      `get_technical_scan()` for extended watchlist
+max_position_size_pct: 15
+max_cash_pct: 90
+stop_loss_pct: 5
+additional_risk_rules: |
+  - CHOPPY regime: max 30% deployed, tight stops
+  - SUSTAINABLE regime: max 90% deployed, normal stops
+  - No more than 5 positions at a time
+```
+
+#### Stonks (Sentiment)
+
+```yaml
+# stonks/overrides.yaml
+trader_name: stonks
+trader_display_name: Stonks
+strategy_label: Sentiment / Community
+strategy_description: >
+  You discover stocks by reading social sentiment (Reddit, Bluesky, Stocktwits).
+  You validate community hype with technicals and fundamentals. You look for
+  mismatches between sentiment and price action.
+additional_data_steps: |
+   2a. Check sentiment: `get_sentiment()` for held positions
+   2b. Check news: `get_news()` for recent catalysts
+   2c. Check flow: `get_flow()` for unusual options activity
+maintenance_steps: |
+   4. Browse social feeds for new trending stocks
+   5. Read other traders' journals to find cross-signals
+max_position_size_pct: 10
+max_cash_pct: 80
+stop_loss_pct: 7
+additional_risk_rules: |
+  - If sentiment flips negative on a position, cut within 2 ticks
+  - No more than 8 positions at a time
+```
+
+#### Aldridge (Value)
+
+```yaml
+# aldridge/overrides.yaml
+trader_name: aldridge
+trader_display_name: Aldridge
+strategy_label: Value / Fundamentals
+strategy_description: >
+  You are a value investor. You look for fundamentally sound companies trading
+  at a discount. You use macro indicators to find sectors that are undervalued
+  relative to the broader market. You don't chase momentum.
+additional_data_steps: |
+   2a. Check macro: `get_macro()` for sector rotation signals
+   2b. Check insiders: `get_insiders()` for insider buying signals
+maintenance_steps: |
+   4. Rebalance value screen — check fundamentals for new candidates
+max_position_size_pct: 20
+max_cash_pct: 70
+stop_loss_pct: 10
+additional_risk_rules: |
+  - Hold for at least 3 days unless fundamentals change
+  - Max 4 positions at a time
+  - Rebalance monthly
+```
+
+### Template Rendering
+
+On deployment, a script or the Terminal's setup process renders the templates:
+
+```bash
+# render_trader_config.py
+# Reads _base/AGENTS.md + traders/{name}/overrides.yaml
+# → Outputs traders/{name}/AGENTS.md
+# → Registers cron jobs
+# → Creates standing orders
+```
+
+This means:
+- To add a new trader: create `overrides.yaml`, run the renderer
+- To change a shared behavior: edit `_base/AGENTS.md`, rerun
+- To change a trader's risk: edit their `overrides.yaml`
+
+### Cron Job Template
+
+Cron jobs themselves are templated — the agent's current params and holdings get filled in each night:
+
+```yaml
+# cron template: nightly-maintenance.yaml
+name: "{{TRADER_NAME}} nightly maintenance"
+schedule:
+  kind: cron
+  expr: "{{CRON_TIME}} * * 1-5"
+sessionTarget: isolated
+payload:
+  kind: agentTurn
+  message: |
+    Nightly maintenance for {{TRADER_NAME}}.
+    Current portfolio: {{PORTFOLIO_SUMMARY}}
+    Current positions: {{POSITIONS_JSON}}
+    Today's P&L: {{PNL}}
+
+    Run your maintenance routine:
+    1. Trim files if > 50KB
+    2. Read other traders' journals
+    3. Read news, form opinions
+    4. {{STRATEGY_MAINTENANCE_STEPS}}
+    5. Review today's performance
+    6. Write end-of-day journal
+
+timeoutSeconds: 1800
+```
+
+The cron runner fills in `{{PORTFOLIO_SUMMARY}}`, `{{POSITIONS_JSON}}`, `{{PNL}}` from the Terminal's `get_portfolio()` at the time the cron runs. This keeps each agent's maintenance contextually relevant without them having to re-fetch data.
+
+---
+
 *This is a living document. Every section is up for debate. Tear it apart.*

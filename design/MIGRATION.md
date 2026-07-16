@@ -259,17 +259,61 @@ To:
 6. Keep local append-only journal for stream-of-consciousness
 ```
 
-### 2d. Run Parallel for a Day
+### 2d. Deploy Standing Orders & Cron Jobs
+
+```bash
+# Deploy the competition mindset standing order
+# This injects the competition mindset into EVERY session —
+# heartbeat, cron, direct chat. No need to repeat it in prompts.
+
+cat > /home/openclaw/.openclaw/workspace/STANDING_ORDERS.md << 'ORDER'
+# Standing Order: Competition Mindset
+
+You are in a competition with limited time. Every trade, every journal entry,
+every line of code costs time. Be efficient. Be decisive.
+
+- Keep files under 50KB. If any file grows too large, summarize and prune
+  during nightly maintenance.
+- Don't generate verbose logs. Write what matters.
+- If you're stuck, make a decision and move on. Perfection is the enemy of profit.
+- Prioritize: trades > analysis > journaling > maintenance
+- If you're running out of time, skip maintenance and come back tomorrow.
+ORDER
+```
+
+For OpenClaw, standing orders work best injected via AGENTS.md or a dedicated file referenced in the workspace. The key is the instruction is always present — not a file the agent decides to read.
+
+### 2e. Set Up Nightly Cron Jobs
+
+```bash
+# Stonks — nightly maintenance at 16:35 ET (5 min after close + buffer)
+openclaw cron create "35 16 * * 1-5" \
+  --name "Stonks nightly maintenance" \
+  --session isolated \
+  --message "Run your nightly maintenance routine. Trim files, read journals, read news, review today's performance, prune skills, and write end-of-day journal." \
+  --timeout-seconds 1800 \
+  --tz America/New_York
+
+# Template rendering note: future cron jobs should fill in:
+# {{PORTFOLIO_SUMMARY}}, {{POSITIONS_JSON}}, {{PNL}}
+# from Terminal.get_portfolio() at runtime
+```
+
+Stagger cron times per trader (16:30 Kairos, 16:35 Stonks, 16:40 Aldridge) to avoid all three hitting the news poller simultaneously.
+
+### 2f. Run Parallel for a Day
 
 - Stonks trades through Terminal ONLY
 - Old tools still available as fallback
 - Monitor: leaderboard shows correct data, orders flow, journals populate
 - Compare: decision quality should be unchanged (same data sources, just through Terminal)
 
-### 2e. Rollback if Needed
+### 2g. Rollback if Needed
 
 ```bash
 # Remove MCP config from Stonks' openclaw.json
+# Remove or disable the cron job
+# Remove standing order file
 # Restart OpenClaw gateway
 # Stonks falls back to old tools
 ```
@@ -440,6 +484,12 @@ No backfill needed — news_archive starts empty and grows naturally.
 | Leaderboard updates within 5s | Dashboard refresh | |
 | All agents connected | `/debug/agents` endpoint | |
 | No secrets in agent environments | `env \| grep ALPACA` = empty | |
+| Standing orders deployed | Check STANDING_ORDERS.md exists | |
+| Cron jobs active | `openclaw cron list` shows nightly jobs | |
+| Competition mindset present | Agent response is time-aware | |
+| File trimming works | File sizes decrease after 2-3 runs | |
+| Nightly maintenance completes | `openclaw cron runs --id <job>` | |
+| Monitoring alert fires | Kill terminal → alert within 2 min | |
 
 ---
 
@@ -451,7 +501,10 @@ No backfill needed — news_archive starts empty and grows naturally.
 | **T+1** | Stonks migration + verification | Orchestrator |
 | **T+2** | Kairos + Aldridge migration | Orchestrator |
 | **T+3** | Hermes registration + deprecation | Orchestrator |
-| **T+4+** | Backfill, monitoring, optimization | Automated |
+| **T+3** | Standing orders + cron jobs deployed | Orchestrator |
+| **T+4** | Monitoring/alerting live | Orchestrator |
+| **T+4+** | Testing framework in CI | Orchestrator |
+| **T+5+** | Backfill, prompt templates, optimization | Automated |
 
 ---
 
