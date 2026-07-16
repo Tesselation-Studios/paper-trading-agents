@@ -1,24 +1,77 @@
 # Trading Terminal — MCP Server Design
 
-> **Status**: Draft | **Date**: 2026-07-16 | **Author**: Casper
-> **Board**: [`trading-terminal` workboard](https://github.com/Tesselation-Studios/paper-trading-agents/issues)
+> **Status**: Draft v2 (updated w/ Hermes intel) | **Date**: 2026-07-16
+> **Board**: `trading-terminal` workboard | **PR**: [#1](https://github.com/Tesselation-Studios/paper-trading-agents/pull/1)
 
-## Problem
+---
 
-We currently have a split-brain architecture:
+## 1. Current State — What Actually Exists
 
-1. **Data Bus** (Flask, localhost:5000) — fetches quotes, flow, insiders, macro, sentiment
-2. **Executor** (skill_alpaca.py, execute.py) — places trades via Alpaca API
-3. **SQLite tables** (3 of them) — journals, decisions, positions
-4. **Dashboard** reads from PG — but sync scripts were missing, cron jobs silently failing
+```
+┌─────────────────────────────────────┐
+│ .41 VM (paper-trading-rebuild)      │  ← spinning HDD, slow I/O
+│                                     │
+│  tick_cron.py (runs)                │
+│  → fetches snapshots                │
+│  → dispatches OpenClaw agents       │
+│  → writes tick_queue                │
+│                                     │
+│  LLM Engine (hermes-trader, runs)   │
+│  → decisions → PG ✅                │
+│  → journal → PG ✅                  │
+│                                     │
+│  sync_alpaca_positions (5 min cr.)  │
+│  → positions → PG ✅                │
+│  → portfolio snaps → PG ✅          │
+│                                     │
+│  .41:5000 — old data bus (has LLM)  │
+│  .41:5000 — trade exec: ❌ MISSING  │
+└────────────┬────────────────────────┘
+             │
+┌────────────▼────────────────────────┐
+│ docker.klo (.179, 20c/32GB/4TB+SSD) │
+│                                     │
+│  trading-db (PostgreSQL)            │
+│  ← all writes land here ✅          │
+│                                     │
+│  trading-data-bus (.179:5000)       │
+│  → quotes, social, indicators       │
+│                                     │
+│  trading-leaderboard (.179:5002)    │
+│  → reads PG for rankings            │
+│                                     │
+│  trading-dashboard (.179:5004)      │
+│  → trading.wodinga.studio (healthy) │
+└─────────────────────────────────────┘
+```
 
-The VM runs on a spinning HDD. Disk I/O throttles everything — agent thinking, SQLite writes, everything.
+### What Works
+- **Decisions, journal, portfolio snapshots, positions** all flowing to PG ✅
+- **Dashboard healthy** at trading.wodinga.studio ✅
+- **tick_cron** fixed (URL + tick_id) ✅
+- **Sync positions cron** running every 5 min ✅
+- **Trader model** → Gemini 3.5 Flash (cheap) ✅
 
-Docker.klo has 20 cores, 32 GB RAM, 4 TB+ SSD on TrueNAS. That's where this needs to live.
+### What's Broken
+1. **Trade execution is missing** — decisions get logged but no orders get placed in Alpaca → no trades in DB since July 10
+2. **Two data busses** — .41:5000 (has LLM) vs .179:5000 (pure data). Should consolidate.
+3. **OpenClaw agents dispatch but output doesn't flow** — sync_agents_to_pg.py cron exists but never ran.
+4. **Historical trader needs polish** — replay harness, learning loop signals, param optimization.
+5. **Signals table stale** — `trading.signants` frozen July 8, dashboard falls back to `trading.decisions`.
 
-## Solution: The Trading Terminal
+### Root Cause
 
-A **single authenticated MCP server** on docker.klo that replaces the data bus + executor + sync scripts + SQLite tables. One service. One key store. One database. Every agent connects to it with their own API key.
+The .41 VM runs on a spinning HDD. Disk I/O throttles everything — agent thinking, SQLite writes, Docker operations, everything. Docker.klo has 20 cores, 32 GB RAM, 4 TB+ SSD — that's where the pipeline needs to live.
+
+---
+
+## 2. Solution: The Trading Terminal
+
+A **single authenticated MCP server** on docker.klo that replaces the current split-brain architecture with one unified pipeline:
+
+```
+fetch data → LLM decides → execute order → write everything to PG
+```
 
 ### Core Principles
 
@@ -27,10 +80,27 @@ A **single authenticated MCP server** on docker.klo that replaces the data bus +
 | **One service** | One deploy, one set of Alpaca keys, one auth model, one thing to debug |
 | **Agents don't touch Alpaca directly** | Keys live in the Terminal. Agents present their own API key. Security + simplicity. |
 | **Share everything** | News, signals, historical data — all in one PG. Trader A's research feeds Trader B. |
-| **Archive forever** | Every quote fetched, every trade placed, every journal entry — stored. Over time, a rich historical corpus for backtesting. |
+| **Archive forever** | Every quote fetched gets stored. Over time, a rich historical corpus for backtesting. |
 | **Auth per trader, data per trader** | API key scopes portfolio/orders to that trader. Shared data (macro, news, signals) is accessible by all. |
+| **Same schema for live + historical** | Backtests use the same tables with an `is_backtest` flag. Leaderboard shows both. |
 
-## Architecture
+### What It Replaces
+
+| Old Thing | Replaced By |
+|-----------|-------------|
+| .41:5000 data bus | Terminal MCP tools |
+| .179:5000 data bus | Terminal MCP tools |
+| skill_alpaca.py (3 copies) | Terminal `submit_order()` tool |
+| execute.py | Terminal internal execution engine |
+| sync_alpaca_positions.py | Terminal writes positions on every order |
+| sync_agents_to_pg.py | Terminal writes everything transactionally |
+| SQLite journal files | Terminal `record_journal()` → PG |
+| (nothing — new) | Historical accumulator + backtest engine |
+| (nothing — new) | Background news poller + archive |
+
+---
+
+## 3. Architecture
 
 ```
                    ┌─────────────────────────────────────────────────┐
@@ -39,76 +109,77 @@ A **single authenticated MCP server** on docker.klo that replaces the data bus +
                    │  ┌─────────────────────────────────────────┐   │
                    │  │          Trading Terminal (MCP)          │   │
                    │  │  Python + FastMCP / MCP SDK              │   │
-                   │  │  Port: e.g. 5001                         │   │
-                   │  │  Transport: SSE (for persistent conns)   │   │
+                   │  │  Port: 5001 (SSE transport)              │   │
                    │  │                                           │   │
-                   │  │  Tools (per-trader via API key):          │   │
-                   │  │   get_quotes, get_portfolio,             │   │
-                   │  │   get_macro, get_sentiment,              │   │
-                   │  │   get_flow, get_insiders,                │   │
-                   │  │   get_technical_scan, get_risk,          │   │
-                   │  │   get_news, watch_symbol,                │   │
-                   │  │   submit_order, cancel_order,            │   │
-                   │  │   get_positions, get_leaderboard,        │   │
-                   │  │   record_journal                          │   │
-                   │  └─────────────────┬───────────────────────┘   │
-                   │                    │                             │
-                   │  ┌─────────────────▼───────────────────────┐   │
-                   │  │         PostgreSQL (shared DB)           │   │
-                   │  │                                          │   │
-                   │  │  Tables:                                 │   │
-                   │  │   • traders            — trader profiles │   │
-                   │  │   • positions          — open positions  │   │
-                   │  │   • orders             — order history   │   │
-                   │  │   • journals           — structured logs │   │
-                   │  │   • decisions          — trading tick    │   │
-                   │  │   • news_archive       — accumulated     │   │
-                   │  │   • historical_ticks   — OHLCV archive   │   │
-                   │  │   • signals            — all signals     │   │
-                   │  │   • watchlist          — shared coverage │   │
-                   │  └──────────────────────────────────────────┘   │
+                   │  │  ┌─────────────────────────────────────┐ │   │
+                   │  │  │  Auth Layer                         │ │   │
+                   │  │  │  → API key → trader identity       │ │   │
+                   │  │  │  → Scopes all downstream calls     │ │   │
+                   │  │  └─────────────────────────────────────┘ │   │
+                   │  │                                           │   │
+                   │  │  ┌─────────────────────────────────────┐ │   │
+                   │  │  │  MCP Tools                          │ │   │
+                   │  │  │  → Data tools (shared)              │ │   │
+                   │  │  │  → Trading tools (scoped)           │ │   │
+                   │  │  │  → Historical tools (shared)        │ │   │
+                   │  │  └─────────────────────────────────────┘ │   │
+                   │  │                                           │   │
+                   │  │  ┌─────────────────────────────────────┐ │   │
+                   │  │  │  Execution Engine                   │ │   │
+                   │  │  │  → Live mode: Alpaca API            │ │   │
+                   │  │  │  → Backtest mode: sim engine        │ │   │
+                   │  │  │  → Both write to same PG tables     │ │   │
+                   │  │  └─────────────────────────────────────┘ │   │
+                   │  └─────────────────────────────────────────┘   │
                    │                                                 │
                    │  Background Workers:                            │
                    │  ┌─────────────────────────────────────────┐   │
                    │  │  News Poller                            │   │
-                   │  │  • Rate-limited per source              │   │
-                   │  │  • Round-robins through sources         │   │
-                   │  │  • Stores in news_archive, deduplicated │   │
-                   │  │  • Priority queue for watched symbols   │   │
+                   │  │  • Rate-limited, round-robin sources    │   │
+                   │  │  • Stores in news_archive (deduped)     │   │
+                   │  │  • Priority queue from watch_symbol()   │   │
                    │  │                                          │   │
                    │  │  Data Refresher                          │   │
-                   │  │  • Quotes / flow / macro refresh loop    │   │
+                   │  │  • Pre-fetches quotes/flow/macro/signal  │   │
                    │  │  • In-memory cache + PG persistence      │   │
                    │  │  • Adjusts cadence by market hours       │   │
                    │  │                                          │   │
                    │  │  Historical Accumulator                  │   │
                    │  │  • Every quote fetch → OHLCV to PG       │   │
-                   │  │  • Builds growing historical corpus      │   │
-                   │  │  • Alpaca only gives 5 days of 5-min     │   │
-                   │  │    bars — this is how we escape that     │   │
+                   │  │  • Builds growing corpus for backtests   │   │
+                   │  │  • Escapes Alpaca's 5-day window limit   │   │
+                   │  └─────────────────────────────────────────┘   │
+                   │                                                 │
+                   │  ┌─────────────────────────────────────────┐   │
+                   │  │  PostgreSQL (shared DB)                  │   │
+                   │  │  Persists: positions, orders, journals,  │   │
+                   │  │  decisions, news_archive, historical_    │   │
+                   │  │  ticks, signals, watchlist               │   │
                    │  └─────────────────────────────────────────┘   │
                    └─────────────────────────────────────────────────┘
 
-┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│  Kairos Agent       │    │  Stonks Agent       │    │  Aldridge Agent     │
-│  (API key: kairos)  │    │  (API key: stonks)  │    │  (API key: aldridge) │
-│                     │    │                     │    │                     │
-│  Connects via MCP   │    │  Connects via MCP   │    │  Connects via MCP   │
-│  (SSE or stdio)     │    │  (SSE or stdio)     │    │  (SSE or stdio)     │
-└─────────────────────┘    └─────────────────────┘    └─────────────────────┘
+┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+│  Kairos Agent        │  │  Stonks Agent        │  │  Aldridge Agent      │
+│  (key: kairos_key)   │  │  (key: stonks_key)   │  │  (key: aldridge_key) │
+│                      │  │                      │  │                      │
+│  Connects via MCP    │  │  Connects via MCP    │  │  Connects via MCP    │
+│  (SSE)               │  │  (SSE)               │  │  (SSE)               │
+└──────────────────────┘  └──────────────────────┘  └──────────────────────┘
 
-┌─────────────────────┐
-│  Leaderboard UI     │
-│  (reads direct from │
-│  PG, no API call)   │
-└─────────────────────┘
+┌──────────────────────────────────────┐
+│  Leaderboard UI (trading.wodinga.x)  │
+│  → reads PG directly (no API dep)   │
+│  → shows live AND historical results │
+└──────────────────────────────────────┘
 ```
 
-## Auth & Security
+---
+
+## 4. Auth & Security
 
 ### Per-Trader API Keys
 
-Each trader agent gets a unique API key stored as an environment variable:
+Each agent gets a unique key stored in OpenClaw's env:
 
 ```
 TRADING_TERMINAL_KEY_KAIROS=tt_xxxxx
@@ -116,161 +187,149 @@ TRADING_TERMINAL_KEY_STONKS=tt_yyyyy
 TRADING_TERMINAL_KEY_ALDRIDGE=tt_zzzzz
 ```
 
-The Terminal resolves the key to a trader identity and scopes:
-- `get_portfolio()` → returns only that trader's portfolio
+The Terminal resolves the key to a trader identity and scopes all calls:
+- `get_portfolio()` → only that trader's portfolio
 - `submit_order()` → places from that trader's Alpaca account
 - `record_journal()` → writes with that trader's ID
 - `get_news()`, `get_macro()` → shared, accessible by all
 
 ### Alpaca Keys
 
-**Alpaca keys live ONLY in the Terminal's environment** on docker.klo. Agents never see them. The Terminal's `docker-compose.env` or Docker secrets holds:
+**Alpaca keys live ONLY in the Terminal's environment** on docker.klo. Never transmitted. Never seen by agents.
 
 ```
-ALPACA_KAIROS_KEY=...
-ALPACA_KAIROS_SECRET=...
-ALPACA_STONKS_KEY=...
-ALPACA_STONKS_SECRET=...
-ALPACA_ALDRIDGE_KEY=...
-ALPACA_ALDRIDGE_SECRET=...
+ALPACA_KAIROS_KEY=***
+ALPACA_KAIROS_SECRET=***
+ALPACA_STONKS_KEY=***
+ALPACA_STONKS_SECRET=***
+ALPACA_ALDRIDGE_KEY=***
+ALPACA_ALDRIDGE_SECRET=***
 ```
 
 ### Threat Model
 
 | Threat | Mitigation |
 |--------|-----------|
-| Agent key leaks | Key rotation. Keys are bearer tokens, scoped per trader. |
+| Agent key leaks | Key rotation. Keys are bearer tokens scoped per trader. |
 | Agent impersonates another trader | Key scoping. Terminal rejects mismatched trader_id. |
-| Alpaca key leak | Alpaca keys never leave docker.klo. Agents can't read them. |
-| Unauthenticated requests | Every MCP tool call requires valid key. |
+| Alpaca key leak | Never leave docker.klo environment. Agents never see them. |
+| Unauthenticated requests | Every MCP tool call requires valid key in header/auth. |
 
-## MCP Tool Definitions
+---
 
-### Data Tools (shared, available to all)
+## 5. MCP Tool Definitions
 
-| Tool | Params | Returns | Cache |
-|------|--------|---------|-------|
-| `get_quotes` | symbols: string[] | OHLCV + RSI per symbol | 5s |
+### Data Tools (shared across all traders)
+
+| Tool | Params | Returns | Cache TTL |
+|------|--------|---------|-----------|
+| `get_quotes` | `symbols: string[]` | OHLCV + RSI per symbol | 5s |
 | `get_macro` | — | FOMC, yield curve, GDP, CPI, unemployment | 1h |
-| `get_sentiment` | symbol: string | FinBERT + Praesentire scores | 5m |
-| `get_sentiment_divergence` | symbol: string | EN vs ZH sentiment, divergence score | 10m |
-| `get_flow` | symbol: string | Unusual options flow | 5m |
-| `get_insiders` | symbol: string | SEC Form 4 filings | 30m |
-| `get_technical_scan` | symbol: string | Multi-TF RSI/MACD/BB (15m/1h/4h/1d) | 5m |
-| `get_risk` | symbol: string | VaR, beta, correlation, concentration | 15m |
-| `get_market_regime` | — | ML regime signal (bullish/bearish/choppy/sustainable/exhausted) | heartbeats |
-| `get_news` | filters: {symbol?, sources?, categories?, since?, limit?} | Archived news entries | instant |
+| `get_sentiment` | `symbol: string` | FinBERT + Praesentire scores | 5m |
+| `get_sentiment_divergence` | `symbol: string` | EN vs ZH sentiment + divergence score | 10m |
+| `get_flow` | `symbol: string` | Unusual options flow | 5m |
+| `get_insiders` | `symbol: string` | SEC Form 4 filings | 30m |
+| `get_technical_scan` | `symbol: string` | Multi-TF RSI/MACD/BB (15m/1h/4h/1d) | 5m |
+| `get_risk` | `symbol: string` | VaR, beta, correlation, concentration | 15m |
+| `get_market_regime` | — | ML regime signal | heartbeat |
+| `get_news` | `filters: {symbol?, sources?, categories?, since?, limit?}` | Archived news entries | instant |
 | `get_leaderboard` | — | All trader P&L, positions, rankings | 5s |
 
 ### Trading Tools (scoped by API key)
 
 | Tool | Params | Returns | Notes |
 |------|--------|---------|-------|
-| `get_portfolio` | — | {value, cash, positions[], P&L} | Scoped to API key's trader |
-| `get_positions` | — | Open positions with P&L | Scoped to API key's trader |
-| `submit_order` | {symbol, qty, side, type, time_in_force} | Order confirmation | Validates against entry gate |
-| `cancel_order` | order_id: string | Cancellation confirmation | — |
-| `get_orders` | status?, limit? | Order history | Scoped |
-| `record_journal` | {entry_type, title, body, metadata?} | Journal record ID | Structured + append-only |
-| `record_decision` | {ticker, action, rationale, confidence?} | Decision record ID | For leaderboard/audit |
-| `watch_symbol` | symbol: string | Confirmation | Adds to news poller's priority queue |
+| `get_portfolio` | — | `{value, cash, positions[], P&L}` | Scoped to trader |
+| `get_positions` | — | Open positions with P&L | Scoped to trader |
+| `submit_order` | `{symbol, qty, side, type, time_in_force}` | Order confirmation | Validates via entry gate |
+| `cancel_order` | `order_id: string` | Cancellation confirmation | — |
+| `get_orders` | `status?, limit?` | Order history | Scoped to trader |
+| `record_journal` | `{entry_type, title, body, metadata?}` | Journal record ID | Structured + append-only |
+| `record_decision` | `{ticker, action, rationale, confidence?}` | Decision record ID | For leaderboard/audit |
+| `watch_symbol` | `symbol: string, priority?: int` | Confirmation | Adds to news poller queue |
 
-### Historical Trading Tools
+### Historical/Backtest Tools
 
 | Tool | Params | Returns | Notes |
 |------|--------|---------|-------|
-| `get_historical_data` | {symbol, start, end, interval?} | OHLCV bars | From accumulated historical_ticks |
-| `run_backtest` | {symbols, start, end, initial_capital?, strategy?} | Backtest results | Uses historical engine |
-| `set_mode` | mode: "live" \| "backtest" | Mode confirmed | Switches between live Alpaca and historical engine |
+| `get_historical_data` | `{symbol, start, end, interval?}` | OHLCV bars | From accumulated historical_ticks |
+| `set_mode` | `mode: "live" \| "backtest"` | Mode confirmed | Switches execution engine |
+| `get_mode` | — | Current mode | Status check |
 
-## Database Schema (PostgreSQL)
+---
+
+## 6. Pipeline Flow
+
+### Live Trading (market hours)
+
+```
+tick_cron.py (.41)
+  → dispatches agent (Kairos/Stonks/Aldridge)
+  → agent connects to Terminal
+  → Terminal.get_quotes(symbols)  ← cache hit or Alpaca fetch
+  → agent analyzes
+  → Terminal.record_decision(...)  ← writes to PG
+  → Terminal.submit_order(...)     ← hits Alpaca API
+  → Terminal writes order + position to PG
+  → Terminal.record_journal(...)   ← writes to PG
+  → Leaderboard reads from PG ← live updated
+```
+
+### Historical Trading (off hours / backtest)
+
+```
+Agent (any trader)
+  → Terminal.set_mode("backtest", {date: "2026-07-15"})
+  → Terminal.get_quotes("NVDA")    ← from historical_ticks table
+  → agent analyzes
+  → Terminal.record_decision(...)   ← same PG, is_backtest=true
+  → Terminal.submit_order(...)      ← sim engine, same PG tables
+  → Terminal.record_journal(...)    ← same PG, is_backtest=true
+  → Leaderboard shows backtest results tagged
+```
+
+---
+
+## 7. Database Schema
+
+The Terminal writes to the **existing `trading` schema** in PG on docker.klo. New tables are added, existing tables are adapted.
+
+### Existing Tables (already in PG)
+
+| Table | Status | Notes |
+|-------|--------|-------|
+| `trading.decisions` | ✅ Flowing | Already written by LLM engine |
+| `trading.trader_journals` | ✅ Flowing | Already written by LLM engine |
+| `trading.portfolio_snapshots` | ✅ Flowing | Already written by sync script |
+| `trading.positions` | ✅ Flowing | Already written by sync script |
+| `trading.signants` (signals) | ❌ Stale | Frozen July 8 — needs replacement |
+
+### New Tables (need creation)
 
 ```sql
--- Traders
-CREATE TABLE traders (
-    id TEXT PRIMARY KEY,          -- 'kairos', 'stonks', 'aldridge'
-    display_name TEXT NOT NULL,
-    api_key_hash TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Positions (live + historical)
-CREATE TABLE positions (
-    id BIGSERIAL PRIMARY KEY,
-    trader_id TEXT REFERENCES traders(id),
+-- Orders (execution records — currently MISSING from pipeline)
+CREATE TABLE trading.orders (
+    id TEXT PRIMARY KEY,                   -- Alpaca order ID or local UUID
+    trader_id TEXT NOT NULL,               -- 'kairos', 'stonks', 'aldridge'
     symbol TEXT NOT NULL,
+    side TEXT NOT NULL,                    -- 'buy', 'sell'
+    order_type TEXT NOT NULL,              -- 'market', 'limit', 'stop', 'stop_limit'
     qty NUMERIC NOT NULL,
-    avg_entry_price NUMERIC NOT NULL,
-    current_price NUMERIC,
-    side TEXT NOT NULL DEFAULT 'long',
-    opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    closed_at TIMESTAMPTZ,
-    realized_pnl NUMERIC,
-    is_live BOOLEAN DEFAULT TRUE,
-    backtest_run_id TEXT   -- NULL for live trades
-);
-
--- Orders
-CREATE TABLE orders (
-    id TEXT PRIMARY KEY,           -- Alpaca order ID or local UUID
-    trader_id TEXT REFERENCES traders(id),
-    symbol TEXT NOT NULL,
-    side TEXT NOT NULL,
-    type TEXT NOT NULL,
-    qty NUMERIC NOT NULL,
-    status TEXT NOT NULL,
-    filled_qty NUMERIC,
+    status TEXT NOT NULL,                  -- 'new', 'filled', 'partially_filled', 'canceled', 'rejected'
+    filled_qty NUMERIC DEFAULT 0,
     filled_avg_price NUMERIC,
     submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     filled_at TIMESTAMPTZ,
-    is_backtest BOOLEAN DEFAULT FALSE
+    is_backtest BOOLEAN DEFAULT FALSE,
+    backtest_run_id TEXT,                  -- NULL for live trades
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Journals (trading diaries per agent)
-CREATE TABLE journals (
-    id BIGSERIAL PRIMARY KEY,
-    trader_id TEXT REFERENCES traders(id),
-    entry_type TEXT NOT NULL,       -- 'analysis', 'decision', 'reflection', 'error'
-    title TEXT NOT NULL,
-    body TEXT NOT NULL,
-    metadata JSONB,                 -- extra structured data
-    ticker TEXT,                    -- optional related symbol
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Decisions (structured trading ticks)
-CREATE TABLE decisions (
-    id BIGSERIAL PRIMARY KEY,
-    trader_id TEXT REFERENCES traders(id),
-    ticker TEXT,
-    action TEXT NOT NULL,           -- 'buy', 'sell', 'hold', 'cut', 'watch'
-    rationale TEXT NOT NULL,
-    confidence NUMERIC,             -- 0.0 to 1.0
-    regime TEXT,                    -- market regime at decision time
-    portfolio_value_at_time NUMERIC,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- News archive (accumulated)
-CREATE TABLE news_archive (
-    id BIGSERIAL PRIMARY KEY,
-    symbols TEXT[],                 -- related tickers
-    title TEXT NOT NULL,
-    body TEXT,
-    source TEXT NOT NULL,           -- 'alpaca', 'alphai', 'reddit', etc.
-    url TEXT,
-    relevance_score NUMERIC,
-    categories TEXT[],
-    published_at TIMESTAMPTZ,
-    ingested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(url, published_at)       -- dedup
-);
-
--- Historical ticks (OHLCV from Alpaca)
-CREATE TABLE historical_ticks (
+-- Historical ticks (Alpaca OHLCV accumulation)
+CREATE TABLE trading.historical_ticks (
     id BIGSERIAL PRIMARY KEY,
     symbol TEXT NOT NULL,
-    interval TEXT NOT NULL,          -- '1Min', '5Min', '15Min', '1D'
+    interval TEXT NOT NULL,                -- '1Min', '5Min', '15Min', '1D'
     timestamp TIMESTAMPTZ NOT NULL,
     open NUMERIC NOT NULL,
     high NUMERIC NOT NULL,
@@ -282,61 +341,101 @@ CREATE TABLE historical_ticks (
     UNIQUE(symbol, interval, timestamp)
 );
 
--- Signals (shared signal repository)
-CREATE TABLE signals (
+-- News archive
+CREATE TABLE trading.news_archive (
     id BIGSERIAL PRIMARY KEY,
-    source TEXT NOT NULL,            -- 'kairos', 'stonks', 'aldridge', or external
+    symbols TEXT[],                        -- related tickers
+    title TEXT NOT NULL,
+    body TEXT,
+    source TEXT NOT NULL,                  -- 'alpaca', 'reddit', 'stocktwits', 'bluesky'
+    url TEXT,
+    relevance_score NUMERIC,
+    categories TEXT[],                     -- ['earnings', 'macro', 'regulatory', ...]
+    published_at TIMESTAMPTZ,
+    ingested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(url, published_at)
+);
+
+-- Watchlist (news poller priority queue)
+CREATE TABLE trading.watchlist (
+    id BIGSERIAL PRIMARY KEY,
+    symbol TEXT NOT NULL UNIQUE,
+    requested_by TEXT,                     -- trader_id or 'auto'
+    priority INTEGER DEFAULT 5,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_polled_at TIMESTAMPTZ,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+-- Trader API keys
+CREATE TABLE trading.trader_api_keys (
+    id BIGSERIAL PRIMARY KEY,
+    trader_id TEXT NOT NULL UNIQUE,
+    key_hash TEXT NOT NULL,                -- bcrypt or similar
+    label TEXT,                            -- human-readable
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    last_used_at TIMESTAMPTZ
+);
+
+-- Signals (replaces stale trading.signants)
+CREATE TABLE trading.signals_v2 (
+    id BIGSERIAL PRIMARY KEY,
+    source TEXT NOT NULL,                  -- 'kairos', 'stonks', 'aldridge', 'terminal'
     ticker TEXT NOT NULL,
-    signal_type TEXT NOT NULL,       -- 'momentum', 'value', 'sentiment', 'flow', 'insider'
-    direction TEXT NOT NULL,         -- 'bullish', 'bearish', 'neutral'
-    strength NUMERIC,                -- 0.0 to 1.0
+    signal_type TEXT NOT NULL,             -- 'momentum', 'value', 'sentiment', 'flow', 'insider'
+    direction TEXT NOT NULL,               -- 'bullish', 'bearish', 'neutral'
+    strength NUMERIC,                      -- 0.0 to 1.0
     rationale TEXT,
     metadata JSONB,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Watchlist (news poller priority)
-CREATE TABLE watchlist (
-    id BIGSERIAL PRIMARY KEY,
-    symbol TEXT NOT NULL UNIQUE,
-    requested_by TEXT,              -- trader_id or 'auto'
-    priority INTEGER DEFAULT 5,     -- higher = more frequent polling
-    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_polled_at TIMESTAMPTZ,
-    is_active BOOLEAN DEFAULT TRUE
+-- Backtest runs
+CREATE TABLE trading.backtest_runs (
+    id TEXT PRIMARY KEY,                   -- UUID
+    trader_id TEXT NOT NULL,
+    mode TEXT NOT NULL DEFAULT 'backtest',
+    symbols TEXT[],                        -- symbols traded
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    initial_capital NUMERIC NOT NULL,
+    final_value NUMERIC,
+    total_return NUMERIC,
+    sharpe_ratio NUMERIC,
+    max_drawdown NUMERIC,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
 );
 ```
 
-## Agent Onboarding
+---
 
-### What Changes for Each Trader
+## 8. Agent Onboarding
 
-Currently each trader has:
-- `TOOLS.md` pointing to local data fetching (curl localhost:5000)
-- `skill-alpaca-*` for trade execution
-- Local append-only journal files
+### What Changes
 
-After migration:
-- `TOOLS.md` references Trading Terminal MCP tools
-- MCP client configured in OpenClaw gateway pointing to docker.klo:PORT
-- Each trader keeps **local append-only logs** for their own reasoning
-- Structured journals go through `record_journal()` → PG → leaderboard
+| Current | After Migration |
+|---------|----------------|
+| Local curl to .41:5000 or .179:5000 | MCP tools via `trading-terminal` server |
+| skill_alpaca.py for orders | `submit_order()` tool |
+| Manual markdown journals | `record_journal()` for structured entries |
+| Local append-only logs **still kept** | Local logs remain for stream-of-consciousness |
+| Can't see other traders' signals | Shared `get_signals()` from Terminal |
 
 ### Local Append-Only Logs
 
-Agents still maintain local markdown files for their own stream of consciousness:
-
+Agents still maintain local markdown files for their own reasoning:
 ```
-kairos/journal/2026-07-16.md  ← raw thoughts, rejected ideas, notes
+kairos/journal/2026-07-16.md  ← raw thoughts, rejected ideas, full reasoning
 ```
 
-But structured decisions and trades go through the Terminal. Two fidelity levels:
-- **Local**: high-fidelity, stream-of-consciousness, full reasoning chain
+Structured decisions go through `record_journal()` → PG → leaderboard. Two fidelity levels:
+- **Local**: high-fidelity, stream-of-consciousness, complete reasoning chain
 - **Terminal**: structured, auditable, leaderboard-visible
 
-### Configuration
+### MCP Client Config (OpenClaw)
 
-In each trader's OpenClaw config:
+In each trader's config:
 
 ```json
 {
@@ -352,171 +451,135 @@ In each trader's OpenClaw config:
 }
 ```
 
-## Historical Trading Engine
+---
 
-### Live vs Backtest Mode
+## 9. Historical & Backtest Engine
 
-The Terminal has a **mode flag**:
+### Mode System
 
 ```
 mode = "live"     → submit_order() hits Alpaca API
-mode = "backtest" → submit_order() hits historical engine
+mode = "backtest" → submit_order() hits internal sim engine
 ```
 
-### Historical Engine Behavior
+The `set_mode()` tool returns the current mode and any active backtest context.
 
-In backtest mode:
-1. `get_portfolio()` reads from the backtest's simulated account (initial capital + filled orders)
-2. `get_quotes(symbol)` returns historical bars for the configured date range
-3. `submit_order()` matches against historical OHLCV for fill simulation
-4. All trades, journals, and decisions are stored with `is_backtest = TRUE` and a `backtest_run_id`
-5. Results appear on the leaderboard alongside live trades (tagged)
+### Backtest Engine Behavior
 
-### Default Backtest Mode
+1. `set_mode("backtest", date="2026-07-15")`
+   - Creates a `backtest_runs` record
+   - Simulated portfolio initialized with `initial_capital` (configurable)
+2. `get_portfolio()` returns simulated portfolio
+3. `get_quotes("NVDA")` returns bars from `historical_ticks` filtered to date range
+4. `submit_order(...)` simulates fill:
+   - Looks up matching bar in historical_ticks
+   - Fills at bar open (default) or configurable fill model
+   - Updates simulated position/portfolio
+5. On completion: backtest stats (return, sharpe, max drawdown) written to `backtest_runs`
 
-- **Default**: trade against the **most recent completed trading day**
-- Traders can specify: `set_mode("backtest", date="2026-07-15", symbols=["NVDA", "TSLA"], initial_capital=10000)`
-- This lets agents "wake up, trade yesterday, see how they did" before markets open
+### Data Growth
 
-### Data Source for Backtesting
+| Time | Historical Data Available |
+|------|--------------------------|
+| Day 1 | 5 trading days (Alpaca window) |
+| Week 2 | ~12 trading days |
+| Month 1 | ~25 trading days |
+| Month 3 | ~65 trading days |
+| Year 1 | ~260 trading days |
 
-The `historical_ticks` table grows every time `get_quotes()` is called for a live ticker. Over time, it accumulates:
+More data = more accurate backtests = better agent models.
 
-- **Day 1**: 5 days of data (from Alpaca's window)
-- **Day N**: 5 + N days of data (from accumulation)
-- **Month 3**: ~65 trading days of 5-min bars
-- **Year 1**: ~260 trading days
+---
 
-This means backtests get **more accurate over time** as the corpus grows.
-
-## News Aggregation
+## 10. News Aggregation
 
 ### Background Poller
 
 ```
 loop:
-  for each source in [Alpaca News, AlphaAI, Reddit, Stocktwits, Bluesky]:
-    for each symbol in priority_queue (sorted by priority, watchlist):
+  for each source in [Alpaca News, Reddit, Stocktwits, Bluesky]:
+    for each active symbol in watchlist (sorted by priority desc):
       fetch news for symbol from source
       deduplicate by (url, published_at)
-      store in news_archive table
+      upsert into news_archive
       update watchlist.last_polled_at
-      sleep(rate_limit_delay)
+      sleep(source_rate_limit)
 ```
 
-### Rate Limiting
+### Rate Limits
 
-| Source | Rate Limit | Notes |
-|--------|-----------|-------|
-| Alpaca News | 10 req/min | Reliable, bulk unfiltered |
-| AlphaAI | 100 req/day (free) | Use only for high-priority symbols |
+| Source | Rate Limit | Strategy |
+|--------|-----------|----------|
+| Alpaca News | 10 req/min | Primary source, bulk unfiltered |
 | Reddit | Varies | Per-subreddit, rotating accounts |
 | Stocktwits | Varies | Public API |
-| Bluesky | Varies | AT Protocol, no hard limit |
+| Bluesky | Varies | AT Protocol |
 
-### Priority Queue
+### Shared Archive
 
-- Default watched symbols: current positions + discovered tickers from all traders
-- `watch_symbol("XYZ")` → adds to queue with priority 5
-- Trader can set priority: `watch_symbol("XYZ", priority=10)` → polled more frequently
-- Symbols with no activity for 7 days → auto-deactivated
-
-### Shared Archive Benefit
-
-If Kairos discovers and watches `NVDA`:
-1. News poller adds NVDA to its rotation
+If Kairos watches `NVDA`:
+1. News poller adds NVDA to rotation
 2. News fetched → stored in `news_archive`
-3. Stonks queries `get_news(symbol="NVDA")` → returns from archive (no new fetch)
-4. Aldridge queries `get_news(symbol="NVDA", categories=["macro"])` → filtered from archive
+3. Stonks calls `get_news(symbol="NVDA")` → returns from archive, no new fetch
+4. Aldridge calls `get_news(symbol="NVDA", categories=["macro"])` → filtered from same archive
 
-This means **the more traders use the system, the less redundant fetching happens.**
+The more traders use the system, the less redundant fetching happens.
 
-## Deployment
+---
 
-### Current: scp + ssh
-
-```bash
-# Build
-docker build -t trading-terminal .
-
-# Save
-docker save trading-terminal | gzip > terminal.tar.gz
-
-# Deploy
-scp terminal.tar.gz docker.klo:/docker/terminal/
-ssh docker.klo "cd /docker/terminal && docker compose up -d"
-```
+## 11. Deployment
 
 ```yaml
 # docker-compose.yml
-version: "3.8"
 services:
   terminal:
     build: .
     ports:
       - "5001:5001"
-    env_file: .env  # Alpaca keys live here
+    env_file: .env          # Alpaca keys + DB creds
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
 
   db:
     image: postgres:16
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: trading_terminal
+      POSTGRES_DB: trading
       POSTGRES_USER: terminal
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     secrets:
       - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U terminal -d trading"]
+      interval: 10s
     restart: unless-stopped
 
 volumes:
   pgdata:
-
-secrets:
-  db_password:
-    file: ./secrets/db_password.txt
 ```
 
-### Future: CI/CD
-
-GitHub Actions → build → scp → ssh docker compose up. Standard pipeline.
-
-## Migration Plan
-
-| Phase | What | When |
-|-------|------|------|
-| **1** | Deploy Trading Terminal alongside existing system | Before next market open |
-| **2** | Switch one trader (Stonks — simplest) to Terminal-only | Day 1 |
-| **3** | Verify leaderboard data flows correctly | Day 1-2 |
-| **4** | Switch remaining traders | Day 2-3 |
-| **5** | Deprecate old data bus / SQLite tables | Day 3-4 |
-| **6** | Data migration from old tables | Day 4-5 |
-
-### Rollback
-
-If the Terminal goes down:
-- Each trader still has their local tools/knowledge
-- Old data bus can be restarted (it's still on .41 VM)
-- Fallback: agents can use Alpaca MCP directly as emergency override
-
-## Workboard
-
-Created cards for each major work item:
-
-| Card | Priority | Status |
-|------|----------|--------|
-| Architecture & Schema Design | Urgent | Triage |
-| News Aggregation Engine | High | Triage |
-| Historical Data Accumulation Engine | High | Triage |
-| Historical Trading Engine | High | Triage |
-| Agent Skills & Onboarding | Urgent | Triage |
-| Leaderboard V2 + Testing Dashboard | Normal | Triage |
-| Deployment & Secrets Pipeline | Urgent | Triage |
-| Migration Plan & Cutover Strategy | High | Triage |
+Deploy via scp + ssh for now. GitHub Actions later.
 
 ---
 
-*This is a living document. Update as design decisions are made.*
+## 12. Migration Phases
+
+| Phase | What | Duration |
+|-------|------|----------|
+| **1** | Build Terminal MCP server with core tools | Build session |
+| **2** | Deploy to docker.klo, connect to existing PG | Build session |
+| **3** | Switch Stonks (simplest trader) to Terminal-only | Day 1 |
+| **4** | Verify: leaderboard, orders, journals all flow | Day 1-2 |
+| **5** | Switch Kairos + Aldridge | Day 2-3 |
+| **6** | Deprecate .41:5000 data bus + old sync scripts | Day 3-4 |
+| **7** | Backfill historical_ticks from existing data | Ongoing |
+
+---
+
+*This is a living document. Every section is up for debate. Tear it apart.*
