@@ -1,6 +1,6 @@
 # Trading Terminal — MCP Server Design
 
-> **Status**: Draft v2 (updated w/ Hermes intel) | **Date**: 2026-07-16
+> **Status**: Draft v3 (GPU compute added) | **Date**: 2026-07-16
 > **Board**: `trading-terminal` workboard | **PR**: [#1](https://github.com/Tesselation-Studios/paper-trading-agents/pull/1)
 
 ---
@@ -43,6 +43,16 @@
 │  trading-dashboard (.179:5004)      │
 │  → trading.wodinga.studio (healthy) │
 └─────────────────────────────────────┘
+
+┌─────────────────────────────────────┐
+│ iMac (Apple Silicon GPU)            │
+│                                     │
+│  gpu-compute (gRPC :5002)           │
+│  → Phase 0: Health + Capabilities   │
+│  → Kairos uses for ML directly      │
+│  → No graceful degradation          │
+│  → No service discovery             │
+└─────────────────────────────────────┘
 ```
 
 ### What Works
@@ -51,6 +61,7 @@
 - **tick_cron** fixed (URL + tick_id) ✅
 - **Sync positions cron** running every 5 min ✅
 - **Trader model** → Gemini 3.5 Flash (cheap) ✅
+- **GPU compute** Phase 0 scaffold on iMac ✅
 
 ### What's Broken
 1. **Trade execution is missing** — decisions get logged but no orders get placed in Alpaca → no trades in DB since July 10
@@ -58,6 +69,7 @@
 3. **OpenClaw agents dispatch but output doesn't flow** — sync_agents_to_pg.py cron exists but never ran.
 4. **Historical trader needs polish** — replay harness, learning loop signals, param optimization.
 5. **Signals table stale** — `trading.signants` frozen July 8, dashboard falls back to `trading.decisions`.
+6. **GPU compute is direct** — Kairos calls iMac directly, no abstraction, no graceful degradation, no health check.
 
 ### Root Cause
 
@@ -83,6 +95,7 @@ fetch data → LLM decides → execute order → write everything to PG
 | **Archive forever** | Every quote fetched gets stored. Over time, a rich historical corpus for backtesting. |
 | **Auth per trader, data per trader** | API key scopes portfolio/orders to that trader. Shared data (macro, news, signals) is accessible by all. |
 | **Same schema for live + historical** | Backtests use the same tables with an `is_backtest` flag. Leaderboard shows both. |
+| **GPU compute is an abstracted backend** | Terminal wraps gRPC calls. Health check required. Graceful degradation on failure. |
 
 ### What It Replaces
 
@@ -95,8 +108,10 @@ fetch data → LLM decides → execute order → write everything to PG
 | sync_alpaca_positions.py | Terminal writes positions on every order |
 | sync_agents_to_pg.py | Terminal writes everything transactionally |
 | SQLite journal files | Terminal `record_journal()` → PG |
+| Kairos direct GPU calls | Terminal `submit_ml_job()` tool |
 | (nothing — new) | Historical accumulator + backtest engine |
 | (nothing — new) | Background news poller + archive |
+| (nothing — new) | GPU compute bridge (health check + graceful degradation) |
 
 ---
 
@@ -122,6 +137,7 @@ fetch data → LLM decides → execute order → write everything to PG
                    │  │  │  → Data tools (shared)              │ │   │
                    │  │  │  → Trading tools (scoped)           │ │   │
                    │  │  │  → Historical tools (shared)        │ │   │
+                   │  │  │  → ML tools (shared, with health)   │ │   │
                    │  │  └─────────────────────────────────────┘ │   │
                    │  │                                           │   │
                    │  │  ┌─────────────────────────────────────┐ │   │
@@ -129,6 +145,14 @@ fetch data → LLM decides → execute order → write everything to PG
                    │  │  │  → Live mode: Alpaca API            │ │   │
                    │  │  │  → Backtest mode: sim engine        │ │   │
                    │  │  │  → Both write to same PG tables     │ │   │
+                   │  │  └─────────────────────────────────────┘ │   │
+                   │  │                                           │   │
+                   │  │  ┌─────────────────────────────────────┐ │   │
+                   │  │  │  GPU Compute Bridge                 │ │   │
+                   │  │  │  → Proxies ML jobs to workers       │ │   │
+                   │  │  │  → Health check before every call   │ │   │
+                   │  │  │  → Graceful degradation on failure  │ │   │
+                   │  │  │  → Future: multi-worker dispatch    │ │   │
                    │  │  └─────────────────────────────────────┘ │   │
                    │  └─────────────────────────────────────────┘   │
                    │                                                 │
@@ -148,13 +172,11 @@ fetch data → LLM decides → execute order → write everything to PG
                    │  │  • Every quote fetch → OHLCV to PG       │   │
                    │  │  • Builds growing corpus for backtests   │   │
                    │  │  • Escapes Alpaca's 5-day window limit   │   │
-                   │  └─────────────────────────────────────────┘   │
-                   │                                                 │
-                   │  ┌─────────────────────────────────────────┐   │
-                   │  │  PostgreSQL (shared DB)                  │   │
-                   │  │  Persists: positions, orders, journals,  │   │
-                   │  │  decisions, news_archive, historical_    │   │
-                   │  │  ticks, signals, watchlist               │   │
+                   │  │                                          │   │
+                   │  │  ML Health Monitor                       │   │
+                   │  │  • Pings GPU worker(s) every N seconds   │   │
+                   │  │  • Updates cached status for tools       │   │
+                   │  │  • Triggers degradation state on failure │   │
                    │  └─────────────────────────────────────────┘   │
                    └─────────────────────────────────────────────────┘
 
@@ -166,11 +188,21 @@ fetch data → LLM decides → execute order → write everything to PG
 │  (SSE)               │  │  (SSE)               │  │  (SSE)               │
 └──────────────────────┘  └──────────────────────┘  └──────────────────────┘
 
-┌──────────────────────────────────────┐
-│  Leaderboard UI (trading.wodinga.x)  │
-│  → reads PG directly (no API dep)   │
-│  → shows live AND historical results │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────┐    ┌───────────────────────────────────────┐
+│  Leaderboard UI (trading.wodinga.x)  │    │  iMac (Apple Silicon GPU)             │
+│  → reads PG directly (no API dep)   │    │                                       │
+│  → shows live AND historical results │    │  gpu-compute gRPC worker (:5003)      │
+└──────────────────────────────────────┘    │  → TrainJob (HMM models)               │
+                                             │  → InferenceJob (model scoring)         │
+                                             │  → EmbedJob (QMD embeddings)            │
+                                             │  → Basic NLP (future: for Stonks)       │
+                                             └───────────────────────────────────────┘
+
+                                             ┌───────────────────────────────────────┐
+                                             │  Future: other machines in house      │
+                                             │  → gRPC workers (when available)       │
+                                             │  → Terminal auto-discovers via config   │
+                                             └───────────────────────────────────────┘
 ```
 
 ---
@@ -191,7 +223,7 @@ The Terminal resolves the key to a trader identity and scopes all calls:
 - `get_portfolio()` → only that trader's portfolio
 - `submit_order()` → places from that trader's Alpaca account
 - `record_journal()` → writes with that trader's ID
-- `get_news()`, `get_macro()` → shared, accessible by all
+- `get_news()`, `get_macro()`, `submit_ml_job()` → shared, accessible by all
 
 ### Alpaca Keys
 
@@ -248,6 +280,21 @@ ALPACA_ALDRIDGE_SECRET=***
 | `record_decision` | `{ticker, action, rationale, confidence?}` | Decision record ID | For leaderboard/audit |
 | `watch_symbol` | `symbol: string, priority?: int` | Confirmation | Adds to news poller queue |
 
+### ML / GPU Compute Tools (shared, with health check)
+
+| Tool | Params | Returns | Notes |
+|------|--------|---------|-------|
+| `get_gpu_health` | — | `{status, worker_id, queue_depth, gpu_mem_free_mb}` | Health check for all workers |
+| `get_gpu_capabilities` | — | `{job_types[], models[], device}` | What can this worker do? |
+| `submit_train_job` | `{model_type, symbol, params?}` | `{job_id, phase}` | Train HMM / ML models on GPU |
+| `submit_inference_job` | `{model_name, features_json}` | `{job_id, phase, result_json?}` | Run model inference |
+| `submit_embed_job` | `{collection, args?}` | `{job_id, phase}` | QMD vector embedding |
+| `get_job_status` | `job_id: string` | `{phase, progress, error?}` | Poll job progress |
+| `cancel_job` | `job_id: string` | `{phase}` | Cancel a running job |
+| `list_models` | — | `{models[]}` | Available models on worker |
+
+The Terminal wraps the GPU compute gRPC calls. The agent never talks to the iMac directly.
+
 ### Historical/Backtest Tools
 
 | Tool | Params | Returns | Notes |
@@ -258,7 +305,78 @@ ALPACA_ALDRIDGE_SECRET=***
 
 ---
 
-## 6. Pipeline Flow
+## 6. GPU Compute Integration
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Trading Terminal (docker.klo)                                   │
+│                                                                  │
+│  Agent submits: submit_train_job({model_type: "hmm", symbol: "NVDA"})
+│                                                                  │
+│  Terminal:                                                       │
+│  1. Check gpu_health() → if unhealthy, return error + suggestion │
+│  2. Forward to gRPC worker                                       │
+│  3. Return job_id to agent                                       │
+│  4. Agent polls get_job_status() until complete                  │
+│  5. On complete: store results in PG (ml_jobs table)             │
+│                                                                  │
+│  Graceful degradation:                                           │
+│  - If GPU unhealthy: Terminal returns {status: "unhealthy",      │
+│    fallback: "technical_analysis"}                               │
+│  - Agent reads the fallback hint and adjusts behavior            │
+│  - Kairos: "no GPU → switch to technicals + news analysis"       │
+│  - Stonks: "no GPU → no NLP available, use manual analysis"     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### Health Check Protocol
+
+The Terminal maintains a cached health status for each GPU worker:
+
+```
+Health Monitor (background loop, every 30s):
+  → gRPC Health() to each configured worker
+  → Cache: {status, queue_depth, gpu_mem_free_mb, last_ok}
+  → If unhealthy for > N consecutive checks → mark DEGRADED
+  → If recovered → mark HEALTHY
+```
+
+When an agent calls any ML tool:
+1. Terminal checks cached health
+2. If HEALTHY: forward the gRPC call
+3. If DEGRADED: return `{status: "unhealthy", fallback: "technical_analysis"}` with error details
+4. Agent reads the fallback hint and adjusts its strategy
+
+### Graceful Degradation Per Trader
+
+| Trader | GPU Available | GPU Unavailable |
+|--------|--------------|-----------------|
+| **Kairos** | Train HMM models, run inference, optimize params | Fall back to technical analysis (RSI/MACD/BB), news-based signals, reduce position sizing |
+| **Stonks** | NLP analysis of news articles, sentiment scoring | Manual keyword analysis, no ML-enhanced signals |
+| **Aldridge** | (doesn't use ML currently) | No change — unaffected |
+
+### Worker Discovery
+
+```yaml
+# Terminal config (docker.klo)
+gpu_workers:
+  - id: mac-a
+    address: 192.168.x.x:5003
+    type: apple_silicon
+    job_types: [train, inference, embed, nlp]
+  # Future:
+  # - id: pc-b
+  #   address: 192.168.x.y:5003
+  #   type: nvidia_cuda
+```
+
+The Terminal dispatches jobs to the least-loaded healthy worker. If only one worker, it's the default.
+
+---
+
+## 7. Pipeline Flow
 
 ### Live Trading (market hours)
 
@@ -273,6 +391,19 @@ tick_cron.py (.41)
   → Terminal writes order + position to PG
   → Terminal.record_journal(...)   ← writes to PG
   → Leaderboard reads from PG ← live updated
+```
+
+### Kairos ML Loop (any time)
+
+```
+Kairos agent
+  → Terminal.get_gpu_health()     ← cached, instant
+  → Terminal.get_quotes("NVDA")   ← data from Terminal
+  → Terminal.submit_train_job({model_type: "hmm", symbol: "NVDA"})
+  → Terminal.get_job_status(job_id) ← poll until COMPLETED
+  → Terminal.get_quotes("NVDA")   ← re-fetch with new model insights
+  → Terminal.record_decision(...)  ← trade decision w/ ML signal
+  → Terminal.submit_order(...)     ← if trade signal triggers
 ```
 
 ### Historical Trading (off hours / backtest)
@@ -290,7 +421,7 @@ Agent (any trader)
 
 ---
 
-## 7. Database Schema
+## 8. Database Schema
 
 The Terminal writes to the **existing `trading` schema** in PG on docker.klo. New tables are added, existing tables are adapted.
 
@@ -406,11 +537,29 @@ CREATE TABLE trading.backtest_runs (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ
 );
+
+-- GPU compute jobs (ML job history)
+CREATE TABLE trading.ml_jobs (
+    id BIGSERIAL PRIMARY KEY,
+    job_id TEXT NOT NULL UNIQUE,           -- gRPC job handle
+    worker_id TEXT NOT NULL,               -- which worker ran it
+    trader_id TEXT NOT NULL,               -- who requested it
+    job_type TEXT NOT NULL,                -- 'train', 'inference', 'embed', 'nlp'
+    model_type TEXT,                       -- 'hmm', 'lstm', etc.
+    symbol TEXT,                           -- related ticker
+    params JSONB,                          -- job parameters
+    status TEXT NOT NULL,                  -- 'queued', 'running', 'completed', 'failed'
+    result_json JSONB,                     -- output data
+    error TEXT,
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ---
 
-## 8. Agent Onboarding
+## 9. Agent Onboarding
 
 ### What Changes
 
@@ -419,6 +568,8 @@ CREATE TABLE trading.backtest_runs (
 | Local curl to .41:5000 or .179:5000 | MCP tools via `trading-terminal` server |
 | skill_alpaca.py for orders | `submit_order()` tool |
 | Manual markdown journals | `record_journal()` for structured entries |
+| Direct GPU calls (Kairos only) | `submit_train_job()` / `submit_inference_job()` via Terminal |
+| No health check on GPU | Terminal does health check + graceful degradation |
 | Local append-only logs **still kept** | Local logs remain for stream-of-consciousness |
 | Can't see other traders' signals | Shared `get_signals()` from Terminal |
 
@@ -453,7 +604,7 @@ In each trader's config:
 
 ---
 
-## 9. Historical & Backtest Engine
+## 10. Historical & Backtest Engine
 
 ### Mode System
 
@@ -491,7 +642,7 @@ More data = more accurate backtests = better agent models.
 
 ---
 
-## 10. News Aggregation
+## 11. News Aggregation
 
 ### Background Poller
 
@@ -527,7 +678,7 @@ The more traders use the system, the less redundant fetching happens.
 
 ---
 
-## 11. Deployment
+## 12. Deployment
 
 ```yaml
 # docker-compose.yml
@@ -536,7 +687,7 @@ services:
     build: .
     ports:
       - "5001:5001"
-    env_file: .env          # Alpaca keys + DB creds
+    env_file: .env          # Alpaca keys + DB creds + GPU worker config
     depends_on:
       db:
         condition: service_healthy
@@ -568,17 +719,18 @@ Deploy via scp + ssh for now. GitHub Actions later.
 
 ---
 
-## 12. Migration Phases
+## 13. Migration Phases
 
 | Phase | What | Duration |
 |-------|------|----------|
-| **1** | Build Terminal MCP server with core tools | Build session |
+| **1** | Build Terminal MCP server with core tools + GPU bridge | Build session |
 | **2** | Deploy to docker.klo, connect to existing PG | Build session |
 | **3** | Switch Stonks (simplest trader) to Terminal-only | Day 1 |
 | **4** | Verify: leaderboard, orders, journals all flow | Day 1-2 |
 | **5** | Switch Kairos + Aldridge | Day 2-3 |
-| **6** | Deprecate .41:5000 data bus + old sync scripts | Day 3-4 |
-| **7** | Backfill historical_ticks from existing data | Ongoing |
+| **6** | Move GPU calls through Terminal (Kairos stops calling iMac directly) | Day 3 |
+| **7** | Deprecate .41:5000 data bus + old sync scripts | Day 3-4 |
+| **8** | Backfill historical_ticks from existing data | Ongoing |
 
 ---
 
