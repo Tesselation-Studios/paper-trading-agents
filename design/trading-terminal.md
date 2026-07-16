@@ -923,4 +923,289 @@ Deploy via scp + ssh for now. GitHub Actions later.
 
 ---
 
+## 14. ML Expansion Roadmap
+
+A phased, practical plan for how agents use the GPU compute system to improve trading.
+
+### Phase 0: HMM Regime Detection (already working)
+
+**What:** Train Hidden Markov Models on years of SPY/QQQ data. The model learns market "states" — bull, bear, choppy, sustainable, exhausted.
+
+**How agents use it:**
+- `get_market_regime()` → returns current regime + confidence
+- Kairos adjusts posture: CHOPPY → defensive (high cash), SUSTAINABLE → aggressive
+- Already running in the pipeline today
+
+**GPU job:** `submit_train_job({model_type: "hmm", symbol: "SPY"})` → `submit_inference_job({model_name: "hmm_spy", features_json: ...})`
+
+---
+
+### Phase 1: Adaptive Parameter Optimization (next)
+
+**What:** Instead of static RSI/MACD thresholds, run 10,000+ backtest variations on the GPU with different parameter combinations, then deploy the best-performing set for the current market.
+
+**How agents use it:**
+- Agent calls `submit_train_job({model_type: "param_opt", symbol: "NVDA", params: {rsi_range: "14-30", macd_range: "9-26-9"}})`
+- GPU runs all combinations against historical data, returns best params
+- Agent uses those params for the next tick
+
+**Trader benefit:** Adaptive parameters that tune to the current market personality without you touching anything.
+
+**GPU job:** `submit_train_job({model_type: "param_optimizer", ...})`
+
+---
+
+### Phase 2: Cross-Signal Weighting (soon)
+
+**What:** Feed the GPU all signals (sentiment, flow, technical, insider) for the last N trades plus whether each was profitable. Learn which signals actually predict wins for each trader's style.
+
+**How agents use it:**
+- Agent calls `submit_train_job({model_type: "signal_weights", trader: "kairos"})`
+- GPU returns weight vector: `{sentiment: 0.3, flow: 0.4, technical: 0.2, insider: 0.1}`
+- Agent applies weights to current signals before making decisions
+
+**Trader benefit:** Kairos learns "when sentiment and flow agree, my trades work 70% of the time." Stonks learns "community sentiment matters more than fundamentals."
+
+**GPU job:** `submit_train_job({model_type: "signal_weighter", ...})`
+
+---
+
+### Phase 3: News Embedding + Similarity Search (later)
+
+**What:** Embed every news article into a vector. When Stonks finds a hot stock, search for similar past situations — "what happened last time WSB was hyping a stock with these characteristics?"
+
+**How agents use it:**
+- Stonks calls `submit_embed_job({collection: "news", ...})` to build an embedding index
+- Stonks calls `submit_inference_job({model_name: "similarity_search", features_json: {headline: "..."}})`
+- Returns: "3 similar situations found — 2 outperformed, 1 underperformed"
+
+**Trader benefit:** Pattern matching against history, not gut feel.
+
+**GPU job:** `submit_embed_job(...)` + `submit_inference_job(...)`
+
+---
+
+### Phase 4: Portfolio Optimization & Risk Modeling (future)
+
+**What:** Use GPU to run Monte Carlo simulations on the current portfolio — thousands of possible market paths, find the allocation that maximizes Sharpe ratio.
+
+**How agents use it:**
+- Aldridge calls `submit_train_job({model_type: "portfolio_opt", symbols: [...], ...})`
+- Returns optimal position sizes given current risk constraints
+
+**Trader benefit:** Scientific portfolio construction instead of ad-hoc sizing.
+
+**GPU job:** `submit_train_job({model_type: "portfolio_optimizer", ...})`
+
+---
+
+### Expansion Principle
+
+| Phase | Capability | Who Benefits | Prerequisite |
+|-------|-----------|--------------|-------------|
+| 0 | HMM regime detection | Kairos | Already done |
+| 1 | Adaptive parameter optimization | Kairos | Terminal + GPU worker |
+| 2 | Cross-signal weighting | All traders | Terminal + historical trade data |
+| 3 | News embedding + similarity search | Stonks | Terminal + news_archive |
+| 4 | Portfolio optimization & risk modeling | Aldridge, all | Terminal + full position history |
+
+To add a new ML capability, you don't need to understand the math. You just:
+1. Add a new `model_type` to the GPU worker (e.g., `lstm`, `xgboost`, `random_forest`)
+2. The agent calls `submit_train_job({model_type: "new_thing", ...})`
+3. The GPU worker does the heavy lifting
+4. The agent calls `submit_inference_job()` to use the trained model
+
+The `ml_jobs` table records every job — you can audit what ran, when, and what came out, even without understanding the math.
+
+---
+
+## 15. Agent Registration & Multi-Agent System
+
+### Problem
+
+Currently, agents are hardcoded: `kairos`, `stonks`, `aldridge`. Each has a fixed API key, fixed Alpaca account, fixed prompt. But:
+- Hermes has an agent that trades but only records to DB — should be visible on leaderboard
+- You might want multiple virtual agents running different strategies on the same schedule
+- Different strategies could be represented as different agents even if they're the same codebase with different prompts
+
+### Registration Flow
+
+```
+New Agent                          Trading Terminal
+    │                                     │
+    │ 1. POST /register                   │
+    │    {agent_id: "hermes-bot",        │
+    │     display_name: "Hermes Bot",    │
+    │     strategy: "mean_reversion",    │
+    │     public_key: "..."}             │
+    │─────────────────────────────────→   │
+    │                                     │
+    │ 2. Terminal generates API key       │
+    │    Stores: agent_id → key_hash      │
+    │    Creates: leaderboard entry       │
+    │    Creates: portfolio snapshot       │
+    │                                     │
+    │ 3. Response: {api_key: "tt_xxx"}   │
+    │←─────────────────────────────────   │
+    │                                     │
+    │ 4. Agent now calls Terminal tools   │
+    │    with api_key in MCP auth header   │
+    │                                     │
+    │ 5. Leaderboard shows agent          │
+    │    alongside Kairos/Stonks/Aldridge │
+```
+
+### Registration API
+
+```
+POST /api/register
+{
+  "agent_id": "hermes-bot",
+  "display_name": "Hermes Bot",
+  "strategy": "mean_reversion",
+  "description": "Trades mean reversion on SPY options",
+  "public_key": "optional - for future auth"
+}
+
+Response:
+{
+  "api_key": "tt_hermes_xxxxxxxx",
+  "api_key_prefix": "tt_hermes",
+  "trader_id": "hermes-bot",
+  "endpoint": "http://docker.klo:5001/sse"
+}
+```
+
+Registration is idempotent — if the agent already exists, it returns the existing key (or regenerates on request).
+
+### Agent Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **Live trader** | Full agent with Alpaca account | kairos, stonks, aldridge |
+| **Read-only** | Records to DB only, no trading | Hermes bot |
+| **Virtual / Strategy** | Same Alpaca account, different prompts | kairos-momentum, kairos-breakout |
+| **Backtest-only** | Only runs in backtest mode, never live | test-strategy-v7 |
+
+### Virtual Agents (Multiple Strategies)
+
+Same Alpaca account, different prompts/params, different leaderboard entries:
+
+```
+Kairos (live, 9:30-16:00)
+├── kairos-default (standard prompt)
+├── kairos-aggressive (higher risk tolerance)
+└── kairos-defensive (tighter stops, lower sizing)
+
+Only one runs at a time. The leaderboard shows all as separate entries with
+"virtual" tag, so you can compare strategy performance.
+```
+
+### Leaderboard Impact
+
+Every registered agent gets:
+- A row on the leaderboard (even read-only agents)
+- Portfolio value tracking (if they submit positions)
+- Journal entries visible
+- Strategy tag for filtering
+
+### Hermes Bot Integration
+
+Hermes bot already writes to the DB. Once registered with the Terminal:
+- Its existing data appears on the leaderboard
+- It can use MCP tools instead of direct DB writes
+- It gets its own API key (no shared secrets)
+
+---
+
+## 16. Dashboard Navigation
+
+### Current State
+
+The dashboard has endpoints across multiple services, some you can't even see or remember:
+
+| Service | Port | URL | Purpose |
+|---------|------|-----|---------|
+| trading-dashboard | 5004 | trading.wodinga.studio | Main UI |
+| trading-leaderboard | 5002 | (internal) | Standings + P&L |
+| trading-data-bus | 5000 | (internal) | Raw data endpoints |
+| trading-db | 5432 | (internal) | PostgreSQL |
+
+Plus debug endpoints that are undocumented.
+
+### Goal: Unified LAN-Only Navigation
+
+A single navigation hub accessible only via LAN (Traefik routes configured by Jet).
+
+### Proposed Endpoint Map
+
+```
+LAN (docker.klo:5001 or via Traefik route)
+│
+├── /health              → Terminal health + connected workers
+├── /api/*               → MCP tools (SSE transport)
+├── /ui/                 → Main dashboard (trading.wodinga.studio)
+│   ├── /leaderboard     → Trader rankings + P&L
+│   ├── /portfolio       → Position details per trader
+│   ├── /journal         → Decision log per trader
+│   ├── /backtest        → Backtest results
+│   ├── /ml-jobs          → GPU compute job history
+│   └── /debug           → Debug endpoints
+│       ├── /queries     → Raw SQL query runner (read-only)
+│       ├── /cache       → Cache inspection + flush
+│       ├── /rate-limits → Current rate limit state
+│       ├── /workers     → GPU worker health/details
+│       └── /secrets     → Secret status (masked, never plaintext)
+├── /api/register        → Agent registration endpoint
+└── /api/rotate-key      → API key rotation endpoint
+```
+
+### Traefik Configuration
+
+Jet handles Traefik routes. The configuration should be:
+
+```yaml
+# All LAN-only routes
+# trading.wodinga.studio already routes to dashboard :5004
+# Terminal routes:
+http:
+  routers:
+    terminal-sse:
+      rule: "Host(`terminal.wodinga.studio`)"
+      service: terminal
+      middlewares:
+        - lan-only  # enforced by Jet's existing middleware
+
+  services:
+    terminal:
+      loadBalancer:
+        servers:
+          - url: "http://docker.klo:5001"
+```
+
+### Debug Endpoints (LAN Only)
+
+| Endpoint | Method | What it does | Who uses it |
+|----------|--------|-------------|-------------|
+| `/debug/queries` | GET | Run read-only SQL against PG | You, debugging |
+| `/debug/cache` | GET | Show current cache contents + TTLs | You, debugging |
+| `/debug/cache/flush` | POST | Flush specific cache keys | You, recovery |
+| `/debug/rate-limits` | GET | Show current rate limit counters and resets | You, monitoring |
+| `/debug/workers` | GET | Show all GPU workers, health, queue depth | You, monitoring |
+| `/debug/workers/health` | GET | Detailed health of each worker | You, monitoring |
+| `/debug/agents` | GET | List all registered agents + their status | You, inventory |
+| `/debug/orders` | GET | Show recent orders across all traders | You, audit |
+| `/debug/secrets` | GET | Show secret status (masked: "ALPACA_KAIROS_KEY: set ✓") | You, setup |
+
+All debug endpoints are:
+- **LAN-only** (Traefik middleware enforces internal IP range)
+- **Read-only** where possible (POST endpoints are for cache flush, not data mutation)
+- **Authenticated** with a separate debug key (optional, for extra safety)
+
+### Navigation UI
+
+A simple nav bar at the top of the dashboard that lists all available endpoints, with "LAN Only" badges on debug routes. This prevents you from forgetting what exists.
+
+---
+
 *This is a living document. Every section is up for debate. Tear it apart.*
