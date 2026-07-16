@@ -1824,4 +1824,133 @@ The cron runner fills in `{{PORTFOLIO_SUMMARY}}`, `{{POSITIONS_JSON}}`, `{{PNL}}
 
 ---
 
+## 21. System Principles
+
+These principles govern every design decision in the trading system. If a future feature conflicts with a principle here, the feature needs to be redesigned — don't break the principle.
+
+### P1: Git for Agent Prompts
+
+**All agent prompts, standing orders, and system instructions live in version control.**
+
+- The `paper-trading-agents` repo holds all AGENTS.md files, HEARTBEAT.md, SKILL.md, and standing orders
+- Changes are made via branches → PRs → CI → merge
+- This enables:
+  - **Quick iteration**: try a new strategy prompt on a branch, test it in backtest, merge if it works
+  - **Rollback**: if a prompt change degrades performance, revert the commit
+  - **Audit**: every prompt change is tracked with a rationale in the commit message
+  - **Experimentation**: different traders can be on different prompt versions simultaneously
+
+The template system (Section 20) supports this by keeping shared logic in one place and trader-specific overrides in separate files.
+
+### P2: All Data Access is Copy-on-Write
+
+**No component mutates shared data in place.** Every read creates a local snapshot that is safe to work with, even if the source changes.
+
+- Terminal query results are cached copies, not live references
+- Agent journal entries are appended, never edited after creation
+- Position snapshots are historical records, not mutable state
+- Backtest runs use their own simulated portfolio, never touching live data
+
+This prevents race conditions, enables safe parallel reads, and makes historical replay deterministic.
+
+### P3: Local SQLite Caches for Offline Resilience
+
+**Every agent maintains a local SQLite cache for essential data.**
+
+- If the Terminal is down or PG is unreachable, agents can serve cached data locally
+- Cache layers (fastest → slowest):
+  1. Terminal's in-memory cache (docker.klo — 5s TTL)
+  2. Agent's local SQLite cache (.41 VM — 5min TTL)
+  3. Terminal's PG persistence (docker.klo — unlimited)
+  4. Agent's local journal files (append-only, never deleted)
+- The Terminal health check tells agents what's available. If PG is down but cache is warm, trading continues at reduced confidence.
+
+### P4: Dynamic Stock Lists & Watchlists Always
+
+**No static universes. Ever.**
+
+- Every trader discovers stocks algorithmically — no hardcoded lists
+- Kairos discovers via momentum screener, Stonks via social sentiment, Aldridge via fundamentals
+- Watchlists are stored in PG (`trading.watchlist`), shared across traders, managed via `watch_symbol()`
+- Abandoned symbols auto-purge after 7 days of no activity
+- The `get_leaderboard()` tool shows what other traders are watching — cross-pollination is intentional
+
+### P5: Dynamic Thinking
+
+**Agents adjust their thinking depth based on context.**
+
+- During market hours: efficient, decisive, time-aware. Prioritize speed over depth.
+- During nightly maintenance: deeper analysis, reflection, self-critique
+- In backtest mode: can run arbitrarily deep analysis — no time pressure
+- When confidence is high: fast decisions, minimal deliberation
+- When confidence is low: deeper analysis, consult more signals
+- When the GPU is available: offload heavy computation, keep thinking light
+
+This is encoded in the standing order and the nightly work loop design.
+
+### P6: Always Include a Learning & Reflection Loop
+
+**Every trading cycle, no matter how small, must include a "what did I learn?" step.**
+
+- Market hours: after every trading tick, record a brief reflection (`record_journal({type: "reflection"})`)
+- Nightly maintenance: full retro on today's performance — what worked, what didn't, why
+- New strategies: before deploying a strategy, the agent must articulate why it expects it to work
+- Mistakes: when a trade loses money, the agent must explain what went wrong and how it will avoid it next time
+
+Reflections are stored in PG and are visible on the leaderboard. Other agents read them. Learning compounds.
+
+### P7: Learning is Essential — Prioritize Learning Opportunities
+
+**When in doubt, choose the option that provides more learning data.**
+
+- Prefer more trades over fewer trades (at small sizes)
+- Prefer faster cycles over deeper analysis on single points
+- In the absence of market hours, run backtest cycles at maximum speed
+- A trade that loses money but teaches a lesson is more valuable than sitting out
+- Every position is both a trade and a data point
+
+This means:
+- Position sizing should be small enough that losing is educational, not damaging
+- Agents should enter positions they're uncertain about (at appropriate size) to gather data
+- The backtest engine exists to generate learning data when the market is closed
+
+### P8: Maximize Night Cycles
+
+**Every moment that isn't daytime trading hours should be spent running test cycles.**
+
+- Nightly maintenance (16:30-00:00 ET): reflection, discovery, learning
+- Midnight GPU burst (00:00-02:00 ET): parameter optimization
+- Remaining hours: continuous backtesting across strategy variants
+
+The goal: by market open, the agent has tested hundreds of parameter combinations and enters the day with the best-performing strategy.
+
+### P9: Parameter Combinations as Learning Engine
+
+**Run the traders all day on as many combinations and parameters as possible when not actively trading.**
+
+- The GPU compute bridge enables this — overnight training across parameter space
+- Multiple virtual agents (Section 15) can each run different parameter sets simultaneously
+- Results feed back into the agent's decision-making via the `ml_jobs` table
+- The system self-optimizes: yesterday's losing parameters get pruned, winning ones get explored more deeply
+
+### P10: Design for the OpenClaw Runtime
+
+**Every workflow must fit within OpenClaw's execution model.**
+
+| Mechanism | Capacity | Used For |
+|-----------|----------|----------|
+| Heartbeat | ~30 min, full session | Quick market checks, alerts |
+| Isolated cron | Up to 48h, fresh session | Nightly maintenance, GPU training |
+| Standing orders | Injected every session | Competition mindset, system principles |
+| Tasks | Ledger, no execution | Tracking detached work |
+| Inferred commitments | Opt-in, short-lived | Gentle follow-ups |
+
+Rules:
+- No single turn should run longer than its timeout budget
+- Break long work into cron-sized chunks (maintenance = 30 min, GPU = 2h)
+- Standing orders carry principles into every session without prompt bloat
+- Task records ensure no work is lost on crash (audit via `openclaw tasks list`)
+
+---
+
 *This is a living document. Every section is up for debate. Tear it apart.*
