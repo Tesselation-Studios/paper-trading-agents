@@ -112,6 +112,123 @@ The git log tracks which hypotheses worked.
 
 **Validation gate:** Aldridge trades for one full day. All checks pass. If any check fails, fix before moving to Phase 2.
 
+### Strategy Playbook Design
+
+Aldridge's `strategy.md` is a **decision tree, not a single strategy.** He reads it every tick, assesses the current market, and picks the right branch.
+
+#### Structure
+
+```markdown
+# Aldridge — Current Strategy
+
+## Market Assessment (read every tick)
+- SPY trend: {uptrend / downtrend / sideways}  ← assess from RSI + MACD
+- Volatility: {low / normal / high}              ← assess from BB width
+- Confidence: {high / medium / low}              ← assess from signal agreement
+
+## Playbook (pick one branch based on assessment)
+
+### If Uptrend + Low Vol → "Accumulate"
+- Buy dips to mid-BB, sell at upper BB
+- Position: 15% of portfolio
+- Hold: 5-20 days
+
+### If Uptrend + High Vol → "Trend Follow"
+- Buy breakouts above upper BB
+- Position: 10% of portfolio
+- Tighter stops (3%)
+- Hold: 3-10 days
+
+### If Sideways + Low Vol → "Range Trade"
+- Buy at lower BB, sell at mid-BB
+- Position: 8% of portfolio
+- Hold: 2-5 days
+
+### If Sideways + High Vol → "Wait"
+- Don't enter. Cash is position.
+- Review watchlist for breakouts
+
+### If Downtrend → "Defend"
+- No new positions
+- Cut any position below lower BB
+- Cash > 80%
+
+## Current Posture
+- Regime: Sideways + Normal Vol
+- Active play: Range Trade
+- Started: 2026-07-15
+- Win rate this play: 60% (6 of 10 trades)
+
+## Learning Notes
+- Last week: Range Trade worked on SPY (+1.2%), not on NVDA (-3%)
+- Hypothesis: Range Trade only works on index ETFs, not individual stocks
+- Testing: next range trade will be SPY-only
+```
+
+#### Keeping It Nimble
+
+| Rule | Detail |
+|------|--------|
+| **Branch size** | Max 10 lines per playbook. If it's longer, it's too complex. |
+| **Win rate tracking** | Agent tracks win rate per branch. < 40% after 10 trades ⇒ archive. |
+| **Expiration** | If a branch hasn't triggered in 30 days, archive it (git keeps the history). |
+| **Experiments** | New branches start as experiments. Test 5 times. Keep or delete. |
+| **Current posture** | Always visible at the top so you know what's active and why. |
+
+#### Evolution Path
+
+```
+Week 1:  1 playbook (value: buy undervalued stocks, hold 5 months)
+Week 2:  2 playbooks (value + range trade on SPY)
+Week 3:  3 playbooks (value + range + trend follow)
+Month 2: 5 playbooks, each refined by 10+ trades of data
+Month 3: Branch pruning — the 2 weakest playbooks removed
+Month 6: 3 highly refined playbooks, each with 50+ trades of data
+```
+
+The agent learns which playbooks work, prunes the losers, and deepens the winners. The `strategy.md` stays nimble because it's always under active management.
+
+#### Same for Stonks and Kairos
+
+When they join in later phases, they get the same structure:
+
+```markdown
+# Kairos — Current Strategy
+
+## Market Assessment
+- {same trend/vol/confidence assessment}
+
+## Playbook
+### If Momentum > Threshold + High Volume → "Momentum Entry"
+### If Sentiment Divergence + Low Price → "Contrarian Bet"
+### If No Clear Signal → "Wait / Tighten"
+### If Regime Chop → "Defensive"
+
+## Current Posture
+- {active play + win rate}
+
+## Learning Notes
+- {lessons from recent trades}
+```
+
+The playbook structure is universal. Only the playbook contents differ per trader.
+
+#### Baked Into the Agent Prompt
+
+Every trader's AGENTS.md includes this instruction:
+
+```markdown
+## Strategy
+- Read `strategy.md` at the start of every tick
+- Assess current market (trend, volatility, confidence)
+- Pick the matching playbook branch
+- Execute according to that branch's rules
+- After the trade, reflect: did this playbook perform as expected?
+- During nightly maintenance: update win rates, prune dead branches, add experiments
+```
+
+This makes the playbook system immutable from the agent's perspective — they read it, follow it, and update it. The strategy.md is always the source of truth for "what should I do right now?"
+
 ---
 
 ## Phase 2: Add PG (Week 2)
