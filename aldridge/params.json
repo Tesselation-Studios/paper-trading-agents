@@ -22,6 +22,37 @@
     "max_portfolio_risk_pct": 5.0
   },
 
+  "regimes": {
+    "chop_allow_new_entries": false,
+    "chop_oversold_rsi_threshold": 37,
+    "chop_max_add_shares": 2,
+    "sustainable_allow_new_entries": true,
+    "sustainable_entry_rsi_max": 50,
+    "exhausted_trim_above_pct": 5.0,
+    "exhausted_raise_stops_be": true
+  },
+
+  "trim": {
+    "cyclical_trim_pct": 0.25,
+    "cyclical_pt_trigger": 0.10,
+    "curve_trim_pct": 0.50,
+    "curve_trim_threshold_bps": 25,
+    "defensive_let_run": true
+  },
+
+  "conviction_rules": {
+    "adjust_conviction_premarket": false,
+    "entry_rsi_max_chop": 45
+  },
+
+  "micro_cap": {
+    "enabled": true,
+    "max_shares_per_ticker": 4,
+    "max_cost_per_ticker": 0.50,
+    "max_total_exposure": 2.00,
+    "stop_loss_pct": -8.0
+  },
+
   "alpaca": {
     "base_url": "https://paper-api.alpaca.markets",
     "time_in_force": "day",
@@ -30,8 +61,7 @@
 
   "strategy_files": [
     "strategy.md",
-    "strategies/active.md",
-    "strategies/aldridge_active.md"
+    "strategies/active.md"
   ],
 
   "journal": {
