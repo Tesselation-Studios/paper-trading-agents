@@ -16,25 +16,34 @@ Everything we do must be **validated before moving on**. No building the next la
 | Multi-trader system | One trader first. Aldridge. |
 | PostgreSQL on docker.klo | Local SQLite. Avoid VM disk IO bottleneck. |
 | Leaderboard / Dashboard | Watch on Alpaca directly. Fastest feedback loop. |
-| GPU compute / ML | Aldridge doesn't need it. Manual param tuning first. |
+| GPU compute / ML training | Aldridge evolves via reflection + params, not GPU. |
 | MCP Server | Direct Alpaca calls via existing skill. Keep it simple. |
 | News aggregation | Manual for now. Aldridge checks macro + fundamentals. |
 | Historical data accumulation | Later. Don't build what isn't needed. |
 | Multi-agent registration | Later. One agent. |
 | Virtual agents | Later. One strategy. |
 
-### What We Keep
+### What We Keep — Including the Learning System
 
 | Keep | Why |
 |------|-----|
 | **Aldridge** | Simplest trader. Value picks on 5-month time scale. Dynamic watchlist. |
-| **params.json** | One file. Read every tick. Write via agent commits. |
-| **strategy.md** | One file. Read every tick. Updated during nightly maintenance. |
-| **journal.md** | Local, append-only. Git commit tag per entry. |
+| **params.json** | One file. Read every tick. Write via agent commits. **Params evolve.** |
+| **strategy.md** | One file. Read every tick. **Updated when agent learns something new.** |
+| **journal.md** | Local, append-only. Git commit tag per entry. Reflection data. |
 | **Git** | Branch, change strategy, commit with rationale, correlate performance. |
-| **Nightly maintenance** | Cron job. Trim files, reflect, update strategy, commit. |
+| **Nightly maintenance** | Cron job. Trim files, **reflect, evolve strategy, commit.** |
 | **Competition mindset** | Standing order. Always present. |
 | **sqlite** | Local DB for now. Minimal, fast, no PG overhead. |
+| **Learning & reflection loop** | Every tick includes "what did I learn?" Every night includes strategy evolution. |
+
+### Learning System is NOT Deferred
+
+The learning system — params evolution, strategy.md updates, reflection, git-based iteration — is **baked into Phase 1.** The only ML capabilities deferred are GPU-based (model training, parameter sweeps), because Aldridge doesn't need them to start learning.
+
+Aldridge starts with a value strategy, but **he is not limited to it.** If he reflects and genuinely believes he can do better with momentum signals, sentiment analysis, or something else entirely, he can evolve his strategy.md and params.json to try it. The git commit trail tracks every evolution.
+
+> **Principle: Traders are not their starting strategy.** The initial prompt is a suggestion, not a cage.
 
 ---
 
@@ -42,7 +51,9 @@ Everything we do must be **validated before moving on**. No building the next la
 
 ### Goal
 
-Aldridge reads params.json + strategy.md, picks stocks, places trades via Alpaca, writes journal.md, commits to git. All on local SQLite. Works end-to-end.
+Aldridge reads params.json + strategy.md, picks stocks, places trades via Alpaca, writes journal.md with reflection, evolves strategy based on what he learns, and commits changes to git. All on local SQLite. Works end-to-end.
+
+**Aldridge starts as a value trader but can evolve.** If he reflects and believes a different approach would work better, he changes his strategy.md, updates params.json, and commits the change. The only thing not available yet is GPU-based ML training.
 
 ### Stack
 
@@ -67,18 +78,23 @@ Alpaca (paper trading API — watch performance there)
 ```
 Every tick:
   Reads:  strategy.md, params.json
-  Reads:  Terminal.get_quotes() → or direct Alpaca call
-  Writes: journal.md (with git commit tag)
+  Reads:  get_quotes() → via direct Alpaca call
+  Writes: journal.md (with git commit tag + reflection)
   Writes: aldridge.db (positions, decisions)
 
 Nightly maintenance (16:30 ET — cron, 30 min):
-  Reads:  journal.md from today
+  Reads:  journal.md from today (what did I learn?)
   Reads:  strategy.md (what was I trying?)
   Reads:  params.json (what params was I using?)
-  Writes: updated strategy.md (new thesis)
+  Reflects: "Did the strategy work? What should change?"
+  Writes: updated strategy.md (new thesis — can be completely different)
   Writes: updated params.json (adjusted params)
   Writes: git commit with rationale
   Writes: aldridge.db (reflection entry)
+
+Key: Aldridge can evolve to use momentum, sentiment, breakouts — whatever
+he genuinely believes will work better. The strategy.md is his hypothesis.
+The git log tracks which hypotheses worked.
 ```
 
 ### Verification
