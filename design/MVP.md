@@ -175,6 +175,95 @@ Aldridge's `strategy.md` is a **decision tree, not a single strategy.** He reads
 | **Experiments** | New branches start as experiments. Test 5 times. Keep or delete. |
 | **Current posture** | Always visible at the top so you know what's active and why. |
 
+#### Branch Naming Scheme
+
+Every playbook branch gets a unique, stable identifier so it can be referenced across files, queried in the DB, and jumped to via git.
+
+##### Format: `{trader}.{branch_slug}:v{major}.{minor}`
+
+| Component | Rules | Example |
+|-----------|-------|---------|
+| `trader` | 3-letter abbreviation | `ald` (Aldridge), `kai` (Kairos), `stk` (Stonks) |
+| `branch_slug` | 3-12 lowercase chars, underscores | `range_trade`, `accumulate`, `defend` |
+| `v{major}.{minor}` | Semver | `v1.0` (initial), `v1.1` (tweak), `v2.0` (major revision) |
+
+##### Branch IDs for Aldridge's Playbook
+
+```
+ald.acc:v1.0      → Accumulate (uptrend + low vol)
+ald.tfl:v1.1      → Trend Follow (uptrend + high vol)
+ald.rng:v2.0      → Range Trade (sideways + low vol)
+ald.wat:v1.0      → Wait (sideways + high vol)
+ald.dfn:v1.3      → Defend (downtrend)
+```
+
+##### Where Identifiers Appear
+
+| File | How |
+|------|-----|
+| **strategy.md** | `### If Sideways + Low Vol → "Range Trade" [ald.rng:v2.0]` |
+| **params.json** | `"active_branch": "ald.rng:v2.0"` |
+| **journal.md** | `Branch: ald.rng:v2.0` on every trade entry |
+| **Git commit** | `ald: range_trade v1.1 - tighten stops 5%→3%` |
+| **SQLite** | `decisions.branch_id` column |
+
+##### How to Jump Between Branches
+
+When the market assessment changes, the agent:
+
+```
+1. Reads market: SPY trend → sideways, volatility → low
+2. Checks strategy.md: "Sideways + Low Vol → Range Trade [ald.rng:v2.0]"
+3. Updates params.json: active_branch: "ald.rng:v2.0"
+4. Journal: "Jump: ald.acc:v1.0 → ald.rng:v2.0 (market shifted sideways)"
+5. Trades using Range Trade rules
+```
+
+The jump is instant — agent reads the new branch's rules and executes. No restart.
+
+##### Branch Versioning in Git
+
+```bash
+# Initial
+$ git commit -m "ald: add range_trade playbook [ald.rng:v1.0]"
+
+# Minor tweak (stops)
+$ git commit -m "ald: range_trade v1.1 - tighten stops 5%→3%"
+
+# Major revision (entry criteria)
+$ git commit -m "ald: range_trade v2.0 - buy at lower BB + MACD confirmation"
+```
+
+##### Performance by Branch
+
+```sql
+SELECT branch_id, COUNT(*) as trades, AVG(pnl) as avg_pnl
+FROM aldridge.decisions GROUP BY branch_id ORDER BY avg_pnl DESC;
+-- ald.rng:v2.0   | 3 trades  | +1.5%  ← best
+-- ald.rng:v1.0   | 8 trades  | +1.2%
+-- ald.acc:v1.0   | 12 trades | +0.5%
+-- ald.dfn:v1.3   | 4 trades  | -0.3%  (defensive, expected)
+```
+
+##### Experimental Branches
+
+Prefix with `x-` until promoted:
+
+```
+ald.rng:x-gap-up      → Experiment: range trade on gap-up openings
+kai.mom:x-vwap        → Experiment: momentum entry with VWAP confirmation
+```
+
+Promote to numbered version when proven: `ald.rng:x-gap-up` → `ald.rng:v3.0`.
+
+##### Quick Reference
+
+| Pattern | Example | Meaning |
+|---------|---------|---------|
+| `{3l}.{slug}:v{maj}.{min}` | `ald.rng:v2.0` | Stable, versioned |
+| `{3l}.{slug}:x-{name}` | `ald.rng:x-gap-up` | Experimental |
+| `{3l}.{slug}` | `ald.wat` | Version omitted = latest active |
+
 #### Evolution Path
 
 ```
