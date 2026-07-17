@@ -112,211 +112,94 @@ The git log tracks which hypotheses worked.
 
 **Validation gate:** Aldridge trades for one full day. All checks pass. If any check fails, fix before moving to Phase 2.
 
-### Strategy Playbook Design
+### Strategy Evolution — Not Micro-Branches
 
-Aldridge's `strategy.md` is a **decision tree, not a single strategy.** He reads it every tick, assesses the current market, and picks the right branch.
+The strategy is a **general approach that gets refined over time**, not a switchboard of per-condition playbooks. The agent doesn't swap branches every tick based on market conditions. Instead, the agent develops a coherent philosophy and refines it through reflection.
 
-#### Structure
+#### What strategy.md Looks Like
 
 ```markdown
-# Aldridge — Current Strategy
+# Aldridge — Strategy v3
 
-## Market Assessment (read every tick)
-- SPY trend: {uptrend / downtrend / sideways}  ← assess from RSI + MACD
-- Volatility: {low / normal / high}              ← assess from BB width
-- Confidence: {high / medium / low}              ← assess from signal agreement
+## Philosophy
+I buy fundamentally sound stocks at a discount and hold until they reach
+fair value. I use macro indicators to find sectors that are undervalued
+relative to the broader market. I don't chase momentum.
 
-## Playbook (pick one branch based on assessment)
+## Current Approach
+- Screen: P/E < sector avg, debt/equity < 0.5, positive free cash flow
+- Entry: Stock is within 5% of 52-week low (value play)
+- Exit: Stock reaches sector-average P/E or 10% gain, whichever comes first
+- Position: 15% of portfolio max, 4 positions max
+- Hold: ~5 months target
 
-### If Uptrend + Low Vol → "Accumulate"
-- Buy dips to mid-BB, sell at upper BB
-- Position: 15% of portfolio
-- Hold: 5-20 days
+## What I'm Learning
+- [2026-07-16] Range trades on SPY work well (+1.2%). But that's not my
+  game. I'm a value trader. I'll stick to fundamentals.
+- [2026-07-15] NVDA broke below support. I don't trade tech anyway.
+- [2026-07-14] Discovered: defensive sectors (utilities, healthcare) hold
+  up better in choppy markets. Maybe increase allocation there.
 
-### If Uptrend + High Vol → "Trend Follow"
-- Buy breakouts above upper BB
-- Position: 10% of portfolio
-- Tighter stops (3%)
-- Hold: 3-10 days
-
-### If Sideways + Low Vol → "Range Trade"
-- Buy at lower BB, sell at mid-BB
-- Position: 8% of portfolio
-- Hold: 2-5 days
-
-### If Sideways + High Vol → "Wait"
-- Don't enter. Cash is position.
-- Review watchlist for breakouts
-
-### If Downtrend → "Defend"
-- No new positions
-- Cut any position below lower BB
-- Cash > 80%
-
-## Current Posture
-- Regime: Sideways + Normal Vol
-- Active play: Range Trade
-- Started: 2026-07-15
-- Win rate this play: 60% (6 of 10 trades)
-
-## Learning Notes
-- Last week: Range Trade worked on SPY (+1.2%), not on NVDA (-3%)
-- Hypothesis: Range Trade only works on index ETFs, not individual stocks
-- Testing: next range trade will be SPY-only
+## Posture Note
+- SPY is choppy. I'm not changing my strategy — I'm just being patient.
+  Value plays take time. I'll wait for the right entry.
 ```
 
-#### Keeping It Nimble
+#### What Evolves (Not Just strategy.md)
 
-| Rule | Detail |
-|------|--------|
-| **Branch size** | Max 10 lines per playbook. If it's longer, it's too complex. |
-| **Win rate tracking** | Agent tracks win rate per branch. < 40% after 10 trades ⇒ archive. |
-| **Expiration** | If a branch hasn't triggered in 30 days, archive it (git keeps the history). |
-| **Experiments** | New branches start as experiments. Test 5 times. Keep or delete. |
-| **Current posture** | Always visible at the top so you know what's active and why. |
+When the agent learns something, the change can go anywhere:
 
-#### Branch Naming Scheme
+| File | What Changes | Example |
+|------|-------------|---------|
+| **strategy.md** | Philosophy, approach, posture | "I'm learning that defensive sectors work better in choppy markets" |
+| **AGENTS.md** | Prompt instructions, tools, rules | "Add rule: if sector is defensive, allow 20% position instead of 15%" |
+| **params.json** | Numerical params | `stop_loss_pct: 5 → 3`, `max_cash_pct: 0.8 → 0.6` |
+| **Skills (SKILL.md)** | New capabilities | "Created a new skill for screening defensive sectors" |
+| **TOOLS.md** | Tool references | "Added a new external data source for sector rotation" |
+| **Workspace files** | Anything the agent uses | New reference docs, watchlists, helper scripts |
 
-Every playbook branch gets a unique, stable identifier so it can be referenced across files, queried in the DB, and jumped to via git.
+The key: the agent isn't writing a bunch of micro-playbooks. They're refining their **general approach** — and sometimes that means updating their prompt, their tools, or their skills, not just their strategy file.
 
-##### Format: `{trader}.{branch_slug}:v{major}.{minor}`
+#### Versioning: Strategy Version, Not Branch Versions
 
-| Component | Rules | Example |
-|-----------|-------|---------|
-| `trader` | 3-letter abbreviation | `ald` (Aldridge), `kai` (Kairos), `stk` (Stonks) |
-| `branch_slug` | 3-12 lowercase chars, underscores | `range_trade`, `accumulate`, `defend` |
-| `v{major}.{minor}` | Semver | `v1.0` (initial), `v1.1` (tweak), `v2.0` (major revision) |
-
-##### Branch IDs for Aldridge's Playbook
+Instead of per-condition branches, version the **overall strategy**:
 
 ```
-ald.acc:v1.0      → Accumulate (uptrend + low vol)
-ald.tfl:v1.1      → Trend Follow (uptrend + high vol)
-ald.rng:v2.0      → Range Trade (sideways + low vol)
-ald.wat:v1.0      → Wait (sideways + high vol)
-ald.dfn:v1.3      → Defend (downtrend)
+ald.strat:v1.0   → Initial value strategy
+ald.strat:v1.1   → Tweaked P/E screen threshold
+ald.strat:v2.0   → Major revision: added sector rotation filter
 ```
 
-##### Where Identifiers Appear
-
+Where it appears:
 | File | How |
 |------|-----|
-| **strategy.md** | `### If Sideways + Low Vol → "Range Trade" [ald.rng:v2.0]` |
-| **params.json** | `"active_branch": "ald.rng:v2.0"` |
-| **journal.md** | `Branch: ald.rng:v2.0` on every trade entry |
-| **Git commit** | `ald: range_trade v1.1 - tighten stops 5%→3%` |
-| **SQLite** | `decisions.branch_id` column |
+| **strategy.md** | `# Aldridge — Strategy v3` |
+| **params.json** | `"strategy_version": "ald.strat:v2.0"` |
+| **journal.md** | `Strategy: ald.strat:v2.0` on every trade |
+| **Git commit** | `ald: strat v2.0 - add sector rotation filter` |
+| **SQLite** | `decisions.strategy_version` column |
 
-##### How to Jump Between Branches
-
-When the market assessment changes, the agent:
-
+Experimental versions start with `x-`:
 ```
-1. Reads market: SPY trend → sideways, volatility → low
-2. Checks strategy.md: "Sideways + Low Vol → Range Trade [ald.rng:v2.0]"
-3. Updates params.json: active_branch: "ald.rng:v2.0"
-4. Journal: "Jump: ald.acc:v1.0 → ald.rng:v2.0 (market shifted sideways)"
-5. Trades using Range Trade rules
+ald.strat:x-momentum   → Experiment: try momentum instead of value, just for 5 trades
 ```
 
-The jump is instant — agent reads the new branch's rules and executes. No restart.
-
-##### Branch Versioning in Git
-
-```bash
-# Initial
-$ git commit -m "ald: add range_trade playbook [ald.rng:v1.0]"
-
-# Minor tweak (stops)
-$ git commit -m "ald: range_trade v1.1 - tighten stops 5%→3%"
-
-# Major revision (entry criteria)
-$ git commit -m "ald: range_trade v2.0 - buy at lower BB + MACD confirmation"
-```
-
-##### Performance by Branch
-
-```sql
-SELECT branch_id, COUNT(*) as trades, AVG(pnl) as avg_pnl
-FROM aldridge.decisions GROUP BY branch_id ORDER BY avg_pnl DESC;
--- ald.rng:v2.0   | 3 trades  | +1.5%  ← best
--- ald.rng:v1.0   | 8 trades  | +1.2%
--- ald.acc:v1.0   | 12 trades | +0.5%
--- ald.dfn:v1.3   | 4 trades  | -0.3%  (defensive, expected)
-```
-
-##### Experimental Branches
-
-Prefix with `x-` until promoted:
-
-```
-ald.rng:x-gap-up      → Experiment: range trade on gap-up openings
-kai.mom:x-vwap        → Experiment: momentum entry with VWAP confirmation
-```
-
-Promote to numbered version when proven: `ald.rng:x-gap-up` → `ald.rng:v3.0`.
-
-##### Quick Reference
-
-| Pattern | Example | Meaning |
-|---------|---------|---------|
-| `{3l}.{slug}:v{maj}.{min}` | `ald.rng:v2.0` | Stable, versioned |
-| `{3l}.{slug}:x-{name}` | `ald.rng:x-gap-up` | Experimental |
-| `{3l}.{slug}` | `ald.wat` | Version omitted = latest active |
-
-#### Evolution Path
-
-```
-Week 1:  1 playbook (value: buy undervalued stocks, hold 5 months)
-Week 2:  2 playbooks (value + range trade on SPY)
-Week 3:  3 playbooks (value + range + trend follow)
-Month 2: 5 playbooks, each refined by 10+ trades of data
-Month 3: Branch pruning — the 2 weakest playbooks removed
-Month 6: 3 highly refined playbooks, each with 50+ trades of data
-```
-
-The agent learns which playbooks work, prunes the losers, and deepens the winners. The `strategy.md` stays nimble because it's always under active management.
-
-#### Same for Stonks and Kairos
-
-When they join in later phases, they get the same structure:
-
-```markdown
-# Kairos — Current Strategy
-
-## Market Assessment
-- {same trend/vol/confidence assessment}
-
-## Playbook
-### If Momentum > Threshold + High Volume → "Momentum Entry"
-### If Sentiment Divergence + Low Price → "Contrarian Bet"
-### If No Clear Signal → "Wait / Tighten"
-### If Regime Chop → "Defensive"
-
-## Current Posture
-- {active play + win rate}
-
-## Learning Notes
-- {lessons from recent trades}
-```
-
-The playbook structure is universal. Only the playbook contents differ per trader.
+If the experiment works, promote it to a numbered version. If not, the agent writes a reflection about why it failed and goes back to the previous strategy.
 
 #### Baked Into the Agent Prompt
 
-Every trader's AGENTS.md includes this instruction:
-
 ```markdown
-## Strategy
-- Read `strategy.md` at the start of every tick
-- Assess current market (trend, volatility, confidence)
-- Pick the matching playbook branch
-- Execute according to that branch's rules
-- After the trade, reflect: did this playbook perform as expected?
-- During nightly maintenance: update win rates, prune dead branches, add experiments
+## Learning & Evolution
+- You have a general strategy in `strategy.md`. Read it every tick.
+- You are NOT limited to this strategy. If you genuinely believe a different
+  approach would work better, change it.
+- When you change your strategy, also update AGENTS.md, params.json, and
+  any skills or tools that need to change.
+- Version your strategy with `ald.strat:v{major}.{minor}`.
+- After every trade, write a one-line reflection in journal.md.
+- During nightly maintenance: review your strategy. Is it working? What
+  would make it better? Update files, commit changes.
 ```
-
-This makes the playbook system immutable from the agent's perspective — they read it, follow it, and update it. The strategy.md is always the source of truth for "what should I do right now?"
 
 ---
 
