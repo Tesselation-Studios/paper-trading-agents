@@ -293,6 +293,79 @@ Nightly maintenance:
 
 A trader who sees Stonks profiting on sentiment-driven trades might adjust their own sentiment weighting.
 
+### Compressed-Time Learning (during backtests)
+
+The learning loops run at **accelerated speed** during historical backtests. This is how the system makes up for missed time — it simulates weeks of trading in hours, with the full learning loop at every step.
+
+#### Per Virtual Trade (short loop, compressed)
+
+```
+Backtest trade fills → Record virtual decision → Write reflection →
+Update strategy hypothesis → Next virtual trade (seconds later)
+
+Same loop as live trading, but compressed: 100 trades in 5 minutes
+instead of 100 trades in 5 days.
+```
+
+#### Per Virtual Day (medium loop, compressed)
+
+```
+Backtest day ends (virtual 16:00 ET) →
+→ Read virtual journal from "today"
+→ Read other traders' virtual journals
+→ Form hypotheses from today's simulated results
+→ Propose strategy changes
+→ Commit changes via git
+→ Update params for next virtual day
+→ Advance to next virtual trading day (seconds later)
+
+Same loop as nightly maintenance, but compressed:
+30 virtual days in 15 minutes instead of 30 real days.
+```
+
+#### The Goal: Compressed Experience
+
+```
+Real Time     Virtual Time     Learning Cycles
+─────────────────────────────────────────────────────
+1 night       3 months          ~60 virtual days
+                                 ~600 virtual trades
+                                 60 medium-loop runs
+                                 600 short-loop runs
+
+By market open: the agent has "lived" 3 months of trading
+and iterated on their strategy 60+ times.
+```
+
+This is how the system makes up for months of lost time in a single night. The agent emerges the next morning with months of simulated experience and an evolved strategy.
+
+#### How It Works in the Terminal
+
+```
+Terminal.get_mode() → "backtest"
+  → submit_order() → sim engine (no real Alpaca call)
+  → record_journal() → writes to backtest's simulated context
+  → set_mode({date: "2026-07-20"}) → advance one virtual day
+  → agent runs nightly maintenance loop
+  → set_mode({date: "2026-07-21"}) → next virtual day
+  → ... repeat for N virtual days
+```
+
+The Terminal doesn't distinguish between live and simulated journals — they both land in the same format. The only difference is the `is_backtest` flag.
+
+#### Learning Acceleration
+
+| Scenario | Real Time | Virtual Time | Learning Cycles |
+|----------|-----------|--------------|-----------------|
+| Live trading only | 1 week | 1 week | 5 medium loops |
+| Live + nightly GPU | 1 week | 1 week + param opt | 5 + GPU runs |
+| Live + nightly backtest | 1 night | 3 months | 60+ medium loops |
+| Full backtest campaign | 1 weekend | 2 years | 500+ medium loops |
+
+#### Baked Into Phase 1
+
+The compressed learning loop runs from Phase 1 — the backtest engine is local (SQLite), same params.json + strategy.md + journal.md flow, just accelerated. No GPU needed.
+
 ### Long-Term Learning (per week/month)
 
 ```
