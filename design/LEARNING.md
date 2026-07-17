@@ -640,6 +640,31 @@ The system never stops learning. Every trade is a data point. Every night is a t
 
 ## Summary: The Complete Learning Flow
 
+### The Four Memory Layers
+
+The agent doesn't just learn in one place. Lessons are captured at four different levels, each with a different purpose:
+
+| Layer | Where | What It Stores | How It's Written | How It's Read |
+|-------|-------|----------------|-----------------|---------------|
+| **Working memory** | `journal.md` | Today's trades, reflections, lessons | Agent writes after every trade | Agent reads during nightly maintenance |
+| **Structured memory** | SQLite / PG | Decisions, positions, journals, params | `record_journal()`, `record_decision()` | Leaderboard, Terminal tools, queries |
+| **Versioned memory** | Git repo | strategy.md, params.json, AGENTS.md, skills | Agent commits during nightly maintenance | Agent reads every tick, rollback via revert |
+| **OpenClaw memory** | `MEMORY.md`, `memory/*.md` | Cross-session lessons, patterns, personal insights | OpenClaw dreaming system + agent during maintenance | `memory_search()` on every session start |
+
+The OpenClaw memory layer is what makes this an **agent learning system** rather than a script calling an LLM. The agent doesn't just learn within a session — it carries lessons across sessions, dreams about them, and surfaces them automatically.
+
+#### What Gets Dreamt
+
+The OpenClaw dreaming system processes patterns from the agent's experience:
+
+```
+- "I cut SOFI too late" → dream: "cut faster on watchlist alerts"
+- "Range trades worked on SPY" → dream: "consider sector-specific strategies"
+- "Market was choppy for 3 days" → dream: "adjust stop-loss for choppy regimes"
+```
+
+These dreams get stored in MEMORY.md and are available on every session start via `memory_search()`. The agent doesn't need to manually write them — the dreaming system extracts them automatically.
+
 ```
 MARKET HOURS
 ┌─────────────────────────────────────────────────────────────────┐
