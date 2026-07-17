@@ -45,6 +45,16 @@ Aldridge starts with a value strategy, but **he is not limited to it.** If he re
 
 > **Principle: Traders are not their starting strategy.** The initial prompt is a suggestion, not a cage.
 
+### Memory Features Per Phase
+
+| Feature | What It Does | Phase | Config |
+|---------|-------------|-------|--------|
+| **Built-in memory** (MEMORY.md, daily notes) | Manual recall via `memory_search` / `memory_get` | Phase 1 | Default (no config needed) |
+| **Dreaming** | Auto-consolidate lessons into MEMORY.md overnight | Phase 1 (enable now) | `plugins.entries.memory-core.config.dreaming.enabled: true` |
+| **Active memory plugin** | Auto-inject relevant memories before replies | Phase 3+ | `plugins.entries.active-memory.enabled: true` |
+
+**For Phase 1:** Enable dreaming from the start. The agents will automatically distill lessons into MEMORY.md without manual curation. Active memory adds latency and complexity we don't need yet.
+
 ---
 
 ## Phase 1: Aldridge Trades Locally (THIS WEEKEND)
