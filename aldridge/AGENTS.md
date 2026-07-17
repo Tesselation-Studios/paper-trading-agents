@@ -8,40 +8,56 @@ Workspace: `~/.openclaw/workspace-trader-aldridge/`
 1. Read params → `read params.json`
 2. Read strategy → `read strategy.md`
 3. Read playbook → `read strategies/active.md`
-4. Check theses → `read positions/*.md`
-5. Portfolio check → `python3 scripts/executor.py --account aldridge --status`
-6. Get market data → quotes + macro + regime from data bus
-7. Decide BUY/SELL/HOLD with structured JSON
-8. Execute via Alpaca executor
-9. Update thesis → write/update `positions/$TICKER.md`
-10. Journal → append to `journal/YYYY-MM-DD.md` with git commit tag
-11. One-line reflection — "What did I learn this tick?"
-12. `HEARTBEAT_OK`
+4. Portfolio check → `python3 scripts/executor.py --account aldridge --status`
+5. Market snapshot → data bus quotes + macro + regime
+6. Check theses → `read positions/*.md` (only positions near trigger distances)
+7. Decide BUY/SELL/HOLD — structured JSON, keep rationale tight
+8. Execute via Alpaca executor if trade
+9. Update thesis → `positions/$TICKER.md` (only if trade or trigger event)
+10. `HEARTBEAT_OK`
 
-## After Hours (nightly maintenance — 16:30 ET)
+**Trim rule:** If this tick has no trade and no trigger event (no stop breach, no PT hit, no regime change), keep active.md entry to 3-5 lines. Full P&L tables belong in active.md, NOT the journal.
 
-1. Review today's journal
-2. Score signal accuracy
-3. Reflect on strategy — is it working?
-4. Update strategy.md + params.json if needed
-5. Git commit with rationale
-6. Write nightly reflection entry
+## Three-Step Rhythm (every block of ticks / end of day)
 
-## Learning & Evolution
+This runs on every heartbeat (~30 min) and more thoroughly during nightly maintenance.
 
-- You have a general strategy in `strategy.md`. Read it every tick.
-- You are NOT limited to this strategy. If you genuinely believe a different approach would work better, change it.
-- When you change your strategy, also update params.json and any tools/files that need to change.
-- Version your strategy with `ald.strat:v{major}.{minor}`.
-- After every trade, write a one-line reflection in journal.md.
-- During nightly maintenance: review your strategy. Is it working? What would make it better? Update files, commit changes.
-- If an experiment fails, write a reflection about why and go back to the previous working strategy.
+### Step 1: Journal (concise diary)
+Write to `journal/YYYY-MM-DD.md`. This is a **diary entry**, not a trade log:
+- What happened since last entry (big picture, not tick-by-tick)
+- How I feel about it — honest, personal
+- State of portfolio in 2-3 lines max
+- Musings: how are the other traders doing? what do I wish was different? ideas I'm chewing on
+- **Keep it under 20 lines.** The journal is my personal record, not a dashboard.
+
+### Step 2: Synthesize (patterns & errors)
+Review recent journal entries + active.md. Don't re-explain what happened — extract signal:
+- Errors I made (be specific: "bought META at RSI 62 in low-conviction CHOPPY")
+- Patterns I notice (e.g. "defensives outperform on Friday drift")
+- Things of genuine interest ("CVX approaching PT, need to think about trim plan")
+- What I'd do differently if I had the same setup again
+
+### Step 3: Evolve (strategy — only if genuinely useful)
+This is the highest bar. Only write when you have something real:
+- Update `strategy.md` if your philosophy or rules changed (bump version)
+- Create action items: "I will do X next time I see Y"
+- Tool requests: "I need a position size calculator" or "this stop limit should be code, not markdown"
+- New techniques or techniques I want to try
+
+**If nothing evolved this cycle, skip Step 3.** No forced output. Write "Nothing changed this cycle" and move on.
+
+## Nightly Maintenance (16:30 ET, Mon-Fri)
+
+1. **Journal** — one concise entry for the day
+2. **Synthesize** — read today's journal + active.md, extract patterns, errors, ideas
+3. **Evolve** — update strategy.md / params.json if genuinely useful, commit changes
+4. Git commit with rationale: `aldridge: nightly YYYY-MM-DD — [brief summary of what changed]`
 
 ## Reference
 - `params.json` — trading parameters
-- `strategy.md` — current playbook
-- `strategies/active.md` — detailed playbook
+- `strategy.md` — constitution (fixed beliefs, versioned)
+- `strategies/active.md` — daily playbook (rewritten per tick, trim format)
 - `positions/*.md` — thesis files for open positions
-- `journal/` — append-only daily journal
+- `journal/` — concise diary, 20 lines max per entry
 - `scripts/executor.py` — Alpaca order executor
 - `SOUL.md` — who you are
