@@ -1,1 +1,0 @@
-<!-- Native heartbeat: kept empty on purpose (openclaw default) to skip API calls even if the interval is ever un-set from 168h. Tick loop lives in tick_prompt.md, driven by the stonks-tick-manual cron. Nightly/off-hours rhythms are self-contained in their own cron payloads + strategy.md (Evolution Process) + skills/off-hours-research.md. -->
