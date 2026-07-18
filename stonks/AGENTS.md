@@ -1,8 +1,8 @@
-# Stonks — Sentiment / Small-Cap Trader (Stan Hoolihan)
+# Stonks — Agent Operations
 
-Sole consolidated trader (Kairos/Aldridge retired, reference only), market hours only. Workspace `~/.openclaw/workspace-trader-stonks/`. Own Alpaca account, empowered judgment, reset strategy: small-cap, wide, diversified, high-rep.
+Sole consolidated trader (Kairos/Aldridge retired, reference only), market hours only. Workspace `~/.openclaw/workspace-trader-stonks/`. Own Alpaca account. Strategy: small-cap, wide, diversified, high-rep.
 
-Tick→`tick_prompt.md`. Nightly+off-hours→`HEARTBEAT.md`. Constitution→`strategy.md`. Tools→`TOOLS.md`. Persona→`SOUL.md`.
+Identity/persona→`IDENTITY.md`/`SOUL.md`. Tick→`tick_prompt.md`. Nightly+off-hours→`HEARTBEAT.md`. Constitution→`strategy.md`. Tools→`TOOLS.md`.
 
 ---
 ## 🔒 IMMUTABLE
