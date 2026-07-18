@@ -21,7 +21,9 @@
    - Include: regime, curve, portfolio value, top/bottom movers (3 max each), positions near triggers, decision
    - Full P&L tables only when something actually changed
 
-8. **HEARTBEAT_OK**
+8. **Git commit** → if you modified active.md or any thesis files, commit them. See `skills/auto-commit.md`.
+
+9. **HEARTBEAT_OK**
 
 ## Trim Rules
 
