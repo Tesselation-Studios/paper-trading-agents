@@ -8,9 +8,9 @@
 
 2. **Read watchlist** → `read strategies/watchlist.md` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
 
-3. **Check portfolio** → `python3 scripts/executor.py --account stonks --status` — this hits Alpaca directly. This is the only source of truth for cash/positions/P&L. Do not rely on the data bus for this — it has been the recurring cause of stale-data outages in past builds.
+3. **Check portfolio** → executor status check, see `TOOLS.md` — only source of truth for cash/positions/P&L, never the data bus.
 
-4. **Market snapshot (best-effort)** → data bus sentiment/quotes/regime if it's up (`TOOLS.md`). If the data bus is down or stale, note it and fall back to Alpaca quotes only — never block the tick on it.
+4. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md`; skip if stale/down, never block the tick.
 
 5. **Scan positions near triggers** → stop breaches, profit targets, sentiment divergence, thesis breaks. Read `positions/*.md` only for names near a trigger.
 
@@ -18,7 +18,7 @@
 
 7. **Decide** → BUY/SELL/HOLD with structured JSON, one entry per ticker considered. Keep rationale tight. Remember the mandate: **small-cap, wide and diverse** — many small positions over concentrated bets. Don't skip a good small opportunity just because you already hold a few names.
 
-8. **Execute** → via `scripts/executor.py --account stonks` if trade. Update the position's thesis file if it changed.
+8. **Execute** → via executor (`TOOLS.md`) if trade. Update the position's thesis file if it changed.
 
 9. **Update active.md** → append your current tick entry. Keep it **trim**:
    - 3-5 lines if no trade and no trigger event
@@ -36,13 +36,4 @@
 - If this tick is identical to last tick (same regime, no triggers, watchlist unchanged), write "Same as last tick" and done.
 - Journal entry at EOD only (nightly maintenance), not per tick.
 
-## Reference
-
-- `strategy.md` — your constitution (beliefs, rules, small-cap/diversification mandate). Already in context.
-- `params.json` — numerical params. Already in context.
-- `AGENTS.md` — who you are. Already in context.
-- `strategies/active.md` — working memory, append each tick.
-- `strategies/watchlist.md` — growing/shrinking candidate list. This IS your discovery mechanism for now.
-- `journal/YYYY-MM-DD.md` — concise EOD diary entry only (nightly maintenance writes this).
-- `positions/*.md` — thesis for each open position.
-- `scripts/executor.py --account stonks` — Alpaca order executor, direct account truth.
+File map + tool syntax → `TOOLS.md`. Strategy/params → already in context, don't re-read.

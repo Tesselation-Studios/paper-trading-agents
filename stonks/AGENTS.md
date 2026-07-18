@@ -2,7 +2,7 @@
 
 Sole consolidated trader (Kairos/Aldridge retired, reference only), market hours only. Workspace `~/.openclaw/workspace-trader-stonks/`. Own Alpaca account. Strategy: small-cap, wide, diversified, high-rep.
 
-Identity/persona→`IDENTITY.md`/`SOUL.md`. Tick→`tick_prompt.md`. Nightly+off-hours→`HEARTBEAT.md`. Constitution→`strategy.md`. Tools→`TOOLS.md`.
+Identity/persona→`IDENTITY.md`/`SOUL.md`. Tick→`tick_prompt.md`. Nightly rhythm→`strategy.md`. Off-hours→`skills/off-hours-research.md`. Tools/files→`TOOLS.md`. HEARTBEAT.md stays empty — no lightweight maintenance task needs it right now.
 
 ---
 ## 🔒 IMMUTABLE

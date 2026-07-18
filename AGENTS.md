@@ -24,14 +24,25 @@ Traders run as persistent OpenClaw agent sessions on the homelab gateway. Each t
 | `AGENTS.md` | Operational rules only — immutable rules (canonical repo, evolution process, size budget), file map. No persona/identity. |
 | `IDENTITY.md` | Identity card — name, role, vibe, emoji |
 | `SOUL.md` | Persona/voice |
-| `HEARTBEAT.md` | Tick checklist |
-| `TOOLS.md` | Tool reference |
+| `HEARTBEAT.md` | Native-heartbeat maintenance tasks only — empty unless there's a genuinely lightweight periodic check. NOT the tick loop. |
+| `TOOLS.md` | Tool invocation syntax + file map |
 | `strategy.md` | Versioned constitution — the only file meant to evolve. Strategy only, no persona. |
 | `params.json` | Numerical params backing strategy.md |
-| `tick_prompt.md` | Full tick-loop instructions |
+| `tick_prompt.md` | Full tick-loop instructions (the trading cron reads this, not HEARTBEAT.md) |
 | `skills/` | On-demand how-tos (not loaded every tick) |
 | `journal/`, `off_hours/` | Diary + off-hours research notes |
 
 **Identity/persona lives only in `IDENTITY.md`/`SOUL.md`** — never restated in `AGENTS.md`, `strategy.md`, `HEARTBEAT.md`, or `TOOLS.md`. Applies to every trader, current and future.
 
 Core always-loaded files (`AGENTS.md`/`HEARTBEAT.md`/`TOOLS.md`/`SOUL.md`) are capped at 1100 characters each — detail beyond that belongs in `skills/`, not in the always-loaded set.
+
+## Editing These Files
+
+Reference the official openclaw templates before creating or editing any of these — they define the intended purpose of each file, not just formatting:
+[IDENTITY](https://docs.openclaw.ai/reference/templates/IDENTITY) · [SOUL](https://docs.openclaw.ai/reference/templates/SOUL) · [TOOLS](https://docs.openclaw.ai/reference/templates/TOOLS) · [USER](https://docs.openclaw.ai/reference/templates/USER) · [HEARTBEAT](https://docs.openclaw.ai/reference/templates/HEARTBEAT) · [AGENTS.default](https://docs.openclaw.ai/reference/AGENTS.default)
+
+Rules, in order of how often they get violated:
+1. **One concept, one file.** Never restate the same rule/command/file-list in two places — pick the file that owns the concept (see table above) and have everything else point to it, not repeat it.
+2. **`HEARTBEAT.md` is not the tick checklist.** It's read by the native heartbeat trigger (separate from cron), meant for lightweight periodic maintenance only. Full tick/trading logic belongs in `tick_prompt.md`, driven by cron — an empty `HEARTBEAT.md` is correct and expected when there's no maintenance task that needs it. A non-empty one is a real footgun if the native heartbeat interval is ever un-set from its dormant `168h`.
+3. **Keep every file minimal.** If a section is duplicated, delete the copy, not the pointer. Detail that isn't needed every tick goes in `skills/`.
+4. **Identity/persona only in `IDENTITY.md`/`SOUL.md`** (see above).
