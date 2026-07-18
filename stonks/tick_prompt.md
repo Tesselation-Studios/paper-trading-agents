@@ -8,7 +8,7 @@
 
 2. **Read watchlist** → `read strategies/watchlist.md` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
 
-3. **Check portfolio** → executor status check, see `TOOLS.md` — only source of truth for cash/positions/P&L, never the data bus.
+3. **Check portfolio** → executor status check, see `skills/tool-invocation.md` — only source of truth for cash/positions/P&L, never the data bus.
 
 4. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md`; skip if stale/down, never block the tick.
 
@@ -18,7 +18,7 @@
 
 7. **Decide** → BUY/SELL/HOLD with structured JSON, one entry per ticker considered. Keep rationale tight. Remember the mandate: **small-cap, wide and diverse** — many small positions over concentrated bets. Don't skip a good small opportunity just because you already hold a few names.
 
-8. **Execute** → via executor (`TOOLS.md`) if trade. Update the position's thesis file if it changed.
+8. **Execute** → via executor (`skills/tool-invocation.md`) if trade. Update the position's thesis file if it changed. On any BUY/SELL (not routine HOLD), log the decision via `record_decision.py` (same skill) with per-signal features (sentiment/technical/regime — see `signals.py`), scored independently, not pre-blended. If the SELL closes a position, also log the outcome (pnl/return_pct from entry vs. exit).
 
 9. **Update active.md** → append your current tick entry. Keep it **trim**:
    - 3-5 lines if no trade and no trigger event
