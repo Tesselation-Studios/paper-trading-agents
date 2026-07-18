@@ -1,0 +1,4 @@
+[trader-stonks/sessions/trader-stonks/202a9c56-f081-4d54-b6a9-23681b7d4d2f.jsonl#L14] Assistant: Now let me run the replay check.
+[trader-stonks/sessions/trader-stonks/202a9c56-f081-4d54-b6a9-23681b7d4d2f.jsonl#L26] Assistant: All the data I need. Let me write the off-hours note now.
+[trader-stonks/sessions/trader-stonks/202a9c56-f081-4d54-b6a9-23681b7d4d2f.jsonl#L28] Assistant: Off-hours routine complete. Here's the rundown: **News**: Quiet Saturday. 131 articles fetched from 6 sources, only 9 touched our tickers — NVDA (Japan AI/robotics, new model), GME (Uber Eats deal), and F (mostly false hits from F-Secure earnings,
+[trader-stonks/sessions/trader-stonks/202a9c56-f081-4d54-b6a9-23681b7d4d2f.jsonl#L28] Assistant: the watchlist feeding discipline (2-3 new names/session) becomes load-bearing for statistical significance. Filed in `off_hours/2026-07-18.md`.

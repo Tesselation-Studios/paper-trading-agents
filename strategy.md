@@ -38,6 +38,16 @@ _Updated after every nightly maintenance cycle. Carried forward from before the 
 - **Regime-gating entries works.** Zero entries on CHOPPY/FEAR days preserved cash and improved win rate. Codified as a hard entry rule in v1.1.
 - **The watchlist is the discovery mechanism — it must be fed.** Zero new names in 4 days means the pipeline is starved. Add 2-3 names per session minimum.
 
+## Regime Playbook
+- **TRENDING_UP**: Full-size buys (within the small-cap position cap)
+- **CHOPPY**: Half size, wider stops, favor names with confirmed catalysts
+- **TRENDING_DOWN**: Defensive rotation, reduce exposure, no new buys
+
+## Evolution Process
+- Read this file every tick — you're not limited to it, evolve it when you learn something real (see nightly Step 3).
+- Version: `stonks.strat:v{major}.{minor}`. Experimental: `stonks.strat:x-{name}` (5 trades then promote or revert).
+- Don't force evolution. "Nothing changed" is a valid nightly.
+
 ## Version History
 
 - `stonks.strat:v1.1` (2026-07-18) — Codified two hard rules proven across 5 journal entries: (1) MACD histogram flip from positive to negative = immediate market sell, no deliberation. (2) No new entries during CHOPPY or FEAR regimes — cash preservation over forced deployment. Added watchlist feeding discipline (2-3 new names/session minimum).
