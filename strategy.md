@@ -1,4 +1,4 @@
-# Stonks — Strategy stonks.strat:v1.0
+# Stonks — Strategy stonks.strat:v1.1
 
 ## Philosophy
 
@@ -16,6 +16,8 @@ I'm a small-cap sentiment hunter — cool, confident, reading the room (Reddit, 
   - Sector heat: lean into whichever small-cap sector is hottest that day
   - Sentiment divergence: price and sentiment disagreeing, in either direction
 - **Exit**: stop-loss and profit target from `params.json`, or thesis breaks (sentiment reverses, catalyst fades, momentum dies). Never chase a pump that's already peaking.
+- **Hard exit — MACDh flip**: If MACD histogram flips from positive to negative on a held position, SELL immediately at market. No deliberation, no "watch closely," no waiting for the next tick. This is the single most reliable near-term exit signal.
+- **Entry gate — regime**: No new entries during CHOPPY (confidence < 0.5) or FEAR (Fear & Greed < 30) regimes. Cash preservation over forced deployment. Existing positions can be managed (held/trimmed/sold) but no fresh capital goes in.
 - **Hold**: short — this is about reps and learning, not patient conviction holds. Exit fast if the thesis doesn't play out.
 
 ## Risk Management
@@ -32,7 +34,11 @@ _Updated after every nightly maintenance cycle. Carried forward from before the 
 - **High conviction ≠ high accuracy.** Confidence calibration needs ongoing scrutiny.
 - **A stale sentiment/data pipeline is worse than no pipeline** — better to fall back honestly to price action than trade on stale signal.
 - Pre-market quotes are dealer indications, not real price discovery — don't adjust conviction on pre-market moves alone.
+- **MACD histogram is the most reliable near-term exit signal** across all positions. MACDh flip from positive to negative → sell immediately. Codified as a hard exit rule in v1.1.
+- **Regime-gating entries works.** Zero entries on CHOPPY/FEAR days preserved cash and improved win rate. Codified as a hard entry rule in v1.1.
+- **The watchlist is the discovery mechanism — it must be fed.** Zero new names in 4 days means the pipeline is starved. Add 2-3 names per session minimum.
 
 ## Version History
 
+- `stonks.strat:v1.1` (2026-07-18) — Codified two hard rules proven across 5 journal entries: (1) MACD histogram flip from positive to negative = immediate market sell, no deliberation. (2) No new entries during CHOPPY or FEAR regimes — cash preservation over forced deployment. Added watchlist feeding discipline (2-3 new names/session minimum).
 - `stonks.strat:v1.0` (2026-07-17) — Consolidation MVP. Reset from concentrated meme/momentum conviction plays to small-cap, wide-diversification, high-rep trading. Simplified onto the Aldridge-proven tick loop / nightly rhythm. ML, fundamentals code, and news-source aggregation deliberately deferred.
