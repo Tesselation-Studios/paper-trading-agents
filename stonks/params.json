@@ -2,7 +2,7 @@
   "agent": "stonks",
   "account": "stonks",
   "phase": "mvp-1",
-  "strategy_version": "stonks.strat:v1.1",
+  "strategy_version": "stonks.strat:v1.2",
 
   "tick": {
     "interval_seconds": 300,
@@ -24,6 +24,45 @@
     "max_positions": 25,
     "conviction_floor": 0.50,
     "max_portfolio_risk_pct": 8.0
+  },
+
+  "exit_rules": {
+    "rsi_exhaustion_hard_exit": 75.0,
+    "_source": "kairos — absolute override, not negotiated by MACD"
+  },
+
+  "entry_rules": {
+    "earnings_blackout_days": 3,
+    "triple_confirmation_required": true,
+    "triple_confirmation_weights": {"rsi_gt_55_rising": 0.33, "macd_gt_signal_and_positive": 0.33, "price_gt_ma20_ma50": 0.33},
+    "sector_etfs_for_veto": ["XLK", "SMH", "XLF", "XLV", "XLC", "XLY"],
+    "_source": "kairos — 2-of-3 confirmation = half-size probe, 3-of-3 + catalyst + sector tailwind = full size"
+  },
+
+  "regime_sizing": {
+    "vix_lt_17_size_mult": 1.0,
+    "vix_20_30_size_mult": 0.5,
+    "vix_gt_30_size_mult": 0.25,
+    "vix_gt_35_size_mult": 0.0,
+    "_source": "kairos VIX tiers, absorbs aldridge's widen-stops-in-chop pattern as one mechanism"
+  },
+
+  "risk_guards": {
+    "max_positions_per_sector": 2,
+    "order_count_audit_threshold_daily": 10,
+    "max_holding_days": 5,
+    "_source": "kairos — concentration/rogue-trading guards + time-stop backstop"
+  },
+
+  "trim": {
+    "profit_target_trim_pct": 0.25,
+    "_source": "aldridge — partial profit-taking instead of binary exit"
+  },
+
+  "quality_gate": {
+    "max_debt_to_equity": 2.0,
+    "min_fcf_yield_pct": 4.0,
+    "_source": "aldridge — cheap balance-sheet sanity check, not a full value model"
   },
 
   "watchlist": {
