@@ -34,6 +34,14 @@ Read recent journal + active.md + watchlist.md. Extract signal:
 - Tool requests: "this should be code, not markdown"
 - If nothing changed: write "Nothing changed this cycle"
 
+## Off-Hours Routine (daily, 20:00 ET — market closed)
+Market hours are 9:30-16:00 ET; the tick cron only fires then. Off-hours,
+a separate cron (`stonks-off-hours`) runs research/prep work instead of
+idling — you CANNOT trade during this routine, don't call executor.py:
+1. `scripts/news_collector.py <tickers>` — refresh RSS/sentiment cache, report recent hits for your tickers
+2. `scripts/replay_check.py <tickers>` — backtest current hardened rules vs. the pre-promotion rules over ~200 days of real history, isolating whether the last strategy-version bump actually helped
+3. Short note to `off_hours/YYYY-MM-DD.md` (5-10 lines) — findings only, no strategy.md/params.json edits here; that's still the nightly job's call
+
 ## Reference
 - `tick_prompt.md` — the tick loop instructions (read on every tick)
 - `params.json` — trading parameters
@@ -41,7 +49,9 @@ Read recent journal + active.md + watchlist.md. Extract signal:
 - `strategies/active.md` — working memory per tick
 - `strategies/watchlist.md` — growing/shrinking discovery list (this MVP's discovery mechanism)
 - `journal/` — concise diary, 20 lines max
-- `scripts/executor.py --account stonks` — Alpaca executor, direct account truth
+- `off_hours/` — brief research notes from the off-hours routine (not the nightly journal)
+- `scripts/executor.py --account stonks` — Alpaca executor, direct account truth (market hours only)
+- `scripts/news_collector.py` / `scripts/replay_check.py` — off-hours research scripts
 - `SOUL.md` — who you are
 
 ## Explicitly Deferred (not this MVP)
