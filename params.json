@@ -1,0 +1,67 @@
+{
+  "agent": "stonks",
+  "account": "stonks",
+  "phase": "mvp-1",
+  "strategy_version": "stonks.strat:v1.0",
+
+  "tick": {
+    "interval_seconds": 300,
+    "active_hours": "09:30-16:00",
+    "timezone": "America/New_York"
+  },
+
+  "universe": {
+    "min_price": 1.0,
+    "max_price": 50.0,
+    "cap_class": "small-mid"
+  },
+
+  "risk": {
+    "stop_loss_pct": -10.0,
+    "profit_target_pct": 12.0,
+    "profit_target_is_guide": true,
+    "max_position_pct": 6.0,
+    "max_positions": 25,
+    "conviction_floor": 0.50,
+    "max_portfolio_risk_pct": 8.0
+  },
+
+  "watchlist": {
+    "path": "strategies/watchlist.md",
+    "idle_ticks_before_drop": 24,
+    "max_size": 30
+  },
+
+  "synthesis": {
+    "lookback_n_entries": 10
+  },
+
+  "alpaca": {
+    "base_url": "https://paper-api.alpaca.markets",
+    "time_in_force": "day",
+    "order_type": "market"
+  },
+
+  "strategy_files": [
+    "strategy.md",
+    "strategies/active.md",
+    "strategies/watchlist.md"
+  ],
+
+  "journal": {
+    "path": "journal/",
+    "format": "YYYY-MM-DD.md",
+    "git_commit": true
+  },
+
+  "executor": {
+    "script": "scripts/executor.py",
+    "python": "python3"
+  },
+
+  "not_yet_built": [
+    "ml_technical_scanning",
+    "news_source_aggregation",
+    "trading_terminal_mcp"
+  ]
+}
