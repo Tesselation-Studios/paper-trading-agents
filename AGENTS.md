@@ -15,7 +15,8 @@ Traders run as persistent OpenClaw agent sessions on the homelab gateway. Each t
 - **`stonks/`** — the sole active trader. Consolidated architecture (persistent tick session, nightly journal→synthesize→evolve rhythm, off-hours research routine), strategy v1.2.
 - **`aldridge/`**, **`kairos/`** — retired (crons/heartbeats disabled, not deleted). Kept as reference for pulling in trading knowledge — `aldridge/` is the proven architecture Stonks was built on; `kairos/`'s and `aldridge/`'s pruned, non-redundant trading knowledge has already been partially consolidated into `stonks/strategy.md` v1.2. Contents vary in freshness — not everything in every trader directory reflects current thinking; treat older material as reference to mine, not as truth.
 - **`design/`** — forward-looking specs, not yet built (e.g. `trading-terminal.md`, a unified MCP server for market data + execution — currently traders use a data-bus/direct-Alpaca split instead).
-- **`archive/`** — superseded material kept for history, not for reference (e.g. `legacy-single-agent-prompts/`, from before the per-trader directory split).
+
+Superseded material gets deleted, not archived — git history already has it. No `archive/` folder.
 
 ## Per-Trader File Conventions
 
@@ -46,3 +47,4 @@ Rules, in order of how often they get violated:
 2. **`HEARTBEAT.md` is not the tick checklist.** It's read by the native heartbeat trigger (separate from cron), meant for lightweight periodic maintenance only. Full tick/trading logic belongs in `tick_prompt.md`, driven by cron — an empty `HEARTBEAT.md` is correct and expected when there's no maintenance task that needs it. A non-empty one is a real footgun if the native heartbeat interval is ever un-set from its dormant `168h`.
 3. **Keep every file minimal.** If a section is duplicated, delete the copy, not the pointer. Detail that isn't needed every tick goes in `skills/`.
 4. **Identity/persona only in `IDENTITY.md`/`SOUL.md`** (see above).
+5. **Delete superseded material, don't archive it.** Git history already has it — no `archive/` folders.
