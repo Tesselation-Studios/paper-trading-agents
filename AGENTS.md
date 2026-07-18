@@ -21,14 +21,17 @@ Traders run as persistent OpenClaw agent sessions on the homelab gateway. Each t
 
 | File | Purpose |
 |------|---------|
-| `AGENTS.md` | Identity + immutable rules (canonical repo, evolution process, size budget) |
+| `AGENTS.md` | Operational rules only — immutable rules (canonical repo, evolution process, size budget), file map. No persona/identity. |
+| `IDENTITY.md` | Identity card — name, role, vibe, emoji |
 | `SOUL.md` | Persona/voice |
 | `HEARTBEAT.md` | Tick checklist |
 | `TOOLS.md` | Tool reference |
-| `strategy.md` | Versioned constitution — the only file meant to evolve |
+| `strategy.md` | Versioned constitution — the only file meant to evolve. Strategy only, no persona. |
 | `params.json` | Numerical params backing strategy.md |
 | `tick_prompt.md` | Full tick-loop instructions |
 | `skills/` | On-demand how-tos (not loaded every tick) |
 | `journal/`, `off_hours/` | Diary + off-hours research notes |
+
+**Identity/persona lives only in `IDENTITY.md`/`SOUL.md`** — never restated in `AGENTS.md`, `strategy.md`, `HEARTBEAT.md`, or `TOOLS.md`. Applies to every trader, current and future.
 
 Core always-loaded files (`AGENTS.md`/`HEARTBEAT.md`/`TOOLS.md`/`SOUL.md`) are capped at 1100 characters each — detail beyond that belongs in `skills/`, not in the always-loaded set.
