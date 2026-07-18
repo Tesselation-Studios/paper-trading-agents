@@ -438,3 +438,62 @@ Every phase has a two-way door:
 ---
 
 *This is the living plan. Update as each phase completes.*
+
+---
+
+## Phase 7: Practice Mode & Historical Trader (Week 5+)
+
+### What Changes
+
+Two new capabilities for testing outside market hours and training on real data:
+
+**Practice Mode (lightweight, week 5)**
+- A cron that fires ticks outside market hours (evenings, weekends) with a flag: `PRACTICE TICK — market is closed. Run your full loop but don't execute trades.`
+- Agent runs the same tick loop, same tick_prompt.md, same params.json
+- Data bus provides last-close quotes (no intraday movement, but real data)
+- No Alpaca execution — decisions are logged to journal + practice log
+- Useful for: shaking out tool issues, verifying tick_prompt.md instructions, testing params.json changes, ensuring the nightly maintenance flow works end-to-end
+
+**Historical Trader (heavier, week 6+)**
+- A replay engine that feeds historical OHLCV data into the agent's tick loop day-by-day
+- Agent runs "as if" it's in that past time period — same tick_prompt.md, same params.json, same decision-making
+- Decisions are logged but not executed
+- After replay: score decisions against what actually happened (would the trade have won or lost?)
+- **Parameter estimation**: run the agent across N historical periods with different params.json values → build a dataset of which params produced which outcomes → estimate optimal params for current conditions
+
+### Data Source
+
+Historical 5-min OHLCV bars already exist in the paper-trading-rebuild PG database on docker.klo. Each bar is a natural data point for the agent's tick loop — one bar per 5-min tick, exactly as in live mode.
+
+### Data Flow
+
+```
+Historical data store (OHLCV, docker.klo PG)
+    │
+    ▼
+Replay engine → fed to agent tick loop day-by-day
+    │
+    ▼
+Agent makes decisions → logs to practice journal
+    │
+    ▼
+Post-run: score decisions vs actual outcomes
+    │
+    ▼
+Parameter estimation: which params → best results?
+```
+
+### Verification
+
+```markdown
+✅ [ ] Practice mode fires outside market hours
+✅ [ ] Agent runs full loop without executing trades
+✅ [ ] Historical replay feeds past data correctly
+✅ [ ] Agent's decisions are logged and scored
+✅ [ ] Parameter estimation produces actionable insights
+✅ [ ] Estimated params are written to params.json for next live session
+```
+
+### Key Design Decision
+
+The historical trader is NOT a separate system — it's the same agent, same tick_prompt.md, same params.json, same nightly maintenance. The only difference is the data source (historical vs live) and the execution flag (simulated vs real). This means the agent's learning from historical replay carries over to live trading naturally — the nightly maintenance doesn't know or care which mode ran today.
