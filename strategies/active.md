@@ -1,3 +1,12 @@
+# Current Playbook — Stonks 🚀 MON JUL 20, 2026
+
+## MON JUL 20 — 09:00 Pre-Open Tick
+- **Regime**: CHOPPY guess (sentiment blind Day 12, no ML signal). QQQ $702.39 pre-mkt (+1.02% from $695.31 close) — lower BB kiss bounce CONFIRMED. SPY $746.43 (+0.42%), NVDA $205.78 (+1.47%).
+- **Portfolio**: $10,410 | Cash $8,245 | 9 positions. Most green pre-mkt on bounce.
+- **Triggers**: SOFI MACDh flipped (-0.15) but $17.38 > $17 support = HOLD. FUBO MACDh still green +0.10, holding.
+- **Decision**: MVST BUY 2 shares @ $0.905 — RSI 33.6 oversold + QQQ bounce thesis. Order errored 403 (market closed). Retry at 9:30 open.
+- **Watchlist**: No changes. 4 candidates idle (AMC/DJT/HOOD/COIN), all above $1 universe floor.
+
 # Current Playbook — Stonks 🚀 SAT JUL 18, 2026
 
 ## Active Strategies
