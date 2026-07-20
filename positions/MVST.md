@@ -1,12 +1,7 @@
 # MVST Position Thesis
 
-- **Entry**: $0.90 avg | 3 shares
-- **Current**: $0.90 (+0.40% unrealized)
-- **Market Value**: $2.71
-- **Unrealized P&L**: $+0.01 (+0.40%)
-- **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-18 07:01:07 UTC
-
-This position is managed through the Alpaca paper trading API.
-Entry, exit, and sizing are handled by the trader agent via executor.py.
-Stop-loss and take-profit levels are maintained in the trading.trader_positions table.
+- **Entry**: $0.899 avg | 5 shares (3 @ $0.8985 + 2 @ $0.9003)
+- **Current**: $0.9003
+- **Market Value**: ~$4.50
+- **Thesis**: Oversold bounce (RSI 33.6) + QQQ lower BB kiss confirmed. Stop $0.81 (-10%).
+- **Last trade**: 2026-07-20 13:38 UTC

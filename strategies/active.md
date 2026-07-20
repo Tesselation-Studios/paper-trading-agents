@@ -1,12 +1,12 @@
 # Current Playbook — Stonks 🚀 MON JUL 20, 2026
 
-## MON JUL 20 — Session Summary (09:00-11:45)
+## MON JUL 20 — Session Summary (09:00-13:45)
 - **Regime**: CHOPPY/FEAR (F&G 29, sentiment blind Day 13). QQQ pre-mkt bounce confirmed.
-- **Portfolio**: $10,430 | Cash $8,245 | 9 positions. NO CHANGES from Fri close.
-- **Triggers**: SOFI >$17 HOLD. FUBO/LYFT MACDh green HOLD.
-- **🚨 PAPER API OUTAGE — FULL SESSION**: 2.5 hours, ZERO fills. MVST (4) + F (2) attempts stuck. GTC stops broken → recreated but also stuck = ALL POSITIONS UNPROTECTED.
-- **Decision**: MVST BUY 2 @ $0.90 + F BUY 1 queued (decision #5417). Cron disabled at 11:45.
-- **Lesson**: Paper API Monday fragility. Never touch GTC stops before verifying fills. Need API health gate before order attempts.
+- **Portfolio**: ~$10,414 | Cash $8,221 | **12 positions** (was 9).
+- **Executed**: MVST +2 @ $0.9003 (now 5 total), F +1 @ $14.04 (now 2 total). LIVE TICK added: AMC +2 @ $2.37, DJT +1 @ $9.79, OPEN +2 @ $4.50.
+- **🚨 PAPER API OUTAGE**: 9:30-13:00 (~3.5hr). Zombie GTC stops blocked orders. Recovered at 13:00.
+- **Risk**: All 12 GTC stops now active (-10% each).
+- **Lesson**: Paper API Monday fragility. Verify fills BEFORE touching GTC stops. Get full UUIDs (don't truncate).
 
 # Current Playbook — Stonks 🚀 SAT JUL 18, 2026
 
