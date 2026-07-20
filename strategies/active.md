@@ -1,12 +1,12 @@
 # Current Playbook — Stonks 🚀 MON JUL 20, 2026
 
-## MON JUL 20 — 09:30 Open Tick
-- **Regime**: CHOPPY guess (sentiment blind Day 12). QQQ $702.39 pre-mkt (+1.02%) — lower BB bounce confirmed. SPY $746.43 (+0.42%), NVDA $205.78 (+1.47%).
-- **Portfolio**: $10,430 | Cash $8,245 | 9 positions.
-- **Triggers**: SOFI $17.38 > $17 support HOLD despite MACDh flip. FUBO/LYFT MACDh holding green.
-- **🚨 Execution**: MVST buy 2 shares @ ~$0.90 FAILED — 4 attempts (market + limit). F buy 1 share FAILED — 2 attempts. Both stuck in "new" unfilled. Paper API not processing fills on Monday morning (last fill: Fri 7/17). GTC stop orders broken during attempt, recreated (MVST $0.80, F $12.80).
-- **Decision**: MVST BUY queued (decision #5417). Will retry when paper API resumes. F add-on from weekend plan also queued.
-- **Watchlist**: No changes.
+## MON JUL 20 — 09:30-10:00 Open Session
+- **Regime**: CHOPPY/FEAR (F&G 29, sentiment blind Day 12). QQQ pre-mkt bounce confirmed.
+- **Portfolio**: $10,430 | Cash $8,245 | 9 positions. No changes from Fri close.
+- **Triggers**: SOFI >$17 HOLD. FUBO/LYFT MACDh green HOLD.
+- **🚨 PAPER API OUTAGE**: 30+ min, zero fills all morning. MVST (4 attempts) + F (2 attempts) all stuck "new" then canceled. GTC stops broken — recreated but also stuck "new" = positions UNPROTECTED. No orders will execute until API resumes.
+- **Decision**: MVST + F buys queued (decision #5417). Retry when/if API comes back.
+- **Lesson**: Paper API has Monday morning fragility — verify fills before touching GTC stops next session.
 
 # Current Playbook — Stonks 🚀 SAT JUL 18, 2026
 
