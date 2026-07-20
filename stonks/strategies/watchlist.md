@@ -16,9 +16,8 @@ Format: `TICKER — idle_ticks: N — note`
 - FUBO — open position
 
 ## Candidates
-- AMC — idle_ticks: 0 — legacy meme carryover, re-evaluate under small-cap/diversification mandate
-- DJT — idle_ticks: 0 — legacy meme carryover, re-evaluate under small-cap/diversification mandate
-- HOOD — idle_ticks: 0 — legacy carryover, note prior -12% realized loss lesson (sizing discipline)
-- COIN — idle_ticks: 0 — legacy carryover, re-evaluate price band fit (may be above $50 max-price universe cap)
+- AMC — idle_ticks: 0 — legacy meme carryover, re-evaluate under small-cap/diversification mandate ($2.45 fits universe)
+- DJT — idle_ticks: 0 — legacy meme carryover, re-evaluate under small-cap/diversification mandate ($9.72 fits universe)
 
-_Last touched: 2026-07-17 (consolidation MVP seed — carried over from GUIDELINES.md watchlist + current positions)_
+_Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN (confirmed above $50 max-price cap)._
+_Last touched: 2026-07-20 (nightly maintenance — pruned stale, need 3+ fresh sub-$15 names by Tue EOD)_
