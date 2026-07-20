@@ -1,9 +1,9 @@
-# GME Position Thesis
+# MARA Position Thesis
 
-- **Entry**: $22.38 avg | 10 shares
-- **Current**: $21.73 (-2.90% unrealized)
-- **Market Value**: $217.32
-- **Unrealized P&L**: $-6.48 (-2.90%)
+- **Entry**: $11.83 avg | 3 shares
+- **Current**: $11.67 (-1.35% unrealized)
+- **Market Value**: $35.01
+- **Unrealized P&L**: $-0.48 (-1.35%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-20 20:31:00 UTC
 

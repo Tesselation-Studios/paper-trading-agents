@@ -1,9 +1,9 @@
-# GME Position Thesis
+# SNAP Position Thesis
 
-- **Entry**: $22.38 avg | 10 shares
-- **Current**: $21.73 (-2.90% unrealized)
-- **Market Value**: $217.32
-- **Unrealized P&L**: $-6.48 (-2.90%)
+- **Entry**: $4.58 avg | 1 shares
+- **Current**: $4.56 (-0.44% unrealized)
+- **Market Value**: $4.56
+- **Unrealized P&L**: $-0.02 (-0.44%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-20 20:31:00 UTC
 
