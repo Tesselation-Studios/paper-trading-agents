@@ -1,5 +1,11 @@
 # Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 15:40 ET
 
+## TUE 15:45 ET — Market Tick
+- **🛑 MARA SOLD**: trailing stop breach — -5.1% off peak $12.73 (stop $12.10, filled ~$12.08). P&L: +$0.75 (+2.11%). First win! ✅
+- **11 pos remain.** No other stop breaches or triggers. All HOLD.
+- PV $10,419, cash $8,236. CHWY +2.55% top, GME -3.17% worst. SOFI $17.46 > $17.
+- New entries gated. Watchlist empty (all pruned 15:40).
+
 ## TUE 15:40 ET — Market Tick
 - **Same as last tick.** Regime CHOPPY/FEAR, F&G 25, sentiment blind Day 14. PV $10,422, cash $8,199, 12 pos.
 - No stop breaches (check-stops clean), no targets hit. All 12 HOLD.

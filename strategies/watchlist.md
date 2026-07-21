@@ -14,11 +14,11 @@ Format: `TICKER — idle_ticks: N — note`
 - LYFT — open position
 - GME — open position
 - DJT — open position
-- MARA — open position
 - OPEN — open position
 - SNAP — open position
 - ~~FUBO~~ — closed 2026-07-21 (MACDh bearish flip, -5.04%)
 - ~~AMC~~ — closed 2026-07-21 (trailing stop breach, -1.69%)
+- ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_

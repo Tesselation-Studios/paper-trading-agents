@@ -1,11 +1,11 @@
 # DJT Position Thesis
 
 - **Entry**: $9.79 avg | 1 shares
-- **Current**: $9.88 (+0.97% unrealized)
-- **Market Value**: $9.88
-- **Unrealized P&L**: $+0.10 (+0.97%)
+- **Current**: $9.80 (+0.15% unrealized)
+- **Market Value**: $9.80
+- **Unrealized P&L**: $+0.01 (+0.15%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 19:41:09 UTC
+- **Last sync**: 2026-07-21 19:47:07 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
