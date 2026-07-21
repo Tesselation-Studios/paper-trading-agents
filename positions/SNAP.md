@@ -1,11 +1,11 @@
 # SNAP Position Thesis
 
 - **Entry**: $4.58 avg | 1 shares
-- **Current**: $4.58 (+0.11% unrealized)
-- **Market Value**: $4.58
-- **Unrealized P&L**: $+0.01 (+0.11%)
+- **Current**: $4.59 (+0.12% unrealized)
+- **Market Value**: $4.59
+- **Unrealized P&L**: $+0.01 (+0.12%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 19:37:49 UTC
+- **Last sync**: 2026-07-21 19:41:09 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

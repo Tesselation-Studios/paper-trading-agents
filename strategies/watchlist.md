@@ -21,15 +21,9 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~AMC~~ — closed 2026-07-21 (trailing stop breach, -1.69%)
 
 ## Candidates
-- TEVA — idle_ticks: 23 — probe discovery 07/20: generic pharma, opioid settlement behind, specialty pipeline growing ($31.36)
-- AEO — idle_ticks: 23 — probe discovery 07/20: retail near lows, back-to-school catalyst, high SI squeeze potential ($17.43)
-- RDDT — idle_ticks: 23 — probe discovery 07/20: post-IPO social, AI data licensing, limited comp ($184.52 — monitor, near cap)
-- UBER — idle_ticks: 23 — probe discovery 07/20: duopoly, FCF-positive, AV optionality ($72.38)
-- AFRM — idle_ticks: 23 — probe discovery 07/20: BNPL leader, rate-cut beneficiary, Amazon/Shopify/Walmart network ($76.99)
-- UPST — idle_ticks: 23 — probe discovery 07/20: AI lending, beaten down, rate-cut re-fi catalyst ($29.09 — fits small-cap well)
-- OXY — idle_ticks: 23 — probe discovery 07/20: Berkshire stake, carbon capture, energy sector gap ($55.50)
-- TOST — idle_ticks: 23 — probe discovery 07/20: restaurant tech, growing merchant base ($24 area)
+_(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 
 _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN (confirmed above $50 max-price cap)._
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
-_Last touched: 2026-07-21 15:35 ET (idle_ticks bumped to 23)._
+_Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, OXY, TOST) — idle_ticks=24 threshold met._
+_Last touched: 2026-07-21 15:40 ET (watchlist pruned empty)._
