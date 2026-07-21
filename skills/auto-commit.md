@@ -1,6 +1,6 @@
 # Skill: Git Auto-Commit
 
-Commit every file change immediately, locally — no approval needed. A `post-commit` hook auto-pushes to GitHub (`Tesselation-Studios/paper-trading-agents`, `v4` branch) via `scripts/sync-and-push.sh`. Push is the revert safety net (see `AGENTS.md` immutable section) — don't rely on local-only history.
+Commit every file change immediately, locally — no approval needed. A `post-commit` hook auto-pushes directly to GitHub (`Tesselation-Studios/paper-trading-agents`, whatever branch is currently checked out — currently `v4`) — no mirror repo, no rsync, this workspace repo IS the source of truth. Push is the revert safety net (see `AGENTS.md` immutable section) — don't rely on local-only history.
 
 ```bash
 cd ~/.openclaw/workspace-trader-stonks
