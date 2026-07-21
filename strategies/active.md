@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 13:21 ET
+# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 13:28 ET
+
+## TUE 13:28 ET — Market Tick
+- **Regime**: CHOPPY/FEAR, F&G 25 (Extreme Fear), sentiment blind Day 14. PV $10,419, cash $8,199.
+- **🛑 AMC SOLD**: trailing stop breach — -5.9% off peak $2.47 (stop $2.35, now $2.33). P&L: -$0.08 (-1.69%).
+- **Also cleared 11 stale GTC sell orders** from yesterday holding all positions hostage (unfilled limit sells).
+- **12 pos remain.** MARA +6.47% (target $13.25 not hit), DJT RSI 71.9 (no exhaustion). No other triggers.
+- **New entries gated.** Watchlist 10 candidates.
 
 ## TUE 13:21 ET — Market Tick
 - **Regime**: CHOPPY/FEAR, F&G 25 (Extreme Fear), sentiment blind Day 14. PV $10,420, cash $8,195.

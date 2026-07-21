@@ -1,12 +1,7 @@
-# AMC Position Thesis
+# AMC Position Thesis — CLOSED 2026-07-21
 
 - **Entry**: $2.37 avg | 2 shares
-- **Current**: $2.35 (-0.63% unrealized)
-- **Market Value**: $4.71
-- **Unrealized P&L**: $-0.03 (-0.63%)
-- **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 17:15:54 UTC
-
-This position is managed through the Alpaca paper trading API.
-Entry, exit, and sizing are handled by the trader agent via executor.py.
-Stop-loss and take-profit levels are maintained in the trading.trader_positions table.
+- **Exit**: $2.33 (trailing stop breach, -5.9% off peak $2.47)
+- **P&L**: -$0.08 (-1.69%)
+- **Closed**: 2026-07-21 13:28 ET
+- **Reason**: Trailing stop breached — -5.9% off peak $2.47 (stop $2.35, current $2.33). Mechanical exit per guardrail.
