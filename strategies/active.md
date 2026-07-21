@@ -1,13 +1,15 @@
-# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 12:43 ET
+# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 12:55 ET
 
-## TUE 12:43 ET — Market Tick
-- **Regime**: CHOPPY/FEAR (sentiment blind Day 14). PV $10,418, cash $8,166, 14 pos, no trades.
-- **FUBO MACDh**: +0.0153 rising (no flip) → HOLD. Price $9.45 (-4.83% UPL).
-- **SOFI**: $17.34, above $17 hard support → HOLD.
-- **NVDA**: $205.32 < $207.63 entry → trim condition NOT met. HOLD.
-- **MARA top mover**: +6.85%, nearest to 12% profit target. GME/LYFT/OPEN soft.
-- **No stop breaches, no targets hit, no MACDh flips.** All 14 HOLD. Regime gates new entries.
-- **Off-hours backtest note**: v1.2 underperforming v1.0 on corrected 200d/22-ticker run. Tonight's evolve: reconsider triple-confirmation entry rules.
+## TUE 12:55 ET — Market Tick
+- **Regime**: CHOPPY/FEAR (sentiment blind Day 14). F&G 25 (Extreme Fear). PV ~$10,415, cash ~$8,194.
+- **🛑 FUBO SOLD**: MACD histogram bearish flip (-0.0052, crossed below zero). Game Plan Item 1 triggered. Filled 3 shares @ $9.43. P&L: -$1.50 (-5.04%).
+- **13 positions remain**. No stop breaches, no other triggers.
+- **MARA +6.70%** 🟢 top mover, approaching 12% target zone ($13.25). CHWY +3.56%, F +1.70%.
+- **SOFI $17.34**: above $17 support. NVDA $205.00: below entry, trim not triggered.
+- **HOLD all 13.** Regime + sentiment blind gates new entries. Watchlist healthy (10 candidates).
+
+## TUE 12:43 ET — Earlier Tick
+- Regime: CHOPPY/FEAR. PV $10,418, 14 pos. FUBO MACDh checked (signal-line read, not histogram). All HOLD.
 
 ## After-Market Close Positions (Mon Jul 20 reference)
 
@@ -25,7 +27,7 @@
 | NVDA | 5 | $207.63 | $203.33 | -2.07% | HOLD — above $200, Apple AI catalyst |
 | AMC | 2 | $2.37 | $2.45 | +3.80% | HOLD |
 | SOFI | 6 | $17.79 | $17.02 | -4.38% 🟡 | **WATCH** — $17 support |
-| FUBO | 3 | $9.93 | $9.42 | -5.14% 🟡 | **WATCH** — MACD check open |
+| ~~FUBO~~ | 3 | $9.93 | $9.43 | -5.04% | **SOLD** Tue 12:55 — MACDh bearish flip |
 | GME | 10 | $22.38 | $21.76 | -2.87% | HOLD |
 | KHC | 3 | $25.95 | $25.86 | -0.36% | HOLD |
 | F | 2 | $14.13 | $14.01 | -0.88% | HOLD — TRENDING_UP |
@@ -44,7 +46,7 @@
 
 ## Tuesday Game Plan
 0. **🚨 READ `off_hours/2026-07-21.md` before tonight's evolve**: replay_check.py had a bug (macd_hist was actually reading the signal line) — fixed. Corrected 200d/22-ticker backtest shows v1.1 AND v1.2 both underperforming v1.0. v1.2 (currently live) is the worst performer on the largest sample tested yet (170 trades). Second night running v1.1 has looked weak in backtest. Worth treating v1.2's promotion as unsettled.
-1. **First thing**: Check FUBO MACDh — flip = SELL immediately
+1. ~~**First thing**: Check FUBO MACDh — flip = SELL immediately~~ ✅ DONE — sold 12:55 ET
 2. **SOFI**: $17 hard support. Break = cut immediately
 3. **CHWY**: Let run, consider trim at $23+ (profit target zone)
 4. **New entries**: Gated — regime still CHOPPY/FEAR, sentiment blind
@@ -59,6 +61,6 @@
 
 ## Key Levels
 - **SOFI support**: $17 (hard cut line)
-- **FUBO MACDh**: Determining factor — check at open
 - **NVDA floor**: $200
 - **CHWY target zone**: $23.36 (12% from $20.86)
+- **MARA target zone**: $13.25 (12% from $11.83, currently $12.62 +6.70%)

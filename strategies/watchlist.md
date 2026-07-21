@@ -13,7 +13,7 @@ Format: `TICKER — idle_ticks: N — note`
 - F — open position
 - LYFT — open position
 - GME — open position
-- FUBO — open position
+- ~~FUBO~~ — closed 2026-07-21 (MACDh bearish flip, -5.04%)
 
 ## Candidates
 - AMC — idle_ticks: 0 — legacy meme carryover, re-evaluate under small-cap/diversification mandate ($2.45 fits universe)
