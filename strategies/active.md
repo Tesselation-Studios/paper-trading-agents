@@ -1,4 +1,4 @@
-# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 14:45 ET
+# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 14:50 ET
 
 ## TUE 14:50 ET — Market Tick
 - **Same as last tick.** Regime CHOPPY/FEAR, F&G 25, sentiment blind Day 14. PV $10,423, cash $8,199, 12 pos.
