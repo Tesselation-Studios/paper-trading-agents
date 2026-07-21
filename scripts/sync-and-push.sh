@@ -23,8 +23,11 @@ rsync -a --delete \
   --exclude='*.pyc' \
   "$WORKSPACE/" "$MIRROR/$MIRROR_SUBDIR/" >> "$LOG" 2>&1
 
-# Stage 2: commit + push in mirror repo
+# Stage 2: commit + push in mirror repo, always on the v4 branch (the live
+# Stonks history lives on v4, not main — main is stale/diverged legacy content)
 cd "$MIRROR"
+git checkout v4 >> "$LOG" 2>&1
+
 if git diff --quiet && git diff --cached --quiet; then
     # Check for untracked files
     if [ -z "$(git status --porcelain -- "$MIRROR_SUBDIR/")" ]; then
@@ -35,6 +38,6 @@ fi
 
 git add "$MIRROR_SUBDIR/"
 git commit -m "stonks: $COMMIT_MSG" >> "$LOG" 2>&1 || echo "[$(date)] nothing to commit" >> "$LOG"
-git push origin main >> "$LOG" 2>&1 && echo "[$(date)] ✓ pushed to GitHub" >> "$LOG" || echo "[$(date)] ✗ push failed" >> "$LOG"
+git push origin v4 >> "$LOG" 2>&1 && echo "[$(date)] ✓ pushed to GitHub (v4)" >> "$LOG" || echo "[$(date)] ✗ push failed" >> "$LOG"
 
 echo "[$(date)] sync-and-push: done" >> "$LOG"
