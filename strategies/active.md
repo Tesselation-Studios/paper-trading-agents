@@ -25,6 +25,12 @@
 | SNAP | 1 | $4.58 | $4.57 | -0.22% | HOLD |
 | MARA | 3 | $11.83 | $11.65 | -1.52% | HOLD |
 
+## TUE 02:37 ET — Off-Hours Tick
+- Regime: CHOPPY/FEAR holding. Market closed. PV $10,424, cash $8,166, 14 pos.
+- No stop breaches. SOFI $17.10 (-3.88%) nearing $17 support. FUBO $9.53 (-4.04%).
+- WATCH: SNAP, MARA added late Mon. Watchlist healthy (10 candidates).
+- Decision: HOLD all. No trades outside market hours.
+
 ## Tuesday Game Plan
 1. **First thing**: Check FUBO MACDh — flip = SELL immediately
 2. **SOFI**: $17 hard support. Break = cut immediately
