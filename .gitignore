@@ -23,6 +23,9 @@ venv/
 # Logs
 *.log
 
+# Guardrail runtime state (transient, regenerated every tick)
+state/guardrail_stops.json
+
 # Trader workspace runtime state (not version-controlled)
 traders/*/memory/
 traders/*/strategy_notes/
