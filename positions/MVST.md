@@ -1,11 +1,11 @@
 # MVST Position Thesis
 
 - **Entry**: $0.90 avg | 5 shares
-- **Current**: $0.92 (+2.30% unrealized)
-- **Market Value**: $4.60
-- **Unrealized P&L**: $+0.10 (+2.30%)
+- **Current**: $0.91 (+1.20% unrealized)
+- **Market Value**: $4.55
+- **Unrealized P&L**: $+0.05 (+1.20%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 20:15:44 UTC
+- **Last sync**: 2026-07-21 20:25:50 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

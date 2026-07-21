@@ -115,6 +115,7 @@
     "conviction": true,
     "hard_stop": true,
     "trailing_stop": true,
-    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run."
+    "bankroll": true,
+    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling)."
   }
 }

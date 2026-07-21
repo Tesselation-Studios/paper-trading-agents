@@ -1,11 +1,11 @@
 # CHWY Position Thesis
 
 - **Entry**: $20.86 avg | 19 shares
-- **Current**: $21.51 (+3.10% unrealized)
-- **Market Value**: $408.69
-- **Unrealized P&L**: $+12.29 (+3.10%)
+- **Current**: $21.38 (+2.47% unrealized)
+- **Market Value**: $406.21
+- **Unrealized P&L**: $+9.81 (+2.47%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 20:15:44 UTC
+- **Last sync**: 2026-07-21 20:25:50 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

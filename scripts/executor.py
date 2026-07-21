@@ -207,6 +207,31 @@ def gate_hours(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, s
     return True, f"{now.strftime('%H:%M %Z')} — market open"
 
 
+def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Reject BUYs that exceed bankroll.py's current self-calibrating ceiling.
+
+    bankroll.py grows the ceiling 2%/win and shrinks it 1%/loss (accelerating
+    above 55% win rate, decelerating below 45%) — this is what makes position
+    sizing actually adapt to real performance, not just a fixed % of
+    portfolio. See scripts/bankroll.py / bankroll.md.
+    """
+    if action.get("action") != "BUY":
+        return True, "non-BUY, skipped"
+    price = float(action.get("price", 0) or 0)
+    qty = float(action.get("quantity", 0))
+    cost = qty * price
+    if cost <= 0:
+        return True, "no price data, skipped (fail-open)"
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import bankroll
+    ceiling = bankroll.read_bankroll()["ceiling"]
+
+    if cost > ceiling:
+        return False, f"BUY costs ${cost:,.2f}, exceeds bankroll ceiling ${ceiling:,.2f}"
+    return True, f"BUY costs ${cost:,.2f}, within bankroll ceiling ${ceiling:,.2f}"
+
+
 def gate_conviction(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
@@ -227,6 +252,7 @@ GATES = {
     "sector_concentration": gate_sector_concentration,
     "hours": gate_hours,
     "conviction": gate_conviction,
+    "bankroll": gate_bankroll,
 }
 
 
@@ -404,9 +430,28 @@ def main():
             print(json.dumps({"error": f"guardrail: {reason}", "gates": gate_results}, indent=2))
             sys.exit(1)
 
+    # Capture entry price BEFORE selling — position may be gone from
+    # get_positions() afterward (full close), and this is what lets a SELL
+    # feed a real win/loss back into bankroll.py's adaptive ceiling.
+    entry_price = None
+    if args.action == "SELL":
+        for p in get_positions(args.account):
+            if p["symbol"].upper() == args.ticker.upper():
+                entry_price = float(p["avg_entry_price"])
+                break
+
     side = args.action.lower()
     order = place_order(args.account, args.ticker, args.qty, side)
     print(json.dumps(order, indent=2))
+
+    if args.action == "SELL" and entry_price is not None:
+        exit_price = args.price if args.price is not None else entry_price
+        pnl = (exit_price - entry_price) * args.qty
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import bankroll
+        state = bankroll.read_bankroll()
+        bankroll.recalc_ceiling(state, pnl, is_win=(pnl > 0))
+        bankroll.write_bankroll(state)
 
 
 if __name__ == "__main__":
