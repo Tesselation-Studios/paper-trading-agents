@@ -1,11 +1,11 @@
 # LYFT Position Thesis
 
 - **Entry**: $15.67 avg | 19 shares
-- **Current**: $15.40 (-1.72% unrealized)
-- **Market Value**: $292.60
-- **Unrealized P&L**: $-5.13 (-1.72%)
+- **Current**: $15.41 (-1.66% unrealized)
+- **Market Value**: $292.79
+- **Unrealized P&L**: $-4.94 (-1.66%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-20 22:09:03 UTC
+- **Last sync**: 2026-07-21 00:03:30 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
