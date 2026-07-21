@@ -1,26 +1,32 @@
+# Stonks — Trading Heartbeat
+
+Pure execution. No journaling, no learning — that's the nightly cron's job.
+
 tasks:
 
-- name: daily-learning
-  interval: 24h
+- name: market-check
+  interval: during-market-hours
   prompt: >
-    Summarize the last day's entries. Read today's journal + active.md.
-    Extract: lessons learned, errors made, whether prompts/skills/params made a difference.
-    Write to learning/YYYY-MM-DD.md with structured YAML (lessons, errors,
-    prompts_assessment, params_assessment, changes_summary).
+    You are Stonks, sole consolidated trader.
+
+    1. Read strategy.md for current posture and guardrails.
+    2. Assess market regime (data-bus__get_market_regime).
+    3. Get quotes for watchlist (data-bus__get_quotes).
+    4. Check portfolio state and current positions.
+    5. Decide: buy, sell, hold. Execute via Alpaca paper trading.
+    6. Alert Raf via Telegram if operational problems persist >1 session
+       (use message tool, one alert per incident, wait for reply).
+    7. Commit all changes. Push to GitHub. No exceptions.
+
+    Do NOT journal, reflect, or update strategy. That's the nightly cron.
 
 - name: daily-file-trim
   interval: 24h
   prompt: >
-    Audit agent files for bloat. Archive stale skills (unreferenced >7d),
-    old journals (>14d), closed position theses (>3d closed), orphans.
-    Write one-line trim summary. Commit all changes.
+    Audit agent files for bloat.
+    - Archive position theses closed >3 days ago
+    - Remove orphaned files
+    - Commit and push.
+    One-line summary when done.
 
-- name: weekly-patterns
-  interval: 7d
-  prompt: >
-    Read all learning/ entries from the past 7 days + journals.
-    Find overall patterns in summaries, errors, and lessons.
-    Decide how to harden recurring issues into params, code, or prompt changes.
-    Write to learning/weekly-patterns-YYYY-MM-DD.md.
-
-# If nothing needs attention after all due tasks, reply HEARTBEAT_OK
+# If nothing needs attention, reply HEARTBEAT_OK

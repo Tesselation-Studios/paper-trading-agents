@@ -1,4 +1,15 @@
-# Current Playbook — Stonks 🚀 MON JUL 20, 2026 — Close
+# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 12:43 ET
+
+## TUE 12:43 ET — Market Tick
+- **Regime**: CHOPPY/FEAR (sentiment blind Day 14). PV $10,418, cash $8,166, 14 pos, no trades.
+- **FUBO MACDh**: +0.0153 rising (no flip) → HOLD. Price $9.45 (-4.83% UPL).
+- **SOFI**: $17.34, above $17 hard support → HOLD.
+- **NVDA**: $205.32 < $207.63 entry → trim condition NOT met. HOLD.
+- **MARA top mover**: +6.85%, nearest to 12% profit target. GME/LYFT/OPEN soft.
+- **No stop breaches, no targets hit, no MACDh flips.** All 14 HOLD. Regime gates new entries.
+- **Off-hours backtest note**: v1.2 underperforming v1.0 on corrected 200d/22-ticker run. Tonight's evolve: reconsider triple-confirmation entry rules.
+
+## After-Market Close Positions (Mon Jul 20 reference)
 
 ## Session Summary
 - **Regime**: CHOPPY/FEAR (F&G ~29). Sentiment blind Day 13.

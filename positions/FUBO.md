@@ -1,11 +1,11 @@
 # FUBO Position Thesis
 
 - **Entry**: $9.93 avg | 3 shares
-- **Current**: $9.53 (-4.04% unrealized)
-- **Market Value**: $28.59
-- **Unrealized P&L**: $-1.20 (-4.04%)
+- **Current**: $9.44 (-4.93% unrealized)
+- **Market Value**: $28.32
+- **Unrealized P&L**: $-1.47 (-4.93%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 04:30:57 UTC
+- **Last sync**: 2026-07-21 16:46:32 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

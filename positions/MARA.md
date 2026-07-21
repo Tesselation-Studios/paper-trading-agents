@@ -1,11 +1,11 @@
 # MARA Position Thesis
 
 - **Entry**: $11.83 avg | 3 shares
-- **Current**: $11.85 (+0.17% unrealized)
-- **Market Value**: $35.55
-- **Unrealized P&L**: $+0.06 (+0.17%)
+- **Current**: $12.62 (+6.64% unrealized)
+- **Market Value**: $37.84
+- **Unrealized P&L**: $+2.35 (+6.64%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 04:30:57 UTC
+- **Last sync**: 2026-07-21 16:46:32 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
