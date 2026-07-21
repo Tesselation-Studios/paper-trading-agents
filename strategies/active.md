@@ -1,10 +1,11 @@
 # Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 13:10 ET
 
-## TUE 13:10 ET — Market Tick
-- **Regime**: CHOPPY/FEAR (Day 14). PV $10,419, 13 pos. No stop breaches, no MACDh flips, no targets.
-- **MACDh scan**: 7 positive (AMC/CHWY/DJT/F/KHC/NVDA/SNAP), 6 negative (GME/LYFT/MARA/MVST/OPEN/SOFI) — zero flips.
-- **MARA $12.70 (+7.36%)** → target $13.25. **DJT RSI 71.9** near exhaustion (75). SOFI $17.41 > $17.
-- **HOLD all 13.** CHOPPY gates entries. Watchlist 10 fresh. Same as last tick.
+## TUE 13:10 ET — Market Tick (subagent rescan)
+- **Regime**: CHOPPY/FEAR, F&G 25 (Extreme Fear), sentiment blind Day 14. PV $10,421, cash $8,195.
+- **No stop breaches, no targets hit.** 13 pos all HOLD. Executor check-stops returned empty breaches.
+- **MARA $12.63 (+6.80%)** → approaching 12% target $13.25. **CHWY $21.61 (+3.60%)**. **SOFI $17.36** > $17.
+- **NVDA $206.01** < $207.63 entry (trim NOT triggered). GME/LYFT/OPEN soft (-2.2% to -3.2%).
+- **New entries gated.** CHOPPY/FEAR + sentiment blind. Watchlist 10, idle_ticks bumped to 1.
 
 ## TUE 13:05 ET — Market Tick
 - **Regime**: CHOPPY/FEAR (sentiment blind Day 14). PV $10,418, cash $8,195, 13 pos.
