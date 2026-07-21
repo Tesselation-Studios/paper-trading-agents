@@ -1,4 +1,4 @@
-# Stonks — Strategy stonks.strat:v1.2
+# Stonks — Strategy stonks.strat:v1.2.1
 
 ## Philosophy
 
@@ -43,6 +43,9 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Regime-gating entries works — cash preserved, win rate up. Codified v1.1.
 - Watchlist must be fed — 4 days with no new names means the pipeline's starved; 2-3/session minimum.
 - Low-confidence/CHOPPY: don't trust MACD divergence without price confirmation — it's a trap (Aldridge).
+- Watchlist discovery is decoupled from entry gating — run daily small-cap scan regardless of regime. Add 2+ new names per session whether or not entries are open. Codified v1.2.1.
+- Pre-session GTC order audit — clear all stale/unfilled GTC orders before first tick. Stale orders can silently block all exits (Jul 21 near-miss: 11 unfilled orders). Codified v1.2.1.
+- v1.2 triple-confirmation entry may be too permissive — 170 trades vs 99 for v1.0 over same 200d/22-ticker sample. Two nights of backtest data consistent. Monitoring; promotion treated as unsettled.
 
 ## Regime Playbook
 - **TRENDING_UP**: full size. **CHOPPY**: half size, wider stops, confirmed catalysts only. **TRENDING_DOWN**: defensive, no new buys.
@@ -54,6 +57,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 
 ## Version History
 
+- `v1.2.1` (2026-07-21) — Hardened two patterns from 7-entry journal synthesis: (1) decoupled watchlist discovery from entry gating — scan and add candidates daily regardless of regime; (2) pre-session GTC order audit — clear stale orders before first tick. Flagged v1.2 triple-confirmation entry rules as under monitoring — two nights of corrected backtest data shows v1.2 underperforming v1.0 on entries (170 vs 99 trades, -3.05% vs -0.08% return).
 - `v1.2` (2026-07-18) — Pulled pruned knowledge from retired Kairos (RSI exhaustion exit, triple-confirmation sizing, sector veto, earnings blackout, VIX-tiered sizing, sector/order-count guards, time-stop) + Aldridge (quality gate, trim discipline, CHOPPY lesson). Added Growth Trajectory + dual time-horizon. Excluded: Kairos's MACD-divergence-as-accumulation read (conflicts with v1.1's hard MACDh exit, already validated by replay_check.py); Aldridge's micro-cap sub-schema + Kairos's sub-$10/volume floors (conflict with small-cap mandate).
 - `v1.1` (2026-07-18) — Hardened MACDh-flip exit + CHOPPY/FEAR entry gate from 5 days of journal patterns. Added watchlist-feeding discipline.
 - `v1.0` (2026-07-17) — Consolidation MVP: reset from concentrated conviction plays to small-cap/wide/high-rep, onto Aldridge's tick-loop architecture. ML/fundamentals/news-aggregation deferred.
