@@ -48,5 +48,20 @@
 - Critical alerts → Telegram + canvas.
 - Telegram = conversation + critical alerts ONLY.
 
+## Trader-Stonks Durable Lessons
+*Updated: 2026-07-21 — nightly learning*
+
+### Operational
+- **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
+- **Sentiment pipeline blind**: FinBERT/Praesentire offline since Jul 7 (Day 14+). Primary edge unavailable. All entry decisions are binary technical-only with no conviction overlay. If this persists past Day 21, treat it as a structural risk requiring operator escalation.
+
+### Strategy Validation (Jul 21)
+- **Regime gate working**: CHOPPY/FEAR prevented all entries, 0 new losses taken. Gate is doing its job.
+- **Trailing stop discipline validated**: 3 mechanical exits today (1 MACDh flip, 2 trail stops). MARA first win (+2.11%) captured via trail stop off peak. No panic sells, no target hits — mechanical system carrying the load.
+- **Watchlist pipeline management**: All candidates age out in 24 idle ticks (params). In prolonged CHOPPY, discovery must continue even when entries are gated — refill pipeline so it's ready when regime clears.
+
+### Unsettled Items
+- **v1.2 backtest weakness**: Two nights running, `replay_check.py` shows v1.2 underperforming v1.0 on 200d/22-ticker backtest (170 trades, -3.05% vs. -0.08%). Caveats: no sector/VIX/fundamentals modeled. Live trading evidence doesn't yet support reversion — rules did their job Jul 21. Bar for action: third confirming backtest + live pattern failures.
+
 ## Key Repos
 Agent configs `~/.openclaw/agents/` · Paper trading `~/projects/paper-trading-teams/` · Blog `~/projects/blog/drafts/` · Homelab `wodinga/Homelab-Setup`
