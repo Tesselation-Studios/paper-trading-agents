@@ -1,0 +1,116 @@
+{
+  "portfolio_value": 10421.43,
+  "cash": 8199.28,
+  "positions": [
+    {
+      "symbol": "CHWY",
+      "qty": 19,
+      "market_value": 405.175,
+      "unrealized_pl": 8.774998,
+      "unrealized_plpc": 0.02214,
+      "avg_entry_price": 20.863158,
+      "current_price": 21.325
+    },
+    {
+      "symbol": "DJT",
+      "qty": 1,
+      "market_value": 9.76,
+      "unrealized_pl": -0.03,
+      "unrealized_plpc": -0.00306,
+      "avg_entry_price": 9.79,
+      "current_price": 9.76
+    },
+    {
+      "symbol": "F",
+      "qty": 2,
+      "market_value": 28.57,
+      "unrealized_pl": 0.3,
+      "unrealized_plpc": 0.01061,
+      "avg_entry_price": 14.135,
+      "current_price": 14.285
+    },
+    {
+      "symbol": "GME",
+      "qty": 10,
+      "market_value": 216.2,
+      "unrealized_pl": -7.6,
+      "unrealized_plpc": -0.03396,
+      "avg_entry_price": 22.38,
+      "current_price": 21.62
+    },
+    {
+      "symbol": "KHC",
+      "qty": 3,
+      "market_value": 77.265,
+      "unrealized_pl": -0.597,
+      "unrealized_plpc": -0.00767,
+      "avg_entry_price": 25.954,
+      "current_price": 25.755
+    },
+    {
+      "symbol": "LYFT",
+      "qty": 19,
+      "market_value": 290.51,
+      "unrealized_pl": -7.22,
+      "unrealized_plpc": -0.02425,
+      "avg_entry_price": 15.67,
+      "current_price": 15.29
+    },
+    {
+      "symbol": "MARA",
+      "qty": 3,
+      "market_value": 36.435,
+      "unrealized_pl": 0.945,
+      "unrealized_plpc": 0.02663,
+      "avg_entry_price": 11.83,
+      "current_price": 12.145
+    },
+    {
+      "symbol": "MVST",
+      "qty": 5,
+      "market_value": 4.572,
+      "unrealized_pl": 0.0758,
+      "unrealized_plpc": 0.01686,
+      "avg_entry_price": 0.89924,
+      "current_price": 0.9144
+    },
+    {
+      "symbol": "NVDA",
+      "qty": 5,
+      "market_value": 1036.2,
+      "unrealized_pl": -1.97,
+      "unrealized_plpc": -0.0019,
+      "avg_entry_price": 207.634,
+      "current_price": 207.24
+    },
+    {
+      "symbol": "OPEN",
+      "qty": 2,
+      "market_value": 8.62,
+      "unrealized_pl": -0.38,
+      "unrealized_plpc": -0.04222,
+      "avg_entry_price": 4.5,
+      "current_price": 4.31
+    },
+    {
+      "symbol": "SNAP",
+      "qty": 1,
+      "market_value": 4.5729,
+      "unrealized_pl": -0.0071,
+      "unrealized_plpc": -0.00155,
+      "avg_entry_price": 4.58,
+      "current_price": 4.5729
+    },
+    {
+      "symbol": "SOFI",
+      "qty": 6,
+      "market_value": 104.22,
+      "unrealized_pl": -2.52,
+      "unrealized_plpc": -0.02361,
+      "avg_entry_price": 17.79,
+      "current_price": 17.37
+    }
+  ],
+  "buying_power": 38363.1,
+  "daytrade_count": 0
+}
