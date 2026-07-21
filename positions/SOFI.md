@@ -1,11 +1,11 @@
 # SOFI Position Thesis
 
 - **Entry**: $17.79 avg | 6 shares
-- **Current**: $17.41 (-2.15% unrealized)
-- **Market Value**: $104.44
-- **Unrealized P&L**: $-2.30 (-2.15%)
+- **Current**: $17.45 (-1.88% unrealized)
+- **Market Value**: $104.73
+- **Unrealized P&L**: $-2.01 (-1.88%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-21 19:31:44 UTC
+- **Last sync**: 2026-07-21 19:37:49 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

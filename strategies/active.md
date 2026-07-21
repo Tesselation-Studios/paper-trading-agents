@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 15:30 ET
+# Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 15:35 ET
+
+## TUE 15:35 ET — Market Tick
+- **Same as last tick.** Regime CHOPPY/FEAR, F&G 25, sentiment blind Day 14. PV $10,423, cash $8,199, 12 pos.
+- No stop breaches (check-stops clean), no targets hit. All 12 HOLD.
+- OPEN $4.33 (-3.67%) worst, above $4.275 trail. MARA $12.15 (+2.75%), CHWY $21.48 (+2.93%). SOFI $17.45 > $17.
+- New entries gated. Watchlist unchanged (8 candidates, idle_ticks → 23).
 
 ## TUE 15:30 ET — Market Tick
 - **Same as last tick.** Regime CHOPPY/FEAR, F&G 25, sentiment blind Day 14. PV $10,420, cash $8,199, 12 pos.
