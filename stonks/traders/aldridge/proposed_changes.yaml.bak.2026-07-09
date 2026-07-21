@@ -1,0 +1,54 @@
+# Proposed Parameter Changes
+# Generated: 2026-07-09T19:03:53.418964
+# Proposed changes: 5
+
+# reflection_win_rate: Reflection observation stored for future analysis.
+#   Current: 0.0 → Proposed: 0.25 (confidence: 100%)
+#   Source: reflection_grade_metric
+
+# reflection_sharpe: Reflection observation stored for future analysis.
+#   Current: 0.0 → Proposed: -10.601 (confidence: 100%)
+#   Source: reflection_grade_metric
+
+# reflection_avg_return: Reflection observation stored for future analysis.
+#   Current: 0.0 → Proposed: -0.0035 (confidence: 100%)
+#   Source: reflection_grade_metric
+
+# reflection_mood_trend_numeric: Reflection observation stored for future analysis.
+#   Current: 0.0 → Proposed: 0.5 (confidence: 100%)
+#   Source: reflection_grade_metric
+
+# reflection_risk_veto_total: Reflection observation stored for future analysis.
+#   Current: 0.0 → Proposed: 32 (confidence: 100%)
+#   Source: reflection_grade_metric
+
+changes:
+  - param: reflection_win_rate
+    current: 0.0
+    proposed: 0.25
+    justification: "Reflection observation stored for future analysis."
+    confidence: 1.0
+
+  - param: reflection_sharpe
+    current: 0.0
+    proposed: -10.601
+    justification: "Reflection observation stored for future analysis."
+    confidence: 1.0
+
+  - param: reflection_avg_return
+    current: 0.0
+    proposed: -0.0035
+    justification: "Reflection observation stored for future analysis."
+    confidence: 1.0
+
+  - param: reflection_mood_trend_numeric
+    current: 0.0
+    proposed: 0.5
+    justification: "Reflection observation stored for future analysis."
+    confidence: 1.0
+
+  - param: reflection_risk_veto_total
+    current: 0.0
+    proposed: 32
+    justification: "Reflection observation stored for future analysis."
+    confidence: 1.0
