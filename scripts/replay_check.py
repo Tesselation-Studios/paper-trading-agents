@@ -2,11 +2,9 @@
 """
 Off-hours replay check — the actual "would the new hardened rule have
 helped" test that was missing from the nightly evolve step. Runs the SAME
-simple entry strategy through the historical replay harness twice: once
-with the OLD exit rules (fixed stop-loss/profit-target only) and once with
-the NEW v1.1 rules (+ MACD-histogram-flip immediate exit, + regime-gated
-entries) — isolating exactly what changed, instead of trusting the
-promotion on narrative confidence alone.
+base entry strategy through the historical replay harness across three
+variants (v1.0 / v1.1 / v1.2), isolating exactly what each rule change did,
+instead of trusting the promotion on narrative confidence alone.
 
 Uses paper-trading-rebuild's src/replay.py ReplayHarness (imported
 directly — no repo-specific deps in that module). Historical daily bars
@@ -14,8 +12,25 @@ come straight from Alpaca (market_data.bars_1d only has real history for
 NVDA among Stonks's holdings — everything else is empty there), same
 approach as the Trading Terminal's indicators.py.
 
+v1.2 coverage: RSI-exhaustion hard exit, 5-day time-stop, and
+profit-target partial-trim (25%) are implemented faithfully — they only
+need price/RSI/MACD data, which this script already fetches. Entry sizing
+uses a real triple-confirmation check (RSI>55 rising, MACD>signal and
+positive, price>MA20>MA50). NOT implemented: sector veto and VIX-tiered
+sizing (no sector/VIX data fetched here) and the fundamentals quality gate
+(Alpaca bars API has no debt/FCF data) — v1.2's result should be read as
+"the part of v1.2 that's testable on price data alone", not the full rule
+set.
+
+2026-07-21 fix: the v1.0/v1.1 code previously read pandas_ta's MACD output
+as `macd_df.iloc[:, 2]` and called it "macd_hist" — but pandas_ta's column
+order is [MACD, MACDh, MACDs], so index 2 is the SIGNAL line, not the
+histogram (index 1). The "MACDh flip" exit had actually been testing
+signal-line sign flips, a related but different signal. Fixed here — all
+three MACD components are now stored correctly and separately.
+
 Usage:
-    python3 scripts/replay_check.py
+    python3 scripts/replay_check.py [TICKER ...]
 """
 import json
 import os
@@ -39,6 +54,9 @@ CHOPPY_VOL_THRESHOLD = 0.035  # 20d rolling stdev of daily returns
 # Mirrors params.json's current values.
 STOP_LOSS_PCT = -10.0
 PROFIT_TARGET_PCT = 12.0
+RSI_EXHAUSTION_EXIT = 75.0          # exit_rules.rsi_exhaustion_hard_exit
+MAX_HOLDING_DAYS = 5                # risk_guards.max_holding_days
+PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not full close)
 
 
 def fetch_history(tickers):
@@ -69,7 +87,12 @@ def fetch_history(tickers):
         } for r in rows])
         df["rsi_14"] = ta.rsi(df["close"], length=RSI_LENGTH)
         macd_df = ta.macd(df["close"], fast=MACD_FAST, slow=MACD_SLOW, signal=MACD_SIGNAL)
-        df["macd_hist"] = macd_df.iloc[:, 2]
+        # pandas_ta column order: [MACD, MACDh, MACDs] — histogram is index 1, not 2.
+        df["macd_line"] = macd_df.iloc[:, 0]
+        df["macd_hist"] = macd_df.iloc[:, 1]
+        df["macd_signal"] = macd_df.iloc[:, 2]
+        df["ma20"] = df["close"].rolling(20).mean()
+        df["ma50"] = df["close"].rolling(50).mean()
         df["daily_return"] = df["close"].pct_change()
         df["vol_20d"] = df["daily_return"].rolling(20).std()
         frames[sym] = df.dropna(subset=["rsi_14", "macd_hist", "vol_20d"]).reset_index(drop=True)
@@ -91,51 +114,90 @@ def build_tick_stream(frames):
     return ticks
 
 
-def make_trader(frames, use_v11_rules):
-    """Build a trader function closing over per-ticker MACD-hist/vol lookups
-    (Tick has no macd field) and a small amount of flip-detection state."""
-    macd_lookup = {}
-    vol_lookup = {}
+def make_trader(frames, variant):
+    """Build a trader function closing over per-ticker indicator lookups
+    (Tick only carries rsi) and a small amount of flip-detection state.
+
+    variant: "v1.0" | "v1.1" | "v1.2"
+    """
+    assert variant in ("v1.0", "v1.1", "v1.2")
+    lookup = {}
     for sym, df in frames.items():
         for _, row in df.iterrows():
-            key = (sym, row["timestamp"])
-            macd_lookup[key] = float(row["macd_hist"])
-            vol_lookup[key] = float(row["vol_20d"])
+            lookup[(sym, row["timestamp"])] = row
 
-    prev_macd = {}
+    prev_hist = {}
+    prev_rsi = {}
 
     def trader(tick, portfolio):
-        key = (tick.ticker, tick.timestamp)
-        macd_hist = macd_lookup.get(key)
-        vol_20d = vol_lookup.get(key)
+        row = lookup.get((tick.ticker, tick.timestamp))
+        macd_hist = float(row["macd_hist"]) if row is not None else None
+        macd_line = float(row["macd_line"]) if row is not None else None
+        macd_signal = float(row["macd_signal"]) if row is not None else None
+        vol_20d = float(row["vol_20d"]) if row is not None else None
+        ma20 = float(row["ma20"]) if row is not None and pd.notna(row["ma20"]) else None
+        ma50 = float(row["ma50"]) if row is not None and pd.notna(row["ma50"]) else None
         held = portfolio.positions.get(tick.ticker)
+
+        last_hist = prev_hist.get(tick.ticker)
+        last_rsi = prev_rsi.get(tick.ticker)
+        if macd_hist is not None:
+            prev_hist[tick.ticker] = macd_hist
+        if tick.rsi is not None:
+            prev_rsi[tick.ticker] = tick.rsi
 
         if held is not None:
             pnl_pct = (tick.close - held.entry_price) / held.entry_price * 100
+            held_days = (tick.timestamp - held.entry_time).days
 
-            if use_v11_rules and macd_hist is not None:
-                last = prev_macd.get(tick.ticker)
-                prev_macd[tick.ticker] = macd_hist
-                if last is not None and last > 0 and macd_hist < 0:
+            if variant in ("v1.1", "v1.2") and macd_hist is not None and last_hist is not None:
+                if last_hist > 0 and macd_hist < 0:
                     return TraderDecision(ticker=tick.ticker, decision="SELL",
-                                           conviction=1.0, rationale="v1.1: MACDh flip positive->negative")
+                                           conviction=1.0, rationale=f"{variant}: MACDh flip positive->negative")
+
+            if variant == "v1.2" and tick.rsi is not None and tick.rsi >= RSI_EXHAUSTION_EXIT:
+                # kairos: absolute override, not negotiated by MACD
+                return TraderDecision(ticker=tick.ticker, decision="SELL",
+                                       conviction=1.0, rationale=f"v1.2: RSI exhaustion {tick.rsi:.1f} >= {RSI_EXHAUSTION_EXIT}")
+
+            if variant == "v1.2" and held_days >= MAX_HOLDING_DAYS:
+                return TraderDecision(ticker=tick.ticker, decision="SELL",
+                                       conviction=1.0, rationale=f"v1.2: time-stop, held {held_days}d >= {MAX_HOLDING_DAYS}d")
 
             if pnl_pct <= STOP_LOSS_PCT:
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
                                        conviction=1.0, rationale="stop_loss_pct breached")
+
             if pnl_pct >= PROFIT_TARGET_PCT:
+                if variant == "v1.2":
+                    trim_shares = max(1, int(held.shares * PROFIT_TRIM_PCT))
+                    return TraderDecision(ticker=tick.ticker, decision="SELL", conviction=1.0,
+                                           shares=trim_shares,
+                                           rationale=f"v1.2: profit_target_trim_pct, sell {trim_shares}/{held.shares}")
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
-                                       conviction=1.0, rationale="profit_target_pct reached")
+                                       conviction=1.0, rationale="profit_target_pct reached (full exit)")
             return TraderDecision(ticker=tick.ticker, decision="HOLD", conviction=0.0)
 
-        if macd_hist is not None:
-            last = prev_macd.get(tick.ticker)
-            prev_macd[tick.ticker] = macd_hist
+        # ── Entry ──
+        if variant == "v1.2":
+            # Triple confirmation: rsi_gt_55_rising, macd_gt_signal_and_positive, price_gt_ma20_ma50.
+            # 2-of-3 = half-size probe, 3-of-3 = full size. Sector veto / VIX-tiering
+            # not implemented (no sector or VIX data fetched here).
+            rsi_rising = tick.rsi is not None and last_rsi is not None and tick.rsi > 55 and tick.rsi > last_rsi
+            macd_confirm = macd_line is not None and macd_signal is not None and macd_line > macd_signal and macd_line > 0
+            price_confirm = ma20 is not None and ma50 is not None and tick.close > ma20 > ma50
+            confirmations = sum([rsi_rising, macd_confirm, price_confirm])
 
-        # Same simple momentum entry in BOTH variants — the only thing under
-        # test is the exit/entry-gating logic that changed in v1.1.
+            if confirmations >= 2:
+                conviction = 0.9 if confirmations == 3 else 0.5
+                return TraderDecision(ticker=tick.ticker, decision="BUY", conviction=conviction,
+                                       rationale=f"v1.2: triple confirmation {confirmations}/3 "
+                                                 f"(rsi_rising={rsi_rising}, macd={macd_confirm}, price={price_confirm})")
+            return TraderDecision(ticker=tick.ticker, decision="HOLD", conviction=0.0)
+
+        # v1.0 / v1.1 share the same simple momentum entry — only exit/gating differs.
         if tick.rsi is not None and 45 < tick.rsi < 65:
-            if use_v11_rules and vol_20d is not None and vol_20d > CHOPPY_VOL_THRESHOLD:
+            if variant == "v1.1" and vol_20d is not None and vol_20d > CHOPPY_VOL_THRESHOLD:
                 return TraderDecision(ticker=tick.ticker, decision="HOLD", conviction=0.0,
                                        rationale="v1.1: regime-gated, choppy/high-vol")
             return TraderDecision(ticker=tick.ticker, decision="BUY", conviction=0.6,
@@ -170,19 +232,19 @@ def main():
 
     ticks = build_tick_stream(frames)
 
-    old_trader = make_trader(frames, use_v11_rules=False)
-    new_trader = make_trader(frames, use_v11_rules=True)
-
-    old_result = replay_trader(ticks, old_trader, initial_balance=10_000.0,
-                                max_position_pct=0.06, require_conviction=0.5)
-    new_result = replay_trader(ticks, new_trader, initial_balance=10_000.0,
-                                max_position_pct=0.06, require_conviction=0.5)
+    results = {}
+    for variant in ("v1.0", "v1.1", "v1.2"):
+        trader_fn = make_trader(frames, variant)
+        results[variant] = replay_trader(ticks, trader_fn, initial_balance=10_000.0,
+                                          max_position_pct=0.06, require_conviction=0.5)
 
     print(json.dumps({
         "tickers_used": sorted(frames.keys()),
         "lookback_days": LOOKBACK_DAYS,
-        "old_rules_v1.0": summarize(old_result, "pre-v1.1 (fixed stop/target only)"),
-        "new_rules_v1.1": summarize(new_result, "v1.1 (+ MACDh-flip exit, + regime-gated entries)"),
+        "v1.0": summarize(results["v1.0"], "fixed stop/target only, simple RSI 45-65 entry"),
+        "v1.1": summarize(results["v1.1"], "+ MACDh-flip exit, + regime-gated entries"),
+        "v1.2": summarize(results["v1.2"], "+ RSI-exhaustion exit, + time-stop, + profit trim, "
+                                            "+ triple-confirmation entry (sector veto/VIX-tiering/quality-gate NOT modeled)"),
     }, indent=2))
 
 

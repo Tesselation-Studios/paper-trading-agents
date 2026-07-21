@@ -32,6 +32,7 @@
 - Decision: HOLD all. No trades outside market hours.
 
 ## Tuesday Game Plan
+0. **🚨 READ `off_hours/2026-07-21.md` before tonight's evolve**: replay_check.py had a bug (macd_hist was actually reading the signal line) — fixed. Corrected 200d/22-ticker backtest shows v1.1 AND v1.2 both underperforming v1.0. v1.2 (currently live) is the worst performer on the largest sample tested yet (170 trades). Second night running v1.1 has looked weak in backtest. Worth treating v1.2's promotion as unsettled.
 1. **First thing**: Check FUBO MACDh — flip = SELL immediately
 2. **SOFI**: $17 hard support. Break = cut immediately
 3. **CHWY**: Let run, consider trim at $23+ (profit target zone)
