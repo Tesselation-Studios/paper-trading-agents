@@ -1,11 +1,11 @@
 # OPEN Position Thesis
 
 - **Entry**: $4.50 avg | 2 shares
-- **Current**: $4.42 (-1.67% unrealized)
-- **Market Value**: $8.85
-- **Unrealized P&L**: $-0.15 (-1.67%)
+- **Current**: $4.41 (-2.11% unrealized)
+- **Market Value**: $8.81
+- **Unrealized P&L**: $-0.19 (-2.11%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 19:50:23 UTC
+- **Last sync**: 2026-07-22 19:55:08 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
