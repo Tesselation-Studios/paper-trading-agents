@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 10:55 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 11:00 ET
+
+## WED 11:00 ET — Market Tick
+- **✅ Account reconciled**: 8 non-Stonks positions cleared, 5 missing Stonks positions (CHWY, DJT, GME, KHC, SNAP) restored. Now correct 9-pos portfolio.
+- **9 pos.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,420, cash $8,618.
+- No stop breaches (check-stops clean), no targets hit. All 9 HOLD. New entries gated.
+- NVDA $209.22 (+0.76%), MVST $0.924 (+2.79%), CHWY $21.32 (+2.19%). GME $21.64 (-3.31%) 🟡, OPEN $4.41 (-2.11%).
+- Watchlist 13, idle→17.
 
 ## WED 10:55 ET — Market Tick
 - **🛑 AMC SOLD**: trailing stop breach — -5.2% off peak $2.40 (stop $2.28, filled ~$2.27). P&L: -$0.63 (-5.21%). ❌
