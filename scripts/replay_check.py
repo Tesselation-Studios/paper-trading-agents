@@ -36,6 +36,7 @@ import json
 import os
 import sys
 
+import numpy as np
 import pandas as pd
 import pandas_ta as ta
 from alpaca.data.historical import StockHistoricalDataClient
@@ -207,6 +208,78 @@ def make_trader(frames, variant):
     return trader
 
 
+TRADING_DAYS_PER_YEAR = 252
+
+
+def resample_to_daily_equity(result):
+    """Collapse (ticker, tick) equity samples down to one value per calendar
+    day (the last observation on that day) before computing return-based
+    metrics. Without this, Sharpe/Sortino would be computed over an
+    oversampled series — result.equity_curve has one entry per (ticker,
+    tick) pair in this multi-ticker interleaved replay, not one per day, so
+    a naive per-tick std/mean would badly understate volatility relative to
+    a real daily portfolio return series.
+    """
+    if not result.timestamps or len(result.timestamps) != len(result.equity_curve):
+        return None  # older ReplayResult without timestamps, or empty run
+
+    daily = {}
+    for ts, equity in zip(result.timestamps, result.equity_curve):
+        day = ts.date() if hasattr(ts, "date") else ts
+        daily[day] = float(equity)  # last write per day wins, ticks are chronological
+    days = sorted(daily.keys())
+    return [daily[d] for d in days]
+
+
+def compute_risk_metrics(result, risk_free_rate: float = 0.0) -> dict:
+    """Sharpe, Sortino, Calmar, and max drawdown from a resampled daily
+    equity series. Returns None values with a note if there isn't enough
+    daily history to compute anything meaningful (need 2+ days).
+    """
+    daily_equity = resample_to_daily_equity(result)
+    if daily_equity is None or len(daily_equity) < 2:
+        return {
+            "sharpe": None, "sortino": None, "calmar": None,
+            "max_drawdown_pct": None,
+            "note": "insufficient daily history for risk metrics (need timestamps + 2+ trading days)",
+        }
+
+    equity = np.array(daily_equity, dtype=np.float64)
+    daily_returns = np.diff(equity) / equity[:-1]
+
+    # Max drawdown — largest peak-to-trough decline in the equity curve.
+    running_max = np.maximum.accumulate(equity)
+    drawdowns = (equity - running_max) / running_max
+    max_dd_pct = float(drawdowns.min() * 100)  # negative number, e.g. -12.4
+
+    mean_daily = daily_returns.mean()
+    std_daily = daily_returns.std(ddof=1) if len(daily_returns) > 1 else 0.0
+    sharpe = (
+        (mean_daily - risk_free_rate / TRADING_DAYS_PER_YEAR) / std_daily * np.sqrt(TRADING_DAYS_PER_YEAR)
+        if std_daily > 0 else None
+    )
+
+    downside_returns = daily_returns[daily_returns < 0]
+    downside_std = downside_returns.std(ddof=1) if len(downside_returns) > 1 else 0.0
+    sortino = (
+        (mean_daily - risk_free_rate / TRADING_DAYS_PER_YEAR) / downside_std * np.sqrt(TRADING_DAYS_PER_YEAR)
+        if downside_std > 0 else None
+    )
+
+    n_days = len(daily_equity)
+    total_return = (equity[-1] - equity[0]) / equity[0]
+    annualized_return = (1 + total_return) ** (TRADING_DAYS_PER_YEAR / n_days) - 1 if n_days > 0 else 0.0
+    calmar = annualized_return / abs(max_dd_pct / 100) if max_dd_pct < 0 else None
+
+    return {
+        "sharpe": round(sharpe, 3) if sharpe is not None else None,
+        "sortino": round(sortino, 3) if sortino is not None else None,
+        "calmar": round(calmar, 3) if calmar is not None else None,
+        "max_drawdown_pct": round(max_dd_pct, 2),
+        "trading_days": n_days,
+    }
+
+
 def summarize(result, label):
     return {
         "variant": label,
@@ -217,6 +290,7 @@ def summarize(result, label):
         "total_return_pct": round(result.total_return_pct, 3),
         "total_pnl": round(result.total_pnl, 2),
         "final_equity": round(result.final_equity, 2),
+        **compute_risk_metrics(result),
     }
 
 
