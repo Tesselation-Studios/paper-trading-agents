@@ -21,11 +21,11 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- IOVA — idle_ticks: 19 — from 2026-07-22.md (evaluated 11:30 — RSI 45.1, HOLD)
-- FVRR — idle_ticks: 19 — from 2026-07-21.md (evaluated 11:30 — RSI 50.2, HOLD)
-- GT — idle_ticks: 19 — from 2026-07-21.md (evaluated 11:30 — RSI 55.3, HOLD)
-- COTY — idle_ticks: 19 — from 2026-07-21.md (evaluated 11:30 — RSI 58.6, HOLD)
-- KSS — idle_ticks: 19 — from 2026-07-21.md (evaluated 11:30 — RSI 49.2, HOLD)
+- IOVA — idle_ticks: 20 — from 2026-07-22.md (evaluated 11:30 — RSI 45.1, HOLD)
+- FVRR — idle_ticks: 20 — from 2026-07-21.md (evaluated 11:30 — RSI 50.2, HOLD)
+- GT — idle_ticks: 20 — from 2026-07-21.md (evaluated 11:30 — RSI 55.3, HOLD)
+- COTY — idle_ticks: 20 — from 2026-07-21.md (evaluated 11:30 — RSI 58.6, HOLD)
+- KSS — idle_ticks: 20 — from 2026-07-21.md (evaluated 11:30 — RSI 49.2, HOLD)
 
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 
@@ -35,4 +35,4 @@ _Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, 
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
 _Dropped 2026-07-22 11:50: none. All candidates below idle threshold (24)._
-_Last touched: 2026-07-22 13:25 ET (all idle bumped +1)._
+_Last touched: 2026-07-22 13:30 ET (all idle bumped +1)._

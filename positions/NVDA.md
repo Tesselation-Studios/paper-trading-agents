@@ -1,11 +1,11 @@
 # NVDA Position Thesis
 
 - **Entry**: $207.63 avg | 5 shares
-- **Current**: $213.42 (+2.79% unrealized)
-- **Market Value**: $1,067.11
-- **Unrealized P&L**: $+28.93 (+2.79%)
+- **Current**: $213.76 (+2.95% unrealized)
+- **Market Value**: $1,068.83
+- **Unrealized P&L**: $+30.66 (+2.95%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 17:15:27 UTC
+- **Last sync**: 2026-07-22 17:30:08 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
