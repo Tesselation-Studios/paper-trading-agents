@@ -14,6 +14,7 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~LYFT~~ — closed 2026-07-22 (trailing stop breach, -5.49%)
 - GME — open position
 - ~~DJT~~ — closed 2026-07-22 (trailing stop breach, -5.2%)
+- ~~MVST~~ — closed 2026-07-22 (trailing stop breach, +0.29%)
 - OPEN — open position
 - SNAP — open position
 - ~~FUBO~~ — closed 2026-07-21 (MACDh bearish flip, -5.04%)
@@ -27,7 +28,9 @@ Format: `TICKER — idle_ticks: N — note`
 - CLF — idle_ticks: 0 — from 2026-07-22.md
 
 
-_(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS. Watchlist empty.)_
+_(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS.)_
+
+_(Updated 2026-07-22 14:20 — MVST closed, trailing stop breach.)_
 
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 

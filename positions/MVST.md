@@ -1,12 +1,7 @@
-# MVST Position Thesis
+# MVST Position Thesis — CLOSED
 
 - **Entry**: $0.90 avg | 5 shares
-- **Current**: $0.90 (+0.43% unrealized)
-- **Market Value**: $4.52
-- **Unrealized P&L**: $+0.02 (+0.43%)
-- **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 18:10:08 UTC
+- **Exit**: $0.90 (trailing stop breach) | P&L: +$0.01 (+0.29%)
+- **Closed**: 2026-07-22 14:20 ET
+- **Reason**: Trailing stop breached — -5.0% off peak $0.95 (stop $0.903, filled ~$0.90)
 
-This position is managed through the Alpaca paper trading API.
-Entry, exit, and sizing are handled by the trader agent via executor.py.
-Stop-loss and take-profit levels are maintained in the trading.trader_positions table.

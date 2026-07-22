@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:17 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:20 ET
+
+## WED 14:20 ET — Market Tick
+- 🛑 **MVST SOLD**: trailing stop breach — -5.0% off peak $0.95 (stop $0.903, filled ~$0.90). P&L: +$0.01 (+0.29%). ✅ (small win)
+- **7 pos remain.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,445, cash $8,632.
+- No other stop breaches (check-stops clean), no targets hit. All 7 HOLD.
+- NVDA $213.67 (+2.91%), CHWY $21.48 (+2.93%), F $14.39 (+1.84%). GME $21.72 (-2.97%) 🟡, OPEN $4.42 (-1.75%).
+- 🔍 **Entries**: 4 watchlist candidates (RKT $13.49, WSC $26.44, DVN $44.86, CLF $9.44, all idle=0), RSI data unavailable for small caps on data bus, sentiment blind — no entry.
+- Discoveries merge: all 4 skipped (already in watchlist). Watchlist 4.
 
 ## WED 14:17 ET — Market Tick
 - 🛑 **DJT SOLD**: trailing stop breach — -5.2% off peak $9.79 (stop $9.30, filled ~$9.28). P&L: -$0.51 (-5.2%). ❌
