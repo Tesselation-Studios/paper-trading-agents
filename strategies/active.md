@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 10:50 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 10:55 ET
+
+## WED 10:55 ET — Market Tick
+- **🛑 AMC SOLD**: trailing stop breach — -5.2% off peak $2.40 (stop $2.28, filled ~$2.27). P&L: -$0.63 (-5.21%). ❌
+- **13 pos remain.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $9,263, cash $5,621.
+- No other stop breaches (check-stops clean), no targets hit. All 13 HOLD. New entries gated.
+- AMD $550.29 (+11.70%) 🟢 nearing 12% target $551.78, MVST $0.92 (+1.48%), NVDA $208.80 (+1.78%). PLTR $126.72 (-4.87%) 🟡, FUBO $9.32 (-4.12%) 🟡.
+- 🚨 **ACCOUNT DISCREPANCY**: Alpaca account has 8 non-Stonks positions (AMD, COST, GOOGL, HOOD, JNJ, PLTR, QQQ, V) — above $50 universe cap, no position theses. 5 Stonks-intended positions MISSING from account (CHWY, DJT, GME, KHC, SNAP). Shared credentials suspected. Cannot resolve in-tick.
+- Watchlist 13, idle→19.
 
 ## WED 10:50 ET — Market Tick
 - **Same as 10:45 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,411, cash $8,618, 9 pos.

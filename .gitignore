@@ -22,6 +22,7 @@ venv/
 
 # Logs
 *.log
+logs/test-results/
 
 # Guardrail runtime state (transient, regenerated every tick)
 state/guardrail_stops.json
