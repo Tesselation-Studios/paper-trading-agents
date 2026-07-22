@@ -1,11 +1,11 @@
 # KHC Position Thesis
 
 - **Entry**: $25.95 avg | 3 shares
-- **Current**: $26.00 (+0.16% unrealized)
-- **Market Value**: $77.98
-- **Unrealized P&L**: $+0.12 (+0.16%)
+- **Current**: $26.00 (+0.20% unrealized)
+- **Market Value**: $78.02
+- **Unrealized P&L**: $+0.15 (+0.20%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 15:40:45 UTC
+- **Last sync**: 2026-07-22 15:55:10 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
