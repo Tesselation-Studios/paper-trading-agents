@@ -378,6 +378,49 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Post-SELL bookkeeping — bankroll ceiling + Postgres outcome label
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_price: float, qty: int) -> Dict[str, Any]:
+    """Called once a SELL actually executes. Updates bankroll.py's
+    win/loss-adaptive ceiling AND labels the Postgres training_examples
+    outcome (trading.training_examples.label_win/label_return_pct) — this
+    used to be two separate concerns, with the Postgres label depending on
+    the LLM remembering a second manual `record_decision.py close` call
+    per tick_prompt.md step 9. Confirmed 2026-07-22: roughly half of real
+    closed trades that week never got labeled this way. Mechanized here
+    instead, same trigger point as the bankroll update, which was already
+    reliable.
+
+    Fail-open on the Postgres side — a labeling failure shouldn't look like
+    a trade failure, the order already executed by the time this runs.
+    """
+    pnl = (exit_price - entry_price) * qty
+    return_pct = (exit_price - entry_price) / entry_price * 100 if entry_price else 0.0
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import bankroll
+    state = bankroll.read_bankroll()
+    bankroll.recalc_ceiling(state, pnl, is_win=(pnl > 0))
+    bankroll.write_bankroll(state)
+
+    outcome_label_warning = None
+    try:
+        import decisions
+        close_result = decisions.record_trade_close(
+            trader_id=account, ticker=ticker, trade_id=None,
+            pnl=pnl, return_pct=return_pct,
+        )
+        if "error" in close_result:
+            outcome_label_warning = close_result["error"]
+    except Exception as e:
+        outcome_label_warning = f"could not label trade outcome: {e}"
+
+    return {"pnl": pnl, "return_pct": return_pct, "outcome_label_warning": outcome_label_warning}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CLI
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -453,12 +496,9 @@ def main():
 
     if args.action == "SELL" and entry_price is not None:
         exit_price = args.price if args.price is not None else entry_price
-        pnl = (exit_price - entry_price) * args.qty
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        import bankroll
-        state = bankroll.read_bankroll()
-        bankroll.recalc_ceiling(state, pnl, is_win=(pnl > 0))
-        bankroll.write_bankroll(state)
+        outcome = close_trade_outcome(args.account, args.ticker, entry_price, exit_price, args.qty)
+        if outcome["outcome_label_warning"]:
+            print(json.dumps({"outcome_label_warning": outcome["outcome_label_warning"]}), file=sys.stderr)
 
 
 if __name__ == "__main__":

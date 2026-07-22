@@ -395,3 +395,96 @@ class TestCheckStops:
         saved = json.loads(state_path.read_text())
         assert "CLOSED" not in saved
         assert "SOFI" in saved
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# close_trade_outcome — bankroll update + Postgres outcome label on SELL
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestCloseTradeOutcome:
+    """Regression coverage for 2026-07-22: outcome labeling used to depend
+    on the LLM remembering a separate record_decision.py close call —
+    confirmed roughly half of real closed trades that week never got
+    labeled. Mechanized into the same SELL codepath that already reliably
+    updates bankroll.py's ceiling."""
+
+    @pytest.fixture
+    def fake_bankroll_module(self, monkeypatch, tmp_path):
+        calls = {}
+
+        class FakeBankroll:
+            @staticmethod
+            def read_bankroll():
+                return {"ceiling": 50.0, "wins": 0, "losses": 0, "closed_trades": 0,
+                        "net_pnl": 0.0, "growth_rate": 0.02, "decay_rate": 0.01,
+                        "target_profit_pct": 1.0, "history": []}
+
+            @staticmethod
+            def recalc_ceiling(state, pnl, is_win):
+                calls["recalc"] = {"pnl": pnl, "is_win": is_win}
+
+            @staticmethod
+            def write_bankroll(state):
+                calls["written"] = True
+
+        monkeypatch.setitem(sys.modules, "bankroll", FakeBankroll)
+        return calls
+
+    def test_win_updates_bankroll_and_labels_outcome(self, fake_bankroll_module, monkeypatch):
+        recorded = {}
+
+        class FakeDecisions:
+            @staticmethod
+            def record_trade_close(trader_id, ticker, trade_id, pnl, return_pct):
+                recorded.update(trader_id=trader_id, ticker=ticker, pnl=pnl, return_pct=return_pct)
+                return {"training_example_id": 1, "labeled": True}
+
+        monkeypatch.setitem(sys.modules, "decisions", FakeDecisions)
+
+        result = executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=11.0, qty=5)
+
+        assert result["pnl"] == pytest.approx(5.0)
+        assert result["return_pct"] == pytest.approx(10.0)
+        assert result["outcome_label_warning"] is None
+        assert fake_bankroll_module["recalc"] == {"pnl": pytest.approx(5.0), "is_win": True}
+        assert fake_bankroll_module["written"] is True
+        assert recorded == {"trader_id": "stonks", "ticker": "SOFI", "pnl": pytest.approx(5.0), "return_pct": pytest.approx(10.0)}
+
+    def test_loss_marks_is_win_false(self, fake_bankroll_module, monkeypatch):
+        class FakeDecisions:
+            @staticmethod
+            def record_trade_close(**kwargs):
+                return {"labeled": True}
+
+        monkeypatch.setitem(sys.modules, "decisions", FakeDecisions)
+
+        executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=9.0, qty=5)
+        assert fake_bankroll_module["recalc"]["is_win"] is False
+
+    def test_postgres_failure_does_not_raise(self, fake_bankroll_module, monkeypatch):
+        """A labeling failure must not look like a trade failure — the
+        order already executed by the time this runs. Bankroll must still
+        update even if Postgres is unreachable."""
+        class FakeDecisions:
+            @staticmethod
+            def record_trade_close(**kwargs):
+                raise RuntimeError("connection to docker.klo refused")
+
+        monkeypatch.setitem(sys.modules, "decisions", FakeDecisions)
+
+        result = executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=11.0, qty=5)
+        assert result["outcome_label_warning"] is not None
+        assert "connection to docker.klo refused" in result["outcome_label_warning"]
+        assert fake_bankroll_module["written"] is True  # bankroll still updated despite PG failure
+
+    def test_label_error_surfaces_as_warning_not_exception(self, fake_bankroll_module, monkeypatch):
+        class FakeDecisions:
+            @staticmethod
+            def record_trade_close(**kwargs):
+                return {"error": "no unlabeled training_examples row found for stonks/SOFI"}
+
+        monkeypatch.setitem(sys.modules, "decisions", FakeDecisions)
+
+        result = executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=11.0, qty=5)
+        assert result["outcome_label_warning"] == "no unlabeled training_examples row found for stonks/SOFI"
