@@ -1,11 +1,11 @@
 # WSC Position Thesis
 
 - **Entry**: $26.46 avg | 1 shares
-- **Current**: $26.26 (-0.76% unrealized)
-- **Market Value**: $26.26
-- **Unrealized P&L**: $-0.20 (-0.76%)
+- **Current**: $26.32 (-0.55% unrealized)
+- **Market Value**: $26.32
+- **Unrealized P&L**: $-0.14 (-0.55%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 19:40:28 UTC
+- **Last sync**: 2026-07-22 19:50:23 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
