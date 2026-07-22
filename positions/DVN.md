@@ -1,21 +1,12 @@
-# DVN — Devon Energy
+# DVN Position Thesis
 
-## Entry
-- **Date**: 2026-07-22 14:55 ET
-- **Price**: ~$44.98
-- **Qty**: 3 (1 intended, 3 filled — possible pending order)
-- **Conviction**: 0.55
-- **Sector**: Energy
+- **Entry**: $44.99 avg | 3 shares
+- **Current**: $44.91 (-0.17% unrealized)
+- **Market Value**: $134.75
+- **Unrealized P&L**: $-0.23 (-0.17%)
+- **Synced from**: Alpaca paper trading
+- **Last sync**: 2026-07-22 19:40:28 UTC
 
-## Thesis
-- RSI(14)=57.6 solidly in 45-65 momentum band (v1.3 simple entry)
-- Oil & gas sector — uncorrelated with existing tech/consumer/auto holdings
-- Probe size entry, no volume/catalyst data (sentiment blind Day 15)
-
-## Risk
-- Stop: 10% hard stop at $40.48
-- Trail: 5% trailing from peak
-- Target: 12% profit at $50.38 (guide, not hard exit)
-
-## Updates
-- 2026-07-22 14:55: Entered. DVN $44.98, RSI 57.6.
+This position is managed through the Alpaca paper trading API.
+Entry, exit, and sizing are handled by the trader agent via executor.py.
+Stop-loss and take-profit levels are maintained in the trading.trader_positions table.

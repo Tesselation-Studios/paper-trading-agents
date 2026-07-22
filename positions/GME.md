@@ -1,11 +1,11 @@
 # GME Position Thesis
 
 - **Entry**: $22.38 avg | 10 shares
-- **Current**: $21.68 (-3.13% unrealized)
-- **Market Value**: $216.80
-- **Unrealized P&L**: $-7.00 (-3.13%)
+- **Current**: $21.57 (-3.60% unrealized)
+- **Market Value**: $215.75
+- **Unrealized P&L**: $-8.05 (-3.60%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 18:55:24 UTC
+- **Last sync**: 2026-07-22 19:40:28 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
