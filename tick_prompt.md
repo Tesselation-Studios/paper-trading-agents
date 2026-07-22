@@ -1,39 +1,40 @@
 # Tick Prompt — Stonks (Consolidated MVP)
 
-**Market tick received.** You are in your persistent trading session. Follow this loop:
+**Market tick received.** Each tick is a separately spawned session, not one long-lived warm conversation — nothing is "already in context" by default. Follow this loop:
 
 ## Core Loop
 
-1. **Read active.md** → `read strategies/active.md` — this is your working memory from last tick. Know your last state.
+1. **Read strategy.md and params.json** → fresh, every tick, no exceptions. Confirmed 2026-07-22: a same-day strategy revert (v1.2.1→v1.3, dropping the regime gate) didn't take effect for several ticks because this step was previously skipped on the wrong assumption these files were already warm in context. They're small; the read is cheap. Correctness > saving a few tokens.
 
-2. **Read watchlist** → `read strategies/watchlist.md` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
+2. **Read active.md** → `read strategies/active.md` — this is your working memory from last tick. Know your last state.
 
-3. **Check portfolio** → executor status check, see `skills/tool-invocation.md` — only source of truth for cash/positions/P&L, never the data bus.
+3. **Read watchlist** → `read strategies/watchlist.md` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
 
-4. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md`; skip if stale/down, never block the tick.
+4. **Check portfolio** → executor status check, see `skills/tool-invocation.md` — only source of truth for cash/positions/P&L, never the data bus.
 
-5. **Scan positions near triggers** → run `python3 scripts/executor.py --account stonks --action check-stops` — mechanically checks every open position against the hard stop (`risk.stop_loss_pct`) and trailing stop (`risk.trailing_stop_pct`, ratchets up from peak price since entry). Any ticker returned in `breaches` **must** be sold this tick via step 8, no re-litigating. Also check profit targets, sentiment divergence, thesis breaks — read `positions/*.md` only for names near a trigger.
+5. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md`; skip if stale/down, never block the tick.
 
-6. **Discovery pass** → run `python3 scripts/merge_discoveries.py` unconditionally, every tick — mechanically merges any unconsumed `discoveries/*.md` candidates into `watchlist.md` (idempotent, no-op if nothing new). Don't rely on remembering to do this manually; the script exists because that failed for days. Then, light touch: glance at the watchlist — anything gone stale (idle_ticks over threshold in `params.json`)? Drop it. Noticed a new name worth watching from your own sentiment scan? Add it too — the script only covers probe-discovery's output, not your own noticing.
+6. **Scan positions near triggers** → run `python3 scripts/executor.py --account stonks --action check-stops` — mechanically checks every open position against the hard stop (`risk.stop_loss_pct`) and trailing stop (`risk.trailing_stop_pct`, ratchets up from peak price since entry). Any ticker returned in `breaches` **must** be sold this tick via step 9, no re-litigating. Also check profit targets, thesis breaks — read `positions/*.md` only for names near a trigger.
 
-7. **Decide** → BUY/SELL/HOLD with structured JSON, one entry per ticker considered. Keep rationale tight. Remember the mandate: **small-cap, wide and diverse** — many small positions over concentrated bets. Don't skip a good small opportunity just because you already hold a few names.
+7. **Discovery pass** → run `python3 scripts/merge_discoveries.py` unconditionally, every tick — mechanically merges any unconsumed `discoveries/*.md` candidates into `watchlist.md` (idempotent, no-op if nothing new). Don't rely on remembering to do this manually; the script exists because that failed for days. Then, light touch: glance at the watchlist — anything gone stale (idle_ticks over threshold in `params.json`)? Drop it. Noticed a new name worth watching from your own scan? Add it too — the script only covers probe-discovery's output, not your own noticing.
 
-8. **Execute** → via executor (`skills/tool-invocation.md`) if trade — pass `--price`/`--conviction`/`--sector` so the executor's built-in guardrail check (position size, max positions, sector concentration, market hours, conviction floor) can evaluate it; a rejected order exits non-zero with the blocking gate's reason — do not retry the same trade, note it in active.md and move on. Update the position's thesis file if it changed. On any BUY/SELL (not routine HOLD), log the decision via `record_decision.py` (same skill) with per-signal features (sentiment/technical/regime — see `signals.py`), scored independently, not pre-blended. If the SELL closes a position, also log the outcome (pnl/return_pct from entry vs. exit).
+8. **Decide** → BUY/SELL/HOLD with structured JSON, one entry per ticker considered. Keep rationale tight. Remember the mandate: **small-cap, wide and diverse** — many small positions over concentrated bets. Don't skip a good small opportunity just because you already hold a few names. Per `strategy.md` v1.3: simple RSI 45-65 momentum entry, no regime gate — don't invent a "entries gated" reason that isn't actually in the current strategy file.
 
-9. **Update active.md** → append your current tick entry. Keep it **trim**:
+9. **Execute** → via executor (`skills/tool-invocation.md`) if trade — pass `--price`/`--conviction`/`--sector` so the executor's built-in guardrail check (position size, max positions, sector concentration, market hours, conviction floor, bankroll ceiling) can evaluate it; a rejected order exits non-zero with the blocking gate's reason — do not retry the same trade, note it in active.md and move on. Update the position's thesis file if it changed. On any BUY/SELL (not routine HOLD), log the decision via `record_decision.py` (same skill) with per-signal features (sentiment/technical/regime — see `signals.py`), scored independently, not pre-blended. If the SELL closes a position, also log the outcome (pnl/return_pct from entry vs. exit).
+
+10. **Update active.md** → append your current tick entry. Keep it **trim**:
    - 3-5 lines if no trade and no trigger event
    - Include: regime, portfolio value, position count, top/bottom movers (3 max each), positions near triggers, decision
    - Full P&L tables only when something actually changed — don't repeat the whole book every tick
 
-10. **Git commit** → if you modified active.md, watchlist.md, or any thesis files, commit locally. See `skills/auto-commit.md`.
+11. **Git commit** → if you modified active.md, watchlist.md, or any thesis files, commit locally. See `skills/auto-commit.md`.
 
-11. **HEARTBEAT_OK**
+12. **HEARTBEAT_OK**
 
 ## Trim Rules
 
-- No re-reading strategy.md or params.json — they're already in your session context.
 - No P&L tables in the journal. That goes in active.md only, and only when something changed.
 - If this tick is identical to last tick (same regime, no triggers, watchlist unchanged), write "Same as last tick" and done.
 - Journal entry at EOD only (nightly maintenance), not per tick.
 
-File map + tool syntax → `TOOLS.md`. Strategy/params → already in context, don't re-read.
+File map + tool syntax → `TOOLS.md`. Strategy/params → read fresh every tick per step 1, never assumed warm.
