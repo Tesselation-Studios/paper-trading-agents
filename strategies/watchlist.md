@@ -8,7 +8,7 @@ Format: `TICKER — idle_ticks: N — note`
 - NVDA — open position
 - CHWY — open position
 - KHC — open position
-- SOFI — open position
+- ~~SOFI~~ — closed 2026-07-22 (broke $17 support, Game Plan cut, -4.58%)
 - MVST — open position
 - F — open position
 - ~~LYFT~~ — closed 2026-07-22 (trailing stop breach, -5.49%)

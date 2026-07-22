@@ -190,13 +190,20 @@ def gate_sector_concentration(context: Dict[str, Any], action: Dict[str, Any]) -
 
 
 def gate_hours(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
-    """Reject any BUY/SELL outside 09:30-16:00 ET, Mon-Fri."""
+    """Reject any BUY/SELL outside 09:30-16:00 ET, Mon-Fri.
+
+    context["_test_now"] lets tests inject a fixed timestamp instead of the
+    real wall clock — not used in production, only by the test suite.
+    """
     import datetime
-    try:
-        from zoneinfo import ZoneInfo
-        now = datetime.datetime.now(ZoneInfo("America/New_York"))
-    except Exception:
-        now = datetime.datetime.now()
+    if context.get("_test_now") is not None:
+        now = context["_test_now"]
+    else:
+        try:
+            from zoneinfo import ZoneInfo
+            now = datetime.datetime.now(ZoneInfo("America/New_York"))
+        except Exception:
+            now = datetime.datetime.now()
 
     if now.weekday() >= 5:
         return False, f"{now.strftime('%A')} — market closed on weekends"

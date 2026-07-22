@@ -1,12 +1,7 @@
-# SOFI Position Thesis
+# SOFI Position Thesis — CLOSED 2026-07-22
 
 - **Entry**: $17.79 avg | 6 shares
-- **Current**: $17.05 (-4.13% unrealized)
-- **Market Value**: $102.33
-- **Unrealized P&L**: $-4.41 (-4.13%)
-- **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 14:35:06 UTC
-
-This position is managed through the Alpaca paper trading API.
-Entry, exit, and sizing are handled by the trader agent via executor.py.
-Stop-loss and take-profit levels are maintained in the trading.trader_positions table.
+- **Exit**: $16.98 (-4.58% unrealized)
+- **P&L**: -$4.89 (-4.58%)
+- **Reason**: Broke $17 hard support — Game Plan trigger after 10+ ticks of monitoring. Thesis invalidated. Cut per plan.
+- **Closed**: 2026-07-22 10:45 ET
