@@ -21,6 +21,14 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- ACHR — idle_ticks: 0 — from 2026-07-21.md
+- RIG — idle_ticks: 0 — from 2026-07-21.md
+- FVRR — idle_ticks: 0 — from 2026-07-21.md
+- MYGN — idle_ticks: 0 — from 2026-07-21.md
+- GT — idle_ticks: 0 — from 2026-07-21.md
+- COTY — idle_ticks: 0 — from 2026-07-21.md
+- KSS — idle_ticks: 0 — from 2026-07-21.md
+
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 
 _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN (confirmed above $50 max-price cap)._

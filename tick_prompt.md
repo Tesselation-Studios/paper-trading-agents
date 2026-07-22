@@ -14,7 +14,7 @@
 
 5. **Scan positions near triggers** → run `python3 scripts/executor.py --account stonks --action check-stops` — mechanically checks every open position against the hard stop (`risk.stop_loss_pct`) and trailing stop (`risk.trailing_stop_pct`, ratchets up from peak price since entry). Any ticker returned in `breaches` **must** be sold this tick via step 8, no re-litigating. Also check profit targets, sentiment divergence, thesis breaks — read `positions/*.md` only for names near a trigger.
 
-6. **Discovery pass (light touch)** → glance at the watchlist. Anything gone stale (idle_ticks over threshold in `params.json`)? Drop it. Noticed a new small-cap name worth watching (mentioned in sentiment scan, unusual volume, a name you'd have wanted a tick ago)? Add it with `idle_ticks: 0`. Keep this quick — this is not a full screen, just noticing.
+6. **Discovery pass** → run `python3 scripts/merge_discoveries.py` unconditionally, every tick — mechanically merges any unconsumed `discoveries/*.md` candidates into `watchlist.md` (idempotent, no-op if nothing new). Don't rely on remembering to do this manually; the script exists because that failed for days. Then, light touch: glance at the watchlist — anything gone stale (idle_ticks over threshold in `params.json`)? Drop it. Noticed a new name worth watching from your own sentiment scan? Add it too — the script only covers probe-discovery's output, not your own noticing.
 
 7. **Decide** → BUY/SELL/HOLD with structured JSON, one entry per ticker considered. Keep rationale tight. Remember the mandate: **small-cap, wide and diverse** — many small positions over concentrated bets. Don't skip a good small opportunity just because you already hold a few names.
 
