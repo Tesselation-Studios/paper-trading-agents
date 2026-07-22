@@ -54,7 +54,7 @@ class TestReadWriteRoundTrip:
         state = bankroll.read_bankroll()
         state["ceiling"] = 123.45
         state["growth_rate"] = 0.03
-        state["decay_rate"] = 0.015
+        state["decay_rate"] = 0.02  # 2 decimals — write_bankroll only keeps .2f precision
         state["target_profit_pct"] = 0.8
         state["closed_trades"] = 7
         state["wins"] = 5
@@ -68,7 +68,7 @@ class TestReadWriteRoundTrip:
         reread = bankroll.read_bankroll()
         assert reread["ceiling"] == 123.45
         assert reread["growth_rate"] == 0.03
-        assert reread["decay_rate"] == 0.015
+        assert reread["decay_rate"] == 0.02
         assert reread["target_profit_pct"] == 0.8
         assert reread["closed_trades"] == 7
         assert reread["wins"] == 5

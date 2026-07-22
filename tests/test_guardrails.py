@@ -343,7 +343,10 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
-        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.5)])
+        # -4% on first observation: peak inits to entry_price (10.0), so this
+        # must stay clear of the 5% trailing-stop boundary (9.5 exactly
+        # breaches via <=) to genuinely exercise the no-breach path.
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.6)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 

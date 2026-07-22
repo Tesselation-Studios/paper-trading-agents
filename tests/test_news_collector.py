@@ -71,6 +71,6 @@ class TestExtractTickersEdgeCases:
         assert result == ["NVDA"]
 
     def test_multiple_distinct_tickers_preserve_first_seen_order(self):
-        text = "SOFI and PLTR both moved on the same catalyst headline."
+        text = "SOFI and PLTR both moved after the same catalyst headline."
         result = news_collector.extract_tickers(text, news_collector.KNOWN_TICKERS)
         assert result == ["SOFI", "PLTR"]
