@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:40 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:50 ET
+
+## WED 14:50 ET — Market Tick
+- ✅ **WSC BOUGHT**: 1 share @ $26.46, conviction 0.55. RSI(14)=63.1 in 45-65 band (v1.3 simple momentum entry). Probe size — no volume/catalyst data (sentiment blind).
+- **8 pos.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,445, cash $8,605.
+- No stop breaches (check-stops clean), no targets hit. All 8 HOLD.
+- NVDA $213.58 (+2.86%), CHWY $21.47 (+2.89%), F $14.37 (+1.63%). GME $21.67 (-3.16%), OPEN $4.42 (-1.78%).
+- Watchlist 4 (RKT/WSC/DVN/CLF). WSC acted on. DVN 57.6 and CLF 45.6 still in RSI band, RKT 38.6 below. Merge discoveries all skipped.
 
 ## WED 14:45 ET — Market Tick
 - **Same as 14:40 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,446, cash $8,632, 7 pos.
