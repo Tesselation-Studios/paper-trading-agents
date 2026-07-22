@@ -297,9 +297,20 @@ def _parse_atom_date(date_str: str) -> str:
 
 
 def extract_tickers(text: str, known_tickers: Set[str]) -> List[str]:
+    """Extract known tickers from free text.
+
+    Excludes matches immediately adjacent to a letter/period/hyphen on
+    either side (lookaround, not just \\b) so "F" doesn't false-match out
+    of "F-Secure" or "e.l.f." (period splits into E/L/F, hyphen splits
+    F-Secure into F/SECURE — plain \\b treats both as real word edges).
+    Legitimate mentions like "Ford (F)" or dotted tickers like "BRK.A"
+    still match since parens/spaces aren't in the excluded set.
+    """
     if not text:
         return []
-    candidates = re.findall(r"\b[A-Z]{1,5}(?:\.[A-Z]{1,3})?\b", text.upper())
+    candidates = re.findall(
+        r"(?<![A-Za-z.-])[A-Z]{1,5}(?:\.[A-Z]{1,3})?(?![A-Za-z.-])", text.upper()
+    )
     seen: Set[str] = set()
     result: List[str] = []
     for c in candidates:
