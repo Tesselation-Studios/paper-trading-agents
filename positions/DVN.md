@@ -1,11 +1,11 @@
 # DVN Position Thesis
 
 - **Entry**: $44.99 avg | 3 shares
-- **Current**: $44.96 (-0.07% unrealized)
-- **Market Value**: $134.88
-- **Unrealized P&L**: $-0.09 (-0.07%)
+- **Current**: $44.88 (-0.24% unrealized)
+- **Market Value**: $134.64
+- **Unrealized P&L**: $-0.33 (-0.24%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 19:55:08 UTC
+- **Last sync**: 2026-07-22 20:15:21 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

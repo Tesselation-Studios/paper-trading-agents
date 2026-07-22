@@ -36,6 +36,8 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Low-confidence/CHOPPY: don't trust MACD divergence without price confirmation — it's a trap (Aldridge).
 - Pre-session GTC order audit — clear all stale/unfilled GTC orders before first tick. Stale orders can silently block all exits (Jul 21 near-miss: 11 unfilled orders). Codified v1.2.1, kept in v1.3 — pure hygiene, not implicated in the v1.1/v1.2 underperformance.
 - v1.2's triple-confirmation entry was too permissive — 170 trades vs 99 for v1.0 over the same 200d/22-ticker sample, worst return of any version across all 3 backtest nights. Reverted in v1.3, not just monitored — the data was consistent enough to act on.
+- Pre-session account audit is as critical as GTC audit (Jul 22): shared credentials mean your Alpaca account may contain positions you don't recognize — audit against journal records symbol-by-symbol before first tick, or your position tracking is corrupt from the jump.
+- Strategy changes must be verified end-to-end across all layers (Jul 22): after revising `strategy.md`, explicitly check `params.json`, `executor.py`, and the tick agent's prompt for stale rules. v1.3's removal of the CHOPPY entry gate was missed for ~2 hours because the agent's mental model still carried v1.1/v1.2 gating logic. A strategy revision that only touches strategy.md is incomplete.
 
 ## Evolution Process
 - Not limited to this file — evolve when something real is learned (nightly Step 3).
