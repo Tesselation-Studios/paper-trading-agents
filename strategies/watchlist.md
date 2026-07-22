@@ -13,7 +13,7 @@ Format: `TICKER — idle_ticks: N — note`
 - F — open position
 - ~~LYFT~~ — closed 2026-07-22 (trailing stop breach, -5.49%)
 - GME — open position
-- DJT — open position
+- ~~DJT~~ — closed 2026-07-22 (trailing stop breach, -5.2%)
 - OPEN — open position
 - SNAP — open position
 - ~~FUBO~~ — closed 2026-07-21 (MACDh bearish flip, -5.04%)
@@ -21,6 +21,11 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- RKT — idle_ticks: 0 — from 2026-07-22.md
+- WSC — idle_ticks: 0 — from 2026-07-22.md
+- DVN — idle_ticks: 0 — from 2026-07-22.md
+- CLF — idle_ticks: 0 — from 2026-07-22.md
+
 
 _(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS. Watchlist empty.)_
 
