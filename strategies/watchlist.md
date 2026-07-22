@@ -21,12 +21,8 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- PLTR — idle_ticks: 17 — from 2026-07-22.md
 - IOVA — idle_ticks: 17 — from 2026-07-22.md
-- BROS — idle_ticks: 17 — from 2026-07-22.md
 - JOBY — idle_ticks: 17 — from 2026-07-22.md
-- ROKU — idle_ticks: 17 — from 2026-07-22.md
-- BWA — idle_ticks: 17 — from 2026-07-22.md
 
 - ACHR — idle_ticks: 17 — from 2026-07-21.md
 - RIG — idle_ticks: 17 — from 2026-07-21.md
@@ -41,4 +37,5 @@ _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Wat
 _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN (confirmed above $50 max-price cap)._
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, OXY, TOST) — idle_ticks=24 threshold met._
-_Last touched: 2026-07-22 11:05 ET (idle_ticks → 17, all 13 candidates)._
+_Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
+_Last touched: 2026-07-22 11:20 ET (idle_ticks → 18, 9 candidates after pruning)._
