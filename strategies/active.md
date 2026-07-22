@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 09:10 ET (pre-market)
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 09:15 ET (pre-market)
+
+## WED 09:15 ET — Pre-Market
+- **Same as 09:10 tick.** F&G 33 (Fear), sentiment blind Day 15. PV $10,420, cash $8,236, 11 pos.
+- No stop breaches (check-stops clean), no targets hit. All 11 HOLD. New entries gated.
+- 15 min to open. Watchlist 13 candidates unchanged.
+
+## WED 09:10 ET — Pre-Market
 
 ## WED 09:10 ET — Pre-Market
 - **Same as 09:05 tick.** F&G 33 (Fear), sentiment blind Day 15. PV $10,419, cash $8,236, 11 pos.
