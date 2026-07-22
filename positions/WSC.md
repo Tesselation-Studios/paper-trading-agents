@@ -1,6 +1,12 @@
-# WSC — WillScot Holdings (Industrials)
+# WSC Position Thesis
 
-- **Entry**: 2026-07-22 14:50 ET, 1 share @ $26.46
-- **Thesis**: v1.3 simple RSI momentum entry. RSI(14)=63.1 in 45-65 band. Probe size only — no volume/catalyst confirmation (sentiment blind Day 15). Earnings Jul 30-Aug 3 (per watchlist note).
-- **Exit**: hard stop -10% ($23.81), trailing stop -5%, profit target 12% ($29.64 guide)
-- **Conviction**: 0.55 (low — signal limited to RSI, no volume/sentiment confirmation)
+- **Entry**: $26.46 avg | 1 shares
+- **Current**: $26.39 (-0.25% unrealized)
+- **Market Value**: $26.39
+- **Unrealized P&L**: $-0.07 (-0.25%)
+- **Synced from**: Alpaca paper trading
+- **Last sync**: 2026-07-22 18:55:24 UTC
+
+This position is managed through the Alpaca paper trading API.
+Entry, exit, and sizing are handled by the trader agent via executor.py.
+Stop-loss and take-profit levels are maintained in the trading.trader_positions table.

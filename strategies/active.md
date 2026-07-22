@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:50 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:55 ET
+
+## WED 14:55 ET — Market Tick
+- ✅ **DVN BOUGHT**: 1 share intended, 3 shares filled @ ~$44.98, conviction 0.55. RSI(14)=57.6 solidly in 45-65 band (v1.3 momentum entry). Probe size, Energy sector.
+- **9 pos.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,446, cash $8,470.
+- No stop breaches (check-stops clean), no targets hit. All 9 HOLD (ex DVN entry).
+- NVDA $213.82 (+2.98%), CHWY $21.48 (+2.96%), F $14.37 (+1.69%). GME $21.68 (-3.15%), OPEN $4.43 (-1.57%).
+- Watchlist 4→2: DVN entered, WSC already held last tick. CLF (RSI 45.6 bare in band, skip) and RKT (RSI 38.6 below band). Merge discoveries all skipped.
 
 ## WED 14:50 ET — Market Tick
 - ✅ **WSC BOUGHT**: 1 share @ $26.46, conviction 0.55. RSI(14)=63.1 in 45-65 band (v1.3 simple momentum entry). Probe size — no volume/catalyst data (sentiment blind).

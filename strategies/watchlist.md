@@ -17,15 +17,16 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MVST~~ — closed 2026-07-22 (trailing stop breach, +0.29%)
 - OPEN — open position
 - SNAP — open position
+- WSC — open position
+- DVN — open position
 - ~~FUBO~~ — closed 2026-07-21 (MACDh bearish flip, -5.04%)
 - ~~AMC~~ — closed 2026-07-21 (trailing stop breach, -1.69%)
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- RKT — idle_ticks: 0 — RSI(14)=38.6 (below band), from 2026-07-22.md
-- WSC — idle_ticks: 0 — RSI(14)=63.1 (in band), earnings Jul 30-Aug 3, from 2026-07-22.md
-- DVN — idle_ticks: 0 — RSI(14)=57.6 (in band), from 2026-07-22.md
-- CLF — idle_ticks: 0 — RSI(14)=45.6 (in band, bare), from 2026-07-22.md
+- RKT — idle_ticks: 1 — RSI(14)=38.6 (below band), from 2026-07-22.md
+- WSC — idle_ticks: 0 — RSI(14)=63.1 (in band), held, earnings Jul 30-Aug 3, from 2026-07-22.md
+- CLF — idle_ticks: 1 — RSI(14)=45.6 (barely in band, skipped 14:55), from 2026-07-22.md
 
 
 _(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS.)_
@@ -42,4 +43,4 @@ _Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, 
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
 _Dropped 2026-07-22 11:50: none. All candidates below idle threshold (24)._
-_Last touched: 2026-07-22 14:40 ET (idle_ticks → 2 for 4 candidates)._
+_Last touched: 2026-07-22 14:55 ET (DVN entered, CLF/RKT idle→1, WSC held)._
