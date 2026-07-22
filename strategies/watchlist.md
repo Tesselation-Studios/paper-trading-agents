@@ -21,11 +21,11 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- IOVA — idle_ticks: 17 — from 2026-07-22.md (evaluated 11:30 — RSI 45.1, HOLD)
-- FVRR — idle_ticks: 17 — from 2026-07-21.md (evaluated 11:30 — RSI 50.2, HOLD)
-- GT — idle_ticks: 17 — from 2026-07-21.md (evaluated 11:30 — RSI 55.3, HOLD)
-- COTY — idle_ticks: 17 — from 2026-07-21.md (evaluated 11:30 — RSI 58.6, HOLD)
-- KSS — idle_ticks: 17 — from 2026-07-21.md (evaluated 11:30 — RSI 49.2, HOLD)
+- IOVA — idle_ticks: 18 — from 2026-07-22.md (evaluated 11:30 — RSI 45.1, HOLD)
+- FVRR — idle_ticks: 18 — from 2026-07-21.md (evaluated 11:30 — RSI 50.2, HOLD)
+- GT — idle_ticks: 18 — from 2026-07-21.md (evaluated 11:30 — RSI 55.3, HOLD)
+- COTY — idle_ticks: 18 — from 2026-07-21.md (evaluated 11:30 — RSI 58.6, HOLD)
+- KSS — idle_ticks: 18 — from 2026-07-21.md (evaluated 11:30 — RSI 49.2, HOLD)
 
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 
