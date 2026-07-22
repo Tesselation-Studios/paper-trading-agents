@@ -1,5 +1,12 @@
 # Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 09:30 ET (market open)
 
+## WED 09:50 ET — Market Tick
+- **🛑 LYFT SOLD**: trailing stop breach — -5.2% off peak $15.67 (stop $14.89, filled ~$14.81). P&L: -$16.34 (-5.49%). ❌
+- **10 pos remain.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,415, cash $8,516.
+- No other stop breaches or targets hit. All 10 HOLD. New entries gated.
+- MVST $0.94 (+4.99%) 🟢, F $14.63 (+3.54%), CHWY $21.36 (+2.36%). GME $21.67 (-3.17%) 🟡, SOFI $17.21 (-3.23%) 🟡.
+- SOFI $17.21 near $17 hard support — watch closely. Watchlist 13, idle_ticks→8.
+
 ## WED 09:45 ET — Market Tick
 - **Same as 09:40 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,418, cash $8,236, 11 pos.
 - No stop breaches (check-stops clean), no targets hit. All 11 HOLD. New entries gated.

@@ -3,9 +3,9 @@
 - **Entry**: $4.58 avg | 1 shares
 - **Current**: $4.50 (-1.64% unrealized)
 - **Market Value**: $4.50
-- **Unrealized P&L**: $-0.08 (-1.64%)
+- **Unrealized P&L**: $-0.07 (-1.64%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 13:45:07 UTC
+- **Last sync**: 2026-07-22 13:50:13 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
