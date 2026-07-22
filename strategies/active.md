@@ -1,3 +1,12 @@
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 09:05 ET (pre-market)
+
+## WED 09:05 ET — New Day, Pre-Market
+- **New day. F&G 33 (Fear, ⬆ from 25 Extreme Fear yesterday).** Sentiment blind Day 15. Macro: flat yield curve (10y-2y 0.39), Fed 3.5-3.75%. PV $10,419, cash $8,235, 11 pos.
+- No stop breaches (check-stops clean), no targets hit. Pre-market — all 11 HOLD.
+- CHWY $21.67 (+3.87%), MVST $0.92 (+2.31%), F $14.28 (+1.03%). LYFT $15.21 (-2.97%), GME $21.72 (-2.95%), DJT $9.59 (-2.04%).
+- SOFI $17.49 > $17 support. NVDA $205.40 < $207.63 entry (trim N/A — Wed, below trigger). GTC audit: day orders from Tue expired.
+- **Discoveries merged**: 6 new → PLTR, IOVA, BROS, JOBY, ROKU, BWA. Watchlist now 13 candidates. New entries gated (CHOPPY + blind).
+
 # Current Playbook — Stonks 🚀 TUE JUL 21, 2026 — 15:55 ET
 
 ## TUE 15:55 ET — Market Tick

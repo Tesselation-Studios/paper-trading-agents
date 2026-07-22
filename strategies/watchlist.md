@@ -21,6 +21,13 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- PLTR — idle_ticks: 0 — from 2026-07-22.md
+- IOVA — idle_ticks: 0 — from 2026-07-22.md
+- BROS — idle_ticks: 0 — from 2026-07-22.md
+- JOBY — idle_ticks: 0 — from 2026-07-22.md
+- ROKU — idle_ticks: 0 — from 2026-07-22.md
+- BWA — idle_ticks: 0 — from 2026-07-22.md
+
 - ACHR — idle_ticks: 0 — from 2026-07-21.md
 - RIG — idle_ticks: 0 — from 2026-07-21.md
 - FVRR — idle_ticks: 0 — from 2026-07-21.md
