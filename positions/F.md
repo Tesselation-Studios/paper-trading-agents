@@ -1,11 +1,11 @@
 # F Position Thesis
 
 - **Entry**: $14.13 avg | 2 shares
-- **Current**: $14.46 (+2.30% unrealized)
-- **Market Value**: $28.92
-- **Unrealized P&L**: $+0.65 (+2.30%)
+- **Current**: $14.39 (+1.84% unrealized)
+- **Market Value**: $28.79
+- **Unrealized P&L**: $+0.52 (+1.84%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 16:20:10 UTC
+- **Last sync**: 2026-07-22 16:25:05 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
