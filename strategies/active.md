@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:35 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 14:40 ET
+
+## WED 14:40 ET — Market Tick
+- **Same as 14:35 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,445, cash $8,632, 7 pos.
+- No stop breaches (check-stops clean), no targets hit. All 7 HOLD.
+- NVDA $213.62 (+2.89%), CHWY $21.48 (+2.98%), F $14.38 (+1.76%). GME $21.71 (-2.97%), OPEN $4.43 (-1.56%).
+- Watchlist 4 (RKT/WSC/DVN/CLF), idle→2, no RSI data for small caps, sentiment blind — no entry. Merge discoveries all skipped.
 
 ## WED 14:35 ET — Market Tick
 - **Same as 14:30 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,445, cash $8,632, 7 pos.
@@ -89,13 +95,13 @@
 - **Same as 13:25 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,447, cash $8,618, 9 pos.
 - No stop breaches (check-stops clean), no targets hit. All 9 HOLD.
 - NVDA $213.88 (+3.01%), CHWY $21.47 (+2.91%), F $14.46 (+2.26%). DJT $9.43 (-3.73%) 🟡, GME $21.72 (-2.95%).
-- Watchlist 5, idle→20, merge discoveries no-op (ET skipped). No entry.
+- Watchlist 5, idle→19, merge discoveries no-op (ET skipped). No entry.
 
 ## WED 13:25 ET — Market Tick
 - **Same as 13:20 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,446, cash $8,618, 9 pos.
 - No stop breaches (check-stops clean), no targets hit. All 9 HOLD.
 - NVDA $213.68 (+2.91%), CHWY $21.47 (+2.89%), F $14.45 (+2.19%). DJT $9.43 (-3.73%) 🟡, GME $21.72 (-2.97%).
-- Watchlist 5, idle→19, merge discoveries no-op (ET skipped). No entry.
+- Watchlist 5, idle→20, merge discoveries no-op (ET skipped). No entry.
 
 ## WED 13:20 ET — Market Tick
 - **Same as 13:15 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,444, cash $8,618, 9 pos.
