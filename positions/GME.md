@@ -5,7 +5,7 @@
 - **Market Value**: $217.20
 - **Unrealized P&L**: $-6.60 (-2.95%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 16:55:05 UTC
+- **Last sync**: 2026-07-22 17:10:04 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
