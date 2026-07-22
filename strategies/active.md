@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 15:25 ET
+# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 15:30 ET
+
+## WED 15:30 ET — Market Tick
+- **Same as 15:25 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,443, cash $8,470, 9 pos.
+- No stop breaches (check-stops clean), no targets hit. All 9 HOLD.
+- CHWY $21.61 (+3.56%), NVDA $213.12 (+2.64%), F $14.36 (+1.56%). GME $21.57 (-3.64%), SNAP $4.46 (-2.73%).
+- Watchlist: RKT RSI 38.6 below band (skip), WSC held, CLF RSI 45.6 bare in band (no vol/catalyst). Merge discoveries all skipped.
 
 ## WED 15:25 ET — Market Tick
 - **Same as 15:20 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,443, cash $8,470, 9 pos.
