@@ -21,16 +21,16 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- IOVA — idle_ticks: 17 — from 2026-07-22.md
-- JOBY — idle_ticks: 17 — from 2026-07-22.md
+- IOVA — idle_ticks: 0 — from 2026-07-22.md (evaluated 11:30 — RSI 45.1, HOLD)
+- JOBY — idle_ticks: 19 — from 2026-07-22.md
 
-- ACHR — idle_ticks: 17 — from 2026-07-21.md
-- RIG — idle_ticks: 17 — from 2026-07-21.md
-- FVRR — idle_ticks: 17 — from 2026-07-21.md
-- MYGN — idle_ticks: 17 — from 2026-07-21.md
-- GT — idle_ticks: 17 — from 2026-07-21.md
-- COTY — idle_ticks: 17 — from 2026-07-21.md
-- KSS — idle_ticks: 17 — from 2026-07-21.md
+- ACHR — idle_ticks: 19 — from 2026-07-21.md
+- RIG — idle_ticks: 19 — from 2026-07-21.md
+- FVRR — idle_ticks: 0 — from 2026-07-21.md (evaluated 11:30 — RSI 50.2, HOLD)
+- MYGN — idle_ticks: 19 — from 2026-07-21.md
+- GT — idle_ticks: 0 — from 2026-07-21.md (evaluated 11:30 — RSI 55.3, HOLD)
+- COTY — idle_ticks: 0 — from 2026-07-21.md (evaluated 11:30 — RSI 58.6, HOLD)
+- KSS — idle_ticks: 0 — from 2026-07-21.md (evaluated 11:30 — RSI 49.2, HOLD)
 
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 
@@ -38,4 +38,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, OXY, TOST) — idle_ticks=24 threshold met._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
-_Last touched: 2026-07-22 11:20 ET (idle_ticks → 18, 9 candidates after pruning)._
+_Last touched: 2026-07-22 11:30 ET (5 evaluated, 4 bumped → 19)._
