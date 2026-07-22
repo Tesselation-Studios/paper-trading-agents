@@ -22,16 +22,17 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- RKT — idle_ticks: 2 — from 2026-07-22.md
-- WSC — idle_ticks: 2 — from 2026-07-22.md
-- DVN — idle_ticks: 2 — from 2026-07-22.md
-- CLF — idle_ticks: 2 — from 2026-07-22.md
+- RKT — idle_ticks: 0 — RSI(14)=38.6 (below band), from 2026-07-22.md
+- WSC — idle_ticks: 0 — RSI(14)=63.1 (in band), earnings Jul 30-Aug 3, from 2026-07-22.md
+- DVN — idle_ticks: 0 — RSI(14)=57.6 (in band), from 2026-07-22.md
+- CLF — idle_ticks: 0 — RSI(14)=45.6 (in band, bare), from 2026-07-22.md
 
 
 _(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS.)_
 
-_(Updated 2026-07-22 14:20 — MVST closed, trailing stop breach.)_
+_(Updated 2026-07-22 14:45 — RSI data populated for all 4 candidates via web search; idle_ticks reset to 0; RKT flagged below 45 band.)_
 _(Updated 2026-07-22 14:40 — idle_ticks bumped to 2 for all 4 candidates.)_
+_(Updated 2026-07-22 14:20 — MVST closed, trailing stop breach.)_
 
 _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Watchlist empty — need fresh small-cap discovery next session.)_
 
