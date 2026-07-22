@@ -17,6 +17,7 @@ trailing-stop breaches (params.json risk.stop_loss_pct / risk.trailing_stop_pct)
 
 import argparse
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -314,23 +315,39 @@ def _save_stop_state(state: Dict[str, Any]) -> None:
 
 
 def check_stops(account: str) -> List[Dict[str, Any]]:
-    """Scan open positions for hard-stop or trailing-stop breaches.
+    """Scan open positions for hard-stop, trailing-stop, or oversized-position
+    breaches.
 
     Hard stop: risk.stop_loss_pct below entry price (fixed floor).
     Trailing stop: risk.trailing_stop_pct below the highest price observed
     since entry (ratchets up only; persisted to state/guardrail_stops.json
     since this script runs fresh each tick, not a long-lived process).
-    Either can be disabled via guardrail_gates.hard_stop / .trailing_stop.
+    Oversized: current market_value / portfolio_value exceeds
+    risk.max_position_pct — this happens when a position grows past the cap
+    via price appreciation (gate_position_size only blocks new BUYs from
+    crossing the cap, it doesn't correct an existing position that's already
+    over). Confirmed 2026-07-22: NVDA sat over cap 4 days / 3 nightly cycles
+    with "trim it" as a journaled intention that never executed — mechanized
+    here instead of relying on that being remembered again.
+    Any of the three can be disabled via guardrail_gates.hard_stop /
+    .trailing_stop / .position_size_trim.
 
-    Returns breach dicts: {ticker, stop_type, reason, loss_pct}. Caller (tick
-    loop) is responsible for actually executing the SELL.
+    Returns breach dicts: {ticker, stop_type, reason, loss_pct, shares_to_sell
+    (oversized only)}. Caller (tick loop) is responsible for actually
+    executing the SELL.
     """
     params = load_params()
     toggles = params.get("guardrail_gates", {})
     hard_stop_pct = abs(float(params.get("risk", {}).get("stop_loss_pct", -10.0)))
     trailing_pct = float(params.get("risk", {}).get("trailing_stop_pct", 5.0))
+    max_position_pct = float(params.get("risk", {}).get("max_position_pct", 6.0))
 
     positions = get_positions(account)
+    portfolio_value = None
+    if toggles.get("position_size_trim", True):
+        account_data = get_account(account)
+        portfolio_value = float(account_data.get("equity", 0))
+
     state = _load_stop_state()
     breaches = []
     held_tickers = set()
@@ -340,6 +357,24 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
         held_tickers.add(ticker)
         entry_price = float(p["avg_entry_price"])
         current_price = float(p["current_price"])
+        market_value = float(p["market_value"])
+        qty_held = int(float(p["qty"]))
+
+        if portfolio_value and portfolio_value > 0 and current_price > 0:
+            current_pct = market_value / portfolio_value * 100
+            if current_pct > max_position_pct:
+                target_value = portfolio_value * max_position_pct / 100
+                excess_value = market_value - target_value
+                shares_to_sell = min(qty_held, max(1, math.ceil(excess_value / current_price)))
+                breaches.append({
+                    "ticker": ticker, "stop_type": "oversized",
+                    "reason": f"{ticker}: {current_pct:.1f}% of portfolio exceeds {max_position_pct:.0f}% cap "
+                              f"(${market_value:,.2f} of ${portfolio_value:,.2f}) — trim {shares_to_sell} share(s)",
+                    "loss_pct": (current_price - entry_price) / entry_price * 100 if entry_price else 0.0,
+                    "shares_to_sell": shares_to_sell,
+                })
+                # Oversized is a trim, not an exit — still check hard/trailing
+                # stops below, don't skip them the way a full-exit breach does.
 
         if toggles.get("hard_stop", True):
             hard_stop_price = entry_price * (1 - hard_stop_pct / 100)

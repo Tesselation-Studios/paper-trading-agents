@@ -34,6 +34,7 @@ DEFAULT_PARAMS = {
         "cash": True, "position_size": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
+        "position_size_trim": True,
     },
 }
 
@@ -287,7 +288,7 @@ class TestCheckOrderChain:
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
 
     def test_all_gates_pass(self, params, mock_account, monkeypatch):
-        monkeypatch.setattr(executor, "gate_hours", lambda c, a: (True, "market open"))
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
         granted, reason, results = executor.check_order(
             "stonks", "BUY", "SOFI", 5, price=4.0, conviction=0.9,
         )
@@ -306,7 +307,7 @@ class TestCheckOrderChain:
         # conviction floor 0.5, pass a BUY with conviction 0.1 -> should be
         # rejected by conviction gate; gates after it in dict order shouldn't
         # need to run (chain stops), but gates before it still show results.
-        monkeypatch.setattr(executor, "gate_hours", lambda c, a: (True, "market open"))
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
         granted, reason, results = executor.check_order(
             "stonks", "BUY", "SOFI", 5, price=4.0, conviction=0.1,
         )
@@ -325,7 +326,7 @@ class TestCheckOrderChain:
         assert "ERROR (fail-open)" in cash_result["reason"]
 
     def test_sell_bypasses_buy_only_gates(self, params, mock_account, monkeypatch):
-        monkeypatch.setattr(executor, "gate_hours", lambda c, a: (True, "market open"))
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
         granted, reason, results = executor.check_order("stonks", "SELL", "SOFI", 5, price=4.0)
         assert granted is True
 
@@ -336,13 +337,20 @@ class TestCheckOrderChain:
 
 
 class TestCheckStops:
-    def _position(self, symbol, entry, current):
-        return {"symbol": symbol, "avg_entry_price": str(entry), "current_price": str(current)}
+    def _position(self, symbol, entry, current, qty=1, market_value=None):
+        # market_value defaults to qty * current so callers not testing
+        # position_size_trim don't need to compute it by hand.
+        mv = market_value if market_value is not None else qty * current
+        return {
+            "symbol": symbol, "avg_entry_price": str(entry), "current_price": str(current),
+            "qty": str(qty), "market_value": str(mv),
+        }
 
     def test_no_breach(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
+        params["guardrail_gates"]["position_size_trim"] = False  # not under test here
         # -4% on first observation: peak inits to entry_price (10.0), so this
         # must stay clear of the 5% trailing-stop boundary (9.5 exactly
         # breaches via <=) to genuinely exercise the no-breach path.
@@ -354,6 +362,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
+        params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
         breaches = executor.check_stops("stonks")
         assert len(breaches) == 1
@@ -364,6 +373,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 5.0}  # wide hard stop, won't trigger
+        params["guardrail_gates"]["position_size_trim"] = False
         # Tick 1: price runs up to 15 (new peak), tick 2: drops to 14.2 (>5% off peak 15 -> breach)
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 15.0)])
         breaches = executor.check_stops("stonks")
@@ -380,6 +390,7 @@ class TestCheckStops:
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["hard_stop"] = False
         params["guardrail_gates"]["trailing_stop"] = False
+        params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 5.0)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
@@ -390,11 +401,84 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
         state_path.write_text(json.dumps({"CLOSED": {"peak_price": 10.0, "entry_price": 9.0}}))
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
+        params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.5)])
         executor.check_stops("stonks")
         saved = json.loads(state_path.read_text())
         assert "CLOSED" not in saved
         assert "SOFI" in saved
+
+    # ── Oversized-position detection — added 2026-07-22 ──────────────────
+    # NVDA sat over its 6% cap for 4 days / 3 nightly cycles because
+    # gate_position_size only blocks NEW over-cap buys, nothing corrected an
+    # existing position that grew past the cap via price appreciation.
+
+    def test_oversized_position_flagged_with_trim_amount(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        # 5 shares @ $211.76 = $1058.80 = 10.6% of $10,000 portfolio, cap is 6% ($600)
+        monkeypatch.setattr(
+            executor, "get_positions",
+            lambda a: [self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80)],
+        )
+        breaches = executor.check_stops("stonks")
+        oversized = [b for b in breaches if b["stop_type"] == "oversized"]
+        assert len(oversized) == 1
+        assert oversized[0]["ticker"] == "NVDA"
+        assert oversized[0]["shares_to_sell"] >= 1
+        # Selling 2 shares brings it to 3 @ $211.76 = $635.28 = 6.35%, still
+        # slightly over — 3 shares -> $423.52 = 4.2%, clearly under. Either
+        # 2 or 3 is a reasonable trim; assert it's not something absurd like
+        # "sell all 5" or "sell 0".
+        assert 1 <= oversized[0]["shares_to_sell"] < 5
+
+    def test_within_cap_not_flagged(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        # $500 of $10,000 = 5%, within the 6% cap
+        monkeypatch.setattr(
+            executor, "get_positions",
+            lambda a: [self._position("SOFI", entry=10.0, current=10.0, qty=50, market_value=500.0)],
+        )
+        breaches = executor.check_stops("stonks")
+        assert breaches == []
+
+    def test_disabling_position_size_trim_skips_the_check(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
+        params["guardrail_gates"]["position_size_trim"] = False
+
+        def fail_if_called(a):
+            raise AssertionError("get_account should not be called when position_size_trim is disabled")
+        monkeypatch.setattr(executor, "get_account", fail_if_called)
+        monkeypatch.setattr(
+            executor, "get_positions",
+            lambda a: [self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80)],
+        )
+        breaches = executor.check_stops("stonks")
+        assert breaches == []
+
+    def test_oversized_and_hard_stop_can_both_fire_for_different_tickers(self, params, monkeypatch, tmp_path):
+        """Oversized is a trim, not an exit — it must not short-circuit the
+        loop the way a hard-stop breach does (continue), so other tickers'
+        checks still run in the same pass."""
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(executor, "get_positions", lambda a: [
+            self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80),  # oversized
+            self._position("GME", entry=22.0, current=19.0, qty=10, market_value=190.0),          # hard stop (-13.6%)
+        ])
+        breaches = executor.check_stops("stonks")
+        stop_types = {b["ticker"]: b["stop_type"] for b in breaches}
+        assert stop_types.get("NVDA") == "oversized"
+        assert stop_types.get("GME") == "hard"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
