@@ -30,13 +30,15 @@ MARKET_OPEN_TS = datetime.datetime(2026, 7, 22, 12, 0, tzinfo=ZoneInfo("America/
 
 DEFAULT_PARAMS = {
     "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5,
-              "duplicate_order_cooldown_seconds": 60},
+              "duplicate_order_cooldown_seconds": 60,
+              "drawdown_pause_pct": 15.0, "drawdown_halt_pct": 20.0},
     "risk_guards": {"max_positions_per_sector": 2, "order_count_audit_threshold_daily": 10},
     "guardrail_gates": {
         "cash": True, "position_size": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
         "position_size_trim": True, "duplicate_order": True, "order_count_audit": True,
+        "drawdown_circuit_breaker": True,
     },
 }
 
@@ -464,6 +466,83 @@ class TestGateDailyOrderCount:
         assert results[0]["reason"] == "disabled via params.json guardrail_gates"
 
 
+class TestGateDrawdownCircuitBreaker:
+    """2026-07-23: competition-mode portfolio-level circuit breaker, adapted
+    from paper-trading-rebuild/COMPETITION.md's >15%/>20% framework. BUY-only
+    by design — SELLs (including stop-loss exits) always pass regardless of
+    drawdown severity, see gate_drawdown_circuit_breaker's docstring."""
+
+    @pytest.fixture(autouse=True)
+    def isolated_state(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", tmp_path / "peak_equity.json")
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+
+    def test_no_portfolio_value_fails_open(self, params):
+        granted, reason = executor.gate_drawdown_circuit_breaker({}, {"action": "BUY"})
+        assert granted is True
+        assert "fail-open" in reason
+
+    def test_first_call_sets_peak_no_drawdown(self, params):
+        granted, reason = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 10000.0}, {"action": "BUY"})
+        assert granted is True
+        assert "0.0%" in reason
+
+    def test_within_bounds_passes(self, params):
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 10000.0}, {"action": "BUY"})
+        granted, reason = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 9200.0}, {"action": "BUY"})  # -8%
+        assert granted is True
+
+    def test_pause_threshold_blocks_buy(self, params):
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 10000.0}, {"action": "BUY"})
+        granted, reason = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 8400.0}, {"action": "BUY"})  # -16%
+        assert granted is False
+        assert "PAUSED" in reason
+
+    def test_halt_threshold_blocks_buy(self, params):
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 10000.0}, {"action": "BUY"})
+        granted, reason = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 7900.0}, {"action": "BUY"})  # -21%
+        assert granted is False
+        assert "HALT" in reason
+
+    def test_sell_always_passes_even_past_halt_threshold(self, params):
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 10000.0}, {"action": "BUY"})
+        granted, reason = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 5000.0}, {"action": "SELL"})  # -50%
+        assert granted is True
+        assert "non-BUY" in reason
+
+    def test_peak_ratchets_up_and_does_not_fall_back_down(self, params):
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 10000.0}, {"action": "BUY"})
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 12000.0}, {"action": "BUY"})
+        # equity drops back to original starting point -- now a real ~16.7% drawdown from the new $12k peak
+        granted, reason = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 10000.0}, {"action": "BUY"})
+        assert granted is False
+        assert "$12,000.00" in reason
+
+    def test_recovering_above_pause_threshold_unblocks(self, params):
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 10000.0}, {"action": "BUY"})
+        executor.gate_drawdown_circuit_breaker({"portfolio_value": 8400.0}, {"action": "BUY"})  # -16%, paused
+        # equity recovers to within 15% of the $10k peak
+        granted, _ = executor.gate_drawdown_circuit_breaker(
+            {"portfolio_value": 8600.0}, {"action": "BUY"})  # -14%
+        assert granted is True
+
+    def test_disabled_via_toggle_skips_in_check_order_chain(self, params, monkeypatch):
+        params["guardrail_gates"]["drawdown_circuit_breaker"] = False
+        monkeypatch.setattr(executor, "GATES", {"drawdown_circuit_breaker": executor.gate_drawdown_circuit_breaker})
+        monkeypatch.setattr(executor, "get_account", lambda account: {"cash": "100000", "equity": "5000"})
+        monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "WSC", 1, price=10.0, conviction=0.9, sector="Tech")
+        assert granted is True
+        assert results[0]["reason"] == "disabled via params.json guardrail_gates"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # check_order — full chain: toggles, fail-open behavior, first-rejection stops
 # ─────────────────────────────────────────────────────────────────────────────
@@ -481,6 +560,7 @@ class TestCheckOrderChain:
         # real against these tests' un-isolated state).
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", tmp_path / "peak_equity.json")
 
     def test_all_gates_pass(self, params, mock_account, monkeypatch):
         monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))

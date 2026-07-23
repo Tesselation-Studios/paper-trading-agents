@@ -26,8 +26,11 @@
     "conviction_floor": 0.50,
     "max_portfolio_risk_pct": 8.0,
     "duplicate_order_cooldown_seconds": 60,
+    "drawdown_pause_pct": 15.0,
+    "drawdown_halt_pct": 20.0,
     "_trailing_stop_source": "2026-07-20 guardrail engine — ratchets up from peak price since entry, mechanically enforced in scripts/guardrails.py check-stops, not LLM-judgment",
-    "_duplicate_order_source": "2026-07-22 — DVN got bought 3x in one tick (three separate orders 5-7s apart). 60s cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries (ticks are 5min apart)."
+    "_duplicate_order_source": "2026-07-22 — DVN got bought 3x in one tick (three separate orders 5-7s apart). 60s cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries (ticks are 5min apart).",
+    "_drawdown_source": "2026-07-23 — competition mode's circuit breaker (paper-trading-rebuild/COMPETITION.md's >15%/>20% framework, adapted). Measured from peak equity (state/peak_equity.json), not starting capital. Blocks new BUYs only — SELLs (including stop-losses) always pass, since blocking an exit at the worst moment can only make a drawdown worse. drawdown_halt_pct is a harder stop than pause but same BUY-only scope; see gate_drawdown_circuit_breaker."
   },
 
   "risk_guards": {
@@ -88,6 +91,7 @@
     "position_size_trim": true,
     "duplicate_order": true,
     "order_count_audit": true,
-    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed. order_count_audit added 2026-07-23: strategy.md promised a daily order-count audit (risk_guards) since v1.0 that nothing ever mechanically enforced — found dead by workspace_review.py."
+    "drawdown_circuit_breaker": true,
+    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed. order_count_audit added 2026-07-23: strategy.md promised a daily order-count audit (risk_guards) since v1.0 that nothing ever mechanically enforced — found dead by workspace_review.py. drawdown_circuit_breaker added 2026-07-23: competition-mode portfolio-level circuit breaker, see risk._drawdown_source."
   }
 }

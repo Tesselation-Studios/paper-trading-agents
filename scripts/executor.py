@@ -30,6 +30,7 @@ STATE_DIR = WORKSPACE_DIR / "state"
 STOPS_STATE_PATH = STATE_DIR / "guardrail_stops.json"
 RECENT_ORDERS_PATH = STATE_DIR / "recent_orders.json"
 DAILY_ORDER_COUNT_PATH = STATE_DIR / "daily_order_count.json"
+PEAK_EQUITY_PATH = STATE_DIR / "peak_equity.json"
 
 _DEFAULT_ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
@@ -402,6 +403,62 @@ def gate_daily_order_count(context: Dict[str, Any], action: Dict[str, Any]) -> T
     return True, f"{count}/{threshold} orders placed today"
 
 
+def _load_peak_equity() -> float:
+    if not PEAK_EQUITY_PATH.exists():
+        return 0.0
+    try:
+        return float(json.loads(PEAK_EQUITY_PATH.read_text()).get("peak_equity", 0.0))
+    except (json.JSONDecodeError, OSError, ValueError):
+        return 0.0
+
+
+def _update_peak_equity(current_equity: float) -> float:
+    """Ratchets state/peak_equity.json up only, same pattern as check_stops'
+    trailing-stop high-water mark. Called both from the drawdown gate (every
+    BUY/SELL attempt) and the `status` action (every tick, even HOLD-only
+    ones) so the recorded peak doesn't lag behind a real new high reached on
+    a day with no order attempts."""
+    peak = max(_load_peak_equity(), current_equity)
+    STATE_DIR.mkdir(exist_ok=True)
+    PEAK_EQUITY_PATH.write_text(json.dumps({"peak_equity": peak}, indent=2))
+    return peak
+
+
+def gate_drawdown_circuit_breaker(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Portfolio-level circuit breaker, adapted from
+    paper-trading-rebuild/COMPETITION.md's >15%/>20% drawdown framework:
+    pauses new BUYs once equity has fallen risk.drawdown_pause_pct from its
+    recorded peak, hard-halts new BUYs at risk.drawdown_halt_pct pending
+    review. Deliberately BUY-only at both thresholds — unlike
+    COMPETITION.md's "eliminated" framing, this never blocks a SELL
+    (including stop-loss exits): an account can't recover by being unable to
+    cut a losing position at the exact moment it's furthest underwater. "An
+    account at zero doesn't win anything" (SOUL.md) cuts against blocking
+    exits, not for it.
+    """
+    portfolio_value = float(context.get("portfolio_value", 0) or 0)
+    if portfolio_value <= 0:
+        return True, "no portfolio value data, skipped (fail-open)"
+
+    peak = _update_peak_equity(portfolio_value)
+    drawdown_pct = ((peak - portfolio_value) / peak * 100) if peak > 0 else 0.0
+
+    if action.get("action") != "BUY":
+        return True, f"non-BUY, unaffected (drawdown {drawdown_pct:.1f}% from peak ${peak:,.2f})"
+
+    risk = load_params().get("risk", {})
+    pause_pct = float(risk.get("drawdown_pause_pct", 15.0))
+    halt_pct = float(risk.get("drawdown_halt_pct", 20.0))
+
+    if drawdown_pct >= halt_pct:
+        return False, (f"HALT: drawdown {drawdown_pct:.1f}% from peak ${peak:,.2f} "
+                        f">= {halt_pct}% — new entries blocked pending review")
+    if drawdown_pct >= pause_pct:
+        return False, (f"PAUSED: drawdown {drawdown_pct:.1f}% from peak ${peak:,.2f} "
+                        f">= {pause_pct}% — new entries paused")
+    return True, f"drawdown {drawdown_pct:.1f}% from peak ${peak:,.2f}, within bounds"
+
+
 # name -> gate function. params.json guardrail_gates.<name> = false disables it.
 GATES = {
     "cash": gate_cash,
@@ -413,6 +470,7 @@ GATES = {
     "bankroll": gate_bankroll,
     "duplicate_order": gate_duplicate_order,
     "order_count_audit": gate_daily_order_count,
+    "drawdown_circuit_breaker": gate_drawdown_circuit_breaker,
 }
 
 
@@ -628,8 +686,12 @@ def main():
     if args.action == "status":
         account_data = get_account(args.account)
         positions = get_positions(args.account)
+        equity = float(account_data.get("equity", 0))
+        peak_equity = _update_peak_equity(equity) if equity > 0 else _load_peak_equity()
         result = {
-            "portfolio_value": float(account_data.get("equity", 0)),
+            "portfolio_value": equity,
+            "peak_equity": peak_equity,
+            "drawdown_pct": round((peak_equity - equity) / peak_equity * 100, 2) if peak_equity > 0 else 0.0,
             "cash": float(account_data.get("cash", 0)),
             "positions": [
                 {
