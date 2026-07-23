@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 10:50 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 10:55 ET
+
+## THU 10:55 ET — Market Tick
+- 🛑 **KHC SOLD**: MACDh histogram flip (+0.0039→-0.0022), v1.4 mandatory exit. 3 shares @ ~$25.65. P&L: -$0.90 (-1.16%). ❌
+- **3 pos remain.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (10:46 ET). PV $10,404, cash $10,212.
+- No other breaches (check-stops clean), no other MACDh flips (DVN +0.0017 🟢, WSC +0.0076 🟢, F -0.0028 red no flip). All 3 HOLD. New entries gated (v1.4 CHOPPY).
+- DVN $45.91 (+2.03%) 🟢, WSC $26.54 (+0.30%), F $14.16 (+0.14%).
+- Watchlist 2 (RKT idle→21, CLF idle→21). Merge discoveries no-op.
 
 ## THU 10:50 ET — Market Tick
 - **Same as 10:45 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (10:46 ET). PV $10,404, cash $10,135, 4 pos.

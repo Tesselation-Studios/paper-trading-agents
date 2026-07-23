@@ -1,6 +1,6 @@
 # Proposal: Implement max_portfolio_risk_pct gate
 
-**Status**: open
+**Status**: escalated
 **Tier**: review_required
 **Created**: 2026-07-23T13:27:53.253776+00:00
 **Files changed**: scripts/executor.py
@@ -12,3 +12,7 @@ params.json.risk.max_portfolio_risk_pct (8.0) has existed since the guardrail en
 ## Evidence
 
 workspace_review.py dead-param scan, 2026-07-23: params.json.risk.max_portfolio_risk_pct not referenced in scripts/*.py or any live-consumed doc.
+
+## Resolution
+
+escalated at 2026-07-23T14:55:41.458034+00:00
