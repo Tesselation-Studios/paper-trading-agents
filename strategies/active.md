@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 10:15 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 10:20 ET
+
+## THU 10:20 ET — Market Tick
+- 🛑 **SNAP SOLD**: MACDh flip (+0.0020→-0.0005). Strategy v1.4 mandatory exit. 1 share @ ~$4.37. P&L: -$0.21 (-4.59%). ❌
+- **7 pos remain.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED. PV $10,408, cash $9,109.
+- No other breaches (check-stops clean), no targets hit. All 7 HOLD. New entries gated (v1.4 CHOPPY).
+- DVN $46.09 (+2.45%) 🟢, NVDA $208.95 (+0.64%), WSC $26.53 (+0.27%). GME $21.32 (-4.74%) 🟡, KHC $25.71 (-0.92%).
+- MACDh: NVDA +0.056 rising 🟢, GME -0.020 improving, DVN -0.016 red (was -0.001), F -0.006, KHC -0.010. CHWY/WSC insufficient bars (free tier). Watchlist 2 idle→19. Merge discoveries no-op.
 
 ## THU 10:15 ET — Market Tick
 - **Same as 10:10 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED (cache 10:01 ET). PV $10,409, cash $9,105, 8 pos.
