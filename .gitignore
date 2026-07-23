@@ -30,6 +30,7 @@ state/sentiment_cache.json
 state/.workspace_blocked
 state/daily_order_count.json
 state/recent_orders.json
+state/peak_equity.json
 
 # Trader workspace runtime state (not version-controlled)
 traders/*/memory/

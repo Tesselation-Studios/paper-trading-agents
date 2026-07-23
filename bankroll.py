@@ -310,6 +310,48 @@ def format_tier(status: dict) -> str:
     return line
 
 
+def expectancy_trend(state: dict, window: int = 10) -> str:
+    """Compares average $ P&L of the last `window` trades (from bankroll.md's
+    own rolling history log, which keeps up to 50) against lifetime
+    expectancy -- a real signal from real logged outcomes, not a fabricated
+    metric. Note: history is the same session-scoped log as closed_trades
+    (cleared by --reset), so "recent" here means "since the last reset",
+    not always a true last-N-trades window -- good enough for a directional
+    read, not a precise one."""
+    pnls = []
+    for entry in state.get("history", [])[-window:]:
+        m = re.search(r"(?:WIN|LOSS) \$([+-]?\d+\.\d+)", entry)
+        if m:
+            pnls.append(float(m.group(1)))
+    if not pnls:
+        return "no recent data"
+
+    recent_avg = sum(pnls) / len(pnls)
+    lifetime_trades = state.get("lifetime_trades", 0)
+    lifetime_avg = (state.get("lifetime_net_pnl", 0.0) / lifetime_trades) if lifetime_trades else 0.0
+    diff = recent_avg - lifetime_avg
+
+    if abs(diff) < 0.5:
+        direction = "flat"
+    elif diff > 0:
+        direction = "improving"
+    else:
+        direction = "declining"
+    return f"{direction} (recent ${recent_avg:+.2f}/trade vs lifetime ${lifetime_avg:+.2f}/trade)"
+
+
+def format_competition_status(state: dict, today: date = None) -> str:
+    """Combined competition-mode context for stonks-evolution-batch: real
+    tier progress, expectancy direction, and time pressure -- informational
+    only, does NOT relax the Sharpe/split-window evidence bar for actual
+    strategy changes (see skills/evolution-proposals.md)."""
+    return "\n".join([
+        format_tier(tier_status(state)),
+        f"Trend: {expectancy_trend(state)}",
+        f"Days to deadline (12/31/26): {days_remaining(today)}",
+    ])
+
+
 def format_output(state: dict) -> str:
     return (
         f"Ceiling: ${state['ceiling']:.2f} | "
@@ -328,12 +370,18 @@ def main():
     parser.add_argument("--reset", action="store_true", help="Reset to defaults")
     parser.add_argument("--set-ceiling", type=float, help="Manual ceiling override")
     parser.add_argument("--tier", action="store_true", help="Show real unlock-tier status")
+    parser.add_argument("--competition", action="store_true",
+                         help="Full competition status: tier + expectancy trend + days remaining")
     args = parser.parse_args()
 
     state = read_bankroll()
 
     if args.tier:
         print(format_tier(tier_status(state)))
+        return
+
+    if args.competition:
+        print(format_competition_status(state))
         return
 
     if args.reset:

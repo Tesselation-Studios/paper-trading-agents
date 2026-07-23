@@ -537,3 +537,66 @@ class TestFormatTier:
         status = {"tier": 4, "tier_name": "Options / leveraged ETFs / forex", "trades": 100, "expectancy": 5.0}
         text = bankroll.format_tier(status)
         assert "Max tier reached" in text
+
+
+class TestExpectancyTrend:
+    def test_no_history_returns_no_data(self):
+        assert bankroll.expectancy_trend({"history": []}) == "no recent data"
+
+    def test_recent_better_than_lifetime_is_improving(self):
+        state = {
+            "history": ["07/23 10:00 WIN $+5.00 → $50.00", "07/23 11:00 WIN $+4.00 → $52.00"],
+            "lifetime_trades": 10, "lifetime_net_pnl": 5.0,  # lifetime avg $0.50
+        }
+        result = bankroll.expectancy_trend(state)
+        assert result.startswith("improving")
+        assert "$+4.50/trade" in result  # recent avg
+
+    def test_recent_worse_than_lifetime_is_declining(self):
+        state = {
+            "history": ["07/23 10:00 LOSS $-5.00 → $45.00"],
+            "lifetime_trades": 10, "lifetime_net_pnl": 5.0,
+        }
+        result = bankroll.expectancy_trend(state)
+        assert result.startswith("declining")
+
+    def test_small_difference_is_flat(self):
+        state = {
+            "history": ["07/23 10:00 WIN $+1.00 → $51.00"],
+            "lifetime_trades": 1, "lifetime_net_pnl": 1.20,
+        }
+        result = bankroll.expectancy_trend(state)
+        assert result.startswith("flat")
+
+    def test_only_uses_last_window_entries(self):
+        history = [f"07/23 10:{i:02d} WIN $+10.00 → $50.00" for i in range(5)]
+        history += ["07/23 11:00 LOSS $-1.00 → $49.00"]
+        state = {"history": history, "lifetime_trades": 6, "lifetime_net_pnl": 49.0}
+        result = bankroll.expectancy_trend(state, window=1)
+        # window=1 -> only the last (LOSS) entry counted
+        assert "$-1.00/trade" in result
+
+    def test_reset_entries_are_ignored(self):
+        state = {
+            "history": ["reset to defaults", "07/23 10:00 WIN $+2.00 → $50.00"],
+            "lifetime_trades": 1, "lifetime_net_pnl": 2.0,
+        }
+        result = bankroll.expectancy_trend(state)
+        assert "$+2.00/trade" in result
+
+
+class TestFormatCompetitionStatus:
+    def test_includes_tier_trend_and_days_remaining(self):
+        state = {
+            "lifetime_trades": 17, "lifetime_net_pnl": 34.0,
+            "history": ["07/23 10:00 WIN $+2.00 → $50.00"],
+        }
+        text = bankroll.format_competition_status(state, today=datetime.date(2026, 9, 1))
+        assert "Tier 1/4" in text
+        assert "Trend:" in text
+        assert "Days to deadline (12/31/26):" in text
+
+    def test_days_remaining_reflects_today(self):
+        state = {"lifetime_trades": 0, "lifetime_net_pnl": 0.0, "history": []}
+        text = bankroll.format_competition_status(state, today=bankroll.COMPETITION_END)
+        assert "Days to deadline (12/31/26): 0" in text
