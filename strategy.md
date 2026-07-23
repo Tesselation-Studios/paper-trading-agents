@@ -36,7 +36,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Low-confidence/CHOPPY: don't trust MACD divergence without price confirmation — it's a trap.
 - Pre-session account audit — shared credentials mean your Alpaca account may contain positions you don't recognize. Audit against journal records symbol-by-symbol before first tick.
 - Strategy changes must be verified end-to-end: after revising `strategy.md`, explicitly check `params.json`, `executor.py`, and `tick_prompt.md` for stale rules. A revision that only touches this file is incomplete.
-- Trailing stop win rate: 2W/4L (33%) across Jul 21-22 exits. Monitoring — if the ratio holds below 33% through 20 trail-stop exits, revisit entry criteria or stop parameters.
+- Trailing stop win rate: 4W/8L (33%) across Jul 21-23 exits. Still holding at exactly the 33% monitoring threshold — 12 trail-stop exits now, need 8 more for the 20-exit review trigger. GME/OPEN added Jul 23 (both -5.0%/-5.1%).
 
 ## Evolution Process
 - Not limited to this file — evolve when something real is learned (nightly Step 3).
