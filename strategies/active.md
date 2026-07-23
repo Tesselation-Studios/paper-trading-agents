@@ -1,11 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 09:15 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 09:20 ET
 
-## THU 09:15 ET — Pre-Market Tick
-- **Same as 09:10 tick.** Regime CHOPPY/FEAR, F&G 43 (Fear, ⬆ from 31 — improving). Sentiment RECOVERED. PV $10,419, cash $8,470, 9 pos.
+## THU 09:20 ET — Pre-Market Tick
+- **Same as 09:15 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear, data bus back this tick). Sentiment RECOVERED (fresh cache 09:15 ET). PV $10,416, cash $8,470, 9 pos. 10 min to open.
 - 🛑 **NVDA oversized**: 10.0% of PV > 6% cap → trim 3 shares. Blocked by hours gate pre-market — queued for 09:30 open.
 - No other stop breaches (check-stops clean), no targets hit. All 8 other pos HOLD.
-- 🔔 CLF earnings today (per sentiment cache). Watchlist 2 (RKT idle→11 below band, CLF idle→11 bare). Merge discoveries no-op. New entries gated (v1.4 CHOPPY).
-- 📡 Data bus unavailable — MACDh flips unchecked this tick.
+- ⚠️ OPEN $4.29 (-4.71%) tight vs trail stop $4.275 — $0.015 margin. GME $21.61 (-3.44%). CHWY +1.81%, DVN +2.11% green.
+- 🔔 CLF earnings today. Watchlist 2 (RKT idle→11 below band, CLF idle→11 bare). Merge discoveries no-op. New entries gated (v1.4 CHOPPY).
+- 📡 Data bus available this tick (MACDh unavailable — pre-market stale quotes only).
 
 ## THU 09:10 ET — Pre-Market Tick
 - **Same as 09:05 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED. PV $10,420, cash $8,470, 9 pos.
