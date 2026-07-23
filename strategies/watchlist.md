@@ -25,9 +25,9 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- FDIV — idle_ticks: 9 — $27.55, RSI 50.6, vol 4.56x (!), news: Emerson/Aramco corrosion monitoring collab (+0.95)
-- COAG — idle_ticks: 9 — $49.73 mid, RSI 61.5, vol 0.95x, news: Hemab clinical data (neutral)
-- MATE — idle_ticks: 9 — $29.95 mid, RSI 60.7, vol 0.85x, no news — technical only
+- FDIV — idle_ticks: 10 — $27.55, RSI 50.6, vol 4.56x (!), news: Emerson/Aramco corrosion monitoring collab (+0.95)
+- COAG — idle_ticks: 10 — $49.73 mid, RSI 61.5, vol 0.95x, news: Hemab clinical data (neutral)
+- MATE — idle_ticks: 10 — $29.95 mid, RSI 60.7, vol 0.85x, no news — technical only
 
 _(RKT idle_ticks=24 and CLF idle_ticks=24 dropped 2026-07-23 11:10 — hit threshold.)_
 
