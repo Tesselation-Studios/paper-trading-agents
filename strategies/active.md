@@ -5,6 +5,11 @@
 - No stop breaches (check-stops clean). MACDh 1-min bars: F 0.0 ← -0.000638 rising ✅ (crossing zero from below, improving), WSC 0.0 ← +0.001595 (tiny+ oscillation, technically crossed zero — but magnitude microscopic, price +1.72% up, consistent with 11:20 precedent where WSC 1-min oscillation was noise). Both HOLD.
 - F $14.15 (+0.07%), WSC $26.92 (+1.72%). New entries gated (v1.4 CHOPPY). Watchlist empty. Merge discoveries no-op.
 
+## THU 12:17 ET — Market Tick
+- **Same as 12:10 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (12:00 ET). PV $10,404, cash $10,349, 2 pos.
+- No stop breaches (check-stops clean). MACDh fresh this tick (50 bars each via data.alpaca.markets desc): F **-0.00130 🔴 rising** (improved from -0.00202, near-zero oscillation confirmed — v1.4 false-alarm pattern per DVN/WSC precedent), WSC **-0.00848 🔴 rising** (was -0.01011). No flips on either.
+- F $14.145 (+0.07%), RSI 64.7. WSC $26.85 (+1.62%), RSI 51.2. Both HOLD. New entries gated (v1.4 CHOPPY). Watchlist empty. Merge discoveries no-op.
+
 ## THU 12:10 ET — Market Tick
 - **Same as 12:00 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (11:46 ET). PV $10,404, cash $10,349, 2 pos.
 - No stop breaches (check-stops clean). MACDh bars available this tick (1-min via Alpaca, 31 bars F / 4 bars WSC). F MACDh computed at **-0.0026 🔴 rising** (improving from -0.0033), was +0.0010 🟢 at 11:40 last confirmed — potential flip but histogram near zero and improving, stable price ($14.15). WSC too sparse to compute (4 bars), last known +0.0088 🟢 rising.
