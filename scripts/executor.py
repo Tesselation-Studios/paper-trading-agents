@@ -24,13 +24,30 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
-
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 STATE_DIR = WORKSPACE_DIR / "state"
 STOPS_STATE_PATH = STATE_DIR / "guardrail_stops.json"
 RECENT_ORDERS_PATH = STATE_DIR / "recent_orders.json"
+
+_DEFAULT_ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
+
+
+def _get_alpaca_base_url() -> str:
+    """Reads params.json.alpaca.base_url fresh, falling back to the paper
+    trading default if params.json is missing/malformed — 2026-07-23:
+    this used to be a hardcoded constant while params.json.alpaca.base_url
+    sat there unread (found by workspace_review.py's dead-param check),
+    silently ignored no matter what it said. Now it's actually live."""
+    try:
+        with open(PARAMS_PATH, 'r') as f:
+            params = json.load(f)
+        return params.get("alpaca", {}).get("base_url", _DEFAULT_ALPACA_BASE_URL)
+    except (OSError, json.JSONDecodeError):
+        return _DEFAULT_ALPACA_BASE_URL
+
+
+ALPACA_BASE_URL = _get_alpaca_base_url()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -74,12 +91,20 @@ def get_positions(account):
 
 def place_order(account, ticker, qty, side):
     import urllib.request
+    # params.json.alpaca.order_type/time_in_force used to be dead config —
+    # this hardcoded its own values regardless of what params.json said
+    # (found by workspace_review.py's dead-param check, 2026-07-23). Read
+    # fresh, fall back to the prior hardcoded defaults on any read error.
+    try:
+        alpaca_params = load_params().get("alpaca", {})
+    except (OSError, ValueError):
+        alpaca_params = {}
     data = {
         "symbol": ticker,
         "qty": str(qty),
         "side": side,
-        "type": "market",
-        "time_in_force": "day",
+        "type": alpaca_params.get("order_type", "market"),
+        "time_in_force": alpaca_params.get("time_in_force", "day"),
     }
     url = f"{ALPACA_BASE_URL}/v2/orders"
     req = urllib.request.Request(
