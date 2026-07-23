@@ -104,6 +104,8 @@ def read_bankroll() -> dict:
         "net_pnl": 0.0,
         "total_deployed": 0.0,
         "history": [],
+        "lifetime_trades": 0,
+        "lifetime_net_pnl": 0.0,
     }
     if not BANKROLL_FILE.exists():
         return state
@@ -136,6 +138,14 @@ def read_bankroll() -> dict:
     if m:
         state["net_pnl"] = float(m.group(1))
 
+    m = re.search(r"Lifetime trades:\s*(\d+)", text)
+    if m:
+        state["lifetime_trades"] = int(m.group(1))
+
+    m = re.search(r"Lifetime net PnL:\s*\$?([+-]?[\d.]+)", text)
+    if m:
+        state["lifetime_net_pnl"] = float(m.group(1))
+
     state["history"] = []
     in_history = False
     for line in text.splitlines():
@@ -143,7 +153,7 @@ def read_bankroll() -> dict:
             in_history = True
             continue
         if in_history and line.strip().startswith("-- "):
-            state["history"].append(line.strip())
+            state["history"].append(line.strip().removeprefix("-- "))
 
     return state
 
@@ -160,6 +170,8 @@ def write_bankroll(state: dict):
         f"Wins: {state['wins']} | Losses: {state['losses']}",
         f"Net: {state['net_pnl']:+.2f}%",
         f"Total deployed: ${state['total_deployed']:.2f}",
+        f"Lifetime trades: {state['lifetime_trades']}",
+        f"Lifetime net PnL: ${state['lifetime_net_pnl']:+.2f}",
         f"Updated: {now}",
         "",
         "## History",
@@ -184,6 +196,8 @@ def recalc_ceiling(state: dict, pnl: float, is_win: bool):
 
     state["closed_trades"] = trade_count
     state["net_pnl"] += pnl
+    state["lifetime_trades"] = state.get("lifetime_trades", 0) + 1
+    state["lifetime_net_pnl"] = state.get("lifetime_net_pnl", 0.0) + pnl
 
     # Dynamic calibration: growth rate accelerates with consistent wins
     if trade_count >= 10 and state["wins"] > 0:
@@ -230,6 +244,72 @@ def universe_max_price_for_ceiling(ceiling: float) -> float:
     return UNIVERSE_MAX_PRICE_TIERS[-1][1]
 
 
+# Unlock tiers (2026-07-23) -- replaces experience.json's current_level /
+# milestones_unlocked, which nothing ever read and had already drifted from
+# real trade counts (prose-agent-maintained, same dead-field pattern as the
+# old peak_ceiling table). Thresholds adapted from
+# paper-trading-rebuild/COMPETITION.md's Phase 1-4 unlock schedule. Gate is
+# evaluated live each call, not unlocked-once-and-forgotten: expectancy can
+# go negative again after a cold streak, and the tier reflects that.
+UNLOCK_TIERS = [
+    (1, "Stocks", 0),
+    (2, "Shorting", 30),
+    (3, "Crypto", 60),
+    (4, "Options / leveraged ETFs / forex", 90),
+]
+
+
+def tier_status(state: dict) -> dict:
+    """Real current unlock tier + progress toward the next one, computed from
+    state['lifetime_trades'] / state['lifetime_net_pnl'] (both updated by
+    executor.close_trade_outcome() on every real SELL -- not agent-reported).
+    Deliberately separate from closed_trades/net_pnl, which are session-scoped
+    and cleared by --reset; lifetime_* survives resets so the unlock clock
+    can't be silently wiped by a ceiling reset."""
+    trades = state.get("lifetime_trades", 0)
+    net_pnl = state.get("lifetime_net_pnl", 0.0)
+    expectancy = net_pnl / trades if trades else 0.0
+
+    current = UNLOCK_TIERS[0]
+    for tier in UNLOCK_TIERS:
+        _, _, trades_needed = tier
+        if trades >= trades_needed and (trades_needed == 0 or expectancy > 0):
+            current = tier
+
+    result = {
+        "tier": current[0],
+        "tier_name": current[1],
+        "trades": trades,
+        "expectancy": round(expectancy, 2),
+    }
+
+    next_tier = next((t for t in UNLOCK_TIERS if t[0] == current[0] + 1), None)
+    if next_tier:
+        _, next_name, next_trades_needed = next_tier
+        result["next_tier"] = next_name
+        result["trades_to_next"] = max(0, next_trades_needed - trades)
+        result["expectancy_positive"] = expectancy > 0
+
+    return result
+
+
+def format_tier(status: dict) -> str:
+    line = (f"Tier {status['tier']}/4: {status['tier_name']} | "
+            f"{status['trades']} trades | "
+            f"Expectancy: ${status['expectancy']:+.2f}/trade")
+    if "next_tier" in status:
+        blockers = []
+        if status["trades_to_next"] > 0:
+            blockers.append(f"{status['trades_to_next']} more trades")
+        if not status["expectancy_positive"]:
+            blockers.append("needs positive expectancy")
+        blocker_text = " and ".join(blockers) if blockers else "ready"
+        line += f" | Next: {status['next_tier']} ({blocker_text})"
+    else:
+        line += " | Max tier reached"
+    return line
+
+
 def format_output(state: dict) -> str:
     return (
         f"Ceiling: ${state['ceiling']:.2f} | "
@@ -247,9 +327,14 @@ def main():
     parser.add_argument("--loss", type=float, help="Record a losing trade")
     parser.add_argument("--reset", action="store_true", help="Reset to defaults")
     parser.add_argument("--set-ceiling", type=float, help="Manual ceiling override")
+    parser.add_argument("--tier", action="store_true", help="Show real unlock-tier status")
     args = parser.parse_args()
 
     state = read_bankroll()
+
+    if args.tier:
+        print(format_tier(tier_status(state)))
+        return
 
     if args.reset:
         state = read_bankroll()

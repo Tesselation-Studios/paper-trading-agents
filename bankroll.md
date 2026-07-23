@@ -7,9 +7,11 @@ Closed trades this session: 2
 Wins: 1 | Losses: 1
 Net: +2.99%
 Total deployed: $0.00
-Updated: 2026-07-23 13:33 UTC
+Lifetime trades: 17
+Lifetime net PnL: $+0.00
+Updated: 2026-07-23 19:33 UTC
 
 ## History
--- -- -- -- reset to defaults
+-- reset to defaults
 -- 07/23 13:33 LOSS $-0.46 → $50.00
 -- 07/23 13:33 WIN $+3.45 → $51.00

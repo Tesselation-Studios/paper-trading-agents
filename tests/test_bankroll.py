@@ -75,8 +75,9 @@ class TestReadWriteRoundTrip:
         assert reread["wins"] == 5
         assert reread["losses"] == 2
         assert reread["net_pnl"] == 12.34
-        # read_bankroll retains the "-- " prefix from the on-disk format
-        assert reread["history"] == ["-- 07/22 10:00 WIN $+5.00 → $50.00"]
+        # 2026-07-23: read_bankroll strips the "-- " on-disk prefix so it
+        # doesn't double up on repeated read/write cycles (was a real bug).
+        assert reread["history"] == ["07/22 10:00 WIN $+5.00 → $50.00"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -398,3 +399,141 @@ class TestEffectiveCeiling:
         state = {"ceiling": 200.0}
         result = bankroll.effective_ceiling(state, current_equity=10000, today=datetime.date(2026, 9, 1))
         assert result == pytest.approx(200.0)
+
+
+class TestLifetimeCountersSurviveReset:
+    """2026-07-23: lifetime_trades/lifetime_net_pnl back the unlock-tier system
+    and must NOT be cleared by --reset -- only the session/ceiling counters
+    are reset. Discovered this distinction after bankroll.md's session
+    counters had actually been reset mid-day, which would have silently
+    wiped tier progress if tier_status() read the session fields instead."""
+
+    def test_recalc_ceiling_increments_lifetime_counters(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        bankroll.recalc_ceiling(state, pnl=-2.0, is_win=False)
+        assert state["lifetime_trades"] == 2
+        assert state["lifetime_net_pnl"] == pytest.approx(3.0)
+
+    def test_lifetime_counters_round_trip_through_write_read(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        bankroll.write_bankroll(state)
+        reread = bankroll.read_bankroll()
+        assert reread["lifetime_trades"] == 1
+        assert reread["lifetime_net_pnl"] == pytest.approx(5.0)
+
+    def test_reset_preserves_lifetime_counters(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        bankroll.write_bankroll(state)
+
+        # simulate main()'s --reset handler
+        reset_state = bankroll.read_bankroll()
+        reset_state["ceiling"] = bankroll.STARTING_CEILING
+        reset_state["closed_trades"] = 0
+        reset_state["wins"] = 0
+        reset_state["losses"] = 0
+        reset_state["net_pnl"] = 0.0
+        reset_state["history"] = ["reset to defaults"]
+        bankroll.write_bankroll(reset_state)
+
+        reread = bankroll.read_bankroll()
+        assert reread["closed_trades"] == 0
+        assert reread["lifetime_trades"] == 2
+        assert reread["lifetime_net_pnl"] == pytest.approx(10.0)
+
+
+class TestHistoryRoundTripDoesNotDoublePrefix:
+    """2026-07-23: read_bankroll() used to store history entries WITH their
+    '-- ' prefix, and write_bankroll() always re-added one -- every
+    read-modify-write cycle doubled the prefix on pre-existing entries
+    ('-- entry' -> '-- -- entry' -> ...). Found via bankroll.md showing
+    '-- -- -- -- reset to defaults' after routine use."""
+
+    def test_prefix_does_not_accumulate_across_multiple_writes(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.recalc_ceiling(state, pnl=1.0, is_win=True)
+        bankroll.write_bankroll(state)
+
+        for _ in range(3):
+            state = bankroll.read_bankroll()
+            bankroll.write_bankroll(state)
+
+        text = bankroll_file.read_text()
+        for line in text.splitlines():
+            if "WIN" in line or "LOSS" in line:
+                assert not line.strip().startswith("-- -- ")
+
+
+class TestTierStatus:
+    def test_zero_trades_is_tier_one(self):
+        state = {"lifetime_trades": 0, "lifetime_net_pnl": 0.0}
+        status = bankroll.tier_status(state)
+        assert status["tier"] == 1
+        assert status["tier_name"] == "Stocks"
+        assert status["next_tier"] == "Shorting"
+        assert status["trades_to_next"] == 30
+
+    def test_below_threshold_with_positive_expectancy_stays_tier_one(self):
+        state = {"lifetime_trades": 17, "lifetime_net_pnl": 34.0}
+        status = bankroll.tier_status(state)
+        assert status["tier"] == 1
+        assert status["expectancy"] == pytest.approx(2.0)
+        assert status["trades_to_next"] == 13
+        assert status["expectancy_positive"] is True
+
+    def test_enough_trades_but_negative_expectancy_stays_tier_one(self):
+        state = {"lifetime_trades": 35, "lifetime_net_pnl": -20.0}
+        status = bankroll.tier_status(state)
+        assert status["tier"] == 1
+        assert status["trades_to_next"] == 0
+        assert status["expectancy_positive"] is False
+
+    def test_enough_trades_and_positive_expectancy_unlocks_tier_two(self):
+        state = {"lifetime_trades": 30, "lifetime_net_pnl": 15.0}
+        status = bankroll.tier_status(state)
+        assert status["tier"] == 2
+        assert status["tier_name"] == "Shorting"
+        assert status["next_tier"] == "Crypto"
+        assert status["trades_to_next"] == 30
+
+    def test_max_tier_has_no_next_tier(self):
+        state = {"lifetime_trades": 90, "lifetime_net_pnl": 100.0}
+        status = bankroll.tier_status(state)
+        assert status["tier"] == 4
+        assert status["tier_name"] == "Options / leveraged ETFs / forex"
+        assert "next_tier" not in status
+
+    def test_zero_trades_does_not_crash_on_expectancy(self):
+        state = {"lifetime_trades": 0, "lifetime_net_pnl": 0.0}
+        status = bankroll.tier_status(state)
+        assert status["expectancy"] == 0.0
+
+    def test_missing_lifetime_fields_default_to_zero(self):
+        # older bankroll.md files predating this feature won't have these keys
+        status = bankroll.tier_status({})
+        assert status["tier"] == 1
+        assert status["trades"] == 0
+
+
+class TestFormatTier:
+    def test_includes_blockers_when_both_present(self):
+        status = bankroll.tier_status({"lifetime_trades": 17, "lifetime_net_pnl": -5.0})
+        text = bankroll.format_tier(status)
+        assert "more trades" in text
+        assert "needs positive expectancy" in text
+
+    def test_ready_when_no_blockers_remain(self):
+        status = {
+            "tier": 1, "tier_name": "Stocks", "trades": 30, "expectancy": 2.0,
+            "next_tier": "Shorting", "trades_to_next": 0, "expectancy_positive": True,
+        }
+        text = bankroll.format_tier(status)
+        assert "ready" in text
+
+    def test_max_tier_reached_message(self):
+        status = {"tier": 4, "tier_name": "Options / leveraged ETFs / forex", "trades": 100, "expectancy": 5.0}
+        text = bankroll.format_tier(status)
+        assert "Max tier reached" in text

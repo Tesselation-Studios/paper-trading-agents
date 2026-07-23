@@ -6,8 +6,8 @@ File: `experience.json`. Read at start of each tick, update after trades:
 - Increment `total_ticks` each tick
 - Increment `total_trades` / `total_wins` / `total_losses` on closed positions
 - Track `consecutive_wins` / `consecutive_losses` streaks
-- Update `current_level`: 10 trades → "Apprentice", 50 → "Journeyman", 100 → "Veteran"
 - Universe breadth is no longer a `peak_ceiling` milestone here (2026-07-23: found stuck at $50 since creation, never fired) — it's mechanized in `bankroll.universe_max_price_for_ceiling()`, read live by `scripts/discovery_scan.py` every scan. Nothing to track manually.
+- Competition unlock tier is likewise mechanized, not tracked here: `python3 bankroll.py --tier` for real live status/progress.
 
 ## Journal
 Append to `journal/YYYY-MM-DD.md` during nightly maintenance only. Each entry: strategy version + reflection.
