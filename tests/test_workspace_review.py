@@ -21,7 +21,7 @@ VALID_PARAMS = {
     "watchlist": {"path": "strategies/watchlist.md"},
 }
 
-VALID_STRATEGY = "# Stonks — Strategy stonks.strat:v1.3.1\n\n## Version History\n\n- v1.3.1 ...\n"
+VALID_STRATEGY = "# Stonks — Strategy stonks.strat:v1.4\n\n## Current Approach\n\n- some rule\n"
 
 MINIMAL_EXECUTOR = '''
 GATES = {
@@ -63,15 +63,16 @@ class TestCheckStrategyMdStructure:
         findings = workspace_review.check_strategy_md_structure("# Just a title\n\nsome text")
         assert any(sev == "critical" for sev, msg in findings)
 
-    def test_missing_version_history_is_warning(self):
-        text = "# Stonks — Strategy stonks.strat:v1.3.1\n\nno history section here"
-        findings = workspace_review.check_strategy_md_structure(text)
-        assert findings == [("warning", "strategy.md has no '## Version History' section")]
+    def test_no_version_history_required(self):
+        """2026-07-23: git tracks version rationale now, not this file —
+        a valid version header with no Version History section is clean."""
+        text = "# Stonks — Strategy stonks.strat:v1.4\n\nno history section, and that's fine"
+        assert workspace_review.check_strategy_md_structure(text) == []
 
 
 class TestCheckVersionSync:
     def test_matching_versions_no_findings(self):
-        params = {"strategy_version": "stonks.strat:v1.3.1"}
+        params = {"strategy_version": "stonks.strat:v1.4"}
         assert workspace_review.check_version_sync(params, VALID_STRATEGY) == []
 
     def test_mismatched_versions_is_warning(self):
@@ -79,7 +80,7 @@ class TestCheckVersionSync:
         findings = workspace_review.check_version_sync(params, VALID_STRATEGY)
         assert len(findings) == 1
         assert findings[0][0] == "warning"
-        assert "v1.2.0" in findings[0][1] and "v1.3.1" in findings[0][1]
+        assert "v1.2.0" in findings[0][1] and "v1.4" in findings[0][1]
 
     def test_empty_params_or_strategy_no_findings(self):
         assert workspace_review.check_version_sync({}, VALID_STRATEGY) == []
@@ -166,6 +167,50 @@ class TestCheckDeadParams:
         monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
         params = {"risk": {"_source": "explanatory, not a real param"}, "universe": "not-a-dict"}
         assert workspace_review.check_dead_params(params) == []
+
+    def test_key_tracked_by_proposal_is_tracked_not_warning(self, tmp_path, monkeypatch):
+        """2026-07-23: a dead param already written up as an evolution
+        proposal is genuinely unresolved but through the right channel —
+        should report as 'tracked', not fail CI as an unaddressed warning
+        forever just because implementing it was deferred responsibly."""
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        (scripts_dir / "executor.py").write_text("# nothing relevant")
+        proposals_dir = tmp_path / "proposals"
+        proposals_dir.mkdir()
+        (proposals_dir / "2026-07-23-x.md").write_text(
+            "# Proposal: Implement max_portfolio_risk_pct gate\n\nmax_portfolio_risk_pct needs design work.\n")
+        monkeypatch.setattr(workspace_review, "SCRIPTS_DIR", scripts_dir)
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        params = {"risk": {"max_portfolio_risk_pct": 8.0}}
+        findings = workspace_review.check_dead_params(params)
+        assert len(findings) == 1
+        assert findings[0][0] == "tracked"
+        assert "max_portfolio_risk_pct" in findings[0][1]
+
+    def test_untracked_dead_param_still_a_warning_with_proposals_dir_present(self, tmp_path, monkeypatch):
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        (scripts_dir / "executor.py").write_text("# nothing relevant")
+        proposals_dir = tmp_path / "proposals"
+        proposals_dir.mkdir()
+        (proposals_dir / "2026-07-23-x.md").write_text("# Proposal: unrelated\n\nsomething else entirely.\n")
+        monkeypatch.setattr(workspace_review, "SCRIPTS_DIR", scripts_dir)
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        params = {"risk": {"totally_unused_param": 1.0}}
+        findings = workspace_review.check_dead_params(params)
+        assert findings == [("warning", "params.json.risk.totally_unused_param isn't referenced in "
+                                         "scripts/*.py or any live-consumed doc — possibly dead")]
+
+    def test_missing_proposals_dir_does_not_crash(self, tmp_path, monkeypatch):
+        scripts_dir = tmp_path / "scripts"
+        scripts_dir.mkdir()
+        (scripts_dir / "executor.py").write_text("# nothing")
+        monkeypatch.setattr(workspace_review, "SCRIPTS_DIR", scripts_dir)
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        params = {"risk": {"totally_unused_param": 1.0}}
+        findings = workspace_review.check_dead_params(params)
+        assert findings[0][0] == "warning"
 
 
 class TestRunAllChecksAndExitCodes:

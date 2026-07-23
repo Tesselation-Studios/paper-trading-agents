@@ -24,6 +24,12 @@ Findings are tiered:
     this repo's "never let a tick stall" philosophy — but does fail CI
     under --strict, since a failed CI run is cheap and a blocked trading
     day is not.
+  - tracked: a dead-param finding that's already been written up as an
+    evolution proposal (proposals/*.md mentions the key) — genuinely
+    unresolved, but through the right channel, not silently ignored.
+    Never fails anything, strict or not — deliberately deferring a change
+    that needs real design (see skills/evolution-proposals.md) shouldn't
+    turn CI red forever as the penalty for being careful.
 
 check_dead_params() is a heuristic (substring match across scripts/*.py),
 not real static analysis — a key referenced only via an f-string or a
@@ -85,13 +91,14 @@ def check_params_json_valid(raw: str) -> Tuple[List[Finding], Dict[str, Any]]:
 
 
 def check_strategy_md_structure(text: str) -> List[Finding]:
+    """No Version History requirement — 2026-07-23: git already tracks
+    version rationale (commit messages), keeping it out of strategy.md on
+    purpose to keep the file the agent re-reads every tick small."""
     findings: List[Finding] = []
     if not STRATEGY_PATH.exists() or not text.strip():
         return [("critical", "strategy.md is missing or empty")]
     if not re.search(r"^#\s+.*stonks\.strat:v[\d.]+", text, re.MULTILINE):
         findings.append(("critical", "strategy.md has no parseable version header (expected '# ... stonks.strat:vX.Y')"))
-    if "## Version History" not in text:
-        findings.append(("warning", "strategy.md has no '## Version History' section"))
     return findings
 
 
@@ -156,6 +163,21 @@ def _live_docs_text() -> str:
     return text
 
 
+def _proposals_text() -> str:
+    """A key mentioned in any proposals/*.md file (open or resolved) is
+    already being tracked through the real channel — not silently dead,
+    just not implemented yet. Deliberately deferred work (e.g. a gate that
+    needs real design, not a guessed formula) shouldn't fail CI forever
+    just because implementing it was the responsible call."""
+    proposals_dir = REPO_ROOT / "proposals"
+    if not proposals_dir.is_dir():
+        return ""
+    text = ""
+    for f in sorted(proposals_dir.glob("*.md")):
+        text += f.read_text()
+    return text
+
+
 def check_dead_params(params: Dict[str, Any]) -> List[Finding]:
     if not params:
         return []
@@ -163,6 +185,7 @@ def check_dead_params(params: Dict[str, Any]) -> List[Finding]:
     for f in sorted(SCRIPTS_DIR.glob("*.py")):
         scripts_text += f.read_text()
     combined_text = scripts_text + _live_docs_text()
+    proposals_text = _proposals_text()
 
     findings: List[Finding] = []
     for block_name in DEAD_PARAM_BLOCKS:
@@ -172,9 +195,14 @@ def check_dead_params(params: Dict[str, Any]) -> List[Finding]:
         for key in block:
             if key.startswith("_"):
                 continue
-            if key not in combined_text:
-                findings.append(("warning", f"params.json.{block_name}.{key} isn't referenced in "
-                                             f"scripts/*.py or any live-consumed doc — possibly dead"))
+            if key in combined_text:
+                continue
+            if key in proposals_text:
+                findings.append(("tracked", f"params.json.{block_name}.{key} isn't implemented yet, "
+                                             f"but is tracked by an evolution proposal — see proposals/"))
+                continue
+            findings.append(("warning", f"params.json.{block_name}.{key} isn't referenced in "
+                                         f"scripts/*.py or any live-consumed doc — possibly dead"))
     return findings
 
 
@@ -193,7 +221,11 @@ def run_all_checks() -> Dict[str, Any]:
 
     critical = [msg for sev, msg in findings if sev == "critical"]
     warnings = [msg for sev, msg in findings if sev == "warning"]
-    return {"critical": critical, "warnings": warnings, "ok": not critical and not warnings}
+    tracked = [msg for sev, msg in findings if sev == "tracked"]
+    return {
+        "critical": critical, "warnings": warnings, "tracked": tracked,
+        "ok": not critical and not warnings,
+    }
 
 
 def gate_status() -> str:

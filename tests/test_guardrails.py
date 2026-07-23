@@ -31,12 +31,12 @@ MARKET_OPEN_TS = datetime.datetime(2026, 7, 22, 12, 0, tzinfo=ZoneInfo("America/
 DEFAULT_PARAMS = {
     "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5,
               "duplicate_order_cooldown_seconds": 60},
-    "risk_guards": {"max_positions_per_sector": 2},
+    "risk_guards": {"max_positions_per_sector": 2, "order_count_audit_threshold_daily": 10},
     "guardrail_gates": {
         "cash": True, "position_size": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
-        "position_size_trim": True, "duplicate_order": True,
+        "position_size_trim": True, "duplicate_order": True, "order_count_audit": True,
     },
 }
 
@@ -289,6 +289,14 @@ class TestGateDuplicateOrder:
     @pytest.fixture(autouse=True)
     def isolated_state(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        # record_order_submitted() also bumps the daily-order-count file —
+        # DAILY_ORDER_COUNT_PATH must be patched explicitly too, not implied
+        # by patching STATE_DIR below (it was already bound to the real
+        # path at module-import time). Missing this leaked real writes from
+        # every test run into the production state/daily_order_count.json,
+        # confirmed 2026-07-23 — Stan hadn't placed a single real order that
+        # day, yet the file showed count=15 purely from repeated pytest runs.
+        monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
 
     def test_no_prior_order_passes(self, params):
@@ -341,6 +349,87 @@ class TestGateDuplicateOrder:
         assert executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})[0] is False
 
 
+class TestGateDailyOrderCount:
+    """2026-07-23: strategy.md promised a daily order-count audit
+    (risk_guards) since v1.0 that nothing ever mechanically enforced —
+    found dead by workspace_review.py. Mirrors TestGateDuplicateOrder's
+    conventions closely (same isolated-state fixture shape, same
+    fail-open/toggle expectations)."""
+
+    TODAY = "2026-07-23"
+
+    @pytest.fixture(autouse=True)
+    def isolated_state(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+
+    def test_zero_orders_today_passes(self, params):
+        granted, reason = executor.gate_daily_order_count({}, {"action": "BUY", "ticker": "DVN"})
+        assert granted is True
+        assert "0/10" in reason
+
+    def test_under_threshold_passes(self, params):
+        for _ in range(5):
+            executor.record_order_submitted("DVN", "BUY", today=self.TODAY)
+        granted, reason = executor.gate_daily_order_count(
+            {"_test_now": datetime.datetime.fromisoformat(self.TODAY)}, {"action": "BUY", "ticker": "WSC"})
+        assert granted is True
+        assert "5/10" in reason
+
+    def test_at_threshold_blocks(self, params):
+        for _ in range(10):
+            executor.record_order_submitted("DVN", "BUY", today=self.TODAY)
+        granted, reason = executor.gate_daily_order_count(
+            {"_test_now": datetime.datetime.fromisoformat(self.TODAY)}, {"action": "SELL", "ticker": "WSC"})
+        assert granted is False
+        assert "rogue loop" in reason
+
+    def test_applies_to_sell_too(self, params):
+        for _ in range(10):
+            executor.record_order_submitted("DVN", "SELL", today=self.TODAY)
+        granted, _ = executor.gate_daily_order_count(
+            {"_test_now": datetime.datetime.fromisoformat(self.TODAY)}, {"action": "SELL", "ticker": "WSC"})
+        assert granted is False
+
+    def test_counts_across_different_tickers_and_actions(self, params):
+        """Unlike gate_duplicate_order, this isn't per-ticker — a rogue
+        loop hammering many different tickers is exactly the failure mode
+        it exists to catch."""
+        executor.record_order_submitted("DVN", "BUY", today=self.TODAY)
+        executor.record_order_submitted("WSC", "SELL", today=self.TODAY)
+        executor.record_order_submitted("GME", "BUY", today=self.TODAY)
+        granted, reason = executor.gate_daily_order_count(
+            {"_test_now": datetime.datetime.fromisoformat(self.TODAY)}, {"action": "BUY", "ticker": "SNAP"})
+        assert granted is True
+        assert "3/10" in reason
+
+    def test_resets_on_new_day(self, params):
+        for _ in range(10):
+            executor.record_order_submitted("DVN", "BUY", today=self.TODAY)
+        granted, reason = executor.gate_daily_order_count(
+            {"_test_now": datetime.datetime.fromisoformat("2026-07-24")}, {"action": "BUY", "ticker": "WSC"})
+        assert granted is True
+        assert "0/10" in reason
+
+    def test_missing_action_fails_open(self, params):
+        granted, reason = executor.gate_daily_order_count({}, {"ticker": "DVN"})
+        assert granted is True
+        assert "non-BUY/SELL" in reason
+
+    def test_disabled_via_toggle_skips_in_check_order_chain(self, params, monkeypatch):
+        params["guardrail_gates"]["order_count_audit"] = False
+        for _ in range(10):
+            executor.record_order_submitted("DVN", "BUY", today=self.TODAY)
+        monkeypatch.setattr(executor, "GATES", {"order_count_audit": executor.gate_daily_order_count})
+        monkeypatch.setattr(executor, "get_account", lambda account: {"cash": "100000", "portfolio_value": "100000"})
+        monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "WSC", 1, price=10.0,
+            conviction=0.9, sector="Tech")
+        assert granted is True
+        assert results[0]["reason"] == "disabled via params.json guardrail_gates"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # check_order — full chain: toggles, fail-open behavior, first-rejection stops
 # ─────────────────────────────────────────────────────────────────────────────
@@ -351,9 +440,13 @@ class TestCheckOrderChain:
     def mock_account(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "get_account", lambda account: {"equity": "10000", "cash": "8000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
-        # Isolate from any real state/recent_orders.json so gate_duplicate_order
-        # doesn't depend on filesystem state left over from a real tick.
+        # Isolate from any real state/*.json so gate_duplicate_order and
+        # gate_daily_order_count don't depend on filesystem state left over
+        # from real trading (confirmed 2026-07-23: Stan had genuinely
+        # placed 10 real orders today, tripping gate_daily_order_count for
+        # real against these tests' un-isolated state).
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
 
     def test_all_gates_pass(self, params, mock_account, monkeypatch):
         monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))

@@ -29,6 +29,7 @@ PARAMS_PATH = WORKSPACE_DIR / "params.json"
 STATE_DIR = WORKSPACE_DIR / "state"
 STOPS_STATE_PATH = STATE_DIR / "guardrail_stops.json"
 RECENT_ORDERS_PATH = STATE_DIR / "recent_orders.json"
+DAILY_ORDER_COUNT_PATH = STATE_DIR / "daily_order_count.json"
 
 _DEFAULT_ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
@@ -288,17 +289,25 @@ def _load_recent_orders() -> Dict[str, Any]:
     return {}
 
 
-def record_order_submitted(ticker: str, action: str) -> None:
+def record_order_submitted(ticker: str, action: str, today: Optional[str] = None) -> None:
     """Called after a BUY/SELL actually executes — used by gate_duplicate_order
     to block an accidental repeat submission of the same ticker+action within
     the cooldown window. Confirmed 2026-07-22: DVN got bought 3 times in one
     tick (three separate BUY orders, 5-7 seconds apart) — nothing stopped the
     agent from submitting the same order again without noticing the first one
-    had already filled."""
+    had already filled.
+
+    Also bumps the daily order counter gate_daily_order_count reads —
+    `today` lets tests inject a fixed date; production always computes the
+    real one."""
     state = _load_recent_orders()
     state[f"{ticker.upper()}:{action.upper()}"] = time.time()
     STATE_DIR.mkdir(exist_ok=True)
     RECENT_ORDERS_PATH.write_text(json.dumps(state, indent=2))
+
+    if today is None:
+        today = _today_et({})
+    _record_daily_order(today)
 
 
 def gate_duplicate_order(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
@@ -323,6 +332,66 @@ def gate_duplicate_order(context: Dict[str, Any], action: Dict[str, Any]) -> Tup
     return True, f"last {side} {ticker} was {elapsed:.0f}s ago, outside {cooldown:.0f}s cooldown"
 
 
+def _today_et(context: Dict[str, Any]) -> str:
+    """YYYY-MM-DD in America/New_York, matching gate_hours' pattern.
+    context["_test_now"] lets tests inject a fixed date instead of the
+    real wall clock — not used in production."""
+    if context.get("_test_now") is not None:
+        return context["_test_now"].strftime("%Y-%m-%d")
+    import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.datetime.now(ZoneInfo("America/New_York"))
+    except Exception:
+        now = datetime.datetime.now()
+    return now.strftime("%Y-%m-%d")
+
+
+def _load_daily_order_count(today: str) -> int:
+    """Count of orders submitted today (ET), across all tickers/actions —
+    resets automatically when the stored date no longer matches today,
+    same rollover-by-comparison pattern as everything else in this file
+    (no separate midnight-reset job needed)."""
+    if not DAILY_ORDER_COUNT_PATH.exists():
+        return 0
+    try:
+        state = json.loads(DAILY_ORDER_COUNT_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return 0
+    if state.get("date") != today:
+        return 0
+    return int(state.get("count", 0))
+
+
+def _record_daily_order(today: str) -> None:
+    count = _load_daily_order_count(today) + 1
+    STATE_DIR.mkdir(exist_ok=True)
+    DAILY_ORDER_COUNT_PATH.write_text(json.dumps({"date": today, "count": count}, indent=2))
+
+
+def gate_daily_order_count(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """2026-07-23: strategy.md's Risk Management section has promised a
+    'daily order-count audit' (risk_guards) since v1.0 — a rogue-trading
+    backstop (a stuck loop or repeated bad decisions placing far more
+    orders than a small-cap/wide/diversified strategy should in one day)
+    — but nothing ever mechanically enforced it (found by
+    workspace_review.py's dead-param check: risk_guards.
+    order_count_audit_threshold_daily was declared, never read). Applies
+    to both BUY and SELL, same reasoning as gate_duplicate_order — a rogue
+    loop isn't only a buying problem.
+    """
+    side = str(action.get("action", "")).upper()
+    if side not in ("BUY", "SELL"):
+        return True, "non-BUY/SELL, skipped"
+
+    threshold = int(load_params().get("risk_guards", {}).get("order_count_audit_threshold_daily", 10))
+    today = _today_et(context)
+    count = _load_daily_order_count(today)
+    if count >= threshold:
+        return False, f"{count} orders already placed today (>= {threshold} threshold) — possible rogue loop"
+    return True, f"{count}/{threshold} orders placed today"
+
+
 # name -> gate function. params.json guardrail_gates.<name> = false disables it.
 GATES = {
     "cash": gate_cash,
@@ -333,6 +402,7 @@ GATES = {
     "conviction": gate_conviction,
     "bankroll": gate_bankroll,
     "duplicate_order": gate_duplicate_order,
+    "order_count_audit": gate_daily_order_count,
 }
 
 

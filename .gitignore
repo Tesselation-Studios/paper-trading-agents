@@ -28,6 +28,8 @@ logs/test-results/
 state/guardrail_stops.json
 state/sentiment_cache.json
 state/.workspace_blocked
+state/daily_order_count.json
+state/recent_orders.json
 
 # Trader workspace runtime state (not version-controlled)
 traders/*/memory/

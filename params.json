@@ -13,7 +13,7 @@
   "universe": {
     "min_price": 1.0,
     "max_price": 50.0,
-    "cap_class": "small-mid"
+    "_cap_class": "small-mid, descriptive only — min_price/max_price are what actually filter"
   },
 
   "risk": {
@@ -87,6 +87,7 @@
     "bankroll": true,
     "position_size_trim": true,
     "duplicate_order": true,
-    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed."
+    "order_count_audit": true,
+    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed. order_count_audit added 2026-07-23: strategy.md promised a daily order-count audit (risk_guards) since v1.0 that nothing ever mechanically enforced — found dead by workspace_review.py."
   }
 }
