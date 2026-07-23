@@ -9,6 +9,7 @@ shrinkage above $500 ceiling, and history log formatting/capping.
 BANKROLL_FILE is monkeypatched to a tmp_path file in every test — this file
 is live production state and must never be touched by tests.
 """
+import datetime
 import re
 import sys
 from pathlib import Path
@@ -303,3 +304,97 @@ class TestUniverseMaxPriceForCeiling:
         ceilings = [50, 99, 100, 250, 300, 500, 750, 1000, 2000]
         prices = [bankroll.universe_max_price_for_ceiling(c) for c in ceilings]
         assert prices == sorted(prices)
+
+
+class TestDaysRemaining:
+    def test_before_deadline(self):
+        assert bankroll.days_remaining(datetime.date(2026, 12, 1)) == 30
+
+    def test_on_deadline(self):
+        assert bankroll.days_remaining(datetime.date(2026, 12, 31)) == 0
+
+    def test_after_deadline_clamps_to_zero(self):
+        assert bankroll.days_remaining(datetime.date(2027, 1, 15)) == 0
+
+
+class TestEndgameFactor:
+    def test_neutral_outside_endgame_window(self):
+        assert bankroll.endgame_factor(datetime.date(2026, 9, 1)) == 1.0
+
+    def test_exactly_at_window_boundary_is_neutral(self):
+        # 60 days out is still >= ENDGAME_WINDOW_DAYS -> neutral
+        boundary = bankroll.COMPETITION_END - datetime.timedelta(days=bankroll.ENDGAME_WINDOW_DAYS)
+        assert bankroll.endgame_factor(boundary) == 1.0
+
+    def test_ramps_up_inside_window(self):
+        halfway = bankroll.COMPETITION_END - datetime.timedelta(days=bankroll.ENDGAME_WINDOW_DAYS // 2)
+        factor = bankroll.endgame_factor(halfway)
+        assert 1.0 < factor < bankroll.ENDGAME_MAX_MULTIPLIER
+
+    def test_max_at_deadline(self):
+        assert bankroll.endgame_factor(bankroll.COMPETITION_END) == pytest.approx(
+            bankroll.ENDGAME_MAX_MULTIPLIER)
+
+    def test_monotonically_increasing_toward_deadline(self):
+        days_out = [90, 60, 45, 30, 15, 1, 0]
+        dates = [bankroll.COMPETITION_END - datetime.timedelta(days=d) for d in days_out]
+        factors = [bankroll.endgame_factor(d) for d in dates]
+        assert factors == sorted(factors)
+
+
+class TestPerformanceFactor:
+    def test_behind_starting_capital_boosts(self):
+        assert bankroll.performance_factor(9000, starting_capital=10000) == bankroll.BEHIND_PACE_MULTIPLIER
+
+    def test_at_starting_capital_neutral(self):
+        assert bankroll.performance_factor(10000, starting_capital=10000) == 1.0
+
+    def test_modest_lead_neutral(self):
+        assert bankroll.performance_factor(12000, starting_capital=10000) == 1.0
+
+    def test_meaningful_lead_dampens(self):
+        assert bankroll.performance_factor(15000, starting_capital=10000) == bankroll.AHEAD_PACE_MULTIPLIER
+
+    def test_zero_starting_capital_does_not_crash(self):
+        assert bankroll.performance_factor(1000, starting_capital=0) == 1.0
+
+
+class TestCompetitionMultiplier:
+    def test_neutral_midyear_at_starting_capital(self):
+        mult = bankroll.competition_multiplier(10000, today=datetime.date(2026, 9, 1))
+        assert mult == pytest.approx(1.0)
+
+    def test_combines_both_factors(self):
+        # Behind pace AND in the endgame window -> both factors > 1, combined higher than either alone
+        endgame_date = bankroll.COMPETITION_END - datetime.timedelta(days=10)
+        mult = bankroll.competition_multiplier(9000, today=endgame_date)
+        assert mult > bankroll.BEHIND_PACE_MULTIPLIER
+        assert mult > bankroll.endgame_factor(endgame_date)
+
+    def test_clamped_to_bounds(self):
+        lo, hi = bankroll.COMBINED_MULTIPLIER_BOUNDS
+        mult = bankroll.competition_multiplier(9000, today=bankroll.COMPETITION_END)
+        assert lo <= mult <= hi
+
+    def test_ahead_and_not_endgame_dampens_below_one(self):
+        mult = bankroll.competition_multiplier(20000, today=datetime.date(2026, 8, 1))
+        assert mult == pytest.approx(bankroll.AHEAD_PACE_MULTIPLIER)
+
+
+class TestEffectiveCeiling:
+    def test_applies_multiplier_to_raw_ceiling(self):
+        state = {"ceiling": 100.0}
+        result = bankroll.effective_ceiling(state, current_equity=9000, today=datetime.date(2026, 9, 1))
+        assert result == pytest.approx(100.0 * bankroll.BEHIND_PACE_MULTIPLIER)
+
+    def test_never_exceeds_max_ceiling(self):
+        state = {"ceiling": bankroll.MAX_CEILING}
+        # even with the max endgame+behind-pace boost, stays capped
+        result = bankroll.effective_ceiling(
+            state, current_equity=1, today=bankroll.COMPETITION_END)
+        assert result <= bankroll.MAX_CEILING
+
+    def test_neutral_conditions_return_raw_ceiling(self):
+        state = {"ceiling": 200.0}
+        result = bankroll.effective_ceiling(state, current_equity=10000, today=datetime.date(2026, 9, 1))
+        assert result == pytest.approx(200.0)

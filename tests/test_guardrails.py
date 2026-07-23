@@ -277,6 +277,40 @@ class TestGateBankroll:
         assert granted is False
         assert "exceeds bankroll ceiling" in reason
 
+    def test_no_portfolio_value_in_context_falls_back_to_raw_ceiling(self, params, monkeypatch):
+        """2026-07-23: competition-mode adjustment needs real portfolio_value
+        to compute — context={} (as used elsewhere in this test class) must
+        still work, fail-open to the raw ceiling, not crash."""
+        fake_bankroll = type("M", (), {"read_bankroll": staticmethod(lambda: {"ceiling": 50.0})})
+        monkeypatch.setitem(sys.modules, "bankroll", fake_bankroll)
+        granted, reason = executor.gate_bankroll({}, {"action": "BUY", "quantity": 5, "price": 5.0})
+        assert granted is True
+
+    def test_uses_effective_ceiling_when_portfolio_value_present(self, params, monkeypatch):
+        """When real portfolio_value IS available, gate_bankroll must call
+        bankroll.effective_ceiling(state, portfolio_value) -- not just the
+        raw state['ceiling'] -- so competition-mode adjustment actually
+        takes effect."""
+        calls = []
+
+        def fake_effective_ceiling(state, equity):
+            calls.append((state["ceiling"], equity))
+            return 200.0  # competition-boosted, higher than raw $50
+
+        fake_bankroll = type("M", (), {
+            "read_bankroll": staticmethod(lambda: {"ceiling": 50.0}),
+            "effective_ceiling": staticmethod(fake_effective_ceiling),
+        })
+        monkeypatch.setitem(sys.modules, "bankroll", fake_bankroll)
+
+        # Cost ($150) exceeds the raw $50 ceiling but not the boosted $200 --
+        # confirms the boosted value is actually what's compared against.
+        granted, reason = executor.gate_bankroll(
+            {"portfolio_value": 9000.0}, {"action": "BUY", "quantity": 30, "price": 5.0})
+        assert granted is True
+        assert "$200.00" in reason
+        assert calls == [(50.0, 9000.0)]
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # gate_duplicate_order — added 2026-07-22 after DVN got bought 3x in one tick

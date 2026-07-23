@@ -250,6 +250,13 @@ def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool
     above 55% win rate, decelerating below 45%) — this is what makes position
     sizing actually adapt to real performance, not just a fixed % of
     portfolio. See scripts/bankroll.py / bankroll.md.
+
+    2026-07-23: the ceiling used here is now competition-mode adjusted
+    (bankroll.effective_ceiling) — ramps up in the final ~60 days before
+    the 12/31/26 deadline, and reacts to whether the account is ahead or
+    behind its own starting capital. Raw ceiling growth/decay from wins
+    and losses is unchanged; this only scales the number gate_bankroll
+    actually compares against.
     """
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
@@ -261,7 +268,10 @@ def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import bankroll
-    ceiling = bankroll.read_bankroll()["ceiling"]
+    state = bankroll.read_bankroll()
+    portfolio_value = float(context.get("portfolio_value", 0) or 0)
+    ceiling = (bankroll.effective_ceiling(state, portfolio_value)
+               if portfolio_value > 0 else state["ceiling"])
 
     if cost > ceiling:
         return False, f"BUY costs ${cost:,.2f}, exceeds bankroll ceiling ${ceiling:,.2f}"
