@@ -15,7 +15,7 @@ Usage:
 
 import argparse
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # ── Config ─────────────────────────────────────────────────────────────────
@@ -28,6 +28,68 @@ MAX_CEILING = 2000.00       # hard cap
 GROWTH_RATE = 0.02          # +2% per win
 DECAY_RATE = 0.01           # -1% per loss
 TARGET_PROFIT_PCT = 0.01    # 1% of position = take-profit target
+
+# ── Competition mode (2026-07-23) ────────────────────────────────────────────
+# Goal is most money by the deadline, not risk-adjusted return -- see
+# SOUL.md. competition_multiplier() layers time-to-deadline and
+# ahead/behind-pace awareness onto the win/loss ceiling above; it does not
+# replace it. Numbers here are a real strategic dial, reviewed with Raf
+# before shipping, not guessed -- easy to retune since they're isolated
+# constants, not logic scattered through the function.
+COMPETITION_END = date(2026, 12, 31)
+ENDGAME_WINDOW_DAYS = 60      # ramp starts this many days out from the deadline
+ENDGAME_MAX_MULTIPLIER = 1.4  # multiplier at day zero
+BEHIND_PACE_MULTIPLIER = 1.15   # equity below starting capital
+AHEAD_PACE_THRESHOLD = 1.5      # equity/starting_capital ratio considered "a real lead"
+AHEAD_PACE_MULTIPLIER = 0.85    # dampener once meaningfully ahead
+COMBINED_MULTIPLIER_BOUNDS = (0.7, 1.5)  # clamp so the two factors can't compound into something extreme
+
+
+def days_remaining(today: date = None) -> int:
+    today = today or datetime.now(timezone.utc).date()
+    return max(0, (COMPETITION_END - today).days)
+
+
+def endgame_factor(today: date = None) -> float:
+    """1.0x until the final ENDGAME_WINDOW_DAYS, then ramps linearly up to
+    ENDGAME_MAX_MULTIPLIER by the deadline -- matches COMPETITION.md's own
+    "endgame, max aggression" framing: willing to swing bigger late if the
+    number isn't where it needs to be."""
+    remaining = days_remaining(today)
+    if remaining >= ENDGAME_WINDOW_DAYS:
+        return 1.0
+    progress = 1 - (remaining / ENDGAME_WINDOW_DAYS)  # 0 at window start -> 1 at deadline
+    return 1.0 + progress * (ENDGAME_MAX_MULTIPLIER - 1.0)
+
+
+def performance_factor(current_equity: float, starting_capital: float = STARTING_CASH) -> float:
+    """Boost if behind the starting line, dampen once meaningfully ahead
+    (protect a real lead) -- neutral in between. Not opponent-relative
+    (no live standings for neko-chan/friends exist yet), just relative to
+    Stan's own starting capital."""
+    if starting_capital <= 0:
+        return 1.0
+    ratio = current_equity / starting_capital
+    if ratio < 1.0:
+        return BEHIND_PACE_MULTIPLIER
+    if ratio >= AHEAD_PACE_THRESHOLD:
+        return AHEAD_PACE_MULTIPLIER
+    return 1.0
+
+
+def competition_multiplier(current_equity: float, today: date = None,
+                            starting_capital: float = STARTING_CASH) -> float:
+    combined = endgame_factor(today) * performance_factor(current_equity, starting_capital)
+    lo, hi = COMBINED_MULTIPLIER_BOUNDS
+    return max(lo, min(hi, combined))
+
+
+def effective_ceiling(state: dict, current_equity: float, today: date = None) -> float:
+    """The real per-tick spending ceiling after competition-mode
+    adjustment -- still hard-capped at MAX_CEILING regardless of how large
+    the multiplier gets."""
+    multiplier = competition_multiplier(current_equity, today)
+    return min(MAX_CEILING, state["ceiling"] * multiplier)
 
 
 def read_bankroll() -> dict:
