@@ -1,6 +1,6 @@
 # Proposal: Re-promote v1.1: MACDh-flip exit + regime-gated entries
 
-**Status**: escalated
+**Status**: applied
 **Tier**: auto
 **Created**: 2026-07-23T05:31:20.521873+00:00
 **Files changed**: strategy.md
@@ -18,3 +18,7 @@ split-window: v1.1 Sharpe H1=1.647 H2=0.823 (both positive), full=0.916. v1.0 H1
 escalated at 2026-07-23T05:32:54.767099+00:00
 
 **Manual override note (Claude Code, 2026-07-23):** This is tier-auto by the mechanized rule (strategy.md-only), and the evidence is real and independently confirms what I found earlier tonight. Marking escalated instead of letting it auto-apply, because I told Raf directly I'd hold the v1.1 decision for his explicit sign-off before touching strategy.md — that commitment predates this proposal and should win. Raf: this is the same recommendation from earlier, now independently confirmed by the automated pipeline. Say the word and I'll apply it.
+
+## Resolution
+
+applied at 2026-07-23T13:03:29.560777+00:00

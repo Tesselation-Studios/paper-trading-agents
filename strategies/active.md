@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 22, 2026 — 15:55 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 09:03 ET
+
+## THU 09:03 ET — Pre-Market Tick
+- **New day.** Regime CHOPPY/FEAR, F&G 43 (Fear, ⬆ from 33). Sentiment RECOVERED (fresh cache 06:29 UTC — Day 0). PV $10,423, cash $8,470, 9 pos.
+- 🛑 **NVDA oversized**: 10.0% of PV > 6% cap → trim 3 shares. Blocked by hours gate pre-market — queued for 09:30 open.
+- No other stop breaches (check-stops clean), no targets hit. All 8 other pos HOLD.
+- Futures red: Dow -0.47%, Nasdaq -0.57%, S&P -0.45%. OPEN -4.22% worst but within trail stop.
+- New entries gated (v1.4 CHOPPY regime gate). Watchlist 2 unchanged (RKT below band, CLF bare). Merge discoveries no-op.
 
 ## WED 15:55 ET — Market Tick
 - **Same as 15:50 tick.** Regime CHOPPY/FEAR, F&G 33 (Fear), sentiment blind Day 15. PV $10,434, cash $8,470, 9 pos.
