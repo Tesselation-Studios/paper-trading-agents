@@ -58,7 +58,7 @@
 
 ### Process & Tooling
 - **Strategy propagation must be verified across all layers (NEW Jul 22)**: v1.3 reverted the CHOPPY/FEAR entry gate, but the tick agent continued applying it for ~2 hours (09:30–11:20 ET). Strategy changes to `strategy.md` need explicit verification: (a) `params.json` reflects the change, (b) `executor.py` code aligns, (c) the agent prompt doesn't carry stale rules forward. Post-revision checklist item.
-- **params.json vs strategy.md drift risk (NEW Jul 22)**: `params.json` still contains v1.1/v1.2 settings (`triple_confirmation_required: true`, `regime_sizing` VIX tiers, `trim`, `quality_gate`) that v1.3 reverted. If executor.py reads params.json independently, it could override v1.3's simplified rules. Needs audit and reconciliation — latent execution risk.
+- **params.json vs strategy.md drift risk (Jul 22, fixed Jul 23)**: `params.json` had contained v1.1/v1.2 settings (`entry_rules.triple_confirmation_required`, `regime_sizing` VIX tiers, `trim`, `quality_gate`, `exit_rules.rsi_exhaustion_hard_exit`, `risk_guards.max_holding_days`) left over from before v1.3's revert. Audited: `executor.py` never read any of them (confirmed by grep — only `risk_guards.max_positions_per_sector` is actually consumed, at executor.py:180), so there was no live behavior risk, but they contradicted `strategy.md` and could mislead the agent reading params.json fresh each tick. Removed from params.json.
 
 ### Trailing Stop Performance (Jul 21-22)
 - **Trailing stops working mechanically**: Over 2 sessions: 5 exits via trailing stop (MARA +2.11% win, LYFT -5.49%, AMC -5.21%, DJT -5.2%, MVST +0.29%). No panic sells, system carrying the load.
