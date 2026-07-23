@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 11:20 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 11:25 ET
+
+## THU 11:25 ET — Market Tick
+- 🛑 **DVN SOLD**: MACDh histogram bearish flip (+0.0034→-0.00101), v1.4 mandatory exit. 3 shares @ ~$45.84. P&L: +$2.55 (+1.89%). ✅
+- **2 pos remain.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (11:16 ET). PV $10,404, cash $10,349.
+- No other breaches (check-stops clean for F/WSC), no targets hit. F MACDh flipped green -0.0024→+0.00197 🟢, WSC +0.00717 🟢 fading slightly. Both HOLD.
+- F $14.07 (-0.50%), WSC $26.56 (+0.38%).
+- New entries gated (v1.4 CHOPPY). Watchlist empty. Merge discoveries no-op.
 
 ## THU 11:20 ET — Market Tick
 - **Same as 11:15 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (11:16 ET). PV $10,404, cash $10,212, 3 pos.
