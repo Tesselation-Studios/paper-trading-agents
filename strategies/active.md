@@ -1,4 +1,9 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 13:45 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 13:50 ET
+
+## THU 13:50 ET — Market Tick
+- **Same as 13:45 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear). PV $10,404, cash $10,349, 2 pos.
+- No stop breaches (check-stops clean). MACDh: Alpaca data API 401, yfinance connection refused — no fresh bars this tick. Last known (13:45): F -0.002308 🔴, WSC -0.012625 🔴 — both already red no flip. Both HOLD.
+- F $14.12 (flat vs 13:45 $14.125), WSC $26.89 (flat vs 13:45 $26.895). New entries gated (v1.4 CHOPPY). Watchlist 3 (FDIV/COAG/MATE idle→11). Merge discoveries no-op.
 
 ## THU 13:45 ET — Market Tick
 - **Same as 13:40 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear). PV $10,404, cash $10,349, 2 pos.
