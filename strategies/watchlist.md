@@ -24,8 +24,8 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- RKT — idle_ticks: 15 — RSI(14)=38.6 (below band), from 2026-07-22.md
-- CLF — idle_ticks: 15 — RSI(14)=45.6 (barely in band, skipped 14:55-15:50), from 2026-07-22.md | 🔔 Q2 earnings today
+- RKT — idle_ticks: 16 — RSI(14)=38.6 (below band), from 2026-07-22.md
+- CLF — idle_ticks: 16 — RSI(14)=45.6 (barely in band, skipped 14:55-15:50), from 2026-07-22.md | ✅ Q2 earnings out, +17.5% to $11.09, gated (CHOPPY)
 
 
 _(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS.)_
@@ -42,4 +42,4 @@ _Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, 
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
 _Dropped 2026-07-22 11:50: none. All candidates below idle threshold (24)._
-_Last touched: 2026-07-23 09:35 ET (all 8 HOLD, no breaches or MACDh flips, RKT/CLF idle→15, CLF Q2 earnings today, new entries gated CHOPPY)._ 
+_Last touched: 2026-07-23 09:40 ET (all 8 HOLD, no breaches or MACDh flips, RKT/CLF idle→16, CLF Q2 earnings +17.5% but gated CHOPPY)._  
