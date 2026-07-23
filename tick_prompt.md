@@ -8,6 +8,8 @@
 
    Before trading, run `python3 scripts/workspace_review.py --gate` (see `skills/workspace-review.md`). If it reports critical findings (`state/.workspace_blocked` set), **do not trade this tick** — note the reason in active.md and `HEARTBEAT_OK`. Warnings alone don't block; just carry them into active.md so they don't go unnoticed (this is exactly how the Jul 22 CHOPPY-gate lag went undetected for 2 hours).
 
+   Also call `memory_search("<today's regime> <top watchlist/position tickers>")` once — feeds the recall store dreaming promotes from. Skip only on tool error, never block the tick.
+
 2. **Read active.md** → `read strategies/active.md` — this is your working memory from last tick. Know your last state.
 
 3. **Read watchlist** → `read strategies/watchlist.md` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
