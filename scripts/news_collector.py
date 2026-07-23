@@ -1,19 +1,35 @@
 #!/usr/bin/env python3
 """
-News Collector — RSS feed aggregation with caching, ticker extraction,
-and keyword-based sentiment scoring.
+News Collector — RSS + Alpaca News aggregation, FinBERT sentiment scoring
+(keyword-based fallback), ticker extraction, and a local per-ticker
+sentiment cache for the live tick loop.
 
 Adapted from paper-trading-rebuild/src/news_collector.py (unmerged branch
 trader/news-collector) for use as a one-shot off-hours script instead of
 the always-on daemon-thread version — Stonks runs this directly via its
 own exec tool, same pattern as scripts/executor.py.
 
-Fetches from free RSS feeds (no API keys), deduplicates by URL, stores
-results in the shared Postgres `public.news_cache` table (additive-only,
-idempotent CREATE IF NOT EXISTS — doesn't touch any other table).
+2026-07-23: added direct Alpaca News (ticker-scoped, more reliable for
+small-caps than generic RSS firehoses) and real FinBERT scoring (keyword
+scoring kept only as the fail-open fallback). Root cause of the "sentiment
+blind" gap wasn't FinBERT/Praesentire being down (confirmed both healthy)
+— it was that nothing ever populated a per-ticker cache the live tick loop
+could read. `write_sentiment_cache()` fixes that: a local
+`state/sentiment_cache.json`, refreshed on its own cadence (see
+stonks-sentiment-refresh cron), so the tick loop gets a fast local read
+instead of a live network round-trip mid-tick.
+
+Fetches from free RSS feeds (no API keys) + Alpaca News (ALPACA_STONKS_KEY/
+SECRET), deduplicates by URL, stores results in the shared Postgres
+`public.news_cache` table (additive-only, idempotent CREATE IF NOT EXISTS
+— doesn't touch any other table).
 
 Usage:
-    python3 scripts/news_collector.py
+    python3 scripts/news_collector.py [TICKER ...]
+
+With no TICKER args, defaults to replay_check.load_live_universe() (open
+positions + active watchlist candidates) — same convention already used by
+replay_check.py/universe_scan.py.
 """
 
 from __future__ import annotations
@@ -25,12 +41,24 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 log = logging.getLogger("news_collector")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SENTIMENT_CACHE_PATH = REPO_ROOT / "state" / "sentiment_cache.json"
+
+FINBERT_HOST = os.environ.get("FINBERT_HOST", "legend-of-macs.local")
+FINBERT_PORT = int(os.environ.get("FINBERT_PORT", "5004"))
+FINBERT_URL = f"http://{FINBERT_HOST}:{FINBERT_PORT}"
+
+ALPACA_NEWS_URL = "https://data.alpaca.markets/v1beta1/news"
 
 # ── RSS Feed Sources ──────────────────────────────────────────────────────────
 # Free, no API key required. Sourced from major financial publishers.
@@ -181,6 +209,71 @@ def _compute_sentiment(text: str) -> float:
         return 0.0
     avg = score / n_matched
     return max(-1.0, min(1.0, avg))
+
+
+def score_sentiment(text: str, ticker: str = "", timeout: int = 8) -> float:
+    """Real FinBERT sentiment (signed -1..1, confirmed via live probe:
+    positive text -> positive score, negative -> negative, neutral -> 0.0),
+    falling back to the keyword scorer above if FinBERT is unreachable or
+    errors — fail-open, same "never let a tick stall" philosophy as the
+    rest of this pipeline. Not cached at this layer; callers that need to
+    avoid re-scoring the same text repeatedly should dedupe first.
+    """
+    if not text:
+        return 0.0
+    try:
+        resp = requests.post(
+            f"{FINBERT_URL}/analyze", json={"text": text, "ticker": ticker}, timeout=timeout,
+        )
+        if resp.status_code == 200:
+            return float(resp.json()["sentiment_score"])
+        log.warning("FinBERT returned %s, falling back to keyword sentiment", resp.status_code)
+    except (requests.RequestException, KeyError, ValueError, TypeError) as e:
+        log.warning("FinBERT unreachable (%s), falling back to keyword sentiment", e)
+    return _compute_sentiment(text)
+
+
+def fetch_alpaca_news(tickers: List[str], limit: int = 20, timeout: int = 15) -> List[Dict[str, Any]]:
+    """Alpaca's own News API, scoped to specific tickers via `symbols=` —
+    far more reliable for small/mid-caps than generic RSS firehoses, which
+    mostly cover megacaps/macro. Returns the same article shape as
+    fetch_rss_feed() (title/url/summary/published/source) plus `tickers`
+    set directly from Alpaca's own per-article symbol tags (no regex
+    extraction needed — Alpaca already tells us which tickers an article
+    is about).
+    """
+    key = os.environ.get("ALPACA_STONKS_KEY")
+    secret = os.environ.get("ALPACA_STONKS_SECRET")
+    if not key or not secret or not tickers:
+        return []
+
+    try:
+        resp = requests.get(
+            ALPACA_NEWS_URL,
+            headers={"APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": secret},
+            params={"symbols": ",".join(tickers), "limit": limit, "sort": "desc"},
+            timeout=timeout,
+        )
+        if resp.status_code != 200:
+            log.warning("Alpaca News returned %s: %s", resp.status_code, resp.text[:200])
+            return []
+        items = resp.json().get("news", [])
+    except requests.RequestException as e:
+        log.warning("Alpaca News fetch failed: %s", e)
+        return []
+
+    articles = []
+    for item in items:
+        summary = item.get("summary", "") or ""
+        articles.append({
+            "title": item.get("headline", ""),
+            "url": item.get("url", ""),
+            "summary": summary,
+            "published": _parse_atom_date(item.get("created_at", "")),
+            "source": "alpaca_news",
+            "tickers": [t.upper() for t in item.get("symbols", [])],
+        })
+    return articles
 
 
 def fetch_rss_feed(url: str, timeout: int = 15) -> List[Dict[str, Any]]:
@@ -339,7 +432,7 @@ def fetch_all_feeds(timeout: int = 15) -> List[Dict[str, Any]]:
         for article in articles:
             article["source"] = source_name
             combined = f"{article.get('title', '')} {article.get('summary', '')}"
-            article["sentiment_score"] = _compute_sentiment(combined)
+            article["sentiment_score"] = score_sentiment(combined)
             article["tickers"] = extract_tickers(combined, KNOWN_TICKERS)
         all_articles.extend(articles)
     deduped = _deduplicate(all_articles)
@@ -457,12 +550,64 @@ def recent_watchlist_articles(watchlist_tickers, hours=24):
         conn.close()
 
 
+def build_ticker_sentiment(articles: List[Dict[str, Any]], tickers: List[str]) -> Dict[str, Dict[str, Any]]:
+    """Aggregate a list of already-scored articles (each with `tickers` and
+    `sentiment_score`) into a per-ticker summary: average sentiment,
+    article count, and the most recent headline for quick human context.
+    Only includes tickers actually present in `tickers` (case-insensitive).
+    """
+    wanted = {t.upper() for t in tickers}
+    by_ticker: Dict[str, List[Dict[str, Any]]] = {}
+    for a in articles:
+        for t in a.get("tickers", []):
+            t = t.upper()
+            if t in wanted:
+                by_ticker.setdefault(t, []).append(a)
+
+    result = {}
+    for t, matched in by_ticker.items():
+        scores = [m["sentiment_score"] for m in matched]
+        matched_sorted = sorted(matched, key=lambda m: m.get("published", ""), reverse=True)
+        result[t] = {
+            "avg_sentiment": round(sum(scores) / len(scores), 3),
+            "article_count": len(matched),
+            "latest_headline": matched_sorted[0].get("title", ""),
+            "latest_source": matched_sorted[0].get("source", ""),
+        }
+    return result
+
+
+def write_sentiment_cache(ticker_sentiment: Dict[str, Dict[str, Any]],
+                           path: Path = SENTIMENT_CACHE_PATH) -> None:
+    """Local per-ticker sentiment cache for the live tick loop — a fast
+    file read instead of a live Alpaca News + FinBERT round-trip mid-tick.
+    Refreshed on its own cadence by the stonks-sentiment-refresh cron, not
+    by the tick loop itself.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "tickers": ticker_sentiment,
+    }
+    path.write_text(json.dumps(payload, indent=2))
+
+
 def main():
-    watchlist_tickers = sys.argv[1:] if len(sys.argv) > 1 else []
+    args_tickers = sys.argv[1:]
+    if args_tickers:
+        watchlist_tickers = args_tickers
+    else:
+        from replay_check import load_live_universe
+        watchlist_tickers = load_live_universe()
 
     ensure_news_cache_table()
     articles = fetch_all_feeds()
     new_count = upsert_articles(articles)
+
+    alpaca_articles = fetch_alpaca_news(watchlist_tickers)
+    for a in alpaca_articles:
+        combined = f"{a.get('title', '')} {a.get('summary', '')}"
+        a["sentiment_score"] = score_sentiment(combined)
 
     relevant = recent_watchlist_articles(watchlist_tickers) if watchlist_tickers else []
     avg_sentiment_by_ticker = {}
@@ -475,11 +620,24 @@ def main():
         t: round(sum(v) / len(v), 3) for t, v in avg_sentiment_by_ticker.items()
     }
 
+    # Cache-file sentiment uses ONLY Alpaca News articles, not RSS. Alpaca
+    # tags each article's tickers itself (first-party, reliable); RSS
+    # articles are tagged by regex over KNOWN_TICKERS, which false-matches
+    # common-English-word tickers (e.g. "OPEN" — Opendoor, one of Stan's
+    # actual positions — matched an RSS headline that just used the word
+    # "open" in an unrelated sentence, scoring -0.723 off zero relevance).
+    # RSS still feeds the broader public.news_cache archive above, just not
+    # this cache, which the tick loop treats as ground truth per ticker.
+    ticker_sentiment = build_ticker_sentiment(alpaca_articles, watchlist_tickers)
+    write_sentiment_cache(ticker_sentiment)
+
     summary = {
         "fetched_this_run": len(articles),
         "new_to_cache": new_count,
+        "alpaca_news_fetched": len(alpaca_articles),
         "watchlist_articles_last_24h": len(relevant),
         "avg_sentiment_by_ticker_last_24h": avg_sentiment_by_ticker,
+        "sentiment_cache_written_for": sorted(ticker_sentiment.keys()),
         "articles": relevant[:20],
     }
     print(json.dumps(summary, indent=2))

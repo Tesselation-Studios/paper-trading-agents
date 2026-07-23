@@ -12,7 +12,7 @@
 
 4. **Check portfolio** → executor status check, see `skills/tool-invocation.md` — only source of truth for cash/positions/P&L, never the data bus.
 
-5. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md`; skip if stale/down, never block the tick.
+5. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md` for quotes/momentum/fear-greed; sentiment is separate — read `state/sentiment_cache.json` per `skills/sentiment-cache.md` (refreshed independently every ~15min, not fetched live per tick). Skip either if stale/down/missing, never block the tick.
 
 6. **Scan positions near triggers** → run `python3 scripts/executor.py --account stonks --action check-stops` — mechanically checks every open position against the hard stop (`risk.stop_loss_pct`), trailing stop (`risk.trailing_stop_pct`, ratchets up from peak price since entry), and oversized-position cap (`risk.max_position_pct` — a position that's grown over cap via price appreciation, not a new buy). Any ticker returned in `breaches` **must** be sold this tick via step 9, no re-litigating — for `stop_type: "oversized"`, sell exactly the `shares_to_sell` count given (a trim, not a full exit) unless another breach on the same ticker calls for a full exit instead. Also check profit targets, thesis breaks — read `positions/*.md` only for names near a trigger.
 
