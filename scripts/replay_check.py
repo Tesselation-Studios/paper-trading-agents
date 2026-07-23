@@ -358,8 +358,50 @@ def summarize(result, label):
     }
 
 
+def split_ticks_by_midpoint(ticks):
+    """Split a chronological tick stream into two halves by DATE midpoint
+    (not by tick/index count, which would skew toward whichever half has
+    more multi-ticker density). Indicators (RSI/MACD/MA) were already
+    computed on the full fetched history before this split, so the second
+    half doesn't have a cold-start problem — only which ticks the trader
+    gets to act on changes, not the indicator values themselves.
+    """
+    if not ticks:
+        return [], []
+    dates = sorted({t.timestamp for t in ticks})
+    mid_date = dates[len(dates) // 2]
+    first_half = [t for t in ticks if t.timestamp < mid_date]
+    second_half = [t for t in ticks if t.timestamp >= mid_date]
+    return first_half, second_half
+
+
+def run_variants(frames, ticks):
+    """Run every registered strategy over a given tick stream (a full
+    window or a half-window slice), reusing the same frames dict (and
+    therefore the same indicator lookups) regardless of which ticks are
+    actually being iterated."""
+    results = {}
+    for variant, build_trader in STRATEGY_BUILDERS.items():
+        trader_fn = build_trader(frames)
+        results[variant] = replay_trader(ticks, trader_fn, initial_balance=10_000.0,
+                                          max_position_pct=0.06, require_conviction=0.5)
+    return results
+
+
+VARIANT_LABELS = {
+    "v1.0": "== live strategy.md v1.3.1: fixed stop/target only, simple RSI 45-65 entry",
+    "v1.1": "+ MACDh-flip exit, + regime-gated entries",
+    "v1.2": "+ RSI-exhaustion exit, + time-stop, + profit trim, "
+            "+ triple-confirmation entry (sector veto/VIX-tiering/quality-gate NOT modeled)",
+}
+
+
 def main():
-    tickers = sys.argv[1:] if len(sys.argv) > 1 else load_live_universe()
+    args = sys.argv[1:]
+    split_window = "--split-window" in args
+    tickers = [a for a in args if a != "--split-window"]
+    if not tickers:
+        tickers = load_live_universe()
 
     frames = fetch_history(tickers)
     if not frames:
@@ -367,21 +409,24 @@ def main():
         return
 
     ticks = build_tick_stream(frames)
+    results = run_variants(frames, ticks)
 
-    results = {}
-    for variant, build_trader in STRATEGY_BUILDERS.items():
-        trader_fn = build_trader(frames)
-        results[variant] = replay_trader(ticks, trader_fn, initial_balance=10_000.0,
-                                          max_position_pct=0.06, require_conviction=0.5)
-
-    print(json.dumps({
+    output = {
         "tickers_used": sorted(frames.keys()),
         "lookback_days": LOOKBACK_DAYS,
-        "v1.0": summarize(results["v1.0"], "== live strategy.md v1.3.1: fixed stop/target only, simple RSI 45-65 entry"),
-        "v1.1": summarize(results["v1.1"], "+ MACDh-flip exit, + regime-gated entries"),
-        "v1.2": summarize(results["v1.2"], "+ RSI-exhaustion exit, + time-stop, + profit trim, "
-                                            "+ triple-confirmation entry (sector veto/VIX-tiering/quality-gate NOT modeled)"),
-    }, indent=2))
+        **{v: summarize(results[v], VARIANT_LABELS[v]) for v in STRATEGY_BUILDERS},
+    }
+
+    if split_window:
+        first_half, second_half = split_ticks_by_midpoint(ticks)
+        for half_name, half_ticks in (("first_half", first_half), ("second_half", second_half)):
+            half_results = run_variants(frames, half_ticks)
+            output[half_name] = {
+                "n_ticks": len(half_ticks),
+                **{v: summarize(half_results[v], VARIANT_LABELS[v]) for v in STRATEGY_BUILDERS},
+            }
+
+    print(json.dumps(output, indent=2))
 
 
 if __name__ == "__main__":

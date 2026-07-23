@@ -21,7 +21,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
 
 import replay_check  # noqa: E402
-from src.replay import ReplayResult  # noqa: E402
+from src.replay import ReplayResult, Tick  # noqa: E402
 
 
 def make_result(equity_values, timestamps=None):
@@ -189,3 +189,45 @@ class TestLoadLiveUniverse:
     def test_missing_watchlist_file_still_uses_positions(self, tmp_path, monkeypatch):
         self._setup(tmp_path, monkeypatch, positions=["GME"], watchlist_text=None)
         assert replay_check.load_live_universe() == ["GME"]
+
+
+def make_tick(ticker, day, rsi=50.0):
+    ts = datetime.datetime(2026, 1, 1) + datetime.timedelta(days=day)
+    return Tick(timestamp=ts, ticker=ticker, open=10.0, high=10.0, low=10.0,
+                close=10.0, volume=1000, rsi=rsi)
+
+
+class TestSplitTicksByMidpoint:
+    """split_ticks_by_midpoint() added 2026-07-23 for robustness-checking
+    a strategy comparison across two halves of the lookback window, not
+    just one aggregate number over the whole thing."""
+
+    def test_empty_input_returns_two_empty_lists(self):
+        first, second = replay_check.split_ticks_by_midpoint([])
+        assert first == []
+        assert second == []
+
+    def test_splits_by_date_midpoint_not_index_count(self):
+        # 10 distinct days, single ticker one tick/day -> midpoint is day 5.
+        ticks = [make_tick("AAA", d) for d in range(10)]
+        first, second = replay_check.split_ticks_by_midpoint(ticks)
+        assert all(t.timestamp < ticks[5].timestamp for t in first)
+        assert all(t.timestamp >= ticks[5].timestamp for t in second)
+        assert len(first) + len(second) == 10
+
+    def test_multi_ticker_same_day_stays_together(self):
+        # Two tickers both have a tick on day 0-3; date midpoint should
+        # split by the DATE, keeping same-day ticks from different
+        # tickers on the same side, not skewed by tick count per ticker.
+        ticks = [make_tick("AAA", d) for d in range(4)] + [make_tick("BBB", d) for d in range(4)]
+        first, second = replay_check.split_ticks_by_midpoint(ticks)
+        first_days = {t.timestamp for t in first}
+        second_days = {t.timestamp for t in second}
+        assert first_days.isdisjoint(second_days)
+        assert len(first) == 4  # days 0,1 x 2 tickers
+        assert len(second) == 4  # days 2,3 x 2 tickers
+
+    def test_halves_are_chronologically_ordered_relative_to_each_other(self):
+        ticks = [make_tick("AAA", d) for d in range(6)]
+        first, second = replay_check.split_ticks_by_midpoint(ticks)
+        assert max(t.timestamp for t in first) < min(t.timestamp for t in second)
