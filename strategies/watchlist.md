@@ -25,7 +25,12 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- SRET — idle_ticks: 16 — $22.72, RSI 49.8, vol 1.07x, news: mortgage rates at lowest since Feb 2023 (sentiment -0.97)
+- BEDY — idle_ticks: 1 — from 2026-07-23.md
+- OLP — idle_ticks: 1 — from 2026-07-23.md
+- IP — idle_ticks: 1 — from 2026-07-23.md
+- FHB — idle_ticks: 1 — from 2026-07-23.md
+
+- SRET — idle_ticks: 17 — $22.72, RSI 49.8, vol 1.07x, news: mortgage rates at lowest since Feb 2023 (sentiment -0.97)
 
 _(FDIV idle_ticks=24, COAG idle_ticks=24, MATE idle_ticks=24 dropped 2026-07-23 15:20 — hit threshold.)_
 _(RKT idle_ticks=24 and CLF idle_ticks=24 dropped 2026-07-23 11:10 — hit threshold.)_
