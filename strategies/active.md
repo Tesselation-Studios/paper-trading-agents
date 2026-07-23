@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 09:20 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 09:25 ET
+
+## THU 09:25 ET — Pre-Market Tick
+- **Same as 09:20 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED. PV $10,412, cash $8,470, 9 pos. 5 min to open.
+- 🛑 **NVDA oversized**: 10.0% > 6% cap → trim 3 shares. Blocked by hours gate — queued for 09:30.
+- 🛑 **NEW: OPEN trailing stop breached**: -5.1% off peak $4.50 (stop $4.27, now $4.28). SELL 2 shares. Blocked by hours gate — queued for 09:30.
+- No other breaches. 7 HOLD (CHWY $21.12 +1.23%, DVN $45.95 +2.13%, F $14.19 +0.39%, GME $21.52 -3.84%, KHC $25.89 -0.25%, SNAP $4.40 -3.93%, WSC $26.29 -0.64%).
+- 🔔 CLF earnings today. Watchlist 2 (RKT idle→13 below band, CLF idle→13 bare). Merge discoveries no-op. New entries gated (v1.4 CHOPPY).
+- 📡 Data bus available this tick (quotes stale — yesterday's close only, pre-market).
 
 ## THU 09:20 ET — Pre-Market Tick
 - **Same as 09:15 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear, data bus back this tick). Sentiment RECOVERED (fresh cache 09:15 ET). PV $10,416, cash $8,470, 9 pos. 10 min to open.

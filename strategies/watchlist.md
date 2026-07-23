@@ -24,8 +24,8 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- RKT — idle_ticks: 12 — RSI(14)=38.6 (below band), from 2026-07-22.md
-- CLF — idle_ticks: 12 — RSI(14)=45.6 (barely in band, skipped 14:55-15:50), from 2026-07-22.md
+- RKT — idle_ticks: 13 — RSI(14)=38.6 (below band), from 2026-07-22.md
+- CLF — idle_ticks: 13 — RSI(14)=45.6 (barely in band, skipped 14:55-15:50), from 2026-07-22.md
 
 
 _(All 5 candidates dropped 2026-07-22 14:00 — hit idle_ticks=24 threshold: IOVA, FVRR, GT, COTY, KSS.)_
