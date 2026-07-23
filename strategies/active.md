@@ -1,5 +1,13 @@
 # Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 09:31 ET
 
+## THU 09:35 ET — Market Tick
+- **Same as 09:31 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED. PV $10,415, cash $9,105, 8 pos.
+- No stop breaches (check-stops clean), no MACDh flips. All 8 HOLD. New entries gated (v1.4 CHOPPY).
+- DVN $46.13 (+2.53%) 🟢, NVDA $209.48 (+0.89%), CHWY $21.14 (+1.32%). SNAP $4.38 (-4.48%) 🟡, GME $21.44 (-4.20%) 🟡.
+- 🟡 SNAP MACDh +0.0107 (barely green, declining), $0.02 above trail stop $4.351. Watch closely.
+- 🟡 DVN RSI 77.6 overbought but MACDh rising; GME RSI 29.2 oversold, MACDh red no new flip.
+- 🔔 CLF earnings today (before open, 8:30am call). Watchlist 2 (RKT idle→15, CLF idle→15). Merge discoveries no-op.
+
 ## THU 09:31 ET — Market Open Tick
 - ✅ **NVDA trimmed**: 3 shares sold @ $208.78 (oversized guardrail 10.0% > 6% cap). P&L +$3.45 (+0.55%). 2 shares remain.
 - ✅ **OPEN SOLD**: 2 shares @ $4.27 (trailing stop breach -5.4% off $4.50 peak). P&L -$0.46 (-5.11%). ❌
