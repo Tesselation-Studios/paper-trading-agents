@@ -20,6 +20,7 @@ import json
 import math
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -29,6 +30,7 @@ WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 STATE_DIR = WORKSPACE_DIR / "state"
 STOPS_STATE_PATH = STATE_DIR / "guardrail_stops.json"
+RECENT_ORDERS_PATH = STATE_DIR / "recent_orders.json"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -252,6 +254,50 @@ def gate_conviction(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bo
     return True, f"conviction {conviction:.2f} >= {floor:.2f} floor"
 
 
+def _load_recent_orders() -> Dict[str, Any]:
+    if RECENT_ORDERS_PATH.exists():
+        try:
+            return json.loads(RECENT_ORDERS_PATH.read_text())
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def record_order_submitted(ticker: str, action: str) -> None:
+    """Called after a BUY/SELL actually executes — used by gate_duplicate_order
+    to block an accidental repeat submission of the same ticker+action within
+    the cooldown window. Confirmed 2026-07-22: DVN got bought 3 times in one
+    tick (three separate BUY orders, 5-7 seconds apart) — nothing stopped the
+    agent from submitting the same order again without noticing the first one
+    had already filled."""
+    state = _load_recent_orders()
+    state[f"{ticker.upper()}:{action.upper()}"] = time.time()
+    STATE_DIR.mkdir(exist_ok=True)
+    RECENT_ORDERS_PATH.write_text(json.dumps(state, indent=2))
+
+
+def gate_duplicate_order(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Reject a BUY or SELL for the same ticker+action submitted again within
+    risk.duplicate_order_cooldown_seconds of the last one that actually
+    executed. Applies to both BUY and SELL, unlike most gates — a duplicate
+    SELL is just as real a mistake as a duplicate BUY."""
+    ticker = str(action.get("ticker", "")).upper()
+    side = str(action.get("action", "")).upper()
+    if not ticker or side not in ("BUY", "SELL"):
+        return True, "no ticker/action, skipped"
+
+    cooldown = float(load_params().get("risk", {}).get("duplicate_order_cooldown_seconds", 60))
+    state = _load_recent_orders()
+    last_ts = state.get(f"{ticker}:{side}")
+    if last_ts is None:
+        return True, "no recent matching order, skipped"
+
+    elapsed = time.time() - float(last_ts)
+    if elapsed < cooldown:
+        return False, f"{side} {ticker} submitted {elapsed:.0f}s ago (< {cooldown:.0f}s cooldown) — likely a duplicate"
+    return True, f"last {side} {ticker} was {elapsed:.0f}s ago, outside {cooldown:.0f}s cooldown"
+
+
 # name -> gate function. params.json guardrail_gates.<name> = false disables it.
 GATES = {
     "cash": gate_cash,
@@ -261,6 +307,7 @@ GATES = {
     "hours": gate_hours,
     "conviction": gate_conviction,
     "bankroll": gate_bankroll,
+    "duplicate_order": gate_duplicate_order,
 }
 
 
@@ -528,6 +575,7 @@ def main():
     side = args.action.lower()
     order = place_order(args.account, args.ticker, args.qty, side)
     print(json.dumps(order, indent=2))
+    record_order_submitted(args.ticker, args.action)
 
     if args.action == "SELL" and entry_price is not None:
         exit_price = args.price if args.price is not None else entry_price

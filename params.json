@@ -25,7 +25,9 @@
     "max_positions": 25,
     "conviction_floor": 0.50,
     "max_portfolio_risk_pct": 8.0,
-    "_trailing_stop_source": "2026-07-20 guardrail engine — ratchets up from peak price since entry, mechanically enforced in scripts/guardrails.py check-stops, not LLM-judgment"
+    "duplicate_order_cooldown_seconds": 60,
+    "_trailing_stop_source": "2026-07-20 guardrail engine — ratchets up from peak price since entry, mechanically enforced in scripts/guardrails.py check-stops, not LLM-judgment",
+    "_duplicate_order_source": "2026-07-22 — DVN got bought 3x in one tick (three separate orders 5-7s apart). 60s cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries (ticks are 5min apart)."
   },
 
   "exit_rules": {
@@ -117,6 +119,7 @@
     "trailing_stop": true,
     "bankroll": true,
     "position_size_trim": true,
+    "duplicate_order": true,
     "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed."
   }
 }

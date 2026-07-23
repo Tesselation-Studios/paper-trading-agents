@@ -11,6 +11,7 @@ convention (see that repo for the pattern this mirrors).
 import datetime
 import json
 import sys
+import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -28,13 +29,14 @@ MARKET_OPEN_TS = datetime.datetime(2026, 7, 22, 12, 0, tzinfo=ZoneInfo("America/
 
 
 DEFAULT_PARAMS = {
-    "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5},
+    "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5,
+              "duplicate_order_cooldown_seconds": 60},
     "risk_guards": {"max_positions_per_sector": 2},
     "guardrail_gates": {
         "cash": True, "position_size": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
-        "position_size_trim": True,
+        "position_size_trim": True, "duplicate_order": True,
     },
 }
 
@@ -277,15 +279,81 @@ class TestGateBankroll:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# gate_duplicate_order — added 2026-07-22 after DVN got bought 3x in one tick
+# (three separate BUY orders, 5-7 seconds apart — nothing stopped a repeat
+# submission the agent didn't realize had already executed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestGateDuplicateOrder:
+    @pytest.fixture(autouse=True)
+    def isolated_state(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+
+    def test_no_prior_order_passes(self, params):
+        granted, reason = executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})
+        assert granted is True
+        assert "no recent matching" in reason
+
+    def test_immediate_repeat_blocked(self, params):
+        executor.record_order_submitted("DVN", "BUY")
+        granted, reason = executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})
+        assert granted is False
+        assert "duplicate" in reason
+
+    def test_different_ticker_not_blocked(self, params):
+        executor.record_order_submitted("DVN", "BUY")
+        granted, _ = executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "WSC"})
+        assert granted is True
+
+    def test_different_action_same_ticker_not_blocked(self, params):
+        """A BUY followed immediately by a SELL of the same ticker is a real
+        scenario (e.g. a stop breach right after entry) — must not be
+        confused with a duplicate of the same action."""
+        executor.record_order_submitted("DVN", "BUY")
+        granted, _ = executor.gate_duplicate_order({}, {"action": "SELL", "ticker": "DVN"})
+        assert granted is True
+
+    def test_applies_to_sell_too(self, params):
+        executor.record_order_submitted("SOFI", "SELL")
+        granted, reason = executor.gate_duplicate_order({}, {"action": "SELL", "ticker": "SOFI"})
+        assert granted is False
+
+    def test_outside_cooldown_window_passes(self, params):
+        # Write a timestamp 61s in the past directly, rather than mocking the
+        # global time module (which record_order_submitted itself also uses).
+        executor.RECENT_ORDERS_PATH.write_text(json.dumps({"DVN:BUY": time.time() - 61}))
+        granted, reason = executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})
+        assert granted is True
+        assert "outside" in reason
+
+    def test_missing_ticker_fails_open(self, params):
+        granted, reason = executor.gate_duplicate_order({}, {"action": "BUY"})
+        assert granted is True
+
+    def test_record_then_check_full_cycle(self, params):
+        """End-to-end: three rapid BUYs of the same ticker, only the first
+        should have been allowed by a real caller checking between each."""
+        assert executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})[0] is True
+        executor.record_order_submitted("DVN", "BUY")
+        assert executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})[0] is False
+        assert executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})[0] is False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # check_order — full chain: toggles, fail-open behavior, first-rejection stops
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 class TestCheckOrderChain:
     @pytest.fixture
-    def mock_account(self, monkeypatch):
+    def mock_account(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "get_account", lambda account: {"equity": "10000", "cash": "8000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        # Isolate from any real state/recent_orders.json so gate_duplicate_order
+        # doesn't depend on filesystem state left over from a real tick.
+        monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
 
     def test_all_gates_pass(self, params, mock_account, monkeypatch):
         monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
