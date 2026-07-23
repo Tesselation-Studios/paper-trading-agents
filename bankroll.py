@@ -143,6 +143,31 @@ def recalc_ceiling(state: dict, pnl: float, is_win: bool):
     state["history"].append(f"{now} {label} ${pnl:+.2f} → ${state['ceiling']:.2f}")
 
 
+# Ceiling -> universe.max_price override, replacing TOOLS.md's old
+# experience.json.peak_ceiling milestone table (2026-07-23: found stuck at
+# its $50 starting value since creation, milestones_unlocked always empty
+# — dead, prose-only, never actually fired). This is the one real,
+# mechanized connection between bankroll growth and what Stan even looks
+# at, not just position sizing — mechanizes strategy.md's Growth
+# Trajectory section ("as real track record accumulates... sanctioned to
+# widen toward larger-cap names"), which was previously unenforced prose.
+# Tiers recalibrated against today's real starting point (ceiling ~$50-51
+# right now), not the stale numbers TOOLS.md had.
+UNIVERSE_MAX_PRICE_TIERS = [
+    (100.0, 50.0),    # ceiling < $100 -> current $1-$50 universe, unchanged
+    (300.0, 75.0),
+    (750.0, 150.0),
+    (MAX_CEILING, 300.0),
+]
+
+
+def universe_max_price_for_ceiling(ceiling: float) -> float:
+    for threshold, max_price in UNIVERSE_MAX_PRICE_TIERS:
+        if ceiling < threshold:
+            return max_price
+    return UNIVERSE_MAX_PRICE_TIERS[-1][1]
+
+
 def format_output(state: dict) -> str:
     return (
         f"Ceiling: ${state['ceiling']:.2f} | "

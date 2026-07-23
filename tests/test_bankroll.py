@@ -268,3 +268,38 @@ class TestHistoryLog:
         bankroll.write_bankroll(state)
         text = bankroll_file.read_text()
         assert "(no closed trades yet)" in text
+
+
+class TestUniverseMaxPriceForCeiling:
+    """2026-07-23: replaces the dead experience.json.peak_ceiling milestone
+    table in TOOLS.md (stuck at $50 since creation, never fired) with one
+    real, mechanized connection between bankroll growth and universe
+    breadth."""
+
+    def test_starting_ceiling_keeps_current_universe(self):
+        assert bankroll.universe_max_price_for_ceiling(bankroll.STARTING_CEILING) == 50.0
+
+    def test_real_current_ceiling_keeps_current_universe(self):
+        # Real live ceiling as of 2026-07-23 is $51 -- barely above floor,
+        # should not have unlocked anything yet.
+        assert bankroll.universe_max_price_for_ceiling(51.0) == 50.0
+
+    def test_first_tier_boundary(self):
+        assert bankroll.universe_max_price_for_ceiling(99.99) == 50.0
+        assert bankroll.universe_max_price_for_ceiling(100.0) == 75.0
+
+    def test_second_tier_boundary(self):
+        assert bankroll.universe_max_price_for_ceiling(299.99) == 75.0
+        assert bankroll.universe_max_price_for_ceiling(300.0) == 150.0
+
+    def test_third_tier_boundary(self):
+        assert bankroll.universe_max_price_for_ceiling(749.99) == 150.0
+        assert bankroll.universe_max_price_for_ceiling(750.0) == 300.0
+
+    def test_at_max_ceiling_returns_widest_tier(self):
+        assert bankroll.universe_max_price_for_ceiling(bankroll.MAX_CEILING) == 300.0
+
+    def test_monotonically_non_decreasing_across_tiers(self):
+        ceilings = [50, 99, 100, 250, 300, 500, 750, 1000, 2000]
+        prices = [bankroll.universe_max_price_for_ceiling(c) for c in ceilings]
+        assert prices == sorted(prices)
