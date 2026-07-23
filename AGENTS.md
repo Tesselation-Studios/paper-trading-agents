@@ -16,4 +16,5 @@ Operational problems persisting >1 session (sentiment blind, API down, watchlist
 - **Push every commit**: every change to prompt/strategy/journal files must be committed AND pushed to GitHub immediately. No exceptions. Local-only commits are lost — push is the revert safety net.
 - **Size**: max 1100 chars Overflow → a skill.
 - **Tests**: new scripts/features need unit tests in `tests/` (see `test_guardrails.py` for convention); GitHub Actions runs pytest on every push; work isn't done until tests pass.
+- **Self-edit boundary**: see `skills/evolution-proposals.md` — strategy.md/params.json self-commit as today; code/tooling/doc changes go through a proposal instead.
 - ---

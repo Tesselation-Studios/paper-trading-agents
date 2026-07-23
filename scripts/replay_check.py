@@ -169,13 +169,19 @@ def build_tick_stream(frames):
     return ticks
 
 
-def make_trader(frames, variant):
+def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None):
     """Build a trader function closing over per-ticker indicator lookups
     (Tick only carries rsi) and a small amount of flip-detection state.
 
     variant: "v1.0" | "v1.1" | "v1.2"
+    stop_loss_pct/profit_target_pct: override the module defaults (used by
+    sweep_thresholds() to test candidate values) — None means "use the
+    current live params.json-mirroring constants," same behavior as before
+    this was parameterized.
     """
     assert variant in ("v1.0", "v1.1", "v1.2")
+    stop_loss_pct = STOP_LOSS_PCT if stop_loss_pct is None else stop_loss_pct
+    profit_target_pct = PROFIT_TARGET_PCT if profit_target_pct is None else profit_target_pct
     lookup = {}
     for sym, df in frames.items():
         for _, row in df.iterrows():
@@ -219,11 +225,11 @@ def make_trader(frames, variant):
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
                                        conviction=1.0, rationale=f"v1.2: time-stop, held {held_days}d >= {MAX_HOLDING_DAYS}d")
 
-            if pnl_pct <= STOP_LOSS_PCT:
+            if pnl_pct <= stop_loss_pct:
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
                                        conviction=1.0, rationale="stop_loss_pct breached")
 
-            if pnl_pct >= PROFIT_TARGET_PCT:
+            if pnl_pct >= profit_target_pct:
                 if variant == "v1.2":
                     trim_shares = max(1, int(held.shares * PROFIT_TRIM_PCT))
                     return TraderDecision(ticker=tick.ticker, decision="SELL", conviction=1.0,
@@ -396,10 +402,71 @@ VARIANT_LABELS = {
 }
 
 
+def sweep_thresholds(frames, ticks, stop_loss_grid, profit_target_grid, variant="v1.0"):
+    """Small grid sweep over stop_loss_pct/profit_target_pct for a given
+    strategy variant (default v1.0, the live strategy's entry/exit logic).
+    For each combo, runs the SAME both-halves split-window robustness check
+    used to decide the v1.1 promotion (2026-07-23) — Sharpe positive in
+    BOTH halves, not just a single aggregate number — rather than trusting
+    one full-window backtest. Only sweeps the two thresholds the harness
+    actually models; trailing_stop_pct isn't simulated here at all (a
+    separate, real gap — the harness only ever tested fixed full-exit
+    stops, never the trailing mechanism live in executor.py).
+
+    Returns candidates sorted by full-window Sharpe (robust ones first),
+    each with "robust": bool (Sharpe > 0 in both halves).
+    """
+    first_half, second_half = split_ticks_by_midpoint(ticks)
+    candidates = []
+    for stop_loss_pct in stop_loss_grid:
+        for profit_target_pct in profit_target_grid:
+            def build_trader(frames, sl=stop_loss_pct, pt=profit_target_pct):
+                return make_trader(frames, variant, stop_loss_pct=sl, profit_target_pct=pt)
+
+            full_result = replay_trader(ticks, build_trader(frames), initial_balance=10_000.0,
+                                         max_position_pct=0.06, require_conviction=0.5)
+            first_result = replay_trader(first_half, build_trader(frames), initial_balance=10_000.0,
+                                          max_position_pct=0.06, require_conviction=0.5)
+            second_result = replay_trader(second_half, build_trader(frames), initial_balance=10_000.0,
+                                           max_position_pct=0.06, require_conviction=0.5)
+
+            full_summary = summarize(full_result, variant)
+            first_sharpe = compute_risk_metrics(first_result)["sharpe"]
+            second_sharpe = compute_risk_metrics(second_result)["sharpe"]
+            robust = bool(first_sharpe is not None and second_sharpe is not None
+                          and first_sharpe > 0 and second_sharpe > 0)
+
+            candidates.append({
+                "stop_loss_pct": float(stop_loss_pct),
+                "profit_target_pct": float(profit_target_pct),
+                "sharpe": full_summary["sharpe"],
+                "first_half_sharpe": None if first_sharpe is None else float(first_sharpe),
+                "second_half_sharpe": None if second_sharpe is None else float(second_sharpe),
+                "robust": robust,
+                "total_return_pct": full_summary["total_return_pct"],
+                "n_trades": full_summary["n_trades"],
+            })
+
+    def sort_key(c):
+        return (c["robust"], c["sharpe"] if c["sharpe"] is not None else -999)
+
+    candidates.sort(key=sort_key, reverse=True)
+    return candidates
+
+
+# Default sweep grid — small enough to stay fast (a few seconds on the
+# live universe), wide enough to span meaningfully tighter/looser than the
+# current live thresholds (params.json risk.stop_loss_pct=-10.0,
+# profit_target_pct=12.0).
+DEFAULT_STOP_LOSS_GRID = [-15.0, -12.0, -10.0, -8.0, -6.0]
+DEFAULT_PROFIT_TARGET_GRID = [8.0, 10.0, 12.0, 15.0, 18.0]
+
+
 def main():
     args = sys.argv[1:]
     split_window = "--split-window" in args
-    tickers = [a for a in args if a != "--split-window"]
+    sweep = "--sweep" in args
+    tickers = [a for a in args if a not in ("--split-window", "--sweep")]
     if not tickers:
         tickers = load_live_universe()
 
@@ -409,6 +476,18 @@ def main():
         return
 
     ticks = build_tick_stream(frames)
+
+    if sweep:
+        candidates = sweep_thresholds(frames, ticks, DEFAULT_STOP_LOSS_GRID, DEFAULT_PROFIT_TARGET_GRID)
+        print(json.dumps({
+            "tickers_used": sorted(frames.keys()),
+            "lookback_days": LOOKBACK_DAYS,
+            "stop_loss_grid": DEFAULT_STOP_LOSS_GRID,
+            "profit_target_grid": DEFAULT_PROFIT_TARGET_GRID,
+            "candidates": candidates,
+        }, indent=2))
+        return
+
     results = run_variants(frames, ticks)
 
     output = {

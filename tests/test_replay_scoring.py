@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
@@ -231,3 +232,87 @@ class TestSplitTicksByMidpoint:
         ticks = [make_tick("AAA", d) for d in range(6)]
         first, second = replay_check.split_ticks_by_midpoint(ticks)
         assert max(t.timestamp for t in first) < min(t.timestamp for t in second)
+
+
+def make_sweep_frame(n_days=20, entry_day=1, daily_pct_change=-0.02):
+    """A single-ticker synthetic frame with all columns make_trader's
+    lookup needs (macd_hist/line/signal, ma20/ma50, vol_20d) — enters the
+    RSI 45-65 band on entry_day, then closes drift by daily_pct_change
+    every day after, so different stop_loss/profit_target thresholds
+    trigger an exit on different days (or not at all).
+    """
+    base = datetime.datetime(2026, 1, 1)
+    rows = []
+    price = 100.0
+    for d in range(n_days):
+        rsi = 55.0 if d == entry_day else 50.0  # only in-band on entry_day
+        rows.append({
+            "timestamp": base + datetime.timedelta(days=d), "close": price,
+            "high": price, "low": price, "volume": 10000,
+            "rsi_14": rsi, "macd_line": 0.1, "macd_hist": 0.1, "macd_signal": 0.0,
+            "ma20": price, "ma50": price, "vol_20d": 0.01,
+        })
+        if d >= entry_day:
+            price = price * (1 + daily_pct_change)
+    return pd.DataFrame(rows)
+
+
+class TestSweepThresholds:
+    """sweep_thresholds() added 2026-07-23 as evolution-batch groundwork —
+    small grid over stop_loss_pct/profit_target_pct, scored by the same
+    both-halves-Sharpe-positive robustness bar the v1.1 decision used."""
+
+    def test_returns_one_candidate_per_grid_combo(self):
+        frames = {"AAA": make_sweep_frame()}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-15.0, -10.0], profit_target_grid=[10.0, 15.0, 20.0])
+        assert len(candidates) == 6  # 2 x 3
+
+    def test_candidate_keys_and_grid_values_round_trip(self):
+        frames = {"AAA": make_sweep_frame()}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-8.0], profit_target_grid=[12.0])
+        assert len(candidates) == 1
+        c = candidates[0]
+        assert c["stop_loss_pct"] == -8.0
+        assert c["profit_target_pct"] == 12.0
+        for key in ("sharpe", "first_half_sharpe", "second_half_sharpe", "robust",
+                    "total_return_pct", "n_trades"):
+            assert key in c
+
+    def test_tighter_stop_loss_exits_sooner_changes_outcome(self):
+        # Steady -2%/day decline after entry -> a tight stop should exit
+        # much earlier (fewer days held, different P&L) than a loose one.
+        frames = {"AAA": make_sweep_frame(n_days=30, entry_day=1, daily_pct_change=-0.02)}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-5.0, -25.0], profit_target_grid=[50.0])
+        by_stop = {c["stop_loss_pct"]: c for c in candidates}
+        # Tight stop should produce a worse (more negative) or at least
+        # different total return than the loose stop on a declining path.
+        assert by_stop[-5.0]["total_return_pct"] != by_stop[-25.0]["total_return_pct"]
+
+    def test_sorted_robust_candidates_ranked_before_non_robust(self):
+        frames = {"AAA": make_sweep_frame(n_days=40, entry_day=1, daily_pct_change=0.015)}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-10.0], profit_target_grid=[5.0, 50.0])
+        robust_flags = [c["robust"] for c in candidates]
+        # Once sorted, True (robust) values must not appear after False ones.
+        assert robust_flags == sorted(robust_flags, reverse=True)
+
+    def test_make_trader_uses_overridden_thresholds_not_module_defaults(self):
+        # A -3% stop should exit long before the module default -10%, on a
+        # steadily declining path, given the same entry.
+        frames = {"AAA": make_sweep_frame(n_days=15, entry_day=1, daily_pct_change=-0.01)}
+        ticks = replay_check.build_tick_stream(frames)
+        tight_trader = replay_check.make_trader(frames, "v1.0", stop_loss_pct=-2.0)
+        loose_trader = replay_check.make_trader(frames, "v1.0", stop_loss_pct=-9.0)
+        tight_result = replay_check.replay_trader(ticks, tight_trader, initial_balance=10_000.0)
+        loose_result = replay_check.replay_trader(ticks, loose_trader, initial_balance=10_000.0)
+        assert len(tight_result.trades) >= 1
+        assert len(loose_result.trades) >= 1
+        # The tight stop should cut the loss earlier -> smaller magnitude loss.
+        assert tight_result.trades[0].return_pct > loose_result.trades[0].return_pct
