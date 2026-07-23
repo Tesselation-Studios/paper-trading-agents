@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 10:00 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 10:05 ET
+
+## THU 10:05 ET — Market Tick
+- **Same as 10:00 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED. PV $10,408, cash $9,105, 8 pos.
+- No stop breaches (check-stops clean), no MACDh flips. All 8 HOLD. New entries gated (v1.4 CHOPPY).
+- NVDA $209.53 (+0.91%), DVN $45.88 (+2.00%), WSC $26.35 (-1.53%). GME $21.34 (-4.67%) 🟡, SNAP $4.38 (-4.26%) 🟡.
+- 🟡 SNAP $4.38 slightly below last tick's noted trail $4.39 — but check-stops clean, trail recalculated. GME flat. WSC dip from $26.76 to $26.35.
+- 📡 Quotes fresh via Alpaca. Watchlist 2 idle→18. Merge discoveries no-op.
 
 ## THU 10:00 ET — Market Tick
 - **Same as 09:55 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment RECOVERED. PV $10,407, cash $9,105, 8 pos.
