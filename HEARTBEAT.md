@@ -1,1 +1,1 @@
-OK 2026-07-23T16:57:59Z | tick 12:55 THU JUL 23 | regime CHOPPY/FEAR F&G 31 | PV $10,404 | 2 pos (F $14.15 +0.11%, WSC $27.02 +2.12%) | both HOLD | no breaches, no MACDh flips, new entries gated v1.4 | watchlist 3 (FDIV/COAG/MATE idle→2)
+OK 2026-07-23T19:05:00Z | tick 15:05 THU JUL 23 | regime CHOPPY/FEAR F&G 31 | PV $10,404 | 1 pos (F $14.06 -0.53%) | F HOLD | no breaches, MACDh -0.001 🔴 near-zero oscillation no flip, new entries gated v1.4 | watchlist 4 (FDIV/COAG/MATE idle→21, SRET idle→9)
