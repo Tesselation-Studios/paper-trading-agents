@@ -29,12 +29,27 @@ histogram (index 1). The "MACDh flip" exit had actually been testing
 signal-line sign flips, a related but different signal. Fixed here — all
 three MACD components are now stored correctly and separately.
 
+2026-07-22: strategy.md v1.3 reverted entry/exit logic to be identical to
+this harness's "v1.0" variant (simple RSI 45-65 momentum entry, fixed
+stop-loss/profit-target full exit) — so "v1.0" here IS what's currently
+live, not a retired baseline. v1.1/v1.2 remain in the comparison as
+already-tried-and-reverted alternatives, not candidates for promotion
+without new evidence (see strategy.md Version History).
+
 Usage:
     python3 scripts/replay_check.py [TICKER ...]
+
+With no TICKER args, the universe is built from what's actually live:
+every currently-open position (positions/*.md) plus every active (not
+struck-through) watchlist candidate (strategies/watchlist.md). This
+mirrors real trading activity instead of a hand-picked ticker list, so
+the comparison can't be accidentally cherry-picked.
 """
 import json
 import os
+import re
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -47,6 +62,11 @@ from alpaca.data.enums import DataFeed
 sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
 from src.replay import Tick, TraderDecision, replay_trader  # noqa: E402
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+# Only used if load_live_universe() finds nothing (e.g. fresh checkout with
+# no open positions and an empty watchlist) — not the primary source.
+FALLBACK_TICKERS = ["CHWY", "F", "FUBO", "GME", "KHC", "LYFT", "MVST", "NVDA", "SOFI"]
+
 LOOKBACK_DAYS = 200
 RSI_LENGTH = 14
 MACD_FAST, MACD_SLOW, MACD_SIGNAL = 12, 26, 9
@@ -58,6 +78,40 @@ PROFIT_TARGET_PCT = 12.0
 RSI_EXHAUSTION_EXIT = 75.0          # exit_rules.rsi_exhaustion_hard_exit
 MAX_HOLDING_DAYS = 5                # risk_guards.max_holding_days
 PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not full close)
+
+
+def load_live_universe():
+    """Build the ticker universe from what's actually live right now:
+    every open position (a positions/TICKER.md file exists) plus every
+    active watchlist candidate (not struck-through with ~~, meaning
+    closed/dropped). Falls back to FALLBACK_TICKERS if both are empty.
+    """
+    tickers = set()
+
+    positions_dir = REPO_ROOT / "positions"
+    if positions_dir.is_dir():
+        for f in positions_dir.glob("*.md"):
+            tickers.add(f.stem.upper())
+
+    watchlist_path = REPO_ROOT / "strategies" / "watchlist.md"
+    if watchlist_path.exists():
+        text = watchlist_path.read_text()
+        in_candidates = False
+        for line in text.splitlines():
+            if line.strip().startswith("## Candidates"):
+                in_candidates = True
+                continue
+            if in_candidates and line.strip().startswith("##"):
+                break
+            if not in_candidates or not line.strip().startswith("-"):
+                continue
+            if "~~" in line:
+                continue  # struck-through = dropped, not active
+            m = re.match(r"-\s*([A-Z]{1,5})\b", line.strip())
+            if m:
+                tickers.add(m.group(1))
+
+    return sorted(tickers) if tickers else list(FALLBACK_TICKERS)
 
 
 def fetch_history(tickers):
@@ -295,9 +349,7 @@ def summarize(result, label):
 
 
 def main():
-    tickers = sys.argv[1:] if len(sys.argv) > 1 else [
-        "CHWY", "F", "FUBO", "GME", "KHC", "LYFT", "MVST", "NVDA", "SOFI",
-    ]
+    tickers = sys.argv[1:] if len(sys.argv) > 1 else load_live_universe()
 
     frames = fetch_history(tickers)
     if not frames:
@@ -315,7 +367,7 @@ def main():
     print(json.dumps({
         "tickers_used": sorted(frames.keys()),
         "lookback_days": LOOKBACK_DAYS,
-        "v1.0": summarize(results["v1.0"], "fixed stop/target only, simple RSI 45-65 entry"),
+        "v1.0": summarize(results["v1.0"], "== live strategy.md v1.3.1: fixed stop/target only, simple RSI 45-65 entry"),
         "v1.1": summarize(results["v1.1"], "+ MACDh-flip exit, + regime-gated entries"),
         "v1.2": summarize(results["v1.2"], "+ RSI-exhaustion exit, + time-stop, + profit trim, "
                                             "+ triple-confirmation entry (sector veto/VIX-tiering/quality-gate NOT modeled)"),
