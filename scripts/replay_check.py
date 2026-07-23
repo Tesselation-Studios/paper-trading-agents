@@ -262,6 +262,16 @@ def make_trader(frames, variant):
     return trader
 
 
+# Addressable by name so other scripts (e.g. universe_scan.py) can build a
+# trader for a given strategy without knowing make_trader's internal
+# variant-dispatch details. Same closures as before — no behavior change.
+STRATEGY_BUILDERS = {
+    "v1.0": lambda frames: make_trader(frames, "v1.0"),
+    "v1.1": lambda frames: make_trader(frames, "v1.1"),
+    "v1.2": lambda frames: make_trader(frames, "v1.2"),
+}
+
+
 TRADING_DAYS_PER_YEAR = 252
 
 
@@ -359,8 +369,8 @@ def main():
     ticks = build_tick_stream(frames)
 
     results = {}
-    for variant in ("v1.0", "v1.1", "v1.2"):
-        trader_fn = make_trader(frames, variant)
+    for variant, build_trader in STRATEGY_BUILDERS.items():
+        trader_fn = build_trader(frames)
         results[variant] = replay_trader(ticks, trader_fn, initial_balance=10_000.0,
                                           max_position_pct=0.06, require_conviction=0.5)
 
