@@ -5,20 +5,21 @@ This is the discovery mechanism for the MVP: no ML, no news-source aggregation y
 Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
+- F — open position (2 shares @ $14.135)
+- WSC — open position (1 share @ $26.46)
+
+## Closed Positions
 - ~~NVDA~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +0.45%)
-- CHWY — open position
+- ~~CHWY~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, -0.02%)
 - ~~KHC~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, -1.16%)
+- ~~DVN~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +1.89%)
+- ~~SNAP~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, -4.59%)
+- ~~GME~~ — closed 2026-07-23 (trailing stop breach, -5.00%)
+- ~~OPEN~~ — closed 2026-07-23 (trailing stop breach, -5.11%)
 - ~~SOFI~~ — closed 2026-07-22 (broke $17 support, Game Plan cut, -4.58%)
-- MVST — open position
-- F — open position
 - ~~LYFT~~ — closed 2026-07-22 (trailing stop breach, -5.49%)
-- GME — open position
 - ~~DJT~~ — closed 2026-07-22 (trailing stop breach, -5.2%)
 - ~~MVST~~ — closed 2026-07-22 (trailing stop breach, +0.29%)
-- ~~OPEN~~ — closed 2026-07-23 (trailing stop breach, -5.11%)
-- ~~SNAP~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, -4.59%)
-- WSC — open position
-- DVN — open position
 - ~~FUBO~~ — closed 2026-07-21 (MACDh bearish flip, -5.04%)
 - ~~AMC~~ — closed 2026-07-21 (trailing stop breach, -1.69%)
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
