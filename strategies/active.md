@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 11:10 ET
+# Current Playbook — Stonks 🚀 THU JUL 23, 2026 — 11:15 ET
+
+## THU 11:15 ET — Market Tick
+- **Same as 11:10 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (11:00 ET). PV $10,404, cash $10,212, 3 pos.
+- No stop breaches (check-stops clean). MACDh: 1-min bars stale (free-tier Alpaca delay). 11:10 tick reported DVN/WSC flipped red but prices flat — possible bar noise. F red near zero. All 3 HOLD. New entries gated (v1.4 CHOPPY).
+- DVN $45.85 (+1.92%), WSC $26.58 (+0.45%), F $14.11 (-0.21%).
+- ⚠️ MACDh data gap: 11:10 tick described DVN/WSC MACDh as "red" after 11:05 had both green (DVN +0.01044, WSC +0.0006). If confirmed, this is a v1.4 mandatory exit on both. But prices barely moved ($0.02-0.03) and stale-bar check shows DVN oscillating ±0 across zero repeatedly — likely 1-min noise, not a real trend break. Flagged for next tick: verify MACDh fresh.
+- Watchlist empty. Merge discoveries no-op.
 
 ## THU 11:10 ET — Market Tick
 - **Same as 11:05 tick.** Regime CHOPPY/FEAR, F&G 31 (Fear), sentiment fresh (11:00 ET). PV $10,404, cash $10,212, 3 pos.
