@@ -1,12 +1,7 @@
-# OPEN Position Thesis
+# OPEN Position Thesis — CLOSED 2026-07-23
 
 - **Entry**: $4.50 avg | 2 shares
-- **Current**: $4.39 (-2.44% unrealized)
-- **Market Value**: $8.78
-- **Unrealized P&L**: $-0.22 (-2.44%)
-- **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-22 20:15:21 UTC
-
-This position is managed through the Alpaca paper trading API.
-Entry, exit, and sizing are handled by the trader agent via executor.py.
-Stop-loss and take-profit levels are maintained in the trading.trader_positions table.
+- **Exit**: $4.27 | 2 shares | trailing stop breach
+- **P&L**: -$0.46 (-5.11%)
+- **Reason**: Trailing stop breached -5.4% off peak $4.50. Mechanical exit via check-stops.
+- **Closed**: 2026-07-23 09:31 ET
