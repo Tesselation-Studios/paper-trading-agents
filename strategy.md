@@ -34,6 +34,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Promotion bar is split-window Sharpe (both halves positive independently), not raw aggregate return — a good full-window number can hide a strategy that's actually broken in the more recent half.
 - Watchlist must be fed — 4 days with no new names means the pipeline's starved; 2-3/session minimum. Mechanically enforced (`scripts/merge_discoveries.py`), not just a reminder.
 - Low-confidence/CHOPPY: don't trust MACD divergence without price confirmation — it's a trap.
+- Near-zero MACDh oscillation is noise, not a signal: when histogram crosses near zero (±0.003 range) on a $1-$50 stock with flat price, declining-but-improving bars, and MACD line holding structurally above/below zero — don't exit. Verified 3+ times under live fire (Jul 23: DVN, WSC, F). Real flips are unmistakable — 4-5 bar declining trends with price confirmation.
 - Pre-session account audit — shared credentials mean your Alpaca account may contain positions you don't recognize. Audit against journal records symbol-by-symbol before first tick.
 - Strategy changes must be verified end-to-end: after revising `strategy.md`, explicitly check `params.json`, `executor.py`, and `tick_prompt.md` for stale rules. A revision that only touches this file is incomplete.
 - Trailing stop win rate: 4W/8L (33%) across Jul 21-23 exits. Still holding at exactly the 33% monitoring threshold — 12 trail-stop exits now, need 8 more for the 20-exit review trigger. GME/OPEN added Jul 23 (both -5.0%/-5.1%).

@@ -1,11 +1,11 @@
 {
   "version": 1,
   "total_ticks": 169,
-  "total_trades": 17,
-  "total_wins": 5,
+  "total_trades": 19,
+  "total_wins": 8,
   "total_losses": 11,
   "consecutive_wins": 2,
   "consecutive_losses": 0,
   "created_at": "2026-07-20T16:30:00Z",
-  "updated_at": "2026-07-23T19:20:00Z"
+  "updated_at": "2026-07-23T20:30:00Z"
 }
