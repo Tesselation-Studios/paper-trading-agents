@@ -44,6 +44,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Not limited to this file — evolve when something real is learned (nightly Step 3).
 - Version `stonks.strat:v{major}.{minor}`; experimental `x-{name}` (5 trades, promote or revert).
 - "Nothing changed" is valid.
+- Run `skills/rule-mechanization-audit.md` every cycle — surfaces which prose rules here are repeatedly violated (mechanize candidates) vs. no longer relevant (removal candidates).
 
 ## Version History
 
