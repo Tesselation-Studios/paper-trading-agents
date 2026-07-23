@@ -15,8 +15,9 @@ tasks:
     4. Check portfolio state and current positions.
     5. Decide: buy, sell, hold. Execute via Alpaca paper trading.
     6. Commit all changes. Push to GitHub. No exceptions.
-    7. Send Raf a brief status update via Telegram (message tool, target: 8734159864):
-       - What you checked, what you did, any trades executed
+    7. Once per hour (on the hour: 10:00, 11:00, 12:00, etc.), send Raf a status update via
+       Telegram (message tool, target: 8734159864). Skip if you sent one in the last 55 min.
+       - What you checked, what you did, any trades executed since last update
        - Portfolio snapshot: positions open, cash, total value, top movers
        - Any alerts or concerns
        - One concise message, not a novel
