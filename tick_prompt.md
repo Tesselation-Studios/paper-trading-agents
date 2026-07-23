@@ -6,6 +6,8 @@
 
 1. **Read strategy.md and params.json** → fresh, every tick, no exceptions. Confirmed 2026-07-22: a same-day strategy revert (v1.2.1→v1.3, dropping the regime gate) didn't take effect for several ticks because this step was previously skipped on the wrong assumption these files were already warm in context. They're small; the read is cheap. Correctness > saving a few tokens.
 
+   Before trading, run `python3 scripts/workspace_review.py --gate` (see `skills/workspace-review.md`). If it reports critical findings (`state/.workspace_blocked` set), **do not trade this tick** — note the reason in active.md and `HEARTBEAT_OK`. Warnings alone don't block; just carry them into active.md so they don't go unnoticed (this is exactly how the Jul 22 CHOPPY-gate lag went undetected for 2 hours).
+
 2. **Read active.md** → `read strategies/active.md` — this is your working memory from last tick. Know your last state.
 
 3. **Read watchlist** → `read strategies/watchlist.md` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).

@@ -27,6 +27,7 @@ logs/test-results/
 # Guardrail runtime state (transient, regenerated every tick)
 state/guardrail_stops.json
 state/sentiment_cache.json
+state/.workspace_blocked
 
 # Trader workspace runtime state (not version-controlled)
 traders/*/memory/
