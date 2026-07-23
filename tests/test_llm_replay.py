@@ -44,9 +44,28 @@ class TestBuildReplayPrompt:
 
     def test_includes_ticker_snapshot_data(self):
         snapshot = {"GME": {"close": 22.5, "rsi_14": 60.0, "macd_hist": 0.05,
-                             "macd_line": 0.1, "macd_signal": 0.05, "ma20": 21.0, "ma50": 20.0}}
+                             "macd_line": 0.1, "macd_signal": 0.05, "ma20": 21.0, "ma50": 20.0,
+                             "volume": 1_000_000, "volume_ma20": 500_000}}
         prompt = llm_replay.build_replay_prompt("2026-01-01", snapshot, {"cash": 1.0, "positions": {}}, "s")
         assert "GME" in prompt and "rsi14=60.0" in prompt
+
+    def test_includes_relative_volume(self):
+        snapshot = {"GME": {"close": 22.5, "rsi_14": 60.0, "macd_hist": 0.05,
+                             "macd_line": 0.1, "macd_signal": 0.05, "ma20": 21.0, "ma50": 20.0,
+                             "volume": 2_000_000, "volume_ma20": 1_000_000}}
+        prompt = llm_replay.build_replay_prompt("2026-01-01", snapshot, {"cash": 1.0, "positions": {}}, "s")
+        assert "2.00x 20d avg" in prompt
+
+    def test_missing_volume_ma20_reports_na(self):
+        snapshot = {"GME": {"close": 22.5, "rsi_14": 60.0, "macd_hist": 0.05,
+                             "macd_line": 0.1, "macd_signal": 0.05, "ma20": 21.0, "ma50": 20.0,
+                             "volume": 1_000_000, "volume_ma20": None}}
+        prompt = llm_replay.build_replay_prompt("2026-01-01", snapshot, {"cash": 1.0, "positions": {}}, "s")
+        assert "20d avg n/a" in prompt
+
+    def test_no_catalyst_disclaimer_present(self):
+        prompt = llm_replay.build_replay_prompt("2026-01-01", {}, {"cash": 1.0, "positions": {}}, "s")
+        assert "no news/catalyst feed" in prompt
 
 
 class TestParseDecisions:

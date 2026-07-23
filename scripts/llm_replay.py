@@ -35,6 +35,7 @@ Usage:
 import argparse
 import json
 import re
+import pandas as pd
 import subprocess
 import sys
 from pathlib import Path
@@ -85,11 +86,15 @@ def build_replay_prompt(date_str: str, day_snapshot: Dict[str, Dict[str, Any]],
         lines.append("  (no open positions)")
 
     lines.append("")
-    lines.append("Today's data per ticker:")
+    lines.append("Today's data per ticker (no news/catalyst feed in this replay — "
+                  "decide on price/volume/technicals alone, same honesty rule as always: "
+                  "don't fabricate a catalyst that isn't here):")
     for ticker, row in sorted(day_snapshot.items()):
+        vol_ratio = f"{row['volume'] / row['volume_ma20']:.2f}x 20d avg" if row.get("volume_ma20") else "20d avg n/a"
         lines.append(
             f"  {ticker}: close=${row['close']:.2f} rsi14={row['rsi_14']:.1f} "
-            f"macd_hist={row['macd_hist']:.3f} ma20=${row['ma20']:.2f} ma50=${row['ma50']:.2f}"
+            f"macd_hist={row['macd_hist']:.3f} ma20=${row['ma20']:.2f} ma50=${row['ma50']:.2f} "
+            f"volume={row['volume']:,.0f} ({vol_ratio})"
         )
 
     lines.append("")
@@ -179,12 +184,15 @@ def make_llm_trader(frames, strategy_text: str, model: str = DEFAULT_MODEL):
                 row = lookup.get((sym, tick.timestamp))
                 if row is None:
                     continue
+                vol_ma20 = row.get("volume_ma20")
                 day_snapshot[sym] = {
                     "close": float(row["close"]), "rsi_14": float(row["rsi_14"]),
                     "macd_hist": float(row["macd_hist"]), "macd_line": float(row["macd_line"]),
                     "macd_signal": float(row["macd_signal"]),
-                    "ma20": float(row["ma20"]) if row["ma20"] == row["ma20"] else row["close"],
-                    "ma50": float(row["ma50"]) if row["ma50"] == row["ma50"] else row["close"],
+                    "ma20": float(row["ma20"]) if pd.notna(row["ma20"]) else row["close"],
+                    "ma50": float(row["ma50"]) if pd.notna(row["ma50"]) else row["close"],
+                    "volume": float(row["volume"]),
+                    "volume_ma20": float(vol_ma20) if pd.notna(vol_ma20) else None,
                 }
             portfolio_state = {
                 "cash": portfolio.cash,

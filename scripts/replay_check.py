@@ -150,6 +150,14 @@ def fetch_history(tickers):
         df["ma50"] = df["close"].rolling(50).mean()
         df["daily_return"] = df["close"].pct_change()
         df["vol_20d"] = df["daily_return"].rolling(20).std()
+        # Share-volume 20d average — not in the dropna subset (same as
+        # ma20/ma50), so it's NaN for the first ~20 rows but doesn't
+        # shrink the usable window. Added 2026-07-23: a raw share count
+        # alone isn't decision-useful without a baseline to compare
+        # against — llm_replay.py's entry decisions were citing "no
+        # volume data" despite raw volume being fetched, since nothing
+        # gave it context for what's normal.
+        df["volume_ma20"] = df["volume"].rolling(20).mean()
         frames[sym] = df.dropna(subset=["rsi_14", "macd_hist", "vol_20d"]).reset_index(drop=True)
     return frames
 
