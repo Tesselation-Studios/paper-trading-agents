@@ -1,5 +1,11 @@
 # Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:05 ET
 
+## FRI 09:25 ET — Pre-Market Tick
+- **Same as 09:20 tick.** Pre-market, 5 min to open. Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,404, cash $10,376, 1 pos (F 2sh @ $14.135, UPL +$0.07/+0.25% at $14.17).
+- No stop breaches (check-stops clean). F MACDh -0.0407 🔴 (already red, no new flip). Web search: F day range $13.85-$14.50, JP Morgan Overweight target $16. Earnings 7/28 confirmed. F HOLD.
+- New entries gated (v1.4 CHOPPY). Watchlist 8 (OZKAP/BFST/NKLR/XRPNU idle→5, BEDY/OLP/IP/FHB idle→9). 🔔 F Q2 earnings 7/28 (Tue).
+- MCP tools (get_market_regime/get_risk) unavailable this tick (subagent). Merge discoveries no-op.
+
 ## FRI 09:20 ET — Pre-Market Tick
 - **Same as 09:15 tick.** Pre-market. Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,404, cash $10,376, 1 pos (F 2sh @ $14.135, UPL +$0.09/+0.32% at $14.18).
 - No stop breaches (check-stops clean). F MACDh -0.0407 🔴 (already red, no new flip). Data bus momentum bullish/z≈0, regime conflict unchanged. F HOLD.
