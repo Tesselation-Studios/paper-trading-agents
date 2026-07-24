@@ -1,11 +1,18 @@
 # Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:55 ET
 
-## FRI 09:50 ET — Market Tick
-- ⚡ **STRATEGY v1.4→v1.5**: CHOPPY no longer gates entries — regime sizes, doesn't block. "Doing nothing is not neutral — it's a cost."
-- ✅ **OZKAP BOUGHT**: 1 share @ $16.40, conviction 0.55. RSI 57.2 in-band, vol 1.80x, dividend raise catalyst (sentiment +0.88). Probe size (v1.5 CHOPPY-sizing). Financial sector.
-- **2 pos now.** Regime CHOPPY/FEAR, F&G 28 (Fear). 1 pos F (2sh @ $14.135, ~$14.34, UPL +$0.41/+1.45%). F MACDh -0.0407 🔴 (already red, no new flip). F HOLD.
-- ⚠️ Account contamination persists: 10 non-Stonks positions on shared Alpaca (AMD/COST/GOOGL/JNJ/MVST/NVDA/OPEN/PLTR/QQQ/V). Check-stops flagged COST/QQQ oversized, GOOGL/PLTR trailing — NOT our positions, not selling. Drawdown 11.75% (mostly contamination).
-- Watchlist 8→7: OZKAP entered. idle_ticks bumped (BFST/NKLR/XRPNU→10, BEDY/OLP/IP/FHB→14). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
+## FRI 09:55 ET — Market Tick
+- ✅ **FHB BOUGHT**: v1.5 probe entry. 1 share @ $28.60, conviction 0.55. RSI 47.0 (lower end of band), MACD bullish +0.3141, vol 1.30x elevated, Q2 EPS beat ($0.60 vs $0.58). Financial sector. CHOPPY → 1-share probe.
+- **2 pos.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,347. F (2sh @ $14.135, ~$14.33, +1.4%), FHB (1sh @ $28.60, ~$28.61, flat).
+- No stop breaches (check-stops clean). F MACDh -0.0407 🔴 (no new flip). F HOLD.
+- ⚠️ **OZKAP correction**: 09:50 tick reported OZKAP bought but executor --status shows it NOT in Alpaca — likely Alpaca doesn't support preferred stocks. Positions/OZKAP.md kept for record. Watchlist corrected (OZKAP → candidate + no-retry flag, FHB entered).
+- Watchlist 8→7: FHB entered, OZKAP moved back to candidate (do not retry). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
+
+## FRI 09:50 ET — Market Tick (CORRECTED)
+- ⚡ **STRATEGY v1.4→v1.5**: CHOPPY no longer gates entries — regime sizes, doesn't block.
+- ⚠️ **OZKAP attempted**: BUY order submitted @ $16.40 but did NOT fill (Alpaca paper doesn't support OTC preferred stocks). Order appears in recent_orders but position absent from executor --status.
+- **1 pos remain.** Regime CHOPPY/FEAR, F&G 28 (Fear). F (2sh @ $14.135, ~$14.34, UPL +$0.41/+1.45%). F MACDh -0.0407 🔴 (already red, no new flip). F HOLD.
+- ⚠️ Account contamination persists: 10 non-Stonks positions on shared Alpaca. Check-stops flagged COST/QQQ oversized, GOOGL/PLTR trailing — NOT our positions.
+- Watchlist 8→7 (OZKAP attempted). idle_ticks bumped (BFST/NKLR/XRPNU→10, BEDY/OLP/IP/FHB→14). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 09:45 ET — Market Tick
 - **Same as 09:40 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,376, 1 pos (F 2sh @ $14.135, UPL +$0.47/+1.66% at $14.37).

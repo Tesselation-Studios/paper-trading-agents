@@ -6,7 +6,7 @@ Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
 - F — open position (2 shares @ $14.135)
-- OZKAP — open position (1 share @ $16.40, entry 2026-07-24 09:50)
+- FHB — open position (1 share @ $28.60, entry 2026-07-24 09:55)
 
 ## Closed Positions
 - ~~WSC~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +1.46%)
@@ -26,14 +26,15 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- BFST — idle_ticks: 10 — $30.46, RSI 54.0, vol 1.68x, news: Q2 beat (sentiment +0.00)
-- NKLR — idle_ticks: 10 — $5.42, RSI 57.2, vol 1.28x, news: NRC readiness review (sentiment +0.79)
-- XRPNU — idle_ticks: 10 — $10.73, RSI 54.3, no news — technical signal only
+- OZKAP — idle_ticks: 11 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (Alpaca may not support preferred stocks). Do not retry.
+- BFST — idle_ticks: 11 — $30.47, RSI 53.6, vol 0.88x, MACD bullish +0.4561, news: Stephens & Co. Overweight PT $36
+- NKLR — idle_ticks: 11 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
+- XRPNU — idle_ticks: 11 — $10.80, RSI 44.4, vol 0.0, MACD bearish — dead ticker, consider dropping
 
-- BEDY — idle_ticks: 14 — from 2026-07-23.md
-- OLP — idle_ticks: 14 — from 2026-07-23.md
-- IP — idle_ticks: 14 — from 2026-07-23.md
-- FHB — idle_ticks: 14 — from 2026-07-23.md
+- BEDY — idle_ticks: 15 — $29.06, RSI 53.2, vol 0.86x, MACD bullish +0.1031 — from 2026-07-23.md
+- OLP — idle_ticks: 15 — $24.87, RSI 52.7, vol 0.80x, MACD bullish +0.2734 — from 2026-07-23.md
+- IP — idle_ticks: 15 — $38.00, RSI ?, vol 0.87x, MACD bullish — from 2026-07-23.md, RBC Outperform PT $48 (sentiment +0.925)
+- ~~FHB~~ — entered 2026-07-24 09:55, 1 share @ $28.60, probe entry
 
 - ~~SRET~~ — dropped 2026-07-24 09:20 (idle_ticks=24 threshold)
 
