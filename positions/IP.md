@@ -1,22 +1,12 @@
-# IP — International Paper
+# IP Position Thesis
 
-**Entry**: 2026-07-24 10:05 ET, 2 shares @ $38.43 (probe, CHOPPY)
-**Conviction**: 0.55
+- **Entry**: $38.43 avg | 2 shares
+- **Current**: $38.12 (-0.81% unrealized)
+- **Market Value**: $76.24
+- **Unrealized P&L**: $-0.62 (-0.81%)
+- **Synced from**: Alpaca paper trading
+- **Last sync**: 2026-07-24 15:05:05 UTC
 
-## Thesis
-- Renewable fiber-based packaging, Materials sector
-- RBC Outperform, PT raised to $48 (+28% upside)
-- Truist PT $46, Wells Fargo Buy
-- Sentiment +0.925 (very strong)
-- Dip buy: restructuring news (closing TX facility), stock down from $38.09 close
-- Day range $35.95-$36.85 but filled higher at $38.43
-- Dividend yield, ex-date Aug 14, 2026
-
-## Exit Triggers
-- MACDh histogram flip (positive→negative)
-- Stop-loss: -10% ($34.59)
-- Trailing stop: -5% from peak
-- Profit target guide: +12% ($43.04)
-
-## Sector
-Materials
+This position is managed through the Alpaca paper trading API.
+Entry, exit, and sizing are handled by the trader agent via executor.py.
+Stop-loss and take-profit levels are maintained in the trading.trader_positions table.

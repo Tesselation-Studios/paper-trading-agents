@@ -1,20 +1,12 @@
-# BFST — Business First Bancshares
+# BFST Position Thesis
 
-**Entry**: 2026-07-24 10:05 ET, 1 share @ $30.98 (probe, CHOPPY)
-**Conviction**: 0.55
+- **Entry**: $30.98 avg | 1 shares
+- **Current**: $31.20 (+0.73% unrealized)
+- **Market Value**: $31.20
+- **Unrealized P&L**: $+0.23 (+0.73%)
+- **Synced from**: Alpaca paper trading
+- **Last sync**: 2026-07-24 15:05:05 UTC
 
-## Thesis
-- Small-cap regional bank ($1B market cap), PE 10.77, Forward PE 10.00
-- RSI 53.6 (mid-band), MACD bullish +0.4561
-- Strong Buy analyst consensus, PT $32.60 (+7.48%)
-- Q2 earnings Jul 23 (yesterday) — post-earnings drift play
-- Sentiment +0.514 (moderate positive)
-
-## Exit Triggers
-- MACDh histogram flip (positive→negative)
-- Stop-loss: -10% ($27.88)
-- Trailing stop: -5% from peak
-- Profit target guide: +12% ($34.70)
-
-## Sector
-Financial
+This position is managed through the Alpaca paper trading API.
+Entry, exit, and sizing are handled by the trader agent via executor.py.
+Stop-loss and take-profit levels are maintained in the trading.trader_positions table.
