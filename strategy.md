@@ -1,4 +1,4 @@
-# Stonks — Strategy stonks.strat:v1.7
+# Stonks — Strategy stonks.strat:v1.8
 
 ## Philosophy
 
@@ -8,7 +8,7 @@ Trade small and wide, not concentrated — volume of decisions and honest feedba
 
 ## Current Approach
 
-- **Universe**: $1–$50, small/mid-cap, reasonable liquidity. Starting constraint, not permanent — see Growth Trajectory.
+- **Universe**: $1–$500 (widened 2026-07-24 on real backtest evidence — small-cap-only underperformed mid-cap on this exact strategy, see `bankroll.py`'s `UNIVERSE_MAX_PRICE_TIERS`), reasonable liquidity, bankroll-scaled max price grows further from there — see Growth Trajectory.
 - **Discovery**: `strategies/watchlist.md`, grow/shrink by notice/idle-ticks (`params.json: watchlist.idle_ticks_before_drop`). Decoupled from entry gating — `scripts/merge_discoveries.py` runs every tick regardless of regime, feeds probe-discovery output into the watchlist mechanically.
 - **Sizing**: small per-position, many concurrent, diversification over conviction (`params.json: risk`). 1-3 shares is a legitimate position, not a lesser one — probe size when conviction/regime is uncertain, normal size when clear. No hard cap on position count (removed 2026-07-24) — cash, `max_position_pct`, and the bankroll ceiling are the real limiters, not an arbitrary ticker-count gate.
 - **Scaling into winners**: adding to an existing held position with an intact thesis and real momentum is a legitimate decision on any later tick, not just a fresh watchlist ticker — deploying more cash into what's already working isn't a lesser move than a new entry. **Reconsider every tick it still qualifies (v1.7) — no pacing, no "already added recently" hesitation.** Not throttled by regime the way a fresh entry is — the position has already proven itself, so market-wide CHOPPY/FEAR doesn't cap it to probe size the way it would a brand-new ticker. Instead, **size scales with how strong the winner actually is** — a name up 3% (just past real-vs-noise) gets a small add, one up double digits with momentum intact gets a materially larger one; use judgment, not a fixed increment. `max_position_pct` (6%) and the bankroll ceiling remain the hard backstop on *how much* regardless of how aggressive the add is. This is specifically for names already up with the thesis holding — not a way to average down into a loser to improve the price.
