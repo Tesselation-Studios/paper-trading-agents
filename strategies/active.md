@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:30 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:50 ET
+
+## FRI 09:50 ET — Market Tick
+- **Same as 09:45 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). 1 pos (F 2sh @ $14.135, ~$14.35, UPL +$0.43/+1.50%). F HOLD.
+- No stop breaches on Stonks position. MACDh -0.0407 🔴 (already red, no new flip). New entries gated (v1.4 CHOPPY).
+- ⚠️ Account contamination persists: 10 non-Stonks positions (AMD/COST/GOOGL/JNJ/MVST/NVDA/OPEN/PLTR/QQQ/V) on shared Alpaca. Check-stops flagged COST/QQQ oversized, GOOGL/PLTR trailing — NOT our positions, not selling. Drawdown 11.75% (mostly from contamination).
+- Watchlist 8 (OZKAP/BFST/NKLR/XRPNU idle→10, BEDY/OLP/IP/FHB idle→14). Merge discoveries no-op. Discovery scan: XRPNU (already in WL). 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 09:45 ET — Market Tick
 - **Same as 09:40 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,376, 1 pos (F 2sh @ $14.135, UPL +$0.47/+1.66% at $14.37).
