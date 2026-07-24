@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:55 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:09 ET
+
+## FRI 10:09 ET — Market Tick
+- ✅ **IP BOUGHT**: 1 share @ $38.43, conviction 0.55. RSI 57.99, MACD 0.95 bullish. RBC Outperform PT $48 (+28%). Sentiment +0.925. Probe size (v1.5 CHOPPY). Materials — no sector overlap.
+- **3 pos now.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,309. F 2sh @ $14.135 (~$14.30, +1.2%), FHB 1sh @ $28.60 (~$28.48, -0.4%), IP 1sh @ $38.43 (~$38.45, flat).
+- No stop breaches (check-stops clean). MACDh unavailable (Alpaca 401, yfinance down). Last known: F MACDh -0.0407 🔴 (no new flip). Both F/FHB HOLD.
+- Watchlist 7→6: IP entered. idle_ticks bumped (BFST/NKLR/XRPNU→12, BEDY/OLP→16, OZKAP→12 do-not-retry). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 09:55 ET — Market Tick
 - ✅ **FHB BOUGHT**: v1.5 probe entry. 1 share @ $28.60, conviction 0.55. RSI 47.0 (lower end of band), MACD bullish +0.3141, vol 1.30x elevated, Q2 EPS beat ($0.60 vs $0.58). Financial sector. CHOPPY → 1-share probe.
