@@ -13,10 +13,37 @@ signal's own stated confidence) — the natural predecessor to the design
 doc's "learned signal_weights" ML step. Get the schema and a sane baseline
 combiner right first; learn better weights later once training_examples has
 enough real (signal, outcome) rows to justify it.
+
+That "later" arrived in a small way 2026-07-24: scripts/signal_scorecard.py
+computes each signal's real empirical hit rate from trading.training_examples
+once it has enough labeled rows (state/signal_scorecard.json). reconcile_signals()
+takes that scorecard as an optional argument and nudges weight up/down from
+the fixed baseline for signals with enough history — signals still below the
+sample-size threshold are untouched, so this degrades to the original
+fixed-weight behavior whenever there isn't real data to justify anything else.
 """
 
 DIRECTIONS = {"bullish", "bearish", "neutral"}
 _DIRECTION_SIGN = {"bullish": 1.0, "bearish": -1.0, "neutral": 0.0}
+
+# hit_rate 0.5 (chance) -> multiplier 1.0 (no change from baseline).
+# Clamped so a short bad/good streak can't zero out or blow up a signal's weight.
+_SCORECARD_MULT_MIN = 0.4
+_SCORECARD_MULT_MAX = 1.8
+
+
+def _scorecard_multiplier(name, scorecard):
+    """1.0 if no scorecard, signal missing, or still insufficient_data."""
+    if not scorecard:
+        return 1.0
+    entry = scorecard.get(name)
+    if not entry or entry.get("status") != "scored":
+        return 1.0
+    hit_rate = entry.get("hit_rate")
+    if hit_rate is None:
+        return 1.0
+    mult = 2.0 * hit_rate
+    return max(_SCORECARD_MULT_MIN, min(_SCORECARD_MULT_MAX, mult))
 
 
 def validate_signal_features(features):
@@ -41,11 +68,16 @@ def validate_signal_features(features):
     return warnings
 
 
-def reconcile_signals(features):
+def reconcile_signals(features, scorecard=None):
     """Combine per-signal (direction, confidence) entries into one weighted
     recommendation. Ignores keys that aren't shaped like a signal (e.g. a
     'note' string) so `features` can still carry free-form context
-    alongside scored signals."""
+    alongside scored signals.
+
+    `scorecard` is the optional `signals` dict from state/signal_scorecard.json
+    (load and pass it in; this module doesn't read files itself). Signals
+    without enough labeled history in the scorecard use their raw
+    self-reported confidence unchanged."""
     signal_entries = {
         name: val for name, val in (features or {}).items()
         if isinstance(val, dict) and "direction" in val and "confidence" in val
@@ -63,12 +95,15 @@ def reconcile_signals(features):
     for name, val in signal_entries.items():
         direction = val["direction"]
         confidence = float(val["confidence"])
+        mult = _scorecard_multiplier(name, scorecard)
+        effective_weight = confidence * mult
         sign = _DIRECTION_SIGN.get(direction, 0.0)
-        weighted_sum += sign * confidence
-        weight_total += confidence
+        weighted_sum += sign * effective_weight
+        weight_total += effective_weight
         if direction != "neutral":
             directions_seen.add(direction)
-        detail[name] = {"direction": direction, "confidence": confidence}
+        detail[name] = {"direction": direction, "confidence": confidence,
+                         "scorecard_multiplier": mult}
 
     lean = weighted_sum / weight_total if weight_total > 0 else 0.0
     agreement = len(directions_seen) <= 1

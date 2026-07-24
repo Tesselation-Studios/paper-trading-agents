@@ -14,8 +14,21 @@ Usage:
 import argparse
 import json
 import sys
+from pathlib import Path
 
 import decisions
+import signals
+
+SCORECARD_PATH = Path(__file__).resolve().parent.parent / "state" / "signal_scorecard.json"
+
+
+def _load_scorecard():
+    if not SCORECARD_PATH.exists():
+        return None
+    try:
+        return json.loads(SCORECARD_PATH.read_text()).get("signals")
+    except (json.JSONDecodeError, OSError):
+        return None
 
 
 def main():
@@ -50,6 +63,12 @@ def main():
             rationale=args.rationale, conviction=args.conviction,
             regime=args.regime, features=features,
         )
+        # Echo the reconciled cross-signal read back so it's visible in the
+        # tick's tool output, not just stored — reconcile_signals() existed
+        # but nothing ever surfaced its result until now. Scorecard-adjusted
+        # if state/signal_scorecard.json exists and has scored signals, plain
+        # fixed-weight otherwise.
+        result["reconciled"] = signals.reconcile_signals(features, scorecard=_load_scorecard())
     else:
         result = decisions.record_trade_close(
             trader_id=args.trader_id, ticker=args.ticker,
