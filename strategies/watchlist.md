@@ -29,13 +29,11 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- VTEX — idle_ticks: 0 — from 2026-07-24.md
+- MFAO — idle_ticks: 18 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531, vol 0.59x — too thin)
 
-- MFAO — idle_ticks: 17 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531, vol 0.59x — too thin)
-
-- DBX — idle_ticks: 18 — $28.93, RSI 61.3, MACDh -0.001220 🔴 (flipped bearish on 1-min), vol 0.90x. Technology (cloud storage). Analyst Hold, PT ~$26.50. Do not enter — MACDh bearish.
-- AMC — idle_ticks: 18 — $2.31, RSI 48.0, MACDh -0.000282 🔴, vol 3.08x elevated. Entertainment. Meme volatility risk, MACDh bearish.
-- VTEX — idle_ticks: 1 — from 2026-07-24.md ($3.94, vol ~301 shares extremely thin, bearish ST MA, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin, bearish ST.)
+- DBX — idle_ticks: 19 — $28.93, RSI 61.3, MACDh -0.001220 🔴 (flipped bearish on 1-min), vol 0.90x. Technology (cloud storage). Analyst Hold, PT ~$26.50. Do not enter — MACDh bearish.
+- AMC — idle_ticks: 19 — $2.31, RSI 48.0, MACDh -0.000282 🔴, vol 3.08x elevated. Entertainment. Meme volatility risk, MACDh bearish.
+- VTEX — idle_ticks: 2 — from 2026-07-24.md ($3.94, vol ~301 shares extremely thin, bearish ST MA, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin, bearish ST.)
 
 ~~OZKAP~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, also do-not-retry — preferred stock, never filled)
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
@@ -66,4 +64,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 14:05 ET (bumped idle_ticks: MFAO→17, DBX→18, AMC→18, VTEX→1)._
+_Last touched: 2026-07-24 14:10 ET (bumped idle_ticks: MFAO→18, DBX→19, AMC→19, VTEX→2). Cleaned duplicate VTEX (idle_ticks:0 from merge)._
