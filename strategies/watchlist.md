@@ -29,10 +29,13 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- MFAO — idle_ticks: 15 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531, vol 0.59x — too thin)
+- VTEX — idle_ticks: 0 — from 2026-07-24.md
 
-- DBX — idle_ticks: 16 — $28.93, RSI 61.3, MACDh -0.001220 🔴 (flipped bearish on 1-min), vol 0.90x. Technology (cloud storage). Analyst Hold, PT ~$26.50. Do not enter — MACDh bearish.
-- AMC — idle_ticks: 16 — $2.31, RSI 48.0, MACDh -0.000282 🔴, vol 3.08x elevated. Entertainment. Meme volatility risk, MACDh bearish.
+- MFAO — idle_ticks: 16 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531, vol 0.59x — too thin)
+
+- DBX — idle_ticks: 17 — $28.93, RSI 61.3, MACDh -0.001220 🔴 (flipped bearish on 1-min), vol 0.90x. Technology (cloud storage). Analyst Hold, PT ~$26.50. Do not enter — MACDh bearish.
+- AMC — idle_ticks: 17 — $2.31, RSI 48.0, MACDh -0.000282 🔴, vol 3.08x elevated. Entertainment. Meme volatility risk, MACDh bearish.
+- VTEX — idle_ticks: 0 — from 2026-07-24.md ($3.94, vol ~301 shares extremely thin, bearish ST MA, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin, bearish ST.)
 
 ~~OZKAP~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, also do-not-retry — preferred stock, never filled)
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
@@ -63,4 +66,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 13:55 ET (bumped idle_ticks: MFAO→15, DBX→16, AMC→16; updated DBX/AMC MACDh bearish flag)._
+_Last touched: 2026-07-24 14:00 ET (bumped idle_ticks: MFAO→16, DBX→17, AMC→17; added VTEX→0 from merge_discoveries)._
