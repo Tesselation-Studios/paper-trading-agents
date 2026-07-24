@@ -54,7 +54,13 @@ STRATEGY_PATH = REPO_ROOT / "strategy.md"
 # agent's own configured model.primary (which may differ — crons can
 # override). Cheaper and consistent with what live trading actually runs.
 DEFAULT_MODEL = "openrouter/deepseek/deepseek-v4-flash"
-DEFAULT_LOOKBACK_DAYS = 25
+# 2026-07-24: was 25 — never actually usable. replay_check.fetch_history()
+# requires >=40 rows per ticker AFTER dropping RSI-14/MACD-slow-EMA/vol_20d
+# warmup (~20 rows), and daily bars mean calendar days != trading-day rows.
+# 25 calendar days never clears that bar (confirmed empirically: even 90
+# days only yielded 29 usable rows for a real ticker). 120 is the smallest
+# value that reliably clears it with real margin (~49 rows on a real test).
+DEFAULT_LOOKBACK_DAYS = 120
 AGENT_ID = "trader-stonks"
 AGENT_TIMEOUT_SECONDS = 150
 
@@ -215,8 +221,16 @@ def make_llm_trader(frames, strategy_text: str, model: str = DEFAULT_MODEL):
 
 
 def run_llm_replay(tickers: List[str], lookback_days: int = DEFAULT_LOOKBACK_DAYS,
-                    model: str = DEFAULT_MODEL) -> Dict[str, Any]:
-    strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
+                    model: str = DEFAULT_MODEL, strategy_text: Optional[str] = None) -> Dict[str, Any]:
+    """strategy_text: pass a candidate strategy.md variant to test it against
+    real LLM judgment WITHOUT touching the live file — build_replay_prompt()
+    already embeds this as plain text in its own prompt, it's never read
+    from disk by the agent framework's bootstrap the way TOOLS.md/AGENTS.md
+    are (see module docstring's SAFETY notes — that's a genuinely different,
+    still-unbuilt problem). None (default) reads the real live strategy.md,
+    identical to this function's behavior before this parameter existed."""
+    if strategy_text is None:
+        strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
     if not strategy_text:
         return {"error": "strategy.md missing or empty — nothing to replay against"}
 
@@ -253,10 +267,23 @@ def main() -> int:
     parser.add_argument("--days", type=int, default=DEFAULT_LOOKBACK_DAYS)
     parser.add_argument("--tickers", nargs="*", default=None)
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--strategy-file", default=None,
+                         help="Test a candidate strategy.md variant instead of the live file — "
+                              "never touches the real strategy.md, see skills/backtest-tools.md")
     args = parser.parse_args()
 
     tickers = args.tickers or replay_check.load_live_universe()
-    result = run_llm_replay(tickers, lookback_days=args.days, model=args.model)
+    strategy_text = None
+    if args.strategy_file:
+        candidate_path = Path(args.strategy_file)
+        if not candidate_path.exists():
+            print(json.dumps({"error": f"--strategy-file not found: {args.strategy_file}"}))
+            return 1
+        strategy_text = candidate_path.read_text()
+
+    result = run_llm_replay(tickers, lookback_days=args.days, model=args.model, strategy_text=strategy_text)
+    if args.strategy_file:
+        result["strategy_file"] = args.strategy_file
     print(json.dumps(result, indent=2))
     return 1 if "error" in result else 0
 

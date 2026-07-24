@@ -35,3 +35,16 @@ This is exactly how the $1-500 universe widening got decided — a random, unbia
 ## `bankroll.py` — tunable dials
 
 `LEAD_PROTECT_THRESHOLD`, `SCALE_IN_MIN_PNL_PCT`, `SCALE_IN_SIZE_FACTOR`, `SCALE_IN_MAX_MULTIPLE`, `UNIVERSE_MAX_PRICE_TIERS` are real, isolated constants — retune-able, not sacred. Test a candidate value via `make_trader()`'s matching override param where one exists (`scale_in_max_multiple`); for constants with no override yet, import `bankroll` in a scratch script and monkeypatch the module attribute for the test run only — never edit the live file to check a number.
+
+## `scripts/llm_replay.py` — test actual wording changes with real judgment, not a mechanical proxy
+
+Unlike everything above (hand-coded RSI/MACD if-statements), this asks your REAL model for a real decision on each simulated historical day. `--strategy-file <path>` tests a candidate `strategy.md` wording — safe to do directly, no file-swap risk: the candidate text gets embedded as a plain string into this script's own prompt, never read from disk by the agent framework (unlike `TOOLS.md`/`AGENTS.md`, which genuinely can't be safely variant-tested yet, see `skills/prompt-iteration.md`).
+
+```bash
+# baseline (reads the real live strategy.md)
+python3 scripts/llm_replay.py --days 25
+# candidate — write your variant to a scratch file first, e.g. research/candidate-2026-07-24.md
+python3 scripts/llm_replay.py --days 25 --strategy-file research/candidate-2026-07-24.md
+```
+
+Compare the two `llm_replay` result blocks (same tickers/window either way). One day is a coincidence, not a finding — multi-day validation only, same promotion bar as everything else here. A winning candidate still only reaches the real `strategy.md` through the normal self-commit/evolution-proposal path (`skills/evolution-proposals.md`) — this script only tells you whether it's worth proposing, it never writes the live file itself.

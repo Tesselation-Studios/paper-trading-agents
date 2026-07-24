@@ -205,3 +205,77 @@ class TestRunLlmReplay:
         monkeypatch.setattr(llm_replay.replay_check, "fetch_history", lambda tickers: {})
         result = llm_replay.run_llm_replay(["AAA"])
         assert "error" in result
+
+    def test_explicit_strategy_text_used_instead_of_live_file(self, monkeypatch, tmp_path):
+        """2026-07-24: candidate strategy testing — a passed-in strategy_text
+        must never touch/read the real live file at all."""
+        live_strategy_file = tmp_path / "strategy.md"
+        live_strategy_file.write_text("LIVE STRATEGY MARKER")
+        monkeypatch.setattr(llm_replay, "STRATEGY_PATH", live_strategy_file)
+
+        seen_texts = []
+
+        def fake_make_llm_trader(frames, strategy_text, model=None):
+            seen_texts.append(strategy_text)
+            return lambda tick, portfolio: TraderDecision(ticker=tick.ticker, decision="HOLD", conviction=0.0)
+
+        monkeypatch.setattr(llm_replay, "make_llm_trader", fake_make_llm_trader)
+        frames = {"AAA": make_frame([(0, 55.0)])}
+        monkeypatch.setattr(llm_replay.replay_check, "fetch_history", lambda tickers: frames)
+
+        result = llm_replay.run_llm_replay(["AAA"], strategy_text="CANDIDATE STRATEGY MARKER")
+        assert "error" not in result
+        assert seen_texts == ["CANDIDATE STRATEGY MARKER"]
+        assert live_strategy_file.read_text() == "LIVE STRATEGY MARKER"  # untouched
+
+    def test_none_strategy_text_falls_back_to_live_file(self, monkeypatch, tmp_path):
+        """Default (no override) behavior is byte-identical to before this
+        parameter existed — regression check."""
+        live_strategy_file = tmp_path / "strategy.md"
+        live_strategy_file.write_text("LIVE STRATEGY MARKER")
+        monkeypatch.setattr(llm_replay, "STRATEGY_PATH", live_strategy_file)
+
+        seen_texts = []
+
+        def fake_make_llm_trader(frames, strategy_text, model=None):
+            seen_texts.append(strategy_text)
+            return lambda tick, portfolio: TraderDecision(ticker=tick.ticker, decision="HOLD", conviction=0.0)
+
+        monkeypatch.setattr(llm_replay, "make_llm_trader", fake_make_llm_trader)
+        frames = {"AAA": make_frame([(0, 55.0)])}
+        monkeypatch.setattr(llm_replay.replay_check, "fetch_history", lambda tickers: frames)
+
+        result = llm_replay.run_llm_replay(["AAA"])
+        assert "error" not in result
+        assert seen_texts == ["LIVE STRATEGY MARKER"]
+
+
+class TestMainStrategyFileArg:
+    def test_missing_strategy_file_path_errors_before_any_replay(self, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", ["llm_replay.py", "--strategy-file", "/nonexistent/path.md"])
+
+        def fail_if_called(*a, **k):
+            raise AssertionError("run_llm_replay should not run when --strategy-file is missing")
+        monkeypatch.setattr(llm_replay, "run_llm_replay", fail_if_called)
+
+        rc = llm_replay.main()
+        assert rc == 1
+        import json
+        out = json.loads(capsys.readouterr().out)
+        assert "error" in out
+
+    def test_strategy_file_content_reaches_run_llm_replay(self, monkeypatch, tmp_path):
+        candidate = tmp_path / "candidate.md"
+        candidate.write_text("CANDIDATE FROM CLI")
+        monkeypatch.setattr(sys, "argv", ["llm_replay.py", "--strategy-file", str(candidate), "--tickers", "AAA"])
+
+        seen = {}
+
+        def fake_run(tickers, lookback_days=None, model=None, strategy_text=None):
+            seen["strategy_text"] = strategy_text
+            return {"tickers_used": tickers}
+
+        monkeypatch.setattr(llm_replay, "run_llm_replay", fake_run)
+        rc = llm_replay.main()
+        assert rc == 0
+        assert seen["strategy_text"] == "CANDIDATE FROM CLI"

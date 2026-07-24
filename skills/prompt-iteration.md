@@ -12,6 +12,6 @@ Reports the LLM-driven result alongside the hand-coded proxy's result on the sam
 
 **Multi-day validation, not single-day** (adopted from `paper-trading-rebuild/fusion-review.md`'s critique of the sister repo's prompt-sweep design): a single lucky simulated day is a guaranteed overfitting trap. Any future variant comparison needs to win across the whole tested window, same "robust across the whole test" bar `replay_check.py --split-window` already established for the v1.1 promotion — not reinvented, directly reused.
 
-**Cost**: real observed usage ≈ 25-30K tokens/call (mostly cached context reload), one call per simulated day (not per ticker — see `make_llm_trader`'s per-day memoization). A full ~25-day pass is cheap, well under $1.
+**Cost**: real observed usage ≈ 25-30K tokens/call (mostly cached context reload), one call per simulated day (not per ticker — see `make_llm_trader`'s per-day memoization). Default lookback is 120 calendar days (`--days`, fixed 2026-07-24 — 25 never actually cleared `fetch_history()`'s 40-row-after-warmup minimum), which nets ~50 real usable trading days for a single ticker — still cheap, low single-digit dollars at most, not the "well under $1" a shorter pass would be.
 
 Feeds `scripts/evolution_proposal.py` exactly like `sweep_thresholds()` does for params — any future variant win gets written up as a proposal citing the real comparative numbers, `review_required` tier (unchanged, correct), never auto-applied.
