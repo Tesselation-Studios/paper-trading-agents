@@ -28,13 +28,13 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- OZKAP — idle_ticks: 13 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (preferred stock). Do not retry.
+- OZKAP — idle_ticks: 14 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (preferred stock). Do not retry.
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
-- NKLR — idle_ticks: 13 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
+- NKLR — idle_ticks: 14 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
 ~~XRPNU~~ — dropped 2026-07-24 10:05 (dead ticker, vol 0.0, MACD bearish)
 
-- BEDY — idle_ticks: 17 — $29.06, RSI 53.2, vol 0.86x, MACD bullish +0.1031 — from 2026-07-23.md, wide spread (~3%)
-- OLP — idle_ticks: 17 — $24.87, RSI 52.7, vol 0.80x, MACD bullish +0.2734 — from 2026-07-23.md, extremely wide spread (>30%)
+- BEDY — idle_ticks: 18 — $29.06, RSI 53.2, vol 0.86x, MACD bullish +0.1031 — from 2026-07-23.md
+- OLP — idle_ticks: 18 — $24.87, RSI 52.7, vol 0.80x, MACD bullish +0.2734 — from 2026-07-23.md
 - ~~IP~~ — entered 2026-07-24 10:05, 2 shares @ $38.43, probe entry (parallel tick collision)
 - ~~FHB~~ — entered 2026-07-24 09:55, 1 share @ $28.60, probe entry
 
