@@ -6,6 +6,7 @@ Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
 - F — open position (2 shares @ $14.135)
+- OZKAP — open position (1 share @ $16.40, entry 2026-07-24 09:50)
 
 ## Closed Positions
 - ~~WSC~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +1.46%)
@@ -25,7 +26,6 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- OZKAP — idle_ticks: 10 — $16.38, RSI 57.2, vol 1.80x, news: Bank OZK dividend raise (sentiment +0.88)
 - BFST — idle_ticks: 10 — $30.46, RSI 54.0, vol 1.68x, news: Q2 beat (sentiment +0.00)
 - NKLR — idle_ticks: 10 — $5.42, RSI 57.2, vol 1.28x, news: NRC readiness review (sentiment +0.79)
 - XRPNU — idle_ticks: 10 — $10.73, RSI 54.3, no news — technical signal only
@@ -54,4 +54,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 09:50 ET (idle_ticks bumped)._
+_Last touched: 2026-07-24 09:55 ET (OZKAP entered, idle_ticks bumped)._

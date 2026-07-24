@@ -1,10 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:50 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:55 ET
 
 ## FRI 09:50 ET — Market Tick
-- **Same as 09:45 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). 1 pos (F 2sh @ $14.135, ~$14.35, UPL +$0.43/+1.50%). F HOLD.
-- No stop breaches on Stonks position. MACDh -0.0407 🔴 (already red, no new flip). New entries gated (v1.4 CHOPPY).
-- ⚠️ Account contamination persists: 10 non-Stonks positions (AMD/COST/GOOGL/JNJ/MVST/NVDA/OPEN/PLTR/QQQ/V) on shared Alpaca. Check-stops flagged COST/QQQ oversized, GOOGL/PLTR trailing — NOT our positions, not selling. Drawdown 11.75% (mostly from contamination).
-- Watchlist 8 (OZKAP/BFST/NKLR/XRPNU idle→10, BEDY/OLP/IP/FHB idle→14). Merge discoveries no-op. Discovery scan: XRPNU (already in WL). 🔔 F Q2 earnings 7/28 (Tue).
+- ⚡ **STRATEGY v1.4→v1.5**: CHOPPY no longer gates entries — regime sizes, doesn't block. "Doing nothing is not neutral — it's a cost."
+- ✅ **OZKAP BOUGHT**: 1 share @ $16.40, conviction 0.55. RSI 57.2 in-band, vol 1.80x, dividend raise catalyst (sentiment +0.88). Probe size (v1.5 CHOPPY-sizing). Financial sector.
+- **2 pos now.** Regime CHOPPY/FEAR, F&G 28 (Fear). 1 pos F (2sh @ $14.135, ~$14.34, UPL +$0.41/+1.45%). F MACDh -0.0407 🔴 (already red, no new flip). F HOLD.
+- ⚠️ Account contamination persists: 10 non-Stonks positions on shared Alpaca (AMD/COST/GOOGL/JNJ/MVST/NVDA/OPEN/PLTR/QQQ/V). Check-stops flagged COST/QQQ oversized, GOOGL/PLTR trailing — NOT our positions, not selling. Drawdown 11.75% (mostly contamination).
+- Watchlist 8→7: OZKAP entered. idle_ticks bumped (BFST/NKLR/XRPNU→10, BEDY/OLP/IP/FHB→14). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 09:45 ET — Market Tick
 - **Same as 09:40 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,376, 1 pos (F 2sh @ $14.135, UPL +$0.47/+1.66% at $14.37).
