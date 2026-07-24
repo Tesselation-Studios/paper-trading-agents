@@ -1,10 +1,12 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:09 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:05 ET
 
-## FRI 10:09 ET — Market Tick
-- ✅ **IP BOUGHT**: 1 share @ $38.43, conviction 0.55. RSI 57.99, MACD 0.95 bullish. RBC Outperform PT $48 (+28%). Sentiment +0.925. Probe size (v1.5 CHOPPY). Materials — no sector overlap.
-- **3 pos now.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,309. F 2sh @ $14.135 (~$14.30, +1.2%), FHB 1sh @ $28.60 (~$28.48, -0.4%), IP 1sh @ $38.43 (~$38.45, flat).
-- No stop breaches (check-stops clean). MACDh unavailable (Alpaca 401, yfinance down). Last known: F MACDh -0.0407 🔴 (no new flip). Both F/FHB HOLD.
-- Watchlist 7→6: IP entered. idle_ticks bumped (BFST/NKLR/XRPNU→12, BEDY/OLP→16, OZKAP→12 do-not-retry). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
+## FRI 10:05 ET — Market Tick
+- ✅ **BFST BOUGHT**: v1.5 probe. 1 share @ $30.98, conviction 0.55. RSI 53.6 (in band), MACD bullish +0.4561, Strong Buy, PT $32.60 (+7.48%), PE 10.77. Financial. Q2 earnings 7/23.
+- ✅ **IP BOUGHT**: v1.5 probe. 2 shares @ $38.43 total (submitted 1, combined with parallel tick = 2 filled). Conviction 0.55. MACD bullish, RBC PT $48 (+28%), Truist PT $46, sentiment +0.925. Materials.
+- **4 pos.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,240. F (2sh @ $14.135, ~$14.33, +1.4%), FHB (1sh @ $28.60, ~$28.61, flat), BFST (1sh @ $30.98, ~$30.95, -0.1%), IP (2sh @ $38.43, ~$38.41, -0.1%).
+- No stop breaches (check-stops clean). F MACDh last known -0.0407 🔴 (already red, no new flip). F/FHB HOLD.
+- 🧹 Watchlist: XRPNU dropped (dead ticker). BFST/IP entered. Candidates: OZKAP (do-not-retry), NKLR (bearish MACD), BEDY/OLP (idle→16). Merge discoveries no-op.
+- ⚠️ yfinance/Alpaca quote API unavailable this tick. MCP tools unavailable (subagent). 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 09:55 ET — Market Tick
 - ✅ **FHB BOUGHT**: v1.5 probe entry. 1 share @ $28.60, conviction 0.55. RSI 47.0 (lower end of band), MACD bullish +0.3141, vol 1.30x elevated, Q2 EPS beat ($0.60 vs $0.58). Financial sector. CHOPPY → 1-share probe.
