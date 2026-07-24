@@ -25,15 +25,15 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- OZKAP — idle_ticks: 6 — $16.38, RSI 57.2, vol 1.80x, news: Bank OZK dividend raise (sentiment +0.88)
-- BFST — idle_ticks: 6 — $30.46, RSI 54.0, vol 1.68x, news: Q2 beat (sentiment +0.00)
-- NKLR — idle_ticks: 6 — $5.42, RSI 57.2, vol 1.28x, news: NRC readiness review (sentiment +0.79)
-- XRPNU — idle_ticks: 6 — $10.73, RSI 54.3, no news — technical signal only
+- OZKAP — idle_ticks: 7 — $16.38, RSI 57.2, vol 1.80x, news: Bank OZK dividend raise (sentiment +0.88)
+- BFST — idle_ticks: 7 — $30.46, RSI 54.0, vol 1.68x, news: Q2 beat (sentiment +0.00)
+- NKLR — idle_ticks: 7 — $5.42, RSI 57.2, vol 1.28x, news: NRC readiness review (sentiment +0.79)
+- XRPNU — idle_ticks: 7 — $10.73, RSI 54.3, no news — technical signal only
 
-- BEDY — idle_ticks: 10 — from 2026-07-23.md
-- OLP — idle_ticks: 10 — from 2026-07-23.md
-- IP — idle_ticks: 10 — from 2026-07-23.md
-- FHB — idle_ticks: 10 — from 2026-07-23.md
+- BEDY — idle_ticks: 11 — from 2026-07-23.md
+- OLP — idle_ticks: 11 — from 2026-07-23.md
+- IP — idle_ticks: 11 — from 2026-07-23.md
+- FHB — idle_ticks: 11 — from 2026-07-23.md
 
 - ~~SRET~~ — dropped 2026-07-24 09:20 (idle_ticks=24 threshold)
 
