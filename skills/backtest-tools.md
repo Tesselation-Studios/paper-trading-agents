@@ -42,9 +42,9 @@ Unlike everything above (hand-coded RSI/MACD if-statements), this asks your REAL
 
 ```bash
 # baseline (reads the real live strategy.md)
-python3 scripts/llm_replay.py --days 25
+python3 scripts/llm_replay.py --days 120
 # candidate — write your variant to a scratch file first, e.g. research/candidate-2026-07-24.md
-python3 scripts/llm_replay.py --days 25 --strategy-file research/candidate-2026-07-24.md
+python3 scripts/llm_replay.py --days 120 --strategy-file research/candidate-2026-07-24.md
 ```
 
 Compare the two `llm_replay` result blocks (same tickers/window either way). One day is a coincidence, not a finding — multi-day validation only, same promotion bar as everything else here. A winning candidate still only reaches the real `strategy.md` through the normal self-commit/evolution-proposal path (`skills/evolution-proposals.md`) — this script only tells you whether it's worth proposing, it never writes the live file itself.
