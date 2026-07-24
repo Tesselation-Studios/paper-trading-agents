@@ -29,10 +29,9 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- MFAO — idle_ticks: 23 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531 🟢, vol 0.59x — too thin, approaching threshold)
+- VTEX — idle_ticks: 8 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
 
-- VTEX — idle_ticks: 7 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
-
+~~MFAO~~ — dropped 2026-07-24 14:45 (idle_ticks=24 threshold, vol 0.59x, never crossed 1.0x entry bar)
 ~~DBX~~ — dropped 2026-07-24 14:40 (idle_ticks=24 threshold, vol 0.95x never crossed 1.0x entry bar)
 ~~AMC~~ — dropped 2026-07-24 14:40 (idle_ticks=24 threshold, vol 0.83x meme risk, never qualified)
 ~~OZKAP~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, also do-not-retry — preferred stock, never filled)
@@ -64,4 +63,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 14:40 ET (dropped DBX/AMC — idle_ticks=24 threshold, bumped MFAO→23, VTEX→7). Watchlist now 2 active candidates (both vol <1.0x, no qualifying entries)._
+_Last touched: 2026-07-24 14:45 ET (dropped MFAO — idle_ticks=24 threshold, bumped VTEX→8). Watchlist now 1 active candidate (vol <1.0x, no qualifying entries)._
