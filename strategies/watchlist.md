@@ -29,10 +29,10 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- MFAO — idle_ticks: 6 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531, vol 0.59x — too thin)
+- MFAO — idle_ticks: 7 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531, vol 0.59x — too thin)
 
-- DBX — idle_ticks: 7 — $28.43, RSI 48.8, MACDh +0.7735 🟢, vol 0.95x, PE 14.5x, Technology (cloud storage). Analyst Hold, PT ~$26.50. Earnings 8/6.
-- AMC — idle_ticks: 7 — $2.28, RSI 56.7, MACDh +0.0306 🟢, vol 0.83x. Entertainment. Meme volatility risk.
+- DBX — idle_ticks: 8 — $28.43, RSI 48.8, MACDh +0.7735 🟢, vol 0.95x, PE 14.5x, Technology (cloud storage). Analyst Hold, PT ~$26.50. Earnings 8/6.
+- AMC — idle_ticks: 8 — $2.28, RSI 56.7, MACDh +0.0306 🟢, vol 0.83x. Entertainment. Meme volatility risk.
 
 ~~OZKAP~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, also do-not-retry — preferred stock, never filled)
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
