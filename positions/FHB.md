@@ -1,11 +1,11 @@
 # FHB Position Thesis
 
 - **Entry**: $28.60 avg | 1 shares
-- **Current**: $28.75 (+0.54% unrealized)
-- **Market Value**: $28.75
-- **Unrealized P&L**: $+0.15 (+0.54%)
+- **Current**: $28.73 (+0.44% unrealized)
+- **Market Value**: $28.73
+- **Unrealized P&L**: $+0.12 (+0.44%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-24 15:50:04 UTC
+- **Last sync**: 2026-07-24 16:30:36 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
