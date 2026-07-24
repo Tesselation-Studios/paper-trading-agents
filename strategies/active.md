@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 02:33 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 09:00 ET
+
+## FRI 09:00 ET — Pre-Market Tick
+- **Pre-market.** Regime CHOPPY/FEAR (last known), F&G 31 (Fear). PV $10,404, cash $10,376, 1 pos (F 2sh @ $14.135, UPL +$0.09/+0.32%).
+- No stop breaches (check-stops clean). MACDh N/A (closed). F HOLD.
+- New entries gated (v1.4 CHOPPY). Watchlist 8 (OZKAP/BFST/NKLR/XRPNU idle→1, BEDY/OLP/IP/FHB idle→5, SRET idle→21). 🧹 Deduped watchlist (OZKAP/BFST/NKLR/XRPNU had duplicate "from" entries from merge_discoveries), dropped duplicate IDT entry.
+- 🔔 F Q2 earnings 7/28 (Tue) — pre-earnings thesis review Monday.
 
 ## FRI 02:33 ET — Off-Hours Tick
 - **Markets closed.** Regime CHOPPY/FEAR (last known). PV $10,404, cash $10,376, 1 pos (F 2sh @ $14.12, UPL -$0.03/-0.11%).

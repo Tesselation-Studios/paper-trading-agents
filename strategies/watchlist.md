@@ -25,23 +25,17 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- OZKAP — idle_ticks: 0 — from 2026-07-24.md
-- BFST — idle_ticks: 0 — from 2026-07-24.md
-- IDT — idle_ticks: 0 — from 2026-07-24.md
-- NKLR — idle_ticks: 0 — from 2026-07-24.md
-- XRPNU — idle_ticks: 0 — from 2026-07-24.md
+- OZKAP — idle_ticks: 1 — $16.38, RSI 57.2, vol 1.80x, news: Bank OZK dividend raise (sentiment +0.88)
+- BFST — idle_ticks: 1 — $30.46, RSI 54.0, vol 1.68x, news: Q2 beat (sentiment +0.00)
+- NKLR — idle_ticks: 1 — $5.42, RSI 57.2, vol 1.28x, news: NRC readiness review (sentiment +0.79)
+- XRPNU — idle_ticks: 1 — $10.73, RSI 54.3, no news — technical signal only
 
-- BEDY — idle_ticks: 4 — from 2026-07-23.md
-- OLP — idle_ticks: 4 — from 2026-07-23.md
-- IP — idle_ticks: 4 — from 2026-07-23.md
-- FHB — idle_ticks: 4 — from 2026-07-23.md
+- BEDY — idle_ticks: 5 — from 2026-07-23.md
+- OLP — idle_ticks: 5 — from 2026-07-23.md
+- IP — idle_ticks: 5 — from 2026-07-23.md
+- FHB — idle_ticks: 5 — from 2026-07-23.md
 
-- OZKAP — idle_ticks: 0 — $16.38, RSI 57.2, vol 1.80x, news: Bank OZK dividend raise (sentiment +0.88)
-- BFST — idle_ticks: 0 — $30.46, RSI 54.0, vol 1.68x, news: Q2 beat (sentiment +0.00)
-- NKLR — idle_ticks: 0 — $5.42, RSI 57.2, vol 1.28x, news: NRC readiness review (sentiment +0.79)
-- XRPNU — idle_ticks: 0 — $10.73, RSI 54.3, no news — technical signal only
-
-- SRET — idle_ticks: 20 — $22.72, RSI 49.8, vol 1.07x, news: mortgage rates at lowest since Feb 2023 (sentiment -0.97)
+- SRET — idle_ticks: 21 — $22.72, RSI 49.8, vol 1.07x, news: mortgage rates at lowest since Feb 2023 (sentiment -0.97)
 
 _(IDT $62.53 skipped 2026-07-24 02:33 — above $50 universe cap.)_
 _(FDIV idle_ticks=24, COAG idle_ticks=24, MATE idle_ticks=24 dropped 2026-07-23 15:20 — hit threshold.)_
@@ -58,8 +52,6 @@ _(All 8 candidates dropped 2026-07-21 15:40 — hit idle_ticks=24 threshold. Wat
 
 _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN (confirmed above $50 max-price cap)._
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
-_Dropped 2026-07-21 15:40: All 8 candidates (TEVA, AEO, RDDT, UBER, AFRM, UPST, OXY, TOST) — idle_ticks=24 threshold met._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Dropped 2026-07-22 11:50: none. All candidates below idle threshold (24)._
-_Last touched: 2026-07-23 09:40 ET (all 8 HOLD, no breaches or MACDh flips, RKT/CLF idle→16, CLF Q2 earnings +17.5% but gated CHOPPY)._  
+_Last touched: 2026-07-24 09:00 ET (watchlist deduped, idle_ticks bumped, IDT duplicate dropped)._
