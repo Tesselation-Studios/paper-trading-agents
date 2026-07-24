@@ -1,1 +1,2 @@
+OK 2026-07-24T16:10:00Z | tick 12:10 FRI JUL 24 | regime CHOPPY/FEAR F&G 28 | PV $10,405 | 5 pos (F +2.2% FHB +0.6% BFST +1.2% IP +0.2% BOX -0.1%) | all HOLD | no breaches, MACDh unchanged, watchlist 3 (MFAO→1 DBX→2 AMC→2) | 🔔 F earnings 7/28
 OK 2026-07-23T19:05:00Z | tick 15:05 THU JUL 23 | regime CHOPPY/FEAR F&G 31 | PV $10,404 | 1 pos (F $14.06 -0.53%) | F HOLD | no breaches, MACDh -0.001 🔴 near-zero oscillation no flip, new entries gated v1.4 | watchlist 4 (FDIV/COAG/MATE idle→21, SRET idle→9)
