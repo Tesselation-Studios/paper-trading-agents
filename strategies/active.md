@@ -1,4 +1,9 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:20 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:25 ET
+
+## FRI 10:25 ET — Market Tick
+- **Same as 10:20 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,404, cash $10,240, 4 pos.
+- F $14.35 (+1.5%), FHB $28.63 (+0.1%), BFST $31.00 (+0.1%), IP $38.16 (-0.7%). No stop breaches. All 4 HOLD.
+- MACDh unavailable (yfinance refused, Alpaca 401). Watchlist: OZKAP do-not-retry, NKLR/BEDY/OLP vol <1.0x skip. Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 10:20 ET — Market Tick
 - **Same as 10:15 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,404, cash $10,240, 4 pos.
