@@ -29,7 +29,10 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- VTEX — idle_ticks: 18 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
+- BKSY — idle_ticks: 0 — from 2026-07-24.md
+- RCAT — idle_ticks: 0 — from 2026-07-24.md
+
+- VTEX — idle_ticks: 20 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
 
 ~~MFAO~~ — dropped 2026-07-24 14:45 (idle_ticks=24 threshold, vol 0.59x, never crossed 1.0x entry bar)
 ~~DBX~~ — dropped 2026-07-24 14:40 (idle_ticks=24 threshold, vol 0.95x never crossed 1.0x entry bar)
@@ -63,4 +66,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 15:35 ET (bumped VTEX→18). Watchlist still 1 active candidate (vol <1.0x, no qualifying entries)._
+_Last touched: 2026-07-24 15:55 ET (bumped VTEX→20, 🆕 BKSY/RCAT merged idle→0). 3 candidates (vol all <1.0x, no qualifying entries)._
