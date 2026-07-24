@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 14:35 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 14:40 ET
+
+## FRI 14:40 ET — Market Tick
+- **Same as 14:35 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,410, cash $10,211, 5 pos. All 5 HOLD.
+- BFST $31.32 (+1.1%), BOX $28.90 (+0.2%), F $14.26 (+0.9%), FHB $28.55 (-0.2%), IP $40.91 (+6.5%). No stop breaches (check-stops clean).
+- 📡 Data bus LIVE: MACDh (69 bars) — BFST +0.4561 🟢, BOX +1.0364 🟢, F -0.0407 🔴, FHB +0.3141 🟢, IP +0.5506 🟢 — unchanged, no flips.
+- 🧹 Watchlist: DBX/AMC dropped (idle_ticks=24 threshold). MFAO→23 (vol 0.59x), VTEX→7 (vol 0.45x). Merge discoveries no-op.
 
 ## FRI 14:35 ET — Market Tick
 - **Same as 14:30 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,409, cash $10,211, 5 pos. All 5 HOLD.

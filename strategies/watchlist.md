@@ -29,12 +29,12 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- MFAO — idle_ticks: 22 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531 🟢, vol 0.59x — too thin)
+- MFAO — idle_ticks: 23 — from 2026-07-24.md ($25.38, RSI 50.9, MACDh +0.0531 🟢, vol 0.59x — too thin, approaching threshold)
 
-- DBX — idle_ticks: 23 — $28.43, RSI 48.8, MACDh +0.7735 🟢 (data bus 69 bars — bullish, 1-min was noise), vol 0.95x. Technology (cloud storage). Analyst Hold, PT ~$26.50. Watch: RSI in-band, MACD 🟢, vol near threshold.
-- AMC — idle_ticks: 23 — $2.28, RSI 56.7, MACDh +0.0306 🟢 (data bus 69 bars — bullish cross, 1-min was noise), vol 0.83x. Entertainment. Meme volatility risk, vol <1.0x.
-- VTEX — idle_ticks: 6 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
+- VTEX — idle_ticks: 7 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
 
+~~DBX~~ — dropped 2026-07-24 14:40 (idle_ticks=24 threshold, vol 0.95x never crossed 1.0x entry bar)
+~~AMC~~ — dropped 2026-07-24 14:40 (idle_ticks=24 threshold, vol 0.83x meme risk, never qualified)
 ~~OZKAP~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, also do-not-retry — preferred stock, never filled)
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
 ~~NKLR~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, bearish MACD, vol <1.0x)
@@ -64,4 +64,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 14:15 ET (bumped idle_ticks: MFAO→19, DBX→20, AMC→20, VTEX→3). Data bus MACDh: DBX (+0.7735 🟢), AMC (+0.0306 🟢) both reversed bullish on longer bars — old 1-min readings were noise._
+_Last touched: 2026-07-24 14:40 ET (dropped DBX/AMC — idle_ticks=24 threshold, bumped MFAO→23, VTEX→7). Watchlist now 2 active candidates (both vol <1.0x, no qualifying entries)._
