@@ -8,7 +8,7 @@ Format: `TICKER — idle_ticks: N — note`
 - F — open position (2 shares @ $14.135)
 - FHB — open position (1 share @ $28.60, entry 2026-07-24 09:55)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
-- IP — open position (2 shares @ $38.43, entry 2026-07-24 10:05)
+- IP — open position (2 shares @ $38.43, entry 2026-07-24 10:05 — filled 2 due to parallel tick collision, intended 1)
 
 ## Closed Positions
 - ~~WSC~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +1.46%)
@@ -28,14 +28,14 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- OZKAP — idle_ticks: 12 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (preferred stock). Do not retry.
+- OZKAP — idle_ticks: 13 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (preferred stock). Do not retry.
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
-- NKLR — idle_ticks: 12 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
+- NKLR — idle_ticks: 13 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
 ~~XRPNU~~ — dropped 2026-07-24 10:05 (dead ticker, vol 0.0, MACD bearish)
 
-- BEDY — idle_ticks: 16 — $29.06, RSI 53.2, vol 0.86x, MACD bullish +0.1031 — from 2026-07-23.md
-- OLP — idle_ticks: 16 — $24.87, RSI 52.7, vol 0.80x, MACD bullish +0.2734 — from 2026-07-23.md
-- ~~IP~~ — entered 2026-07-24 10:09, 1 share @ $38.43, probe entry
+- BEDY — idle_ticks: 17 — $29.06, RSI 53.2, vol 0.86x, MACD bullish +0.1031 — from 2026-07-23.md, wide spread (~3%)
+- OLP — idle_ticks: 17 — $24.87, RSI 52.7, vol 0.80x, MACD bullish +0.2734 — from 2026-07-23.md, extremely wide spread (>30%)
+- ~~IP~~ — entered 2026-07-24 10:05, 2 shares @ $38.43, probe entry (parallel tick collision)
 - ~~FHB~~ — entered 2026-07-24 09:55, 1 share @ $28.60, probe entry
 
 - ~~SRET~~ — dropped 2026-07-24 09:20 (idle_ticks=24 threshold)
@@ -57,4 +57,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 10:05 ET (BFST/IP entered, XRPNU dropped, idle_ticks bumped)._
+_Last touched: 2026-07-24 10:10 ET (idle_ticks bumped, all HOLD)._

@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:05 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 10:10 ET
+
+## FRI 10:10 ET — Market Tick
+- **All HOLD.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,405, cash $10,240. 4 pos: F 2sh @ $14.135 (~$14.32, +1.3%), FHB 1sh @ $28.60 (~$28.59, flat), BFST 1sh @ $30.98 (~$30.95, -0.1%), IP 2sh @ $38.43 (~$38.40, -0.1%).
+- No stop breaches (check-stops clean). MACDh: F 1-min -0.0124 🔴 (improving from -0.0407, already red no flip), F 5-min +0.0132 🟢. FHB 1-min -0.0068 🔴 (was +0.3141 at entry — borderline near-zero: MACD line +0.0216 above zero, price flat $28.59 → v1.5 near-zero oscillation precedent, NOT a real flip). IP 1-min +0.0762 🟢. BFST MACDh unavailable (only 22 bars, entered 10:05). All 4 HOLD.
+- Watchlist: OZKAP (do-not-retry), NKLR→13 (bearish MACD), BEDY→17, OLP→17. No qualifying entries (vol <1.0x all, wide spreads). Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
+- ⚠️ IP filled 2 shares (parallel tick collision at 10:05). BFST entered by parallel tick — was contamination, now intentional position. MCP tools unavailable (subagent).
 
 ## FRI 10:05 ET — Market Tick
 - ✅ **BFST BOUGHT**: v1.5 probe. 1 share @ $30.98, conviction 0.55. RSI 53.6 (in band), MACD bullish +0.4561, Strong Buy, PT $32.60 (+7.48%), PE 10.77. Financial. Q2 earnings 7/23.
