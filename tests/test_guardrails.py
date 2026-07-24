@@ -167,6 +167,18 @@ class TestGateMaxPositions:
         assert granted is True
         assert "existing" in reason
 
+    def test_disabled_via_toggle_skips_in_check_order_chain(self, params, monkeypatch):
+        """2026-07-24: no artificial position-count ceiling per Raf — gate
+        disabled via the standard toggle mechanism, not a code change."""
+        params["guardrail_gates"]["max_positions"] = False
+        monkeypatch.setattr(executor, "GATES", {"max_positions": executor.gate_max_positions})
+        monkeypatch.setattr(executor, "get_account", lambda account: {"cash": "100000", "equity": "100000"})
+        monkeypatch.setattr(executor, "get_positions", lambda account: [{"symbol": s, "market_value": "100"} for s in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"])
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "AA", 1, price=10.0, conviction=0.9, sector="Tech")
+        assert granted is True
+        assert results[0]["reason"] == "disabled via params.json guardrail_gates"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # gate_sector_concentration

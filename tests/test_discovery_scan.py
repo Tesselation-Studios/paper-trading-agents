@@ -171,3 +171,43 @@ class TestWriteDiscoveriesFile:
         path = tmp_path / "2026-07-23.md"
         discovery_scan.write_discoveries_file(candidates, 1.0, 50.0, path=path)
         assert merge_discoveries.extract_candidates(path.read_text()) == ["AAA"]
+
+    def test_second_write_same_day_appends_not_overwrites(self, tmp_path):
+        """2026-07-24 bug fix: a second write on the same day (e.g.
+        discovery_urgency_check.py firing twice, or the freeform-discovery
+        cron landing the same day as the deterministic screen) used to
+        silently clobber the first write entirely."""
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        import merge_discoveries
+        path = tmp_path / "2026-07-24.md"
+        discovery_scan.write_discoveries_file(
+            [{"ticker": "AAA", "price": 12.34, "rsi": 55.0, "volume_ratio": 1.5,
+              "news_headline": None, "sentiment": None}], 1.0, 50.0, path=path)
+        discovery_scan.write_discoveries_file(
+            [{"ticker": "BBB", "price": 8.0, "rsi": 60.0, "volume_ratio": 1.2,
+              "news_headline": None, "sentiment": None}], 1.0, 50.0, path=path)
+        tickers = merge_discoveries.extract_candidates(path.read_text())
+        assert tickers == ["AAA", "BBB"]
+
+    def test_duplicate_ticker_same_day_not_appended_twice(self, tmp_path):
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        import merge_discoveries
+        path = tmp_path / "2026-07-24.md"
+        candidate = {"ticker": "AAA", "price": 12.34, "rsi": 55.0, "volume_ratio": 1.5,
+                     "news_headline": None, "sentiment": None}
+        discovery_scan.write_discoveries_file([candidate], 1.0, 50.0, path=path)
+        discovery_scan.write_discoveries_file([candidate], 1.0, 50.0, path=path)
+        tickers = merge_discoveries.extract_candidates(path.read_text())
+        assert tickers == ["AAA"]
+
+    def test_freeform_candidate_without_rsi_writes_source_and_note(self, tmp_path):
+        """Freeform-discovery candidates don't have a technical-screen
+        shape (no rsi/volume_ratio) — just ticker/price/source/note."""
+        candidates = [{"ticker": "ZZZ", "price": 7.5, "source": "freeform",
+                        "note": "Reuters: ZZZ wins DoD contract, 3x pre-market volume"}]
+        path = tmp_path / "2026-07-24.md"
+        discovery_scan.write_discoveries_file(candidates, 1.0, 50.0, path=path)
+        text = path.read_text()
+        assert "## ZZZ — $7.50" in text
+        assert "Source: freeform" in text
+        assert "DoD contract" in text

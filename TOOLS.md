@@ -14,4 +14,4 @@ Append to `journal/YYYY-MM-DD.md` during nightly maintenance only — strategy v
 - `scripts/` — executor + supporting tools, `ls scripts/` for the current list
 - `state/` — machine-written local caches, not hand-edited
 - `proposals/` — evolution proposals awaiting review, see `skills/evolution-proposals.md`
-- `skills/` — tool-invocation, auto-commit, off-hours, data-bus, sentiment-cache, workspace-review, evolution-proposals, prompt-iteration, background, fundamentals, self-improving-agent (each loads by its own trigger)
+- `skills/` — tool-invocation, auto-commit, off-hours, data-bus, sentiment-cache, workspace-review, evolution-proposals, prompt-iteration, background, fundamentals, self-improving-agent, freeform-discovery (each loads by its own trigger)

@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import replay_check  # noqa: E402
 import universe_scan  # noqa: E402
 import news_collector  # noqa: E402
+import merge_discoveries  # noqa: E402 — reuse extract_candidates(), single source of truth for the ticker-header format
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DISCOVERIES_DIR = REPO_ROOT / "discoveries"
@@ -113,31 +114,55 @@ def confirm_with_news(candidates, top_n=DEFAULT_TOP_N):
 
 
 def write_discoveries_file(candidates, min_price, max_price, path=None):
+    """Append candidates to today's discoveries file, deduping by ticker
+    against what's already there. Was a full overwrite until 2026-07-24 —
+    that silently clobbered same-day candidates whenever discovery ran
+    more than once in a day (discovery_urgency_check.py firing twice, or
+    the new freeform-discovery cron landing on the same day as the
+    deterministic screen). Falls back to today's original create-new-file
+    behavior when no file exists yet, so every existing caller/test is
+    unaffected."""
     today = datetime.now(timezone.utc).date().isoformat()
     path = path or (DISCOVERIES_DIR / f"{today}.md")
     DISCOVERIES_DIR.mkdir(parents=True, exist_ok=True)
 
-    lines = [
-        f"# Probe Discovery — {today}",
-        "",
-        f"Direct-Alpaca scan (scripts/discovery_scan.py) — bankroll-scaled universe "
-        f"${min_price:.0f}-${max_price:.0f}, RSI 45-65 + real volume, real news confirmation.",
-        "",
-        "---",
-        "",
-    ]
+    existing_tickers = set()
+    if path.exists():
+        existing_tickers = set(merge_discoveries.extract_candidates(path.read_text()))
+    else:
+        header = [
+            f"# Probe Discovery — {today}",
+            "",
+            f"Direct-Alpaca scan (scripts/discovery_scan.py) — bankroll-scaled universe "
+            f"${min_price:.0f}-${max_price:.0f}, RSI 45-65 + real volume, real news confirmation.",
+            "",
+            "---",
+            "",
+        ]
+        path.write_text("\n".join(header))
+
+    lines = []
     for c in candidates:
+        if c["ticker"] in existing_tickers:
+            continue
         lines.append(f"## {c['ticker']} — ${c['price']:.2f}")
-        lines.append(f"- RSI(14): {c['rsi']:.1f}"
-                      + (f", volume {c['volume_ratio']:.2f}x 20d avg" if c["volume_ratio"] else ""))
+        if c.get("rsi") is not None:
+            lines.append(f"- RSI(14): {c['rsi']:.1f}"
+                          + (f", volume {c['volume_ratio']:.2f}x 20d avg" if c.get("volume_ratio") else ""))
+        if c.get("source"):
+            lines.append(f"- Source: {c['source']}")
+        if c.get("note"):
+            lines.append(f"- {c['note']}")
         if c.get("news_headline"):
-            sentiment_str = f"{c['sentiment']:+.2f}" if c["sentiment"] is not None else "n/a"
+            sentiment_str = f"{c['sentiment']:+.2f}" if c.get("sentiment") is not None else "n/a"
             lines.append(f"- News: \"{c['news_headline']}\" (sentiment {sentiment_str})")
-        else:
+        elif "rsi" in c:
             lines.append("- News: none found — technical signal only")
         lines.append("")
 
-    path.write_text("\n".join(lines))
+    if lines:
+        with path.open("a") as f:
+            f.write("\n".join(lines) + "\n")
     return path
 
 

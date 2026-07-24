@@ -1,4 +1,4 @@
-# Stonks — Strategy stonks.strat:v1.5
+# Stonks — Strategy stonks.strat:v1.6
 
 ## Philosophy
 
@@ -10,7 +10,8 @@ Trade small and wide, not concentrated — volume of decisions and honest feedba
 
 - **Universe**: $1–$50, small/mid-cap, reasonable liquidity. Starting constraint, not permanent — see Growth Trajectory.
 - **Discovery**: `strategies/watchlist.md`, grow/shrink by notice/idle-ticks (`params.json: watchlist.idle_ticks_before_drop`). Decoupled from entry gating — `scripts/merge_discoveries.py` runs every tick regardless of regime, feeds probe-discovery output into the watchlist mechanically.
-- **Sizing**: small per-position, many concurrent, diversification over conviction (`params.json: risk`). 1-3 shares is a legitimate position, not a lesser one — probe size when conviction/regime is uncertain, normal size when clear.
+- **Sizing**: small per-position, many concurrent, diversification over conviction (`params.json: risk`). 1-3 shares is a legitimate position, not a lesser one — probe size when conviction/regime is uncertain, normal size when clear. No hard cap on position count (removed 2026-07-24) — cash, `max_position_pct`, and the bankroll ceiling are the real limiters, not an arbitrary ticker-count gate.
+- **Scaling into winners**: adding to an existing held position with an intact thesis and real momentum is a legitimate decision on any later tick, not just a fresh watchlist ticker — deploying more cash into what's already working isn't a lesser move than a new entry. Same conviction/regime sizing rules apply; `max_position_pct` (6%) and the bankroll ceiling govern *how much*, not *whether*. This is specifically for names already up with the thesis holding — not a way to average down into a loser to improve the price.
 - **Entry signal**: rising RSI in the 45-65 band + volume + a real catalyst. **Regime sizes entries, doesn't block them (v1.5)** — call `get_market_regime` (real ML + confidence, see `skills/data-bus-fallback.md`): clear/high-confidence → normal size, choppy/uncertain → probe size, still a real entry. Weigh `get_fundamentals`/`get_flow`/`get_insiders` (`skills/self-improving-agent.md`) too — strong confluence can justify normal size even in an uncertain regime. No triple-confirmation, no sector-ETF veto, no VIX-tiered sizing.
 - **Exit**: MACD histogram flip (positive→negative) triggers an immediate exit. Stop-loss (`risk.stop_loss_pct`) is a hard, non-negotiable full exit. Profit-target (`risk.profit_target_pct`) is a **guide, not an automatic trigger** (`risk.profit_target_is_guide`) — near it, use judgment: real momentum can justify holding past it, a stalling move should exit at or before it. Also exit on thesis breaks. Never chase a peaked pump. Hard stop and trailing stop are mechanically enforced in `executor.py`'s guardrail gates regardless of strategy version.
 - **Pre-session GTC order audit**: clear all stale/unfilled GTC orders before first tick. Stale orders can silently block all exits.

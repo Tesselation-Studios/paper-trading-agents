@@ -2,7 +2,7 @@
   "agent": "stonks",
   "account": "stonks",
   "phase": "mvp-1",
-  "strategy_version": "stonks.strat:v1.5",
+  "strategy_version": "stonks.strat:v1.6",
 
   "tick": {
     "interval_seconds": 300,
@@ -22,7 +22,6 @@
     "profit_target_pct": 12.0,
     "profit_target_is_guide": true,
     "max_position_pct": 6.0,
-    "max_positions": 25,
     "conviction_floor": 0.50,
     "max_portfolio_risk_pct": 8.0,
     "duplicate_order_cooldown_seconds": 60,
@@ -74,14 +73,13 @@
 
   "not_yet_built": [
     "ml_technical_scanning",
-    "news_source_aggregation",
     "trading_terminal_mcp"
   ],
 
   "guardrail_gates": {
     "cash": true,
     "position_size": true,
-    "max_positions": true,
+    "max_positions": false,
     "sector_concentration": true,
     "hours": true,
     "conviction": true,
@@ -92,6 +90,6 @@
     "duplicate_order": true,
     "order_count_audit": true,
     "drawdown_circuit_breaker": true,
-    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed. order_count_audit added 2026-07-23: strategy.md promised a daily order-count audit (risk_guards) since v1.0 that nothing ever mechanically enforced — found dead by workspace_review.py. drawdown_circuit_breaker added 2026-07-23: competition-mode portfolio-level circuit breaker, see risk._drawdown_source."
+    "_note": "2026-07-20 guardrail engine — flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. bankroll gate added 2026-07-21: wires bankroll.py's win/loss-adaptive ceiling into real position sizing (see bankroll.md for current ceiling). position_size_trim added 2026-07-22: mechanically force-trims a position that's grown over max_position_pct via price appreciation, since gate_position_size only blocks NEW over-cap buys — NVDA sat over cap 4 days before this existed. order_count_audit added 2026-07-23: strategy.md promised a daily order-count audit (risk_guards) since v1.0 that nothing ever mechanically enforced — found dead by workspace_review.py. drawdown_circuit_breaker added 2026-07-23: competition-mode portfolio-level circuit breaker, see risk._drawdown_source. max_positions disabled 2026-07-24 per Raf: no artificial position-count ceiling — cash, max_position_pct (6%), the bankroll ceiling, and sector_concentration (risk_guards.max_positions_per_sector) are the real limiters. risk.max_positions key removed as dead config since gate_max_positions is now never called."
   }
 }
