@@ -344,17 +344,34 @@ class TestEndgameFactor:
 
 
 class TestPerformanceFactor:
+    """2026-07-24: replaced the old step function (neutral 1.0x-1.5x, flat
+    dampener beyond) with a continuous lean-in curve — keep extending the
+    lead through ordinary outperformance, only dampen once the lead is big
+    enough to protect (>= LEAD_PROTECT_THRESHOLD)."""
+
     def test_behind_starting_capital_boosts(self):
         assert bankroll.performance_factor(9000, starting_capital=10000) == bankroll.BEHIND_PACE_MULTIPLIER
 
     def test_at_starting_capital_neutral(self):
         assert bankroll.performance_factor(10000, starting_capital=10000) == 1.0
 
-    def test_modest_lead_neutral(self):
-        assert bankroll.performance_factor(12000, starting_capital=10000) == 1.0
+    def test_modest_lead_leans_in_above_neutral(self):
+        # ratio=1.2, well inside the 1.0x-LEAD_PROTECT_THRESHOLD lean-in zone
+        factor = bankroll.performance_factor(12000, starting_capital=10000)
+        assert 1.0 < factor < bankroll.LEAN_IN_MAX_MULTIPLIER
 
-    def test_meaningful_lead_dampens(self):
-        assert bankroll.performance_factor(15000, starting_capital=10000) == bankroll.AHEAD_PACE_MULTIPLIER
+    def test_lean_in_increases_monotonically_toward_protect_threshold(self):
+        low = bankroll.performance_factor(11000, starting_capital=10000)   # ratio 1.1
+        high = bankroll.performance_factor(19000, starting_capital=10000)  # ratio 1.9
+        assert low < high < bankroll.LEAN_IN_MAX_MULTIPLIER
+
+    def test_at_protect_threshold_dampens(self):
+        equity = 10000 * bankroll.LEAD_PROTECT_THRESHOLD
+        assert bankroll.performance_factor(equity, starting_capital=10000) == bankroll.LEAD_PROTECT_MULTIPLIER
+
+    def test_beyond_protect_threshold_stays_dampened(self):
+        equity = 10000 * bankroll.LEAD_PROTECT_THRESHOLD * 2
+        assert bankroll.performance_factor(equity, starting_capital=10000) == bankroll.LEAD_PROTECT_MULTIPLIER
 
     def test_zero_starting_capital_does_not_crash(self):
         assert bankroll.performance_factor(1000, starting_capital=0) == 1.0
@@ -377,9 +394,10 @@ class TestCompetitionMultiplier:
         mult = bankroll.competition_multiplier(9000, today=bankroll.COMPETITION_END)
         assert lo <= mult <= hi
 
-    def test_ahead_and_not_endgame_dampens_below_one(self):
-        mult = bankroll.competition_multiplier(20000, today=datetime.date(2026, 8, 1))
-        assert mult == pytest.approx(bankroll.AHEAD_PACE_MULTIPLIER)
+    def test_beyond_protect_threshold_and_not_endgame_dampens_below_one(self):
+        equity = 10000 * bankroll.LEAD_PROTECT_THRESHOLD
+        mult = bankroll.competition_multiplier(equity, today=datetime.date(2026, 8, 1))
+        assert mult == pytest.approx(bankroll.LEAD_PROTECT_MULTIPLIER)
 
 
 class TestEffectiveCeiling:

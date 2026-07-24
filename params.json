@@ -2,7 +2,7 @@
   "agent": "stonks",
   "account": "stonks",
   "phase": "mvp-1",
-  "strategy_version": "stonks.strat:v1.6",
+  "strategy_version": "stonks.strat:v1.7",
 
   "tick": {
     "interval_seconds": 300,

@@ -40,8 +40,18 @@ COMPETITION_END = date(2026, 12, 31)
 ENDGAME_WINDOW_DAYS = 60      # ramp starts this many days out from the deadline
 ENDGAME_MAX_MULTIPLIER = 1.4  # multiplier at day zero
 BEHIND_PACE_MULTIPLIER = 1.15   # equity below starting capital
-AHEAD_PACE_THRESHOLD = 1.5      # equity/starting_capital ratio considered "a real lead"
-AHEAD_PACE_MULTIPLIER = 0.85    # dampener once meaningfully ahead
+
+# 2026-07-24: replaces the old two-zone step function (neutral 1.0x-1.5x,
+# flat 0.85x dampener beyond). Raf's framing: keep leaning in to extend the
+# lead through ordinary outperformance — only pull back hard once the lead
+# is big enough to protect outright. LEAD_PROTECT_THRESHOLD (2.0x = doubled
+# the starting stake) is Raf's own example, "not being literal" — a round,
+# retunable anchor for "big enough to bank it," not a precise line. Ramps
+# continuously between 1.0x (breakeven) and LEAD_PROTECT_THRESHOLD rather
+# than jumping, so there's no single trade that suddenly flips the ceiling.
+LEAD_PROTECT_THRESHOLD = 2.0      # equity/starting_capital ratio considered "the lead is big enough to bank it"
+LEAN_IN_MAX_MULTIPLIER = 1.3      # ceiling multiplier just below the protect threshold
+LEAD_PROTECT_MULTIPLIER = 0.7     # dampener once at/beyond the protect threshold
 COMBINED_MULTIPLIER_BOUNDS = (0.7, 1.5)  # clamp so the two factors can't compound into something extreme
 
 
@@ -63,18 +73,22 @@ def endgame_factor(today: date = None) -> float:
 
 
 def performance_factor(current_equity: float, starting_capital: float = STARTING_CASH) -> float:
-    """Boost if behind the starting line, dampen once meaningfully ahead
-    (protect a real lead) -- neutral in between. Not opponent-relative
-    (no live standings for neko-chan/friends exist yet), just relative to
-    Stan's own starting capital."""
+    """Boost if behind the starting line. Between breakeven and
+    LEAD_PROTECT_THRESHOLD, keep leaning in -- ordinary outperformance
+    (including gains sitting unrealized in a held winner, since
+    current_equity is total equity, not just closed-trade P&L) is treated
+    as validated judgment, not a reason to get cautious. Only dampens hard
+    once the lead is big enough to bank (>= LEAD_PROTECT_THRESHOLD)."""
     if starting_capital <= 0:
         return 1.0
     ratio = current_equity / starting_capital
     if ratio < 1.0:
         return BEHIND_PACE_MULTIPLIER
-    if ratio >= AHEAD_PACE_THRESHOLD:
-        return AHEAD_PACE_MULTIPLIER
-    return 1.0
+    if ratio >= LEAD_PROTECT_THRESHOLD:
+        return LEAD_PROTECT_MULTIPLIER
+    # 1.0x (breakeven) -> LEAN_IN_MAX_MULTIPLIER (just under the protect threshold)
+    progress = (ratio - 1.0) / (LEAD_PROTECT_THRESHOLD - 1.0)
+    return 1.0 + progress * (LEAN_IN_MAX_MULTIPLIER - 1.0)
 
 
 def competition_multiplier(current_equity: float, today: date = None,

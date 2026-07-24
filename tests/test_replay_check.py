@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Unit tests for scripts/replay_check.py's v1.6 additions — scale-into-
-winners and the max_positions cap. No network/Alpaca — synthetic frames
-and a hand-built Portfolio/Tick, same pattern paper-trading-rebuild's own
-replay.py test helpers use.
+"""Unit tests for scripts/replay_check.py's v1.6/v1.7 additions —
+scale-into-winners and the max_positions cap. No network/Alpaca —
+synthetic frames and a hand-built Portfolio/Tick, same pattern
+paper-trading-rebuild's own replay.py test helpers use.
 
 make_trader() only reads `frames` to build a read-only lookup keyed by
 (ticker, timestamp) — a single synthetic row per ticker is enough to drive
 the decision logic under test without needing real market data.
 """
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -52,39 +52,37 @@ class TestScaleIntoWinners:
     def test_real_winner_in_band_triggers_scale_in(self):
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        # +5% pnl, entry 6 days ago (past the 5-day cooldown)
-        entry_time = TS - timedelta(days=6)
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5, entry_time=entry_time)
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5)  # +5% pnl
         decision = trader(tick, portfolio)
         assert decision.decision == "BUY"
         assert decision.conviction == replay_check.ENTRY_CONVICTION  # clears require_conviction gate
-        assert decision.shares > 0  # explicit shares carry the "smaller add" sizing, not conviction
+        assert decision.shares > 0  # explicit shares carry the sizing, not conviction
         assert "scale into winner" in decision.rationale
 
     def test_pnl_below_threshold_does_not_scale_in(self):
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        entry_time = TS - timedelta(days=6)
         # +1% pnl — real gain but below SCALE_IN_MIN_PNL_PCT (3%), not a real winner yet
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.10, entry_time=entry_time)
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.10)
         decision = trader(tick, portfolio)
         assert decision.decision == "HOLD"
 
-    def test_too_soon_since_entry_does_not_scale_in(self):
+    def test_no_cooldown_v17_reconsiders_every_tick(self):
+        """v1.7: reconsidered every tick it still qualifies — no pacing,
+        unlike the old (removed) 5-day-gap cooldown."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        # +5% pnl but entered only 1 day ago — cooldown not satisfied
-        entry_time = TS - timedelta(days=1)
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5, entry_time=entry_time)
-        decision = trader(tick, portfolio)
-        assert decision.decision == "HOLD"
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5)
+
+        first = trader(tick, portfolio)
+        second = trader(tick, portfolio)
+        assert first.decision == "BUY"
+        assert second.decision == "BUY"  # no cooldown blocking the very next call
 
     def test_out_of_rsi_band_does_not_scale_in(self):
         frames = make_frames("XYZ", rsi=80.0, macd_hist=0.5)  # overbought, out of 45-65 band
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        entry_time = TS - timedelta(days=6)
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5,
-                                                      entry_time=entry_time, rsi=80.0)
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5, rsi=80.0)
         decision = trader(tick, portfolio)
         assert decision.decision == "HOLD"
 
@@ -92,24 +90,40 @@ class TestScaleIntoWinners:
         """v1.1's regime-gating applies to scale-ins too, same as fresh entries."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5, vol_20d=0.05)  # above CHOPPY_VOL_THRESHOLD
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        entry_time = TS - timedelta(days=6)
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5, entry_time=entry_time)
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5)
         decision = trader(tick, portfolio)
         assert decision.decision == "HOLD"
 
-    def test_second_scale_in_respects_cooldown_from_last_scale_in_not_entry(self):
+    def test_bigger_winner_gets_bigger_add(self):
+        """v1.7: size scales with magnitude, not a fixed increment. Both
+        magnitudes stay under PROFIT_TARGET_PCT (12%) so the exit check
+        doesn't fire first, and under the pnl where SCALE_IN_MAX_MULTIPLE
+        (3x at 3x SCALE_IN_MIN_PNL_PCT = 9%) caps the multiple, which would
+        otherwise mask the size difference."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        entry_time = TS - timedelta(days=20)
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5, entry_time=entry_time)
+        small_tick, small_winner_portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.35)  # +3.5%
+        big_tick, big_winner_portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.6)  # +6%
 
-        first = trader(tick, portfolio)
-        assert first.decision == "BUY"  # first scale-in, 20 days since entry
+        small_add = trader(small_tick, small_winner_portfolio)
+        big_add = trader(big_tick, big_winner_portfolio)
+        assert small_add.decision == "BUY"
+        assert big_add.decision == "BUY"
+        assert big_add.shares > small_add.shares
 
-        # Same tick timestamp again (simulating the very next call) — cooldown
-        # now measured from the scale-in that just happened, not the original entry.
-        second = trader(tick, portfolio)
-        assert second.decision == "HOLD"
+    def test_size_multiple_caps_at_scale_in_max_multiple(self):
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
+        # +11% pnl — still under the 12% profit-target exit, but far beyond
+        # what SCALE_IN_MAX_MULTIPLE should let the size multiple grow past.
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=11.1)
+        decision = trader(tick, portfolio)
+        assert decision.decision == "BUY"
+        expected_max_shares = int(
+            (portfolio.total_equity * replay_check.MAX_POSITION_PCT * replay_check.ENTRY_CONVICTION
+             * replay_check.SCALE_IN_SIZE_FACTOR * replay_check.SCALE_IN_MAX_MULTIPLE) / tick.close
+        )
+        assert decision.shares <= expected_max_shares
 
 
 class TestMaxPositionsCap:
@@ -145,7 +159,7 @@ class TestMaxPositionsCap:
 
 
 class TestStrategyBuildersRegistered:
-    def test_v16_and_capped25_present_alongside_existing_variants(self):
+    def test_v17_and_capped25_present_alongside_existing_variants(self):
         assert set(replay_check.STRATEGY_BUILDERS.keys()) == {
-            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.6"}
+            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7"}
         assert set(replay_check.VARIANT_LABELS.keys()) == set(replay_check.STRATEGY_BUILDERS.keys())

@@ -83,12 +83,14 @@ PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not 
 # decision path. These are rule-based proxies for what's genuine LLM
 # judgment live ("thesis intact, real momentum") — same caveat as v1.2's
 # triple-confirmation entry being a proxy for qualitative confirmation.
-# Only scale into a REAL winner (not noise) and don't compound into one
-# name every tick it's green — bounded by a cooldown, same diversification
-# philosophy as everywhere else in this repo.
-SCALE_IN_MIN_PNL_PCT = 3.0
-SCALE_IN_MIN_GAP_DAYS = 5
-SCALE_IN_SIZE_FACTOR = 0.5           # half of what a fresh entry would allocate
+# v1.7 (2026-07-24, same day): reconsider every tick it still qualifies —
+# no cooldown/pacing (removed SCALE_IN_MIN_GAP_DAYS) — and size scales
+# with how strong the winner actually is, not a fixed increment.
+# max_position_pct remains the hard backstop regardless of how aggressive
+# the add gets.
+SCALE_IN_MIN_PNL_PCT = 3.0           # only a REAL winner, not noise, qualifies at all
+SCALE_IN_SIZE_FACTOR = 0.5           # base add size at exactly the threshold — scales up from here
+SCALE_IN_MAX_MULTIPLE = 3.0          # cap on how far magnitude-scaling can push the add size
 LEGACY_MAX_POSITIONS = 25            # the cap that was live before v1.6 removed it
 ENTRY_CONVICTION = 0.6               # matches v1.0/v1.1's fresh-entry conviction below
 MAX_POSITION_PCT = 0.06              # mirrors params.json risk.max_position_pct; also what
@@ -204,14 +206,15 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
     this was parameterized.
     max_positions: cap on distinct held tickers before a NEW-ticker BUY is
     blocked (adding to an existing position is never blocked by this,
-    mirrors executor.py's gate_max_positions). None = uncapped (v1.6, live
+    mirrors executor.py's gate_max_positions). None = uncapped (v1.6+, live
     today). Every variant before v1.6 was tested here with this implicitly
     unset — the harness never modeled a cap at all, not just "capped at 25".
-    scale_into_winners: v1.6's other new behavior — when True, a held
-    position with intact momentum and real (not noise) PnL gets a smaller
-    add-on BUY instead of a silent HOLD, gated by SCALE_IN_MIN_PNL_PCT and
-    a cooldown (SCALE_IN_MIN_GAP_DAYS) so it doesn't compound into one name
-    every tick it's green.
+    scale_into_winners: v1.6/v1.7's other new behavior — when True, a held
+    position with intact momentum and real (not noise) PnL gets an add-on
+    BUY instead of a silent HOLD, gated only by SCALE_IN_MIN_PNL_PCT (no
+    cooldown as of v1.7 — reconsidered every tick it still qualifies), sized
+    up with magnitude (bigger winner = bigger add, capped at
+    SCALE_IN_MAX_MULTIPLE) rather than a fixed increment.
     """
     assert variant in ("v1.0", "v1.1", "v1.2")
     stop_loss_pct = STOP_LOSS_PCT if stop_loss_pct is None else stop_loss_pct
@@ -223,7 +226,6 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
 
     prev_hist = {}
     prev_rsi = {}
-    last_buy_time = {}
 
     def trader(tick, portfolio):
         row = lookup.get((tick.ticker, tick.timestamp))
@@ -275,22 +277,26 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
 
             if scale_into_winners and tick.rsi is not None and pnl_pct >= SCALE_IN_MIN_PNL_PCT:
                 still_in_band = 45 < tick.rsi < 65
-                gapped_enough = tick.timestamp - last_buy_time.get(tick.ticker, held.entry_time) >= pd.Timedelta(days=SCALE_IN_MIN_GAP_DAYS)
                 choppy_blocked = variant == "v1.1" and vol_20d is not None and vol_20d > CHOPPY_VOL_THRESHOLD
-                if still_in_band and gapped_enough and not choppy_blocked:
-                    last_buy_time[tick.ticker] = tick.timestamp
-                    # Explicit shares, not a lower conviction, expresses "smaller add" —
-                    # conviction below require_conviction (0.5, set by run_variants()/
-                    # sweep_thresholds()) would get silently rejected by the harness's
-                    # own gate before ever reaching _execute_buy. conviction stays at
-                    # the same level as a fresh entry so it clears that gate.
+                if still_in_band and not choppy_blocked:
+                    # No cooldown as of v1.7 — reconsidered every tick it still
+                    # qualifies. Explicit shares, not a lower conviction, express
+                    # sizing — conviction below require_conviction (0.5, set by
+                    # run_variants()/sweep_thresholds()) would get silently
+                    # rejected by the harness's own gate before ever reaching
+                    # _execute_buy. conviction stays at the same level as a fresh
+                    # entry so it clears that gate; size_multiple (bigger winner
+                    # = bigger add, capped at SCALE_IN_MAX_MULTIPLE) carries the
+                    # actual sizing signal instead.
+                    size_multiple = min(SCALE_IN_MAX_MULTIPLE, pnl_pct / SCALE_IN_MIN_PNL_PCT)
                     add_shares = max(1, int(
-                        (portfolio.total_equity * MAX_POSITION_PCT * ENTRY_CONVICTION * SCALE_IN_SIZE_FACTOR)
-                        / tick.close
+                        (portfolio.total_equity * MAX_POSITION_PCT * ENTRY_CONVICTION
+                         * SCALE_IN_SIZE_FACTOR * size_multiple) / tick.close
                     ))
                     return TraderDecision(ticker=tick.ticker, decision="BUY", conviction=ENTRY_CONVICTION,
                                            shares=add_shares,
-                                           rationale=f"v1.6: scale into winner, +{pnl_pct:.1f}% pnl, RSI still in-band")
+                                           rationale=f"v1.7: scale into winner, +{pnl_pct:.1f}% pnl, "
+                                                     f"{size_multiple:.1f}x base size, RSI still in-band")
             return TraderDecision(ticker=tick.ticker, decision="HOLD", conviction=0.0)
 
         if max_positions is not None and portfolio.position_count >= max_positions:
@@ -334,7 +340,7 @@ STRATEGY_BUILDERS = {
     "v1.1": lambda frames: make_trader(frames, "v1.1"),
     "v1.2": lambda frames: make_trader(frames, "v1.2"),
     "v1.1-capped25": lambda frames: make_trader(frames, "v1.1", max_positions=LEGACY_MAX_POSITIONS),
-    "v1.6": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True),
+    "v1.7": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True),
 }
 
 
@@ -461,9 +467,11 @@ VARIANT_LABELS = {
             "+ triple-confirmation entry (sector veto/VIX-tiering/quality-gate NOT modeled)",
     "v1.1-capped25": "v1.1 rules + max_positions=25 (the cap v1.5-and-earlier had, before v1.6 removed it — "
                       "isolates whether the old cap actually constrained anything on this universe)",
-    "v1.6": "== live strategy.md v1.6: v1.1 rules (regime-gated entry, MACDh-flip exit) + "
-            "no position cap + scale-into-winners (rule-based proxy: +3% pnl, RSI still in-band, "
-            "5-day cooldown — real thing is LLM judgment, see SCALE_IN_* constants)",
+    "v1.7": "== live strategy.md v1.7: v1.1 rules (regime-gated entry, MACDh-flip exit) + "
+            "no position cap + scale-into-winners, no pacing, magnitude-scaled sizing "
+            "(rule-based proxy: +3% pnl, RSI still in-band, reconsidered every tick, size scales "
+            "with pnl magnitude up to SCALE_IN_MAX_MULTIPLE — real thing is LLM judgment, "
+            "see SCALE_IN_* constants)",
 }
 
 
