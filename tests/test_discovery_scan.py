@@ -43,7 +43,7 @@ class TestGetUniversePriceBand:
         monkeypatch.setattr(bankroll, "BANKROLL_FILE", bankroll_file)
         min_price, max_price = discovery_scan.get_universe_price_band()
         assert min_price == 2.0
-        assert max_price == 50.0  # ceiling 51 -> first tier, unchanged
+        assert max_price == 500.0  # ceiling 51 -> first tier (widened 2026-07-24)
 
     def test_higher_ceiling_widens_universe(self, tmp_path, monkeypatch):
         params_path = tmp_path / "params.json"
@@ -53,7 +53,7 @@ class TestGetUniversePriceBand:
         monkeypatch.setattr(discovery_scan, "PARAMS_PATH", params_path)
         monkeypatch.setattr(bankroll, "BANKROLL_FILE", bankroll_file)
         _, max_price = discovery_scan.get_universe_price_band()
-        assert max_price == 150.0
+        assert max_price == 1500.0  # ceiling 500 -> third tier (rebased 2026-07-24)
 
 
 class TestScreenCandidates:

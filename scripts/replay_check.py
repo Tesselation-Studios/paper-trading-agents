@@ -195,7 +195,8 @@ def build_tick_stream(frames):
 
 
 def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
-                 max_positions=None, scale_into_winners=False):
+                 max_positions=None, scale_into_winners=False, scale_in_max_per_day=None,
+                 scale_in_max_multiple=None):
     """Build a trader function closing over per-ticker indicator lookups
     (Tick only carries rsi) and a small amount of flip-detection state.
 
@@ -211,19 +212,34 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
     unset — the harness never modeled a cap at all, not just "capped at 25".
     scale_into_winners: v1.6/v1.7's other new behavior — when True, a held
     position with intact momentum and real (not noise) PnL gets an add-on
-    BUY instead of a silent HOLD, gated only by SCALE_IN_MIN_PNL_PCT (no
-    cooldown as of v1.7 — reconsidered every tick it still qualifies), sized
+    BUY instead of a silent HOLD, gated only by SCALE_IN_MIN_PNL_PCT, sized
     up with magnitude (bigger winner = bigger add, capped at
     SCALE_IN_MAX_MULTIPLE) rather than a fixed increment.
+    scale_in_max_per_day: v1.7 as shipped reconsiders every tick with no
+    pacing at all. This is a separate test axis (2026-07-24, same-day
+    follow-up) isolating whether it's the *frequency* or the *magnitude
+    scaling* that hurt v1.7's backtest — None (default) keeps v1.7's actual
+    every-tick behavior; an int caps scale-ins to that many calendar days
+    (not ticks) per ticker. Confirmed a no-op on this daily-bar harness
+    (every variant already gets at most one tick per ticker per day) — kept
+    for completeness/documentation, not because it changes results here.
+    scale_in_max_multiple: overrides the module-level SCALE_IN_MAX_MULTIPLE
+    for this trader instance — a second same-day follow-up test axis,
+    isolating whether a gentler size-scaling cap recovers some of v1.6's
+    better Sharpe while still rewarding bigger winners more than a flat
+    size would. None (default) uses the module constant (3.0, v1.7's
+    shipped value).
     """
     assert variant in ("v1.0", "v1.1", "v1.2")
     stop_loss_pct = STOP_LOSS_PCT if stop_loss_pct is None else stop_loss_pct
     profit_target_pct = PROFIT_TARGET_PCT if profit_target_pct is None else profit_target_pct
+    scale_in_max_multiple = SCALE_IN_MAX_MULTIPLE if scale_in_max_multiple is None else scale_in_max_multiple
     lookup = {}
     for sym, df in frames.items():
         for _, row in df.iterrows():
             lookup[(sym, row["timestamp"])] = row
 
+    last_scale_in_date = {}
     prev_hist = {}
     prev_rsi = {}
 
@@ -278,17 +294,24 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
             if scale_into_winners and tick.rsi is not None and pnl_pct >= SCALE_IN_MIN_PNL_PCT:
                 still_in_band = 45 < tick.rsi < 65
                 choppy_blocked = variant == "v1.1" and vol_20d is not None and vol_20d > CHOPPY_VOL_THRESHOLD
-                if still_in_band and not choppy_blocked:
-                    # No cooldown as of v1.7 — reconsidered every tick it still
-                    # qualifies. Explicit shares, not a lower conviction, express
-                    # sizing — conviction below require_conviction (0.5, set by
+                today = tick.timestamp.date() if hasattr(tick.timestamp, "date") else tick.timestamp
+                paced_out = (scale_in_max_per_day is not None
+                             and last_scale_in_date.get(tick.ticker) == today)
+                if still_in_band and not choppy_blocked and not paced_out:
+                    # v1.7 as shipped: no cooldown, reconsidered every tick it
+                    # still qualifies. scale_in_max_per_day (default None) is a
+                    # separate test axis, not v1.7's live behavior — caps to
+                    # one scale-in per calendar day per ticker when set.
+                    # Explicit shares, not a lower conviction, express sizing —
+                    # conviction below require_conviction (0.5, set by
                     # run_variants()/sweep_thresholds()) would get silently
                     # rejected by the harness's own gate before ever reaching
                     # _execute_buy. conviction stays at the same level as a fresh
                     # entry so it clears that gate; size_multiple (bigger winner
                     # = bigger add, capped at SCALE_IN_MAX_MULTIPLE) carries the
                     # actual sizing signal instead.
-                    size_multiple = min(SCALE_IN_MAX_MULTIPLE, pnl_pct / SCALE_IN_MIN_PNL_PCT)
+                    last_scale_in_date[tick.ticker] = today
+                    size_multiple = min(scale_in_max_multiple, pnl_pct / SCALE_IN_MIN_PNL_PCT)
                     add_shares = max(1, int(
                         (portfolio.total_equity * MAX_POSITION_PCT * ENTRY_CONVICTION
                          * SCALE_IN_SIZE_FACTOR * size_multiple) / tick.close
@@ -341,6 +364,8 @@ STRATEGY_BUILDERS = {
     "v1.2": lambda frames: make_trader(frames, "v1.2"),
     "v1.1-capped25": lambda frames: make_trader(frames, "v1.1", max_positions=LEGACY_MAX_POSITIONS),
     "v1.7": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True),
+    "v1.7-daily": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True, scale_in_max_per_day=1),
+    "v1.7-gentle": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True, scale_in_max_multiple=1.5),
 }
 
 
@@ -472,6 +497,11 @@ VARIANT_LABELS = {
             "(rule-based proxy: +3% pnl, RSI still in-band, reconsidered every tick, size scales "
             "with pnl magnitude up to SCALE_IN_MAX_MULTIPLE — real thing is LLM judgment, "
             "see SCALE_IN_* constants)",
+    "v1.7-daily": "same as v1.7 but scale_in_max_per_day=1 — this harness replays DAILY bars "
+                  "(one tick per ticker per day for every variant), so this is expected to be a "
+                  "no-op vs v1.7 here, not a real test of intraday pacing (see module docstring)",
+    "v1.7-gentle": "same as v1.7 but scale_in_max_multiple=1.5 instead of 3.0 — tests whether a "
+                   "gentler size-scaling cap recovers some of v1.6's better Sharpe",
 }
 
 

@@ -125,6 +125,30 @@ class TestScaleIntoWinners:
         )
         assert decision.shares <= expected_max_shares
 
+    def test_scale_in_max_multiple_override_produces_smaller_add(self):
+        """2026-07-24 follow-up: gentler cap than the module default should
+        cap the add smaller, holding everything else equal."""
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        default_trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
+        gentle_trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True,
+                                                   scale_in_max_multiple=1.5)
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=11.1)  # +11%, saturates both caps
+
+        default_decision = default_trader(tick, portfolio)
+        gentle_decision = gentle_trader(tick, portfolio)
+        assert default_decision.decision == gentle_decision.decision == "BUY"
+        assert gentle_decision.shares < default_decision.shares
+
+    def test_scale_in_max_per_day_blocks_second_same_day_scale_in(self):
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True, scale_in_max_per_day=1)
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.5)
+
+        first = trader(tick, portfolio)
+        second = trader(tick, portfolio)  # same tick.timestamp -> same calendar day
+        assert first.decision == "BUY"
+        assert second.decision == "HOLD"
+
 
 class TestMaxPositionsCap:
     def _new_ticker_tick_portfolio(self, held_tickers, cash=100_000.0):
@@ -161,5 +185,5 @@ class TestMaxPositionsCap:
 class TestStrategyBuildersRegistered:
     def test_v17_and_capped25_present_alongside_existing_variants(self):
         assert set(replay_check.STRATEGY_BUILDERS.keys()) == {
-            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7"}
+            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7", "v1.7-daily", "v1.7-gentle"}
         assert set(replay_check.VARIANT_LABELS.keys()) == set(replay_check.STRATEGY_BUILDERS.keys())

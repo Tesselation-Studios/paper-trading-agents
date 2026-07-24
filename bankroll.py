@@ -241,13 +241,26 @@ def recalc_ceiling(state: dict, pnl: float, is_win: bool):
 # at, not just position sizing — mechanizes strategy.md's Growth
 # Trajectory section ("as real track record accumulates... sanctioned to
 # widen toward larger-cap names"), which was previously unenforced prose.
-# Tiers recalibrated against today's real starting point (ceiling ~$50-51
-# right now), not the stale numbers TOOLS.md had.
+#
+# 2026-07-24: first tier widened $50 -> $500 on real evidence, not track
+# record — a 250-ticker random-sample backtest (not the curated held/
+# watchlist names) found mid-cap $50-500 meaningfully outperforms $1-50 on
+# the identical strategy (mean Sharpe +0.014 vs -0.455, 56.5% vs 38.8%
+# positive). This is a signal-quality unlock, distinct from the
+# risk-capacity reasoning behind the rest of the ladder — small-caps trade
+# on thin retail flow with little sustained momentum, so this mechanical
+# RSI/MACD approach fares worse there regardless of bankroll size.
+# max_position_pct (6%) still caps dollar risk per position the same way
+# regardless of price — a pricier stock just gets fewer shares, same
+# "small position size, wide diversification" philosophy, not a bigger bet.
+# Remaining tiers rebased proportionally (10x, matching the first jump) to
+# stay monotonic — those are still the original risk-capacity-based shape,
+# not independently evidenced the way the first tier now is.
 UNIVERSE_MAX_PRICE_TIERS = [
-    (100.0, 50.0),    # ceiling < $100 -> current $1-$50 universe, unchanged
-    (300.0, 75.0),
-    (750.0, 150.0),
-    (MAX_CEILING, 300.0),
+    (100.0, 500.0),    # ceiling < $100 -> widened 2026-07-24 (see above)
+    (300.0, 750.0),
+    (750.0, 1500.0),
+    (MAX_CEILING, 3000.0),
 ]
 
 

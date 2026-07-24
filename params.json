@@ -12,8 +12,8 @@
 
   "universe": {
     "min_price": 1.0,
-    "max_price": 50.0,
-    "_cap_class": "small-mid, descriptive only — min_price/max_price are what actually filter"
+    "max_price": 500.0,
+    "_cap_class": "small-mid, widened 2026-07-24 per real backtest evidence (see bankroll.py UNIVERSE_MAX_PRICE_TIERS). min_price here is what actually filters live discovery; max_price here only drives scripts/universe_scan.py's manual CLI tool — live discovery (discovery_scan.py/discovery_urgency_check.py) uses bankroll.universe_max_price_for_ceiling() instead, which is the real source of truth for max_price"
   },
 
   "risk": {
