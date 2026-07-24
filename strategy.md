@@ -1,4 +1,4 @@
-# Stonks — Strategy stonks.strat:v1.8
+# Stonks — Strategy stonks.strat:v1.9
 
 ## Philosophy
 
