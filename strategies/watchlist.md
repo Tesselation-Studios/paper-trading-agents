@@ -9,6 +9,7 @@ Format: `TICKER — idle_ticks: N — note`
 - FHB — open position (1 share @ $28.60, entry 2026-07-24 09:55)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
 - IP — open position (2 shares @ $38.43, entry 2026-07-24 10:05 — filled 2 due to parallel tick collision, intended 1)
+- BOX — open position (1 share @ $28.84, entry 2026-07-24 11:50 — v1.5 probe, Technology)
 
 ## Closed Positions
 - ~~WSC~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +1.46%)
@@ -28,6 +29,9 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- DBX — idle_ticks: 0 — $28.43, RSI 48.8, MACDh +0.7735 🟢, vol 0.95x, PE 14.5x, Technology (cloud storage). Analyst Hold, PT ~$26.50. Earnings 8/6.
+- AMC — idle_ticks: 0 — $2.28, RSI 56.7, MACDh +0.0306 🟢, vol 0.83x. Entertainment. Meme volatility risk.
+
 ~~OZKAP~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, also do-not-retry — preferred stock, never filled)
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
 ~~NKLR~~ — dropped 2026-07-24 11:40 (idle_ticks=24 threshold, bearish MACD, vol <1.0x)

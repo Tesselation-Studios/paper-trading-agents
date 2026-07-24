@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 11:40 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 11:50 ET
+
+## FRI 11:50 ET — Market Tick
+- ✅ **BOX BOUGHT**: v1.5 probe. 1 share @ $28.84, conviction 0.55. RSI 50.1 (mid-band), MACDh +1.0364 🟢 (strong bullish), vol 1.14x. PE 93.49 (high), PT $35.33. Technology. CHOPPY → 1-share probe.
+- **5 pos.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,406, cash $10,211. F +2.5%, FHB +0.5%, BFST +1.3%, IP +0.4%, BOX flat (just filled).
+- No stop breaches (check-stops clean). MACDh unchanged: F -0.0407 🔴, FHB +0.3141 🟢, BFST +0.4561 🟢, IP +0.5506 🟢, BOX +1.0364 🟢. No flips.
+- 🆕 Watchlist: DBX, AMC added as new candidates. Merge discoveries no-op (XRPNU dead ticker skipped). 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 11:40 ET — Market Tick
 - **Same as 11:35 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,406, cash $10,240, 4 pos. All 4 HOLD.

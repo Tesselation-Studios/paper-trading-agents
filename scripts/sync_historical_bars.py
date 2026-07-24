@@ -42,9 +42,17 @@ WATCHLIST_CANDIDATE_RE = re.compile(r"^- ([A-Z]{1,5}) — idle_ticks:", re.MULTI
 WATCHLIST_HELD_RE = re.compile(r"^- ([A-Z]{1,5}) — open position", re.MULTILINE)
 
 
+# Always synced regardless of Stan's rotating universe — SPY bars feed
+# get_market_regime()'s daily feature extraction (src/ml_signal.py), which
+# needs today's RSI/MACD/volatility, not whatever was last fetched. The HMM
+# model itself is retrained weekly (stonks-regime-retrain cron), but the
+# bars it reads from at inference time need to stay fresh daily like this.
+ALWAYS_SYNCED = ["SPY"]
+
+
 def current_universe() -> list[str]:
     """Tickers actually relevant to Stan right now: open positions + active watchlist candidates."""
-    tickers = set()
+    tickers = set(ALWAYS_SYNCED)
 
     for pos_file in POSITIONS_DIR.glob("*.md"):
         tickers.add(pos_file.stem.upper())
