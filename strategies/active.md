@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 13:31 ET
+# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 13:35 ET
+
+## FRI 13:35 ET — Market Tick
+- **Same as 13:31 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,408, cash $10,211, 5 pos. All 5 HOLD.
+- F $14.37 (+1.6%), FHB $28.65 (+0.2%), BFST $31.30 (+1.0%), IP $39.87 (+3.7%), BOX $28.86 (+0.1%). No stop breaches (check-stops clean).
+- MACDh unchanged (data bus 69 bars): F -0.0407 🔴, FHB +0.3141 🟢, BFST +0.4561 🟢, IP +0.5506 🟢, BOX +1.0364 🟢 — no flips.
+- Watchlist: MFAO→11 (vol 0.59x), DBX→12 (vol 0.95x), AMC→12 (vol 0.83x meme). No qualifying entries. Merge discoveries no-op. 🔔 F Q2 earnings 7/28 (Tue).
 
 ## FRI 13:31 ET — Market Tick
 - **Same as 13:28 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,408, cash $10,211, 5 pos. All 5 HOLD.
