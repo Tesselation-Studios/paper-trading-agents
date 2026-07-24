@@ -28,9 +28,9 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- OZKAP — idle_ticks: 19 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (preferred stock). Do not retry.
+- OZKAP — idle_ticks: 21 — $16.35, RSI 54.4, vol 1.27x, MACD bullish +0.0098, dividend raise catalyst (sentiment +0.88). ⚠️ Attempted BUY 09:50 — failed to fill (preferred stock). Do not retry.
 ~~BFST~~ — entered 2026-07-24 10:05, 1 share @ $30.98, probe entry
-- NKLR — idle_ticks: 19 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
+- NKLR — idle_ticks: 21 — $5.42, RSI 56.5, vol 0.88x, MACD bearish -0.1261, news: NRC readiness review (sentiment +0.65)
 ~~XRPNU~~ — dropped 2026-07-24 10:05 (dead ticker, vol 0.0, MACD bearish)
 ~~BEDY~~ — dropped 2026-07-24 11:15 (idle_ticks=24 threshold)
 ~~OLP~~ — dropped 2026-07-24 11:15 (idle_ticks=24 threshold)
@@ -55,4 +55,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-24 11:15 ET (idle_ticks bumped, BEDY/OLP dropped at threshold, all HOLD)._
+_Last touched: 2026-07-24 11:25 ET (idle_ticks bumped OZKAP→21 NKLR→21, all HOLD)._
