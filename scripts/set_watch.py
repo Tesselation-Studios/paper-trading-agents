@@ -86,6 +86,24 @@ def _market_close_today() -> datetime.datetime:
     return now.replace(hour=16, minute=0, second=0, microsecond=0)
 
 
+def _market_is_open(now: datetime.datetime) -> bool:
+    """Same bounds as executor.py's gate_hours — 09:30-16:00 ET, Mon-Fri."""
+    if now.weekday() >= 5:
+        return False
+    market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+    return market_open <= now <= market_close
+
+
+# 2026-07-24: found via a real off-hours CLI smoke test — "default to
+# today's close" produces an already-past timestamp for any SELL/ALERT set
+# after 16:00 ET (or on a weekend), so every off-hours call without an
+# explicit --expires-at was rejected outright. Off-hours/weekend calls
+# (research-loop testing, an evening what-if) get a short leash instead of
+# "today's close" — there's no real session left to protect anyway.
+OFF_HOURS_DEFAULT_TTL_SECONDS = 60 * 60
+
+
 def load_watches() -> list:
     if not WATCHES_PATH.exists():
         return []
@@ -166,13 +184,18 @@ def _validate_add(args: argparse.Namespace) -> Tuple[Optional[Dict[str, Any]], O
                 f"latest allowed {max_expiry.isoformat()}) — re-set it at the next tick if still wanted"
             )
     else:
-        close_today = _market_close_today()
+        if _market_is_open(now):
+            cap = _market_close_today()
+            cap_reason = "can't outlive today's session"
+        else:
+            cap = now + datetime.timedelta(seconds=OFF_HOURS_DEFAULT_TTL_SECONDS)
+            cap_reason = "market's closed — capped to a short off-hours window, not a full session"
         if expires is None:
-            expires = close_today
-        elif expires > close_today:
+            expires = cap
+        elif expires > cap:
             return None, (
-                f"SELL/ALERT watches can't outlive today's session (requested {expires.isoformat()}, "
-                f"latest allowed {close_today.isoformat()}) — re-set it fresh next session if still wanted"
+                f"SELL/ALERT watches {cap_reason} (requested {expires.isoformat()}, "
+                f"latest allowed {cap.isoformat()}) — re-set it fresh next session if still wanted"
             )
 
     if expires <= now:

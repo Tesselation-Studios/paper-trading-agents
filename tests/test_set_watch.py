@@ -36,6 +36,19 @@ def frozen_now(monkeypatch):
     return FIXED_NOW
 
 
+# After market close, same Wednesday. Regression fixture for the real bug
+# found via a live CLI smoke test: "default to today's close" produced an
+# already-past timestamp for any SELL/ALERT set after 16:00 ET.
+FIXED_AFTER_HOURS = datetime.datetime(2026, 7, 22, 22, 17, tzinfo=ET)
+FIXED_WEEKEND = datetime.datetime(2026, 7, 25, 12, 0, tzinfo=ET)  # a Saturday
+
+
+@pytest.fixture
+def frozen_after_hours(monkeypatch):
+    monkeypatch.setattr(set_watch, "_now_et", lambda: FIXED_AFTER_HOURS)
+    return FIXED_AFTER_HOURS
+
+
 def _add_args(**overrides):
     defaults = dict(
         ticker="ip", field="price", comparator=">=", value=45.0,
@@ -46,12 +59,51 @@ def _add_args(**overrides):
     return argparse.Namespace(**defaults)
 
 
+class TestMarketIsOpen:
+    def test_weekday_market_hours_open(self):
+        assert set_watch._market_is_open(FIXED_NOW) is True
+
+    def test_weekday_after_close_is_closed(self):
+        assert set_watch._market_is_open(FIXED_AFTER_HOURS) is False
+
+    def test_weekend_is_closed(self):
+        assert set_watch._market_is_open(FIXED_WEEKEND) is False
+
+    def test_before_open_is_closed(self):
+        before_open = FIXED_NOW.replace(hour=8, minute=0)
+        assert set_watch._market_is_open(before_open) is False
+
+
 class TestValidateAdd:
     def test_sell_all_defaults_to_market_close(self, frozen_now):
         watch, error = set_watch._validate_add(_add_args())
         assert error is None
         assert watch["ticker"] == "IP"
         assert watch["expires_at"] == FIXED_NOW.replace(hour=16, minute=0, second=0, microsecond=0).isoformat()
+
+    def test_sell_off_hours_defaults_to_short_window_not_past_close(self, frozen_after_hours):
+        watch, error = set_watch._validate_add(_add_args())
+        assert error is None, f"off-hours add should succeed, got: {error}"
+        expires = datetime.datetime.fromisoformat(watch["expires_at"])
+        assert expires == FIXED_AFTER_HOURS + datetime.timedelta(seconds=set_watch.OFF_HOURS_DEFAULT_TTL_SECONDS)
+
+    def test_alert_off_hours_defaults_to_short_window(self, frozen_after_hours):
+        watch, error = set_watch._validate_add(_add_args(action="ALERT", qty=None, comparator="<=", value=1.0))
+        assert error is None
+        expires = datetime.datetime.fromisoformat(watch["expires_at"])
+        assert expires == FIXED_AFTER_HOURS + datetime.timedelta(seconds=set_watch.OFF_HOURS_DEFAULT_TTL_SECONDS)
+
+    def test_weekend_defaults_to_short_window(self, monkeypatch):
+        monkeypatch.setattr(set_watch, "_now_et", lambda: FIXED_WEEKEND)
+        watch, error = set_watch._validate_add(_add_args())
+        assert error is None
+        expires = datetime.datetime.fromisoformat(watch["expires_at"])
+        assert expires == FIXED_WEEKEND + datetime.timedelta(seconds=set_watch.OFF_HOURS_DEFAULT_TTL_SECONDS)
+
+    def test_sell_off_hours_explicit_expiry_beyond_cap_rejected(self, frozen_after_hours):
+        requested = (FIXED_AFTER_HOURS + datetime.timedelta(hours=3)).isoformat()
+        _, error = set_watch._validate_add(_add_args(expires_at=requested))
+        assert "capped to a short off-hours window" in error
 
     def test_sell_qty_must_be_positive_int_or_all(self, frozen_now):
         _, error = set_watch._validate_add(_add_args(qty="-3"))
