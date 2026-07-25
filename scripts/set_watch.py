@@ -38,7 +38,9 @@ SAFETY (see skills/ for the full design writeup):
     re-trigger.
 """
 import argparse
+import contextlib
 import datetime
+import fcntl
 import json
 import sys
 import uuid
@@ -49,6 +51,25 @@ from zoneinfo import ZoneInfo
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 STATE_DIR = WORKSPACE_DIR / "state"
 WATCHES_PATH = STATE_DIR / "watches.json"
+
+
+@contextlib.contextmanager
+def _locked():
+    """Two independent processes touch watches.json — Stan's tick (add) and
+    position_stream.py's daemon (list/clear on trigger) — so every
+    load-modify-save cycle needs to be atomic across processes, not just
+    within one. Advisory flock, held only for the duration of one command.
+    Derives the lock path from STATE_DIR at call time (not a frozen
+    module-level constant) so tests that monkeypatch STATE_DIR actually
+    isolate the lock file too, not just watches.json itself."""
+    STATE_DIR.mkdir(exist_ok=True)
+    lock_path = STATE_DIR / "watches.json.lock"
+    with open(lock_path, "w") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 FIELDS = ("price", "pnl_pct")
 COMPARATORS = (">=", "<=")
@@ -204,15 +225,17 @@ def main() -> int:
         if error:
             print(json.dumps({"error": error}))
             return 1
-        watches = prune_expired(load_watches())
-        watches.append(watch)
-        save_watches(watches)
+        with _locked():
+            watches = prune_expired(load_watches())
+            watches.append(watch)
+            save_watches(watches)
         print(json.dumps({"ok": True, "watch": watch}, indent=2))
         return 0
 
     if args.command == "list":
-        watches = prune_expired(load_watches())
-        save_watches(watches)  # persist the prune, not just this call's view
+        with _locked():
+            watches = prune_expired(load_watches())
+            save_watches(watches)  # persist the prune, not just this call's view
         if args.ticker:
             watches = [w for w in watches if w["ticker"] == args.ticker.upper()]
         print(json.dumps({"watches": watches}, indent=2))
@@ -222,13 +245,14 @@ def main() -> int:
         if not args.id and not args.ticker:
             print(json.dumps({"error": "--id or --ticker required"}))
             return 1
-        watches = prune_expired(load_watches())
-        before = len(watches)
-        if args.id:
-            watches = [w for w in watches if w["id"] != args.id]
-        if args.ticker:
-            watches = [w for w in watches if w["ticker"] != args.ticker.upper()]
-        save_watches(watches)
+        with _locked():
+            watches = prune_expired(load_watches())
+            before = len(watches)
+            if args.id:
+                watches = [w for w in watches if w["id"] != args.id]
+            if args.ticker:
+                watches = [w for w in watches if w["ticker"] != args.ticker.upper()]
+            save_watches(watches)
         print(json.dumps({"ok": True, "removed": before - len(watches)}))
         return 0
 

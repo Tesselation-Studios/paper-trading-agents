@@ -154,6 +154,23 @@ class TestPruneExpired:
         assert kept == []
 
 
+class TestLocking:
+    def test_lock_file_created_under_patched_state_dir_not_real_one(self, watches_file, frozen_now):
+        with set_watch._locked():
+            pass
+        assert (watches_file.parent / "watches.json.lock").exists()
+
+    def test_locked_is_reentrant_safe_sequentially(self, watches_file, frozen_now):
+        # Not concurrency itself (flock's OS-level exclusion isn't practical
+        # to assert in-process) - just that two sequential uses both complete
+        # without deadlocking on the same lock file.
+        with set_watch._locked():
+            set_watch.save_watches([{"id": "a"}])
+        with set_watch._locked():
+            watches = set_watch.load_watches()
+        assert watches == [{"id": "a"}]
+
+
 class TestLoadSaveRoundtrip:
     def test_save_then_load(self, watches_file):
         watches = [{"id": "a", "ticker": "IP"}]
