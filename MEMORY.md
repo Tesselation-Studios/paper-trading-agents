@@ -1,5 +1,5 @@
 # Casper's Durable Memory
-*Last updated: 2026-07-24 — nightly learning*
+*Last updated: 2026-07-26 — weekly review*
 
 ## Raf's Preferences
 - **Directness**: Follow commands — no scope creep.
@@ -54,17 +54,20 @@
 ### Operational
 - **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
 - **Pre-session account audit (NEW Jul 22)**: Shared Alpaca credentials create account contamination risk. Jul 22: 8 non-Stonks positions (AMD/COST/GOOGL/HOOD/JNJ/PLTR/QQQ/V) found in account, 5 Stonks positions missing (CHWY/DJT/GME/KHC/SNAP). Reconciled by 11:00 ET but 80+ minutes of position tracking were corrupted. Now: every session start, audit Alpaca positions against journal records BEFORE first tick — cross-reference symbol by symbol.
-- **Sentiment pipeline blind**: FinBERT/Praesentire offline since Jul 7 (Day 17). Primary edge unavailable. All entry decisions are technical-only with no conviction overlay. Past the Day 21 threshold — escalation filed Jul 23. Monitor for resolution.
+- **Sentiment pipeline blind**: FinBERT/Praesentire offline since Jul 7 (Day 19). Primary edge unavailable. All entry decisions are technical-only with no conviction overlay. Past the Day 21 threshold — escalation filed Jul 20, Jul 22, Jul 23; zero response. Now treated as permanent constraint — optimize technical-only workflow, treat sentiment as bonus layer if/when restored.
 - **Parallel tick collision guard (NEW Jul 24)**: Two ticks firing simultaneously can submit duplicate buy orders for the same ticker. Jul 24: IP got 2 shares instead of 1 due to parallel tick collision at 10:05 — outcome was favorable (+9.7%) but the symmetry works both ways. Before submitting a buy order, check for existing active/pending orders on that symbol.
 - **Preferred stock screening (NEW Jul 24)**: Alpaca paper trading does NOT support OTC preferred stocks. Jul 24: OZKAP buy order submitted @ $16.40, never filled — order appeared in recent_orders but position absent from account. Screen ticker type (common/ETF/preferred/OTC) at watchlist qualification stage, not execution stage. Flag OTC/preferred as "do-not-retry."
+
+### Evolve→Execute Pipeline Leak (NEW Jul 26)
+- **Action items from nightly syntheses don't survive overnight**: The next session's tick agent starts fresh from strategy.md + active.md — it never reads the prior day's synthesis. Action items (NVDA trim took 5 days/3 cycles, weekend homework from Jul 17 never resolved) accumulate because there's no carry-forward mechanism. This is a process design gap, not an execution failure. Consider a `tasks/pending.md` or carry-forward section in active.md to bridge the overnight gap.
 
 ### Process & Tooling
 - **Strategy propagation must be verified across all layers (NEW Jul 22)**: v1.3 reverted the CHOPPY/FEAR entry gate, but the tick agent continued applying it for ~2 hours (09:30–11:20 ET). Strategy changes to `strategy.md` need explicit verification: (a) `params.json` reflects the change, (b) `executor.py` code aligns, (c) the agent prompt doesn't carry stale rules forward. Post-revision checklist item.
 - **params.json vs strategy.md drift risk (Jul 22, fixed Jul 23)**: `params.json` had contained v1.1/v1.2 settings (`entry_rules.triple_confirmation_required`, `regime_sizing` VIX tiers, `trim`, `quality_gate`, `exit_rules.rsi_exhaustion_hard_exit`, `risk_guards.max_holding_days`) left over from before v1.3's revert. Audited: `executor.py` never read any of them (confirmed by grep — only `risk_guards.max_positions_per_sector` is actually consumed, at executor.py:180), so there was no live behavior risk, but they contradicted `strategy.md` and could mislead the agent reading params.json fresh each tick. Removed from params.json.
 
-### Trailing Stop Performance (Jul 21-24)
-- **Trailing stops working mechanically**: Over 3 sessions: 8 exits via trailing stop (MARA +2.11%, MVST +0.29% wins; LYFT -5.49%, AMC -5.21%, DJT -5.2%, OPEN -5.11%, GME -5.00% losses; plus 1 that was stale-position cleanup). No panic sells, system carrying the load.
-- **Win/loss ratio**: 4 wins / 8 losses (33%) from trailing stops. The 5% trail triggers consistently but exits are mostly losers — entries aren't finding enough momentum to outrun the stop. Now at 12 trail-stop exits. If this ratio holds through 20 exits, entry criteria may need tightening.
+### Trailing Stop Performance (Jul 21-24, reviewed Jul 26)
+- **Trailing stops working mechanically**: Over 3 sessions: 8 exits via trailing stop (MARA +2.11%, MVST +0.29% wins; LYFT -5.49%, AMC -5.21%, DJT -5.2%, OPEN -5.11%, GME -5.00% losses; plus 1 stale-position cleanup). No panic sells, system carrying the load.
+- **Win/loss ratio**: 4 wins / 8 losses (33%) from trailing stops — unchanged since Jul 23, no new trail-stop exits Jul 24. Pinned at 33% for 4 days. 12 exits toward the 20-exit formal review trigger. Entry quality is the variable, not stop calibration.
 
 ### MACDh Data API Fragility (Jul 23+, continuing Jul 24)
 - **Alpaca free-tier bars unreliable**: Multiple ticks throughout Jul 23 had MACDh bars unavailable (Alpaca data API returning 401, yfinance connection-refused). Dozens of ticks went without fresh MACDh computation, forcing reliance on last-known values and price stability as a proxy. This is a structural constraint of the free-tier account — not a transient outage.
@@ -86,3 +89,8 @@
 
 ## Key Repos
 Agent configs `~/.openclaw/agents/` · Paper trading `~/projects/paper-trading-teams/` · Blog `~/projects/blog/drafts/` · Homelab `wodinga/Homelab-Setup`
+
+## Promoted From Short-Term Memory (2026-07-26)
+
+<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-23.md:98:119 -->
+- ### Rule Mechanization Audit Per `skills/rule-mechanization-audit.md`, audited every prose rule in strategy.md against the 9-entry lookback: | Rule | Status | Evidence | |------|--------|----------| | MACDh flip = exit | ✅ Mechanized | No violations. 3W/3L today. | | Stop-loss = hard exit | ✅ Mechanized (hard_stop gate) | No violations. | | Profit target = guide | ✅ Holding | No targets tested. | | RSI 45-65 + vol + catalyst entry | 💤 Untested | Gated by CHOPPY all day. 0 entries. | | Pre-session GTC audit | ✅ Mechanized | Held. No stale orders. | | Pre-session account audit | ✅ Holding | No contamination today.... [score=0.633 recalls=2 avg=0.571 source=memory/journal/2026-07-23.md:98-119]
