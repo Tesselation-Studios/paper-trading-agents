@@ -30,11 +30,12 @@ MARKET_OPEN_TS = datetime.datetime(2026, 7, 22, 12, 0, tzinfo=ZoneInfo("America/
 
 DEFAULT_PARAMS = {
     "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5,
-              "duplicate_order_cooldown_seconds": 60,
+              "duplicate_order_cooldown_seconds": 60, "stop_loss_pct": -10.0,
+              "max_portfolio_risk_pct": 8.0,
               "drawdown_pause_pct": 15.0, "drawdown_halt_pct": 20.0},
     "risk_guards": {"max_positions_per_sector": 2, "order_count_audit_threshold_daily": 10},
     "guardrail_gates": {
-        "cash": True, "position_size": True, "max_positions": True,
+        "cash": True, "position_size": True, "max_portfolio_risk": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
         "position_size_trim": True, "duplicate_order": True, "order_count_audit": True,
@@ -137,6 +138,54 @@ class TestGatePositionSize:
         action = {"action": "SELL", "ticker": "NVDA", "quantity": 100, "price": 100.0}
         granted, _ = executor.gate_position_size(context, action)
         assert granted is True
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# gate_max_portfolio_risk
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestGateMaxPortfolioRisk:
+    def test_within_cap(self, params):
+        # $5000 existing + $1000 proposed = $6000 exposure * 10% stop = $600
+        # risk = 6% of $10000 equity, under the 8% cap
+        context = {"portfolio_value": 10000, "positions": [{"symbol": "NVDA", "market_value": 5000.0}]}
+        action = {"action": "BUY", "ticker": "SOFI", "quantity": 100, "price": 10.0}
+        granted, reason = executor.gate_max_portfolio_risk(context, action)
+        assert granted is True
+        assert "6.0%" in reason
+
+    def test_exceeds_cap(self, params):
+        # $7000 existing + $2000 proposed = $9000 exposure * 10% stop = $900
+        # risk = 9% of $10000 equity, over the 8% cap
+        context = {"portfolio_value": 10000, "positions": [{"symbol": "NVDA", "market_value": 7000.0}]}
+        action = {"action": "BUY", "ticker": "SOFI", "quantity": 200, "price": 10.0}
+        granted, reason = executor.gate_max_portfolio_risk(context, action)
+        assert granted is False
+        assert "9.0%" in reason and "exceeds 8% cap" in reason
+
+    def test_no_portfolio_value_fails_open(self, params):
+        context = {"portfolio_value": 0, "positions": []}
+        action = {"action": "BUY", "ticker": "SOFI", "quantity": 100, "price": 10.0}
+        granted, reason = executor.gate_max_portfolio_risk(context, action)
+        assert granted is True
+        assert "fail-open" in reason
+
+    def test_sell_skips(self, params):
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "SELL", "ticker": "SOFI", "quantity": 100, "price": 10.0}
+        granted, _ = executor.gate_max_portfolio_risk(context, action)
+        assert granted is True
+
+    def test_tighter_stop_lowers_headroom(self, params):
+        # Same exposure as test_within_cap but a 20% stop instead of 10% -
+        # risk doubles to 12%, now over the 8% cap.
+        params["risk"]["stop_loss_pct"] = -20.0
+        context = {"portfolio_value": 10000, "positions": [{"symbol": "NVDA", "market_value": 5000.0}]}
+        action = {"action": "BUY", "ticker": "SOFI", "quantity": 100, "price": 10.0}
+        granted, reason = executor.gate_max_portfolio_risk(context, action)
+        assert granted is False
+        assert "12.0%" in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────

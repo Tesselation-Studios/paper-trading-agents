@@ -173,6 +173,38 @@ def gate_position_size(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple
     return True, f"{ticker} at {total_pct:.1f}% of portfolio, within {max_pct:.0f}% cap"
 
 
+def gate_max_portfolio_risk(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Portfolio-level stop-loss exposure: if every open position (plus this
+    proposed buy) hit its hard stop simultaneously, what % of equity would be
+    lost? stop_loss_pct is a single global value (risk.stop_loss_pct, applied
+    uniformly to every position -- see gate_drawdown_circuit_breaker/check_stops),
+    so this reduces to gross_exposure_value * stop_loss_pct / equity rather than
+    needing a per-position stop distance."""
+    if action.get("action") != "BUY":
+        return True, "non-BUY, skipped"
+    params = load_params()
+    max_risk_pct = float(params.get("risk", {}).get("max_portfolio_risk_pct", 8.0))
+    stop_loss_frac = abs(float(params.get("risk", {}).get("stop_loss_pct", -10.0))) / 100.0
+    price = float(action.get("price", 0) or 0)
+    qty = float(action.get("quantity", 0))
+    proposed_value = qty * price
+    portfolio_value = float(context.get("portfolio_value", 0))
+    if proposed_value <= 0 or portfolio_value <= 0:
+        return True, "no price/portfolio data, skipped (fail-open)"
+
+    existing_value = sum(float(p.get("market_value", 0)) for p in context.get("positions", []))
+    total_exposure_value = existing_value + proposed_value
+    risk_pct = total_exposure_value * stop_loss_frac / portfolio_value * 100
+
+    if risk_pct > max_risk_pct:
+        return False, (
+            f"portfolio stop-loss exposure would be {risk_pct:.1f}% of equity "
+            f"(${total_exposure_value:,.2f} total position value x {stop_loss_frac*100:.0f}% stop), "
+            f"exceeds {max_risk_pct:.0f}% cap"
+        )
+    return True, f"portfolio stop-loss exposure at {risk_pct:.1f}% of equity, within {max_risk_pct:.0f}% cap"
+
+
 def gate_max_positions(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
@@ -463,6 +495,7 @@ def gate_drawdown_circuit_breaker(context: Dict[str, Any], action: Dict[str, Any
 GATES = {
     "cash": gate_cash,
     "position_size": gate_position_size,
+    "max_portfolio_risk": gate_max_portfolio_risk,
     "max_positions": gate_max_positions,
     "sector_concentration": gate_sector_concentration,
     "hours": gate_hours,
