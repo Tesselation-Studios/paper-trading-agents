@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 2:00 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 2:05 ET
+
+## MON 2:05 ET — Market Tick
+- **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,415.17, cash $10,185.27 (97.8%). BFST $31.25 (+0.87%), BOX 3sh $30.67 (+3.06%), KRC 2sh $39.24 (-0.68%), BCS $28.18 (-0.37%). No stop breaches (check-stops clean).
+- 📡 MACDh all 🟢 (67-bar cache unchanged since ~10:32). No flips. Data bus stale — BOX $29.01 vs live $30.67. Sentiment unchanged (1:46pm). workspace_review clean.
+- 🆕 **5 new candidates merged**: STVN (RSI 57.7, MACDh +0.4344 🟢, vol 1.2x ✅), TMED (RSI 55.9, MACDh +0.6131 🟢, 25k shares thin), BSVO (vol 0.56x ❌), YSXT ($0.86 penny, bearish MACD ❌), TKLF ($2.06 microcap, near-zero MACD ❌).
+- 📊 **BOX +3.06%** crosses 3% v1.7 floor but 🚫 order_count_audit 10/10 blocks any BUY. STVN qualifies on signal (vol 1.2x) but same gate block.
+- 🚫 All 9 legacy candidates unchanged disqualified. 1492 under-deployed ticks, conv floor 0.35. Merge +5.
 
 ## MON 2:00 ET — Market Tick
 - **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,414.92, cash $10,185.27 (97.8%). BFST $31.24 (+0.84%), BOX 3sh $30.63 (+2.95%), KRC 2sh $39.18 (-0.83%), BCS $28.16 (-0.44%). No stop breaches (check-stops clean).
