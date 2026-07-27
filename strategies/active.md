@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 11:21 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 11:25 ET
+
+## MON 11:25 ET — Market Tick
+- **All HOLD.** 3 pos. Regime **SUSTAINABLE** (0.92). PV $10,414, cash $10,244. BFST $31.33 (+1.13%), BOX $29.01 (+0.59%), KRC 2sh $39.38 (-0.34%). No stop breaches (check-stops clean).
+- 📡 Data bus LIVE: all 3 MACDh bullish 🟢 (BFST +0.4544, BOX +0.9925, KRC +0.7403). No flips. Sentiment: BFST +0.514, TOST +0.768, NTRS +0.573. workspace_review clean.
+- 📊 **Scale-in**: BFST +1.13%, BOX +0.59% — both below 3% v1.7 threshold. KRC red. None qualify.
+- 🔍 **BCS**: closest qualifier (RSI 56.6, MACDh +0.6383, vol 0.99x) but conviction weak — no flow, no insiders, neutral sentiment, fundamentals unavailable. Below 0.50 floor.
+- 🧹 **Watchlist**: 10 candidates idle→11. TOST MACD 🟢 + sentiment +0.768 but vol 0.38x. DXC +8.41% but MACD near-zero +0.0016. 5 names bearish MACD. Pipeline starved — Tavily rate-limited, no discovery. Merge no-op.
 
 ## MON 11:21 ET — Market Tick
 - **All HOLD.** 3 pos. Regime **SUSTAINABLE** (0.92 confidence — major shift from CHOPPY/FEAR). PV $10,415, cash $10,244. BFST $31.16 (+0.58%), BOX $29.01 (+0.59%), KRC 2sh $39.42 (-0.23%). No stop breaches (check-stops clean).
