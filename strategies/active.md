@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:15 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:17 ET
+
+## MON 10:17 ET — Market Tick
+- **All HOLD.** 2 pos. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,353. BFST $31.11 (+0.42%), BOX $29.87 (+3.62%). No stop breaches (check-stops clean).
+- 📡 Data bus down, MACDh unavailable (BFST 14 bars insufficient), sentiment fresh: BFST +0.514, BOX 0.0. MCP tools unavailable (subagent).
+- ⚠️ **BOX MACDh borderline**: 1-min MACDh -0.0064 (flipped negative over 10-bar decline from +0.014). MACD line +0.0436 still above zero, price flat $29.87 — no price confirmation. Still in near-zero boundary. Monitor next tick for further decline or price dip → exit.
+- 🧹 Watchlist: 11 candidates (idle→7). Merge discoveries no-op. No qualifying entries (degraded data + MCP unavailable).
 
 ## MON 10:15 ET — Market Tick
 - **Same as 10:06 tick.** Both HOLD. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,353. BFST $31.05 (+$0.07, +0.2%), BOX $29.86 (+$1.02, +3.5%). No stop breaches (check-stops clean).
