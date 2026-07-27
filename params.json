@@ -41,7 +41,13 @@
   "watchlist": {
     "path": "strategies/watchlist.md",
     "idle_ticks_before_drop": 24,
-    "max_size": 30
+    "max_size": 30,
+    "discovery_urgency": {
+      "cash_threshold_pct": 70.0,
+      "min_candidates": 3,
+      "empty_floor": 0,
+      "_source": "scripts/discovery_urgency_check.py — cash_threshold_pct+min_candidates gate the cash-thin/thin-pipeline AND trigger (checked by the 45-min stonks-discovery-urgent cron); empty_floor is the cash-independent OR trigger, checked every tick via tick_prompt.md step 7 when the Candidates section looks empty"
+    }
   },
 
   "synthesis": {

@@ -36,7 +36,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Stale pipeline is worse than no pipeline — fall back to price action honestly.
 - Pre-market quotes are dealer indications, not price discovery — don't adjust conviction on them.
 - Promotion bar is split-window Sharpe (both halves positive independently), not raw aggregate return — a good full-window number can hide a strategy that's actually broken in the more recent half.
-- Watchlist must be fed — 4 days with no new names means the pipeline's starved; 2-3/session minimum. Mechanically enforced (`scripts/merge_discoveries.py`), not just a reminder.
+- Watchlist must be fed — 4 days with no new names means the pipeline's starved; 2-3/session minimum. Mechanically enforced end to end, not just a reminder: `scripts/discovery_scan.py` generates candidates, `scripts/merge_discoveries.py` feeds them into the watchlist every tick, and `scripts/discovery_urgency_check.py` forces an immediate scan — checked every tick — whenever the candidate pipeline goes empty, plus on a 45-min cron whenever cash sits mostly idle with a thin pipeline.
 - Low-confidence/CHOPPY: don't trust MACD divergence without price confirmation — it's a trap.
 - Near-zero MACDh oscillation (±0.003 range on a flat price, declining-but-improving bars, MACD line holding) is noise, not a signal — don't exit. Real flips are 4-5 bar declining trends with price confirmation.
 - Pre-session account audit: audit against journal records symbol-by-symbol before first tick.

@@ -86,10 +86,14 @@ class TestCheckAndMaybeDiscover:
     def test_zero_equity_does_not_crash(self, monkeypatch, tmp_path):
         self._mock_account(monkeypatch, cash=0, equity=0)
         watchlist = tmp_path / "watchlist.md"
-        watchlist.write_text("## Candidates\n")
+        # non-empty candidates: this test is about the cash_pct=0/equity=0 division
+        # guard, not the trigger logic — keep it off the empty-pipeline OR-branch
+        # (see test_empty_pipeline_triggers_regardless_of_low_cash for that path)
+        watchlist.write_text("## Candidates\n- AAA\n- BBB\n- CCC\n")
         monkeypatch.setattr(urgency, "WATCHLIST_PATH", watchlist)
         result = urgency.check_and_maybe_discover()
         assert result["cash_pct"] == 0.0
+        assert result["triggered"] is False
 
     def test_custom_thresholds_respected(self, monkeypatch, tmp_path):
         self._mock_account(monkeypatch, cash=5000, equity=10000)  # 50% cash
@@ -109,3 +113,68 @@ class TestCheckAndMaybeDiscover:
         result2 = urgency.check_and_maybe_discover(cash_threshold_pct=40.0, min_candidates=3)
         assert result2["under_deployed"] is True
         assert result2["triggered"] is True
+
+    def test_empty_pipeline_triggers_regardless_of_low_cash(self, monkeypatch, tmp_path):
+        # 2% cash — heavily deployed, would never trip the cash-gated branch
+        self._mock_account(monkeypatch, cash=200, equity=10000)
+        watchlist = tmp_path / "watchlist.md"
+        watchlist.write_text("## Candidates\n")  # zero entries
+        monkeypatch.setattr(urgency, "WATCHLIST_PATH", watchlist)
+
+        monkeypatch.setattr(urgency.discovery_scan, "get_universe_price_band", lambda: (1.0, 50.0))
+        monkeypatch.setattr(urgency.discovery_scan, "screen_candidates", lambda: [])
+        monkeypatch.setattr(urgency.discovery_scan, "confirm_with_news", lambda c: c)
+        monkeypatch.setattr(urgency.discovery_scan, "write_discoveries_file",
+                             lambda *a, **k: tmp_path / "2026-07-27.md")
+
+        result = urgency.check_and_maybe_discover()
+        assert result["pipeline_empty"] is True
+        assert result["under_deployed"] is False
+        assert result["triggered"] is True
+
+    def test_one_candidate_does_not_trigger_empty_branch_at_default_floor(self, monkeypatch, tmp_path):
+        self._mock_account(monkeypatch, cash=200, equity=10000)  # still low cash
+        watchlist = tmp_path / "watchlist.md"
+        watchlist.write_text("## Candidates\n- AAA\n")  # 1 candidate
+        monkeypatch.setattr(urgency, "WATCHLIST_PATH", watchlist)
+
+        result = urgency.check_and_maybe_discover()
+        assert result["pipeline_empty"] is False  # default empty_floor is 0
+        assert result["triggered"] is False
+
+    def test_custom_empty_floor_respected(self, monkeypatch, tmp_path):
+        self._mock_account(monkeypatch, cash=200, equity=10000)
+        watchlist = tmp_path / "watchlist.md"
+        watchlist.write_text("## Candidates\n- AAA\n")  # 1 candidate
+        monkeypatch.setattr(urgency, "WATCHLIST_PATH", watchlist)
+
+        monkeypatch.setattr(urgency.discovery_scan, "get_universe_price_band", lambda: (1.0, 50.0))
+        monkeypatch.setattr(urgency.discovery_scan, "screen_candidates", lambda: [])
+        monkeypatch.setattr(urgency.discovery_scan, "confirm_with_news", lambda c: c)
+        monkeypatch.setattr(urgency.discovery_scan, "write_discoveries_file",
+                             lambda *a, **k: tmp_path / "2026-07-27.md")
+
+        result = urgency.check_and_maybe_discover(empty_floor=1)
+        assert result["pipeline_empty"] is True
+        assert result["triggered"] is True
+
+    def test_params_json_defaults_used_when_no_override(self, monkeypatch, tmp_path):
+        params_file = tmp_path / "params.json"
+        params_file.write_text('{"watchlist": {"discovery_urgency": {"empty_floor": 2}}}')
+        monkeypatch.setattr(urgency, "PARAMS_PATH", params_file)
+
+        self._mock_account(monkeypatch, cash=200, equity=10000)
+        watchlist = tmp_path / "watchlist.md"
+        watchlist.write_text("## Candidates\n- AAA\n- BBB\n")  # 2 candidates
+        monkeypatch.setattr(urgency, "WATCHLIST_PATH", watchlist)
+
+        monkeypatch.setattr(urgency.discovery_scan, "get_universe_price_band", lambda: (1.0, 50.0))
+        monkeypatch.setattr(urgency.discovery_scan, "screen_candidates", lambda: [])
+        monkeypatch.setattr(urgency.discovery_scan, "confirm_with_news", lambda c: c)
+        monkeypatch.setattr(urgency.discovery_scan, "write_discoveries_file",
+                             lambda *a, **k: tmp_path / "2026-07-27.md")
+
+        # no explicit empty_floor kwarg — must come from the monkeypatched params.json
+        result = urgency.check_and_maybe_discover()
+        assert result["pipeline_empty"] is True
+        assert result["triggered"] is True
