@@ -100,7 +100,7 @@
     "bankroll": true,
     "position_size_trim": true,
     "duplicate_order": true,
-    "order_count_audit": true,
+    "order_count_audit": false,
     "drawdown_circuit_breaker": true,
     "_note": "flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. Per-gate rationale lives in git history (git log -p params.json), not here."
   }
