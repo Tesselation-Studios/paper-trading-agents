@@ -31,17 +31,17 @@ Format: `TICKER — idle_ticks: N — note`
 
 ## Candidates
 - ~~KRC~~ — entered 2026-07-27 10:38, 1 share @ $39.49, probe entry
-- NTRS — idle_ticks: 9 — $180.52, RSI 53.6 🟢, vol 1.19x. MS UW PT $173 BELOW current price — disqualified. Financial.
-- BCS — idle_ticks: 9 — $27.91, RSI 56.6 🟢, vol 0.99x marginal <1.0x. Financial.
-- GL — idle_ticks: 9 — $173.48, RSI 45.1 🟢, vol 1.18x. KBW Outperform PT $190. DISQUALIFIED: bankroll ceiling $54.25. Insurance.
-- DXC — idle_ticks: 9 — $10.05, RSI 59.2 🟢, vol 0.77x <1.0x. Technology.
-- RMD — idle_ticks: 9 — $195.27, RSI 45.7 🟢, MACD bearish (-0.2514), vol 0.66x. Healthcare.
-- AVEX — idle_ticks: 9 — $14.29, RSI 39.3 below band, MACD bearish, vol 0.36x. Defense/aerospace.
-- PL — idle_ticks: 9 — $20.47, RSI 27.9 oversold, MACD bearish, vol 1.21x. Earth obs satellites.
-- TOST — idle_ticks: 9 — $29.04, RSI 53.5 🟢, MACD 🟢 +0.9865, vol 0.38x too thin. Truist PT $33. Restaurant tech.
+- NTRS — idle_ticks: 10 — $180.52, RSI 53.6 🟢, vol 1.19x. MS UW PT $173 BELOW current price — disqualified. Financial.
+- BCS — idle_ticks: 10 — $27.91, RSI 56.6 🟢, vol 0.99x marginal <1.0x. Financial.
+- GL — idle_ticks: 10 — $173.48, RSI 45.1 🟢, vol 1.18x. KBW Outperform PT $190. DISQUALIFIED: bankroll ceiling $54.25. Insurance.
+- DXC — idle_ticks: 10 — $10.05, RSI 59.2 🟢, vol 0.77x <1.0x. Technology.
+- RMD — idle_ticks: 10 — $195.27, RSI 45.7 🟢, MACD bearish (-0.2514), vol 0.66x. Healthcare.
+- AVEX — idle_ticks: 10 — $14.29, RSI 39.3 below band, MACD bearish, vol 0.36x. Defense/aerospace.
+- PL — idle_ticks: 10 — $20.47, RSI 27.9 oversold, MACD bearish, vol 1.21x. Earth obs satellites.
+- TOST — idle_ticks: 10 — $29.04, RSI 53.5 🟢, MACD 🟢 +0.9865, vol 0.38x too thin. Truist PT $33. Restaurant tech.
 
-- BKSY — idle_ticks: 9 — $21.57, RSI 35.8 below band, MACD bearish, vol 0.86x. Defense imaging.
-- RCAT — idle_ticks: 9 — $7.64, RSI 37.4 below band, MACD bearish, vol 0.69x. Defense/drones.
+- BKSY — idle_ticks: 10 — $21.57, RSI 35.8 below band, MACD bearish, vol 0.86x. Defense imaging.
+- RCAT — idle_ticks: 10 — $7.64, RSI 37.4 below band, MACD bearish, vol 0.69x. Defense/drones.
 
 - ~~VTEX~~ — dropped 2026-07-27 09:33 (idle_ticks=24 threshold, vol 0.45x never crossed 1.0x entry bar)
 
@@ -77,4 +77,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-27 10:25 ET (idle_ticks bumped to 9. 10 candidates. No qualifying entries — MCP unavailable, bankroll disqualifies GL/NTRS/RMD.)_
+_Last touched: 2026-07-27 10:33 ET (idle_ticks bumped to 10. 10 candidates. No qualifying entries — degraded data: TOST closest but vol 0.38x too thin, rest RSI/MACD bearish or disqualified.)_
