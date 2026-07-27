@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:25 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:32 ET
+
+## MON 10:32 ET — Market Tick
+- **All HOLD.** 3 pos. Regime CHOPPY/FEAR (data bus "strong_bull" vs F&G 30 Fear conflict). PV $10,414, cash $10,274. BFST $31.11 (+0.42%), BOX $30.05 (+4.20%), KRC 2sh $39.445 (-0.17%). No stop breaches (check-stops clean).
+- 📡 Data bus LIVE 🎉: BFST MACDh +0.4544 🟢 RSI 59.6 vol 1.30x, BOX MACDh +0.9925 🟢 RSI 54.7 vol 0.77x, KRC MACDh +0.7403 🟢 RSI 56.7 vol 1.28x. No flips. Sentiment fresh (10:33): BFST +0.514, TOST +0.768. F&G 30 Fear.
+- 📊 BOX +4.20% — approaching 5% v1.7 scale-in threshold but vol 0.77x this tick (was 1.14x at entry). MACDh still strong at +0.9925. Recheck next tick.
+- ⚠️ KRC now 2 shares (was 1 at 10:25 — parallel tick collision, avg $39.51). UPL -0.17%. MACDh healthy. HOLD but do not add.
+- 🧹 Watchlist: 10 candidates (idle=8→9). Merge discoveries no-op. No qualifying entries (TOST closest with MACD 🟢 + sentiment 0.768 but vol 0.38x too thin; GL/NTRS remain disqualified).
 
 ## MON 10:25 ET — Market Tick
 - **All HOLD.** 3 pos. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,314. BFST $31.12 (+0.47%), BOX $30.03 (+4.13%), KRC $39.52 (+0.08%). No stop breaches (check-stops clean).
