@@ -1,5 +1,12 @@
 # Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:37 ET
 
+## MON 09:40 ET — Market Tick
+- **Same as 09:37 tick.** Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,240, 4 pos. All 4 HOLD.
+- BFST $31.35 (+1.2%), BOX $29.56 (+2.5%), FHB $28.04 (-2.0%), IP $42.90 (+11.6%). No stop breaches. Prices stable vs 09:37.
+- 📊 MACDh unavailable (Alpaca data degraded). Data bus empty quotes, momentum null, F&G TLS error. Sentiment cache stale (00:02 UTC).
+- ⚠️ **IP +11.6%**: above 8% guide, no reversal signal. RBC PT $48 (+12%). HOLD — monitor for stall.
+- 🧹 Watchlist: 11 candidates (all idle_ticks=4). Merge discoveries no-op. No qualifying entries (degraded data infra).
+
 ## MON 09:37 ET — Market Tick
 - ✅ **F SOLD**: 2 shares @ ~$14.71, P&L +$1.15 (+4.07%). Pre-earnings exit (Q2 tomorrow 7/28) per Sunday journal base case. Matching engine recovered from 09:33 outage. Decision #5976.
 - **4 pos.** Regime CHOPPY/FEAR (last known). PV $10,415, cash $10,240. BFST $31.35 (+1.2%), BOX $29.51 (+2.3%), FHB $28.02 (-2.0%), IP $42.89 (+11.6%). No stop breaches.
