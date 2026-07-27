@@ -29,18 +29,18 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- KRC — idle_ticks: 5 — $39.40, RSI 56.9 🟢, vol 1.97x. Scotiabank PT $41. Real Estate.
-- NTRS — idle_ticks: 5 — $180.44, RSI 51.7 🟢, vol 1.70x. MS UW PT $173. Financial.
-- BCS — idle_ticks: 5 — $27.91, RSI 57.3 🟢, vol 1.42x. Bloomberg: pulled $1B debt deal (sent -0.30). Financial.
-- GL — idle_ticks: 5 — $173.51, RSI 45.4 🟢 in-band, vol 1.29x. KBW Outperform PT $190. Insurance.
-- DXC — idle_ticks: 5 — $10.05, RSI 59.5 🟢, vol 1.01x marginal. TD Cowen Hold PT $10. Technology.
-- RMD — idle_ticks: 5 — $195.32, RSI 46.2 🟢, vol 0.98x marginal. Mizuho Outperform PT $220. Healthcare.
-- AVEX — idle_ticks: 5 — $14.29. USAF contracts $67.5M, analyst PT $35.75. Defense/aerospace.
-- PL — idle_ticks: 5 — $34.77. 157% backlog growth, EPS +65.4% CAGR, FCF turning positive. Earth obs satellites.
-- TOST — idle_ticks: 5 — $24.80. 28% ARR growth, 19.9% rev growth. Restaurant tech platform.
+- KRC — idle_ticks: 6 — $39.40, RSI 56.9 🟢, vol 1.97x. Scotiabank PT $41. Real Estate.
+- NTRS — idle_ticks: 6 — $180.44, RSI 51.7 🟢, vol 1.70x. MS UW PT $173. Financial.
+- BCS — idle_ticks: 6 — $27.91, RSI 57.3 🟢, vol 1.42x. Bloomberg: pulled $1B debt deal (sent -0.30). Financial.
+- GL — idle_ticks: 6 — $173.51, RSI 45.4 🟢 in-band, vol 1.29x. KBW Outperform PT $190. Insurance.
+- DXC — idle_ticks: 6 — $10.05, RSI 59.5 🟢, vol 1.01x marginal. TD Cowen Hold PT $10. Technology.
+- RMD — idle_ticks: 6 — $195.32, RSI 46.2 🟢, vol 0.98x marginal. Mizuho Outperform PT $220. Healthcare.
+- AVEX — idle_ticks: 6 — $14.29. USAF contracts $67.5M, analyst PT $35.75. Defense/aerospace.
+- PL — idle_ticks: 6 — $34.77. 157% backlog growth, EPS +65.4% CAGR, FCF turning positive. Earth obs satellites.
+- TOST — idle_ticks: 6 — $24.80. 28% ARR growth, 19.9% rev growth. Restaurant tech platform.
 
-- BKSY — idle_ticks: 5 — from 2026-07-24.md (no price/RSI yet)
-- RCAT — idle_ticks: 5 — from 2026-07-24.md (no price/RSI yet, sent -0.102)
+- BKSY — idle_ticks: 6 — from 2026-07-24.md (no price/RSI yet)
+- RCAT — idle_ticks: 6 — from 2026-07-24.md (no price/RSI yet, sent -0.102)
 
 - ~~VTEX~~ — dropped 2026-07-27 09:33 (idle_ticks=24 threshold, vol 0.45x never crossed 1.0x entry bar)
 

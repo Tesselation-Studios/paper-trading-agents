@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:59 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:02 ET
+
+## MON 10:02 ET — Market Tick
+- **All HOLD.** 2 pos. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,353. BFST $31.08 (+0.32%), BOX $29.87 (+3.55%). No stop breaches (check-stops clean).
+- 📊 Data bus down, MACDh unavailable, sentiment cache stale (00:02 UTC). IEX MACDh (via executor): BFST 0 bars, BOX insufficient. MCP tools unavailable (subagent).
+- ⚠️ BOX +3.55% — holding well but PE 93.49, no fresh MACDh to confirm momentum for scale-in. BFST +0.32% too close to entry. Neither qualifies for scale-in this tick.
+- 🧹 Watchlist: 11 candidates (idle_ticks=5→6). Merge discoveries no-op. No qualifying entries (degraded data infra).
+- 📝 09:59 CORRECTION: FHB sale recorded (decision #5979, outcome -$0.69/-2.41%, training example #53). Active.md corrected this tick.
 
 ## MON 09:59 ET — Market Tick
 - ✅ **IP SOLD**: 2sh @ ~$42.46 (+10.5%). Broke $42.50 stall watch — persistent drift from $43.27 peak over 22min, lower highs confirming momentum exhaustion. Recorded as training example #46.
