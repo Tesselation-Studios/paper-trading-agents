@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:33 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:35 ET
+
+## MON 10:35 ET — Market Tick
+- **All HOLD.** 3 pos. Regime CHOPPY/FEAR (data bus strong_bull large-cap only, F&G no update — last known 30 Fear). PV $10,414, cash $10,274. BFST $31.16 (+0.58%), BOX $30.04 (+4.16%), KRC 2sh $39.49 (-0.05%). No stop breaches (check-stops clean).
+- 📡 Data bus LIVE on port 5000 but small-cap blind — momentum covers 17 large caps only (AAPL +22.4% etc.), none of our tickers. Alpaca bars 401. Sentiment unchanged: BFST +0.514 (Stephens PT $36), TOST +0.768 (Truist PT $33). F&G endpoint empty.
+- 📊 **BOX +4.16%**: still below 5% v1.7 scale-in threshold. No live MACDh to confirm momentum for add. HOLD, recheck next tick.
+- 📊 **Macro** (first today): 10Y 4.71% / 2Y 4.37%, spread 0.34% flat, unemp 4.2%, CPI 332.6. No actionable change.
+- 🧹 Watchlist: 10 candidates (idle=10→11). Merge discoveries no-op. No qualifying entries — TOST closest (MACD 🟢, sentiment +0.768) but vol 0.38x too thin; BCS vol 0.99x marginal; remaining all bearish MACD or below-band RSI. Degraded-data bar (v1.10) unmet without MCP flow/insiders/fundamentals.
 
 ## MON 10:33 ET — Market Tick
 - **All HOLD.** 3 pos. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,274. BFST $31.16 (+0.58%), BOX $30.02 (+4.11%), KRC 2sh $39.52 (+0.01%). No stop breaches (check-stops clean).
