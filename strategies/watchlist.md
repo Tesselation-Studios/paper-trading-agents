@@ -33,15 +33,15 @@ Format: `TICKER — idle_ticks: N — note`
 ## Candidates
 - ~~KRC~~ — entered 2026-07-27 10:38, 1 share @ $39.49, probe entry
 - ~~BCS~~ — entered 2026-07-27 11:35, 1 share @ $28.28, probe entry
-- NTRS — idle_ticks: 15 — $180.52, RSI 53.6 🟢, vol 1.19x. MS UW PT $173 BELOW current price — disqualified. Financial.
-- GL — idle_ticks: 15 — $173.48, RSI 45.1 🟢, vol 1.18x. KBW Outperform PT $190. DISQUALIFIED: bankroll ceiling $54.25. Insurance.
-- DXC — idle_ticks: 15 — $10.05, RSI 59.2 🟢, MACDh +0.0016 near-zero, vol 0.77x <1.0x. Technology.
-- RMD — idle_ticks: 15 — $195.27, RSI 45.7 🟢, MACD bearish (-0.2514), vol 0.66x. Healthcare.
-- AVEX — idle_ticks: 15 — $14.29, RSI 39.3 below band, MACD bearish, vol 0.36x. Defense/aerospace.
-- PL — idle_ticks: 15 — $20.47, RSI 27.9 oversold, MACD bearish, vol 1.21x, sentiment -0.445. Earth obs satellites.
-- TOST — idle_ticks: 15 — $29.04, RSI 53.5 🟢, MACD 🟢 +0.9865, vol 0.38x too thin. Truist PT $33. Sentiment +0.768. Restaurant tech.
-- BKSY — idle_ticks: 15 — $21.57, RSI 35.8 below band, MACD bearish, vol 0.86x, -5.31% today. Defense imaging.
-- RCAT — idle_ticks: 15 — $7.64, RSI 37.4 below band, MACD bearish, vol 0.69x, -4.86% today, sentiment +0.212. Defense/drones.
+- NTRS — idle_ticks: 16 — $180.52, RSI 53.6 🟢, vol 1.19x. MS UW PT $173 BELOW current price — disqualified. Financial.
+- GL — idle_ticks: 16 — $173.48, RSI 45.1 🟢, vol 1.18x. KBW Outperform PT $190. DISQUALIFIED: bankroll ceiling $54.25. Insurance.
+- DXC — idle_ticks: 16 — $10.05, RSI 59.2 🟢, MACDh +0.0016 near-zero, vol 0.77x <1.0x. Technology.
+- RMD — idle_ticks: 16 — $195.27, RSI 45.7 🟢, MACD bearish (-0.2514), vol 0.66x. Healthcare.
+- AVEX — idle_ticks: 16 — $14.29, RSI 39.3 below band, MACD bearish, vol 0.36x. Defense/aerospace.
+- PL — idle_ticks: 16 — $20.47, RSI 27.9 oversold, MACD bearish, vol 1.21x, sentiment -0.445. Earth obs satellites.
+- TOST — idle_ticks: 16 — $29.04, RSI 53.5 🟢, MACD 🟢 +0.9865, vol 0.38x too thin. Truist PT $33. Sentiment +0.768. Restaurant tech.
+- BKSY — idle_ticks: 16 — $21.57, RSI 35.8 below band, MACD bearish, vol 0.86x, -5.31% today. Defense imaging.
+- RCAT — idle_ticks: 16 — $7.64, RSI 37.4 below band, MACD bearish, vol 0.69x, -4.86% today, sentiment +0.212. Defense/drones.
 
 - ~~VTEX~~ — dropped 2026-07-27 09:33 (idle_ticks=24 threshold, vol 0.45x never crossed 1.0x entry bar)
 
