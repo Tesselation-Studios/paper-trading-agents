@@ -35,17 +35,24 @@ class TestReadStateDefaults:
         assert state["consecutive_under_deployed_ticks"] == 0
 
 
+def _real_tick(n):
+    """A timestamp for the n-th simulated real tick, spaced far enough
+    apart (> MIN_TICK_INTERVAL_SECONDS) that each counts as a distinct
+    tick rather than a same-tick refresh."""
+    return datetime(2026, 7, 27, 10, 0, tzinfo=timezone.utc) + timedelta(seconds=n * dp.MIN_TICK_INTERVAL_SECONDS * 2)
+
+
 class TestRecordTick:
     def test_increments_when_over_threshold(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
-        dp.record_tick(cash_pct=75.0, threshold_pct=70.0)
-        state = dp.record_tick(cash_pct=90.0, threshold_pct=70.0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
+        dp.record_tick(cash_pct=75.0, threshold_pct=70.0, now=_real_tick(1))
+        state = dp.record_tick(cash_pct=90.0, threshold_pct=70.0, now=_real_tick(2))
         assert state["consecutive_under_deployed_ticks"] == 3
 
     def test_resets_when_under_threshold(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
-        state = dp.record_tick(cash_pct=50.0, threshold_pct=70.0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(1))
+        state = dp.record_tick(cash_pct=50.0, threshold_pct=70.0, now=_real_tick(2))
         assert state["consecutive_under_deployed_ticks"] == 0
 
     def test_exactly_at_threshold_counts_as_under_deployed(self, state_file):
@@ -58,11 +65,41 @@ class TestRecordTick:
         assert reread["consecutive_under_deployed_ticks"] == 1
         assert reread["last_cash_pct"] == 80.0
 
+    def test_call_within_same_tick_does_not_double_count(self, state_file):
+        """2026-07-27 bug found live: status (and therefore record_tick) can
+        be called more than once within a single real ~5min tick -- e.g.
+        Stan re-checking status mid-tick. Without debouncing, the streak
+        inflated to 1481 in ~90 real minutes (should have been ~18).
+        Repeated calls seconds apart must count as ONE tick."""
+        t0 = _real_tick(0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
+        # three more calls, all within MIN_TICK_INTERVAL_SECONDS of t0
+        for i in range(1, 4):
+            state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
+                                    now=t0 + timedelta(seconds=i * 10))
+        assert state["consecutive_under_deployed_ticks"] == 1
+
+    def test_same_tick_refresh_still_updates_cash_pct(self, state_file):
+        """The debounce skips incrementing the streak, but a same-tick call
+        with a different cash_pct reading should still be reflected."""
+        t0 = _real_tick(0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
+        state = dp.record_tick(cash_pct=85.0, threshold_pct=70.0, now=t0 + timedelta(seconds=30))
+        assert state["consecutive_under_deployed_ticks"] == 1  # unchanged, still same tick
+        assert state["last_cash_pct"] == 85.0  # but the reading itself is fresh
+
+    def test_call_after_interval_elapses_counts_as_new_tick(self, state_file):
+        t0 = _real_tick(0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
+        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
+                                now=t0 + timedelta(seconds=dp.MIN_TICK_INTERVAL_SECONDS + 1))
+        assert state["consecutive_under_deployed_ticks"] == 2
+
 
 class TestReset:
     def test_reset_zeroes_streak(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(1))
         state = dp.reset()
         assert state["consecutive_under_deployed_ticks"] == 0
 
@@ -72,9 +109,11 @@ class TestReset:
         assert dp.read_state()["consecutive_under_deployed_ticks"] == 0
 
     def test_next_tick_after_reset_recomputes_fresh(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
-        dp.reset()
-        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
+        t0 = _real_tick(0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
+        dp.reset(now=t0)
+        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
+                                now=t0 + timedelta(seconds=dp.MIN_TICK_INTERVAL_SECONDS + 1))
         assert state["consecutive_under_deployed_ticks"] == 1
 
 
@@ -160,8 +199,8 @@ class TestMarkEscalated:
         assert state["last_backtest_escalation_ts"] is not None
 
     def test_mark_does_not_touch_tick_counter(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0)
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(1))
         dp.mark_escalated("freeform")
         assert dp.read_state()["consecutive_under_deployed_ticks"] == 2
 

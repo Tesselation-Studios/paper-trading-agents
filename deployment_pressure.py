@@ -37,6 +37,14 @@ FREEFORM_ESCALATION_COOLDOWN_HOURS = 4
 BACKTEST_ESCALATION_TICKS = 78          # ~1 full trading day sustained -- escalate to replay_check.py
 BACKTEST_ESCALATION_COOLDOWN_HOURS = 24
 
+MIN_TICK_INTERVAL_SECONDS = 240  # ~4min, just under the real 5-min tick cadence.
+# 2026-07-27, found live: record_tick() can be called more than once per
+# real tick (e.g. Stan re-checking status mid-tick after a gated probe
+# attempt) -- without this guard, every ramp/escalation constant above
+# (all tuned in "ticks" assuming 1 call == 1 real ~5min tick) runs far
+# faster in wall-clock terms than designed. Confirmed: the streak hit 1481
+# in ~90 real minutes, where true tick cadence would give ~18.
+
 
 def read_state() -> dict:
     default = {"consecutive_under_deployed_ticks": 0, "last_cash_pct": 0.0,
@@ -58,16 +66,30 @@ def write_state(state: dict) -> None:
 
 
 def record_tick(cash_pct: float, threshold_pct: float, now: datetime = None) -> dict:
-    """Called from executor.py's `status` action every tick -- cash_pct/
-    threshold_pct are already computed there for free (same account fetch
-    discovery_urgency_check.py's under_deployed check uses)."""
+    """Called from executor.py's `status` action -- cash_pct/threshold_pct
+    are already computed there for free (same account fetch
+    discovery_urgency_check.py's under_deployed check uses). Only actually
+    increments/resets the streak once per MIN_TICK_INTERVAL_SECONDS of real
+    elapsed time -- a call sooner than that just refreshes last_cash_pct so
+    calling this more than once within the same real tick can't inflate the
+    counter (see MIN_TICK_INTERVAL_SECONDS above for why this exists)."""
+    now = now or datetime.now(timezone.utc)
     state = read_state()
+
+    last_updated_str = state.get("last_updated")
+    if last_updated_str:
+        elapsed = (now - datetime.fromisoformat(last_updated_str)).total_seconds()
+        if elapsed < MIN_TICK_INTERVAL_SECONDS:
+            state["last_cash_pct"] = cash_pct
+            write_state(state)
+            return state
+
     if cash_pct >= threshold_pct:
         state["consecutive_under_deployed_ticks"] = state.get("consecutive_under_deployed_ticks", 0) + 1
     else:
         state["consecutive_under_deployed_ticks"] = 0
     state["last_cash_pct"] = cash_pct
-    state["last_updated"] = (now or datetime.now(timezone.utc)).isoformat()
+    state["last_updated"] = now.isoformat()
     write_state(state)
     return state
 
