@@ -2,7 +2,7 @@
 Executor + decision-logging command syntax → `skills/tool-invocation.md`.
 
 ## Experience Counter
-`experience.json` — read each tick, update ticks/trades/wins/losses/streaks after trades. Universe/tier logic in `bankroll.py`.
+`experience.json` — trades/wins/losses auto-tracked by executor.py (7/27 fix, prior hand-edit stalled); total_ticks still manual. Tiers in `bankroll.py`.
 
 ## Journal
 Append to `journal/YYYY-MM-DD.md` during nightly maintenance only — strategy version + reflection.

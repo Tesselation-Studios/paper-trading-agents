@@ -32,6 +32,7 @@ STOPS_STATE_PATH = STATE_DIR / "guardrail_stops.json"
 RECENT_ORDERS_PATH = STATE_DIR / "recent_orders.json"
 DAILY_ORDER_COUNT_PATH = STATE_DIR / "daily_order_count.json"
 PEAK_EQUITY_PATH = STATE_DIR / "peak_equity.json"
+EXPERIENCE_PATH = WORKSPACE_DIR / "experience.json"
 
 _DEFAULT_ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
@@ -87,6 +88,22 @@ def get_account(account):
 def get_positions(account):
     import urllib.request
     url = f"{ALPACA_BASE_URL}/v2/positions"
+    req = urllib.request.Request(url, headers=get_headers(account))
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read())
+
+
+def get_open_orders(account, ticker=None):
+    """GET /v2/orders?status=open[&symbols=<ticker>] — Alpaca's own live
+    order book. Used by gate_order_idempotency (2026-07-27) as the
+    authoritative, cross-process duplicate-BUY guard: unlike
+    state/recent_orders.json (this process's own memory), this reflects
+    reality regardless of which process/session is asking."""
+    import urllib.parse
+    import urllib.request
+    url = f"{ALPACA_BASE_URL}/v2/orders?status=open"
+    if ticker:
+        url += f"&symbols={urllib.parse.quote(str(ticker).upper())}"
     req = urllib.request.Request(url, headers=get_headers(account))
     with urllib.request.urlopen(req) as resp:
         return json.loads(resp.read())
@@ -354,6 +371,81 @@ def _load_recent_orders() -> Dict[str, Any]:
     return {}
 
 
+def _load_experience() -> Dict[str, Any]:
+    """experience.json's total_trades/total_wins/total_losses/consecutive_*
+    fields (NOT current_level/milestones_unlocked -- those were genuinely
+    superseded by bankroll.py's UNLOCK_TIERS, see that module's 2026-07-23
+    comment) used to be hand-edited by the LLM every tick per TOOLS.md's
+    prose instruction ("read each tick, update ... after trades"). That held
+    up for a week, then silently stopped: 2026-07-27's 3 morning SELL exits
+    (F/IP/FHB) never bumped total_trades even though total_ticks kept
+    incrementing normally the same day -- same "prose reminder eventually
+    fails" pattern as the pre-2026-07-22 outcome-labeling gap this file's
+    close_trade_outcome() already fixed the same way. Confirmed still a
+    live-read field, not dead: Stan's own HEARTBEAT.md self-stats line
+    quotes it every tick ("self stats: 0 trades logged today..."). Fixed by
+    mechanizing the update into the same two hook points bankroll.py
+    already updates reliably from -- record_order_submitted() (every real
+    order) and close_trade_outcome() (every real SELL's win/loss)."""
+    defaults = {
+        "version": 1, "total_ticks": 0, "total_trades": 0,
+        "total_wins": 0, "total_losses": 0,
+        "consecutive_wins": 0, "consecutive_losses": 0,
+        "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    if EXPERIENCE_PATH.exists():
+        try:
+            state = json.loads(EXPERIENCE_PATH.read_text())
+            defaults.update(state)
+            return defaults
+        except (json.JSONDecodeError, OSError):
+            pass
+    return defaults
+
+
+def _save_experience(state: Dict[str, Any]) -> None:
+    state["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    EXPERIENCE_PATH.write_text(json.dumps(state, indent=2))
+
+
+def record_experience_trade() -> None:
+    """Bumps total_trades once for any order that actually executed (BUY or
+    SELL) -- called from record_order_submitted(), the one point in this
+    file that already means "a real order was just placed." Matches the
+    historical hand-maintained semantics (total_trades counted every
+    executed order, not just closes -- see git history of experience.json,
+    e.g. a solo BUY bumping total_trades with no win/loss change). Fails
+    open (never raises) -- a bookkeeping write failure must not look like a
+    failed order; the order already executed by the time this runs, same
+    reasoning as close_trade_outcome's Postgres fail-open path below."""
+    try:
+        state = _load_experience()
+        state["total_trades"] = int(state.get("total_trades", 0)) + 1
+        _save_experience(state)
+    except OSError:
+        pass
+
+
+def record_experience_outcome(is_win: bool) -> None:
+    """Bumps total_wins/total_losses + the consecutive-streak counters,
+    called from close_trade_outcome() once a SELL's pnl is known -- the
+    same trigger point bankroll.recalc_ceiling() already updates from
+    reliably. Fails open, same reasoning as record_experience_trade()."""
+    try:
+        state = _load_experience()
+        if is_win:
+            state["total_wins"] = int(state.get("total_wins", 0)) + 1
+            state["consecutive_wins"] = int(state.get("consecutive_wins", 0)) + 1
+            state["consecutive_losses"] = 0
+        else:
+            state["total_losses"] = int(state.get("total_losses", 0)) + 1
+            state["consecutive_losses"] = int(state.get("consecutive_losses", 0)) + 1
+            state["consecutive_wins"] = 0
+        _save_experience(state)
+    except OSError:
+        pass
+
+
 def record_order_submitted(ticker: str, action: str, today: Optional[str] = None) -> None:
     """Called after a BUY/SELL actually executes — used by gate_duplicate_order
     to block an accidental repeat submission of the same ticker+action within
@@ -362,9 +454,10 @@ def record_order_submitted(ticker: str, action: str, today: Optional[str] = None
     agent from submitting the same order again without noticing the first one
     had already filled.
 
-    Also bumps the daily order counter gate_daily_order_count reads —
-    `today` lets tests inject a fixed date; production always computes the
-    real one."""
+    Also bumps the daily order counter gate_daily_order_count reads, and
+    experience.json's total_trades (2026-07-27, see _load_experience's
+    docstring) — `today` lets tests inject a fixed date; production always
+    computes the real one."""
     state = _load_recent_orders()
     state[f"{ticker.upper()}:{action.upper()}"] = time.time()
     STATE_DIR.mkdir(exist_ok=True)
@@ -373,6 +466,7 @@ def record_order_submitted(ticker: str, action: str, today: Optional[str] = None
     if today is None:
         today = _today_et({})
     _record_daily_order(today)
+    record_experience_trade()
 
 
 def gate_duplicate_order(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
@@ -395,6 +489,70 @@ def gate_duplicate_order(context: Dict[str, Any], action: Dict[str, Any]) -> Tup
     if elapsed < cooldown:
         return False, f"{side} {ticker} submitted {elapsed:.0f}s ago (< {cooldown:.0f}s cooldown) — likely a duplicate"
     return True, f"last {side} {ticker} was {elapsed:.0f}s ago, outside {cooldown:.0f}s cooldown"
+
+
+def gate_order_idempotency(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Authoritative, cross-process duplicate-order guard — queries Alpaca's
+    own live order state directly (GET /v2/orders?status=open&symbols=X)
+    instead of local file state.
+
+    Why this exists alongside gate_duplicate_order: that gate is a local,
+    file-based, check-then-set mechanism (state/recent_orders.json) — it
+    only knows about orders THIS process already recorded. Two genuinely
+    concurrent processes (a cron tick and position_stream.py's websocket
+    daemon in paper-trading-rebuild, both invoking this same
+    check_order()/place_order() path via set_watch.py-triggered execution)
+    can each read "nothing recorded yet" before either writes its own
+    record — a classic TOCTOU race. gate_duplicate_order is also purely
+    time-window-based (60s cooldown), not "is there an actual live order
+    right now." Confirmed twice: KRC bought 2x on 2026-07-27 and IP bought
+    2x on 2026-07-24, both from overlapping sessions racing the same local
+    check. Querying Alpaca directly closes that gap — it's authoritative
+    regardless of which process is asking, because Alpaca is the one
+    shared source of truth every process ultimately talks to. This is a
+    second, independent layer, not a replacement — keep gate_duplicate_order
+    as-is (it's free, no API call, and catches same-process repeats before
+    this gate's network round-trip is even needed).
+
+    BUY-only, unlike gate_duplicate_order (which guards both sides). A
+    duplicate SELL of the same ticker fails harmlessly at Alpaca — you
+    can't sell shares you don't hold (or already sold), the second order
+    is rejected by the exchange itself with no capital consequence. A
+    duplicate BUY compounds: both fill, and the account now holds double
+    the intended size (exactly the KRC/IP failure mode this closes). No
+    reason to spend the extra API call guarding a failure mode Alpaca
+    already prevents for free.
+
+    Fails open on any Alpaca API error (network hiccup, auth issue, rate
+    limit, missing account in context) — matches every other gate's
+    convention: a data hiccup shouldn't block a trade, only a genuine,
+    confirmed open order should.
+    """
+    if action.get("action") != "BUY":
+        return True, "non-BUY, skipped"
+    ticker = str(action.get("ticker", "")).upper()
+    if not ticker:
+        return True, "no ticker, skipped"
+    account = context.get("account")
+    if not account:
+        return True, "no account in context, skipped (fail-open)"
+
+    try:
+        open_orders = get_open_orders(account, ticker)
+    except Exception as e:
+        return True, f"could not query Alpaca open orders (fail-open): {e}"
+
+    matching = [
+        o for o in open_orders
+        if str(o.get("symbol", "")).upper() == ticker and str(o.get("side", "")).upper() == "BUY"
+    ]
+    if matching:
+        order_ids = ", ".join(str(o.get("id", "?")) for o in matching)
+        return False, (
+            f"{ticker} already has {len(matching)} open BUY order(s) at Alpaca ({order_ids}) "
+            f"— refusing duplicate submission"
+        )
+    return True, f"{ticker} has no open BUY orders at Alpaca, safe to submit"
 
 
 def _today_et(context: Dict[str, Any]) -> str:
@@ -524,6 +682,7 @@ GATES = {
     "conviction": gate_conviction,
     "bankroll": gate_bankroll,
     "duplicate_order": gate_duplicate_order,
+    "order_idempotency": gate_order_idempotency,
     "order_count_audit": gate_daily_order_count,
     "drawdown_circuit_breaker": gate_drawdown_circuit_breaker,
 }
@@ -538,6 +697,7 @@ def check_order(account: str, action: str, ticker: str, qty: int, price: Optiona
         "portfolio_value": float(account_data.get("equity", 0)),
         "cash": float(account_data.get("cash", 0)),
         "positions": [{"symbol": p["symbol"], "market_value": float(p["market_value"])} for p in positions],
+        "account": account,  # gate_order_idempotency needs this to query Alpaca's live order book
     }
     trade_action = {
         "action": action.upper(), "ticker": ticker.upper(), "quantity": qty,
@@ -722,17 +882,21 @@ def check_stops(account: str, today: Optional[date] = None) -> List[Dict[str, An
 
 def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_price: float, qty: int) -> Dict[str, Any]:
     """Called once a SELL actually executes. Updates bankroll.py's
-    win/loss-adaptive ceiling AND labels the Postgres training_examples
-    outcome (trading.training_examples.label_win/label_return_pct) — this
-    used to be two separate concerns, with the Postgres label depending on
-    the LLM remembering a second manual `record_decision.py close` call
-    per tick_prompt.md step 9. Confirmed 2026-07-22: roughly half of real
+    win/loss-adaptive ceiling, experience.json's total_wins/total_losses/
+    consecutive-streak counters (2026-07-27, see _load_experience's
+    docstring), AND labels the Postgres training_examples outcome
+    (trading.training_examples.label_win/label_return_pct) — this used to
+    be two separate concerns, with the Postgres label depending on the LLM
+    remembering a second manual `record_decision.py close` call per
+    tick_prompt.md step 9. Confirmed 2026-07-22: roughly half of real
     closed trades that week never got labeled this way. Mechanized here
     instead, same trigger point as the bankroll update, which was already
     reliable.
 
     Fail-open on the Postgres side — a labeling failure shouldn't look like
     a trade failure, the order already executed by the time this runs.
+    experience.json bookkeeping is likewise fail-open internally (see
+    record_experience_outcome).
     """
     pnl = (exit_price - entry_price) * qty
     return_pct = (exit_price - entry_price) / entry_price * 100 if entry_price else 0.0
@@ -742,6 +906,7 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     state = bankroll.read_bankroll()
     bankroll.recalc_ceiling(state, pnl, is_win=(pnl > 0))
     bankroll.write_bankroll(state)
+    record_experience_outcome(is_win=(pnl > 0))
 
     outcome_label_warning = None
     try:

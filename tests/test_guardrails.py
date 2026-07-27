@@ -51,7 +51,8 @@ DEFAULT_PARAMS = {
         "cash": True, "position_size": True, "max_portfolio_risk": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
-        "position_size_trim": True, "duplicate_order": True, "order_count_audit": True,
+        "position_size_trim": True, "duplicate_order": True, "order_idempotency": True,
+        "order_count_audit": True,
         "drawdown_circuit_breaker": True,
     },
 }
@@ -458,6 +459,11 @@ class TestGateDuplicateOrder:
         # day, yet the file showed count=15 purely from repeated pytest runs.
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        # record_order_submitted() also bumps experience.json's total_trades
+        # (2026-07-27) — same leak risk as the daily-order-count file above
+        # if left unpatched (real workspace-root experience.json, not under
+        # STATE_DIR, so patching STATE_DIR alone doesn't cover it).
+        monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
 
     def test_no_prior_order_passes(self, params):
         granted, reason = executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})
@@ -509,6 +515,108 @@ class TestGateDuplicateOrder:
         assert executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})[0] is False
 
 
+class TestGateOrderIdempotency:
+    """2026-07-27: KRC bought 2x (same shape as IP on 2026-07-24) — both
+    from overlapping sessions racing gate_duplicate_order's local,
+    check-then-set state/recent_orders.json. This gate queries Alpaca's own
+    live open-order book directly instead, closing the TOCTOU gap a
+    local-file check can't: two concurrent processes (e.g. a cron tick and
+    position_stream.py's websocket daemon) can each see "nothing recorded"
+    before either writes, but they can't both see Alpaca report zero open
+    orders if one of them already submitted one — Alpaca is the single
+    shared source of truth. BUY-only (see gate_order_idempotency's
+    docstring for why SELL doesn't need this)."""
+
+    def _order(self, symbol, side="buy", order_id="ord-1"):
+        return {"id": order_id, "symbol": symbol, "side": side}
+
+    def test_buy_no_open_orders_passes(self, params, monkeypatch):
+        monkeypatch.setattr(executor, "get_open_orders", lambda account, ticker=None: [])
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is True
+        assert "no open BUY orders" in reason
+
+    def test_buy_with_open_buy_order_blocks(self, params, monkeypatch):
+        monkeypatch.setattr(
+            executor, "get_open_orders",
+            lambda account, ticker=None: [self._order("KRC", side="buy", order_id="ord-42")],
+        )
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is False
+        assert "already has 1 open BUY order" in reason
+        assert "ord-42" in reason
+
+    def test_buy_with_open_sell_order_does_not_block(self, params, monkeypatch):
+        # An open SELL for the same ticker (e.g. a stop-loss GTC) is not a
+        # duplicate BUY and must not block a fresh entry.
+        monkeypatch.setattr(
+            executor, "get_open_orders",
+            lambda account, ticker=None: [self._order("KRC", side="sell")],
+        )
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is True
+
+    def test_buy_with_open_order_different_ticker_does_not_block(self, params, monkeypatch):
+        # get_open_orders is called with a ticker filter in production, but
+        # a gate shouldn't trust the caller/API to have filtered correctly.
+        monkeypatch.setattr(
+            executor, "get_open_orders",
+            lambda account, ticker=None: [self._order("SOFI", side="buy")],
+        )
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is True
+
+    def test_sell_always_skipped(self, params, monkeypatch):
+        def fail_if_called(account, ticker=None):
+            raise AssertionError("gate_order_idempotency must not call Alpaca for a SELL")
+        monkeypatch.setattr(executor, "get_open_orders", fail_if_called)
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "SELL", "ticker": "KRC"})
+        assert granted is True
+        assert "non-BUY" in reason
+
+    def test_missing_ticker_fails_open(self, params, monkeypatch):
+        monkeypatch.setattr(executor, "get_open_orders", lambda account, ticker=None: [])
+        granted, reason = executor.gate_order_idempotency({"account": "stonks"}, {"action": "BUY"})
+        assert granted is True
+        assert "no ticker" in reason
+
+    def test_missing_account_fails_open(self, params, monkeypatch):
+        def fail_if_called(account, ticker=None):
+            raise AssertionError("must not call Alpaca without an account")
+        monkeypatch.setattr(executor, "get_open_orders", fail_if_called)
+        granted, reason = executor.gate_order_idempotency({}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is True
+        assert "fail-open" in reason
+
+    def test_alpaca_api_error_fails_open(self, params, monkeypatch):
+        def raise_error(account, ticker=None):
+            raise RuntimeError("HTTP 429 rate limited")
+        monkeypatch.setattr(executor, "get_open_orders", raise_error)
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is True
+        assert "fail-open" in reason
+        assert "429" in reason
+
+    def test_multiple_open_orders_reports_count(self, params, monkeypatch):
+        monkeypatch.setattr(
+            executor, "get_open_orders",
+            lambda account, ticker=None: [
+                self._order("KRC", side="buy", order_id="a"),
+                self._order("KRC", side="buy", order_id="b"),
+            ],
+        )
+        granted, reason = executor.gate_order_idempotency(
+            {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
+        assert granted is False
+        assert "2 open BUY order" in reason
+
+
 class TestGateDailyOrderCount:
     """2026-07-23: strategy.md promised a daily order-count audit
     (risk_guards) since v1.0 that nothing ever mechanically enforced —
@@ -522,6 +630,9 @@ class TestGateDailyOrderCount:
     def isolated_state(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        # See TestGateDuplicateOrder.isolated_state — record_order_submitted()
+        # also bumps experience.json's total_trades.
+        monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
 
     def test_zero_orders_today_passes(self, params):
         granted, reason = executor.gate_daily_order_count({}, {"action": "BUY", "ticker": "DVN"})
@@ -677,6 +788,9 @@ class TestCheckOrderChain:
     def mock_account(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "get_account", lambda account: {"equity": "10000", "cash": "8000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        # gate_order_idempotency (2026-07-27) calls Alpaca directly — must be
+        # patched too or these tests would attempt a real network call.
+        monkeypatch.setattr(executor, "get_open_orders", lambda account, ticker=None: [])
         # Isolate from any real state/*.json so gate_duplicate_order and
         # gate_daily_order_count don't depend on filesystem state left over
         # from real trading (confirmed 2026-07-23: Stan had genuinely
@@ -728,6 +842,21 @@ class TestCheckOrderChain:
         monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
         granted, reason, results = executor.check_order("stonks", "SELL", "SOFI", 5, price=4.0)
         assert granted is True
+
+    def test_order_idempotency_blocks_via_check_order_chain(self, params, mock_account, monkeypatch):
+        """Integration check that check_order() actually wires the account
+        into context so gate_order_idempotency can query Alpaca — a live
+        open BUY order for the ticker must block the whole chain."""
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
+        monkeypatch.setattr(
+            executor, "get_open_orders",
+            lambda account, ticker=None: [{"id": "ord-9", "symbol": "SOFI", "side": "buy"}],
+        )
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "SOFI", 5, price=4.0, conviction=0.9,
+        )
+        assert granted is False
+        assert "Blocked by order_idempotency" in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -977,7 +1106,9 @@ class TestCloseTradeOutcome:
     on the LLM remembering a separate record_decision.py close call —
     confirmed roughly half of real closed trades that week never got
     labeled. Mechanized into the same SELL codepath that already reliably
-    updates bankroll.py's ceiling."""
+    updates bankroll.py's ceiling. 2026-07-27: same codepath now also
+    mechanizes experience.json's total_wins/total_losses (see
+    _load_experience's docstring for the parallel history)."""
 
     @pytest.fixture
     def fake_bankroll_module(self, monkeypatch, tmp_path):
@@ -999,6 +1130,10 @@ class TestCloseTradeOutcome:
                 calls["written"] = True
 
         monkeypatch.setitem(sys.modules, "bankroll", FakeBankroll)
+        # experience.json lives at WORKSPACE_DIR root, not under STATE_DIR --
+        # must be patched explicitly here or these tests would write into
+        # the real production experience.json on every run.
+        monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
         return calls
 
     def test_win_updates_bankroll_and_labels_outcome(self, fake_bankroll_module, monkeypatch):
@@ -1020,6 +1155,11 @@ class TestCloseTradeOutcome:
         assert fake_bankroll_module["recalc"] == {"pnl": pytest.approx(5.0), "is_win": True}
         assert fake_bankroll_module["written"] is True
         assert recorded == {"trader_id": "stonks", "ticker": "SOFI", "pnl": pytest.approx(5.0), "return_pct": pytest.approx(10.0)}
+        exp = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert exp["total_wins"] == 1
+        assert exp["total_losses"] == 0
+        assert exp["consecutive_wins"] == 1
+        assert exp["consecutive_losses"] == 0
 
     def test_loss_marks_is_win_false(self, fake_bankroll_module, monkeypatch):
         class FakeDecisions:
@@ -1031,6 +1171,11 @@ class TestCloseTradeOutcome:
 
         executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=9.0, qty=5)
         assert fake_bankroll_module["recalc"]["is_win"] is False
+        exp = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert exp["total_losses"] == 1
+        assert exp["total_wins"] == 0
+        assert exp["consecutive_losses"] == 1
+        assert exp["consecutive_wins"] == 0
 
     def test_postgres_failure_does_not_raise(self, fake_bankroll_module, monkeypatch):
         """A labeling failure must not look like a trade failure — the
@@ -1058,3 +1203,125 @@ class TestCloseTradeOutcome:
 
         result = executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=11.0, qty=5)
         assert result["outcome_label_warning"] == "no unlabeled training_examples row found for stonks/SOFI"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# experience.json bookkeeping — mechanized 2026-07-27, replacing the
+# LLM-hand-edited counter that silently stopped tracking closed trades
+# (Casper bug report: "experience.json shows 29 trades, unchanged since
+# Friday" while 6 real trades executed that day). See _load_experience's
+# docstring for why this is a real fix, not a "stat already superseded"
+# no-op like experience.json's old current_level/milestones_unlocked
+# fields (those genuinely were dead — replaced by bankroll.py's
+# UNLOCK_TIERS, see that module's 2026-07-23 comment).
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestExperienceTracking:
+    @pytest.fixture(autouse=True)
+    def isolated_experience(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
+
+    def test_load_missing_file_returns_zeroed_defaults(self):
+        state = executor._load_experience()
+        assert state["total_trades"] == 0
+        assert state["total_wins"] == 0
+        assert state["total_losses"] == 0
+        assert state["consecutive_wins"] == 0
+        assert state["consecutive_losses"] == 0
+        assert "created_at" in state
+
+    def test_load_corrupt_file_falls_back_to_defaults(self):
+        executor.EXPERIENCE_PATH.write_text("{not valid json")
+        state = executor._load_experience()
+        assert state["total_trades"] == 0
+
+    def test_load_preserves_existing_fields_not_touched_by_this_fix(self):
+        # total_ticks stays LLM-hand-maintained (out of scope for this fix,
+        # not part of Casper's bug report) -- must survive a trade-count
+        # bump unchanged, not get reset to 0.
+        executor.EXPERIENCE_PATH.write_text(json.dumps({
+            "version": 1, "total_ticks": 200, "total_trades": 29,
+            "total_wins": 12, "total_losses": 13,
+            "consecutive_wins": 0, "consecutive_losses": 1,
+            "created_at": "2026-07-20T16:30:00Z", "updated_at": "2026-07-27T19:30:00Z",
+        }))
+        executor.record_experience_trade()
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_ticks"] == 200  # untouched
+        assert state["total_trades"] == 30  # bumped
+
+    def test_record_trade_increments_total_trades_only(self):
+        executor.record_experience_trade()
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_trades"] == 1
+        assert state["total_wins"] == 0
+        assert state["total_losses"] == 0
+
+    def test_record_trade_updates_timestamp(self):
+        executor.record_experience_trade()
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert "updated_at" in state and state["updated_at"]
+
+    def test_multiple_trades_accumulate(self):
+        for _ in range(6):
+            executor.record_experience_trade()
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_trades"] == 6
+
+    def test_win_increments_wins_and_win_streak(self):
+        executor.record_experience_outcome(is_win=True)
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_wins"] == 1
+        assert state["consecutive_wins"] == 1
+        assert state["consecutive_losses"] == 0
+
+    def test_loss_increments_losses_and_loss_streak(self):
+        executor.record_experience_outcome(is_win=False)
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_losses"] == 1
+        assert state["consecutive_losses"] == 1
+        assert state["consecutive_wins"] == 0
+
+    def test_streak_resets_on_opposite_outcome(self):
+        executor.record_experience_outcome(is_win=True)
+        executor.record_experience_outcome(is_win=True)
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["consecutive_wins"] == 2
+
+        executor.record_experience_outcome(is_win=False)
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["consecutive_wins"] == 0  # win streak broken
+        assert state["consecutive_losses"] == 1
+        assert state["total_wins"] == 2  # lifetime totals unaffected by streak reset
+        assert state["total_losses"] == 1
+
+    def test_write_failure_does_not_raise(self, monkeypatch):
+        """Fail-open, matching every other piece of state bookkeeping in
+        this file -- a bookkeeping write failure must never look like a
+        failed order (the order already executed by the time this runs)."""
+        def broken_save(state):
+            raise OSError("disk full")
+        monkeypatch.setattr(executor, "_save_experience", broken_save)
+        executor.record_experience_trade()  # must not raise
+        executor.record_experience_outcome(is_win=True)  # must not raise
+
+    def test_record_order_submitted_bumps_total_trades(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        executor.record_order_submitted("KRC", "BUY", today="2026-07-27")
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_trades"] == 1
+
+    def test_record_order_submitted_counts_both_buy_and_sell(self, monkeypatch, tmp_path):
+        # Matches the historical hand-maintained semantics confirmed in
+        # git history: every executed order (BUY or SELL) bumped
+        # total_trades, not just closes.
+        monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        executor.record_order_submitted("KRC", "BUY", today="2026-07-27")
+        executor.record_order_submitted("KRC", "SELL", today="2026-07-27")
+        state = json.loads(executor.EXPERIENCE_PATH.read_text())
+        assert state["total_trades"] == 2
