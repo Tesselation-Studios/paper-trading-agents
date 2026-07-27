@@ -353,8 +353,12 @@ class TestUniverseMaxPriceForCeiling:
     strategy, see bankroll.py's UNIVERSE_MAX_PRICE_TIERS comment), not
     track record — remaining tiers rebased 10x to stay monotonic."""
 
-    def test_starting_ceiling_keeps_current_universe(self):
-        assert bankroll.universe_max_price_for_ceiling(bankroll.STARTING_CEILING) == 500.0
+    def test_starting_ceiling_lands_in_second_tier(self):
+        # 2026-07-27: STARTING_CEILING moved from $50 (first tier, <$100) to
+        # $200 (second tier, $100-$300) -- correct, intentional consequence
+        # of the bump, not a regression: a higher starting ceiling naturally
+        # unlocks a wider universe immediately too.
+        assert bankroll.universe_max_price_for_ceiling(bankroll.STARTING_CEILING) == 750.0
 
     def test_real_current_ceiling_keeps_current_universe(self):
         # Real live ceiling as of 2026-07-23 is $51 -- barely above floor,

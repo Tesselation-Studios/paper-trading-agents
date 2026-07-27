@@ -23,7 +23,12 @@ BANKROLL_FILE = Path(__file__).parent / "bankroll.md"
 STARTING_CASH = 10_000.00
 
 FLOOR = 50.00              # absolute minimum per tick
-STARTING_CEILING = 50.00   # start tiny, scale up
+# 2026-07-27: was $50 -- with a $10,414 account and max_position_pct at 6%
+# ($625), the ceiling had become the dominant constraint by a 12x margin,
+# blocking real qualified candidates outright on price alone (e.g. GL at
+# $173/share couldn't even buy 1 share). Raf: bump the start, keep the
+# win/loss-earned growth mechanism intact rather than removing it.
+STARTING_CEILING = 200.00  # start proportional to account size, scale up with wins
 MAX_CEILING = 2000.00       # hard cap
 GROWTH_RATE = 0.02          # +2% per win
 DECAY_RATE = 0.01           # -1% per loss
