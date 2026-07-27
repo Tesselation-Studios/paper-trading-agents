@@ -5,12 +5,12 @@ This is the discovery mechanism for the MVP: no ML, no news-source aggregation y
 Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
-- FHB — open position (1 share @ $28.60, entry 2026-07-24 09:55)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
-- IP — open position (2 shares @ $38.43, entry 2026-07-24 10:05 — filled 2 due to parallel tick collision, intended 1)
 - BOX — open position (1 share @ $28.84, entry 2026-07-24 11:50 — v1.5 probe, Technology)
 
 ## Closed Positions
+- ~~FHB~~ — closed 2026-07-27 09:59 (MACDh flip, v1.9 mandatory exit, -2.41%)
+- ~~IP~~ — closed 2026-07-27 09:58 (unintentional parallel-process sale, +10.62%)
 - ~~F~~ — closed 2026-07-27 09:37 (pre-earnings exit before Q2 7/28, +4.07%)
 - ~~WSC~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +1.46%)
 - ~~NVDA~~ — closed 2026-07-23 (MACDh flip, v1.4 mandatory exit, +0.45%)

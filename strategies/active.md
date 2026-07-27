@@ -2,9 +2,10 @@
 
 ## MON 09:59 ET — Market Tick
 - ✅ **IP SOLD**: 2sh @ ~$42.46 (+10.5%). Broke $42.50 stall watch — persistent drift from $43.27 peak over 22min, lower highs confirming momentum exhaustion. Recorded as training example #46.
-- **3 pos.** Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,325. BFST $31.41 (+1.4%), BOX $29.70 (+3.0%), FHB $27.89 (-2.5%). No stop breaches (check-stops clean).
-- 📡 Data bus still down. Alpaca data API empty. No fresh MACD anywhere. Merge discoveries no-op (9 skipped, all already in watchlist).
-- 🧹 Watchlist: VTEX idle→24 (threshold) — dropping. 11 names remain. No qualifying entries.
+- ✅ **FHB SOLD**: MACDh flip → mandatory exit. 1 share @ $27.91, P&L -$0.69 (-2.41%). IEX MACDh -0.005698 🔴 (7 bars negative), MACD line below zero, price declining confirming. Not near-zero oscillation. Decision #5977.
+- **2 pos remain.** Regime CHOPPY/FEAR (last known). PV ~$10,384, cash ~$10,353. BFST $31.42 (+1.4%), BOX $29.69 (+3.0%). No stop breaches (check-stops clean).
+- 📊 IEX MACDh: FHB -0.005698 🔴 (flip confirmed). BFST 0 bars, BOX 15 bars (insufficient), SPY -0.0992 🔴 bearish. Data bus/yfinance down. Sentiment cache stale (00:02 UTC).
+- 🧹 Watchlist: 11 candidates (idle_ticks=5→6). FHB/IP marked closed. Merge discoveries no-op. No qualifying entries (degraded data infra, MCP unavailable).
 
 ## MON 09:50 ET — Market Tick
 - **Same as 09:45 tick.** Regime CHOPPY/FEAR (last known). PV $10,415, cash $10,240, 4 pos. All 4 HOLD.
