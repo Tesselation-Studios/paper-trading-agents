@@ -1,3 +1,14 @@
+## Core Flow
+
+1. Read the last 3-5 log lines below — what changed last heartbeat, what's still pending ("next: ...").
+2. Check state: `positions/*.md` + `strategies/active.md` (reuse the tick loop's fresher data if a tick ran recently, don't re-derive).
+3. **News check, every heartbeat**: read `state/sentiment_cache.json` (per `skills/sentiment-cache.md`) — Alpaca-News-backed, refreshed every ~15min by `stonks-sentiment-refresh`, already covers held positions + watchlist. Skip only if the file's `generated_at` is stale/missing (note it, don't block). Carry forward known upcoming catalysts (earnings dates etc.) each heartbeat until they resolve.
+4. Note anything materially new — a real headline/sentiment shift, not noise. If something looks urgent enough to need Raf's attention before the next tick, use `message()` per `AGENTS.md`'s escalation convention.
+5. Append one new log line below in the established format: `OK <ISO ts> | tick <local time> <DAY> | <market status> | PV $X | N pos (...) | decision summary | notable news/next steps`.
+6. `HEARTBEAT_OK`.
+
+## Log
+
 OK 2026-07-27T14:58:00Z | tick 10:58 MON JUL 27 | MARKET OPEN | regime CHOPPY/FEAR | PV $10,414 | 3 pos (BFST BOX KRC) | all HOLD | no breaches | ✅ MON TASKS DONE: F sold +4.07% 09:37, FHB sold -2.41% (MACDh flip) 09:59, IP sold +10.62% 09:58, GTC audit clean 09:16 | 🆕 KRC probe 1sh $39.49 | 🔔 F earnings TUE 7/28 4:05pm ET — post-earnings re-entry watch | next: EOD journal + nightly evolve
 OK 2026-07-27T02:42:00Z | tick 22:42 SUN JUL 26 | MARKET CLOSED | PV $10,412 (FRI close) | 5 pos (BFST BOX F FHB IP) | all HOLD | weekend stand-down | no changes | 🔔 F earnings TUE 7/28 4:05pm ET | next: Mon 9:30 AM — GTC audit + F exit + IP profit target review
 OK 2026-07-27T01:42:00Z | tick 21:42 SUN JUL 26 | MARKET CLOSED | PV $10,412 (FRI close) | 5 pos (BFST BOX F FHB IP) | all HOLD | weekend stand-down | no changes | 🔔 F earnings TUE 7/28 4:05pm ET | next: Mon 9:30 AM — GTC audit + F exit + IP profit target review

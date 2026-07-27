@@ -120,6 +120,8 @@ def read_bankroll() -> dict:
         "history": [],
         "lifetime_trades": 0,
         "lifetime_net_pnl": 0.0,
+        "lifetime_wins": 0,
+        "lifetime_losses": 0,
     }
     if not BANKROLL_FILE.exists():
         return state
@@ -152,6 +154,12 @@ def read_bankroll() -> dict:
     if m:
         state["net_pnl"] = float(m.group(1))
 
+    # Was written by write_bankroll() but never parsed back in -- every read
+    # silently reset it to 0.0 regardless of what was persisted (2026-07-27).
+    m = re.search(r"Total deployed:\s*\$?([\d.]+)", text)
+    if m:
+        state["total_deployed"] = float(m.group(1))
+
     m = re.search(r"Lifetime trades:\s*(\d+)", text)
     if m:
         state["lifetime_trades"] = int(m.group(1))
@@ -159,6 +167,11 @@ def read_bankroll() -> dict:
     m = re.search(r"Lifetime net PnL:\s*\$?([+-]?[\d.]+)", text)
     if m:
         state["lifetime_net_pnl"] = float(m.group(1))
+
+    m = re.search(r"Lifetime W/L:\s*(\d+)\s*/\s*(\d+)", text)
+    if m:
+        state["lifetime_wins"] = int(m.group(1))
+        state["lifetime_losses"] = int(m.group(2))
 
     state["history"] = []
     in_history = False
@@ -186,6 +199,7 @@ def write_bankroll(state: dict):
         f"Total deployed: ${state['total_deployed']:.2f}",
         f"Lifetime trades: {state['lifetime_trades']}",
         f"Lifetime net PnL: ${state['lifetime_net_pnl']:+.2f}",
+        f"Lifetime W/L: {state.get('lifetime_wins', 0)} / {state.get('lifetime_losses', 0)}",
         f"Updated: {now}",
         "",
         "## History",
