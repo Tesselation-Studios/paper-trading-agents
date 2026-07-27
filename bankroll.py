@@ -212,6 +212,15 @@ def write_bankroll(state: dict):
     BANKROLL_FILE.write_text("\n".join(lines) + "\n")
 
 
+def record_deployment(state: dict, cost: float):
+    """Called on a successful BUY -- tracks cumulative $ actually put to
+    work this session. Session-scoped (zeroed by --reset), same as
+    net_pnl/closed_trades. Nothing called this before 2026-07-27; the field
+    was write-only (printed but never read back in, and never incremented) --
+    see the read_bankroll()/write_bankroll() fix above."""
+    state["total_deployed"] = state.get("total_deployed", 0.0) + max(0.0, cost)
+
+
 def recalc_ceiling(state: dict, pnl: float, is_win: bool):
     trade_count = state["closed_trades"] + 1
 
@@ -409,8 +418,10 @@ def format_output(state: dict) -> str:
         f"Trades: {state['closed_trades']} "
         f"(W:{state['wins']} L:{state['losses']}) | "
         f"Net: {state['net_pnl']:+.2f}% | "
+        f"Deployed: ${state.get('total_deployed', 0.0):.2f} | "
         f"Target: {state['target_profit_pct']:.1f}% | "
-        f"Growth: {state['growth_rate']:.2f}/decay"
+        f"Growth: {state['growth_rate']:.2f}/decay "
+        f"(lifetime {state.get('lifetime_wins', 0)}W/{state.get('lifetime_losses', 0)}L)"
     )
 
 
@@ -444,6 +455,7 @@ def main():
         state["wins"] = 0
         state["losses"] = 0
         state["net_pnl"] = 0.0
+        state["total_deployed"] = 0.0
         state["history"] = ["-- reset to defaults"]
         write_bankroll(state)
         print(f"Bankroll reset to ${STARTING_CEILING:.2f} ceiling")

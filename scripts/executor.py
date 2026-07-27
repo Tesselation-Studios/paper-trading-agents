@@ -783,6 +783,16 @@ def main():
         if outcome["outcome_label_warning"]:
             print(json.dumps({"outcome_label_warning": outcome["outcome_label_warning"]}), file=sys.stderr)
 
+    if args.action == "BUY" and args.price is not None:
+        # bankroll.py's total_deployed was write-only until 2026-07-27 --
+        # nothing ever called into it on the BUY side. See bankroll.py's
+        # record_deployment().
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        import bankroll
+        bankroll_state = bankroll.read_bankroll()
+        bankroll.record_deployment(bankroll_state, args.qty * args.price)
+        bankroll.write_bankroll(bankroll_state)
+
 
 if __name__ == "__main__":
     main()

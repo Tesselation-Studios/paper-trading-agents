@@ -79,6 +79,48 @@ class TestReadWriteRoundTrip:
         # doesn't double up on repeated read/write cycles (was a real bug).
         assert reread["history"] == ["07/22 10:00 WIN $+5.00 → $50.00"]
 
+    def test_total_deployed_round_trips(self, bankroll_file):
+        """2026-07-27: total_deployed was written but never parsed back in --
+        every read silently reset it to 0.0 regardless of what was on disk."""
+        state = bankroll.read_bankroll()
+        state["total_deployed"] = 1234.56
+        bankroll.write_bankroll(state)
+        reread = bankroll.read_bankroll()
+        assert reread["total_deployed"] == pytest.approx(1234.56)
+
+    def test_lifetime_wins_losses_round_trip(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        state["lifetime_wins"] = 12
+        state["lifetime_losses"] = 5
+        bankroll.write_bankroll(state)
+        reread = bankroll.read_bankroll()
+        assert reread["lifetime_wins"] == 12
+        assert reread["lifetime_losses"] == 5
+
+
+class TestRecordDeployment:
+    """2026-07-27: nothing ever called into total_deployed on the BUY side --
+    it was purely decorative. record_deployment() + executor.py's new BUY
+    hook fix that."""
+
+    def test_record_deployment_accumulates(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.record_deployment(state, 100.0)
+        bankroll.record_deployment(state, 50.5)
+        assert state["total_deployed"] == pytest.approx(150.5)
+
+    def test_record_deployment_ignores_negative_cost(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.record_deployment(state, -20.0)
+        assert state["total_deployed"] == 0.0
+
+    def test_record_deployment_survives_round_trip(self, bankroll_file):
+        state = bankroll.read_bankroll()
+        bankroll.record_deployment(state, 75.0)
+        bankroll.write_bankroll(state)
+        reread = bankroll.read_bankroll()
+        assert reread["total_deployed"] == pytest.approx(75.0)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # recalc_ceiling — win/loss adjustment
@@ -140,15 +182,24 @@ class TestRecalcCeilingCaps:
 
 class TestGrowthRateCalibration:
     def test_growth_rate_accelerates_above_55pct_win_rate(self, bankroll_file):
+        # 2026-07-27: calibration gates on lifetime_trades/lifetime_wins now
+        # (survive --reset), not the session closed_trades/wins counters --
+        # those used to silently zero this calibration's evidence on every
+        # reset. Session counters still tracked below for the current-tick
+        # bookkeeping, just no longer what gates the bonus.
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
         state["closed_trades"] = 9
         state["wins"] = 6
         state["losses"] = 3
-        # 10th trade, a win -> 7/10 = 70% win rate, > 0.55 threshold
+        state["lifetime_trades"] = 9
+        state["lifetime_wins"] = 6
+        # 10th trade, a win -> 7/10 = 70% lifetime win rate, > 0.55 threshold
         bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
         assert state["closed_trades"] == 10
         assert state["wins"] == 7
+        assert state["lifetime_trades"] == 10
+        assert state["lifetime_wins"] == 7
         # bonus = min(0.03, (0.7 - 0.55) * 0.15) = 0.0225
         expected_rate = round(min(0.08, bankroll.GROWTH_RATE + 0.0225), 4)
         assert state["growth_rate"] == pytest.approx(expected_rate)
@@ -160,12 +211,33 @@ class TestGrowthRateCalibration:
         state["closed_trades"] = 9
         state["wins"] = 3
         state["losses"] = 6
-        # 10th trade, a loss -> 3/10 = 30% win rate, < 0.45 threshold
+        state["lifetime_trades"] = 9
+        state["lifetime_wins"] = 3
+        # 10th trade, a loss -> 3/10 = 30% lifetime win rate, < 0.45 threshold
         bankroll.recalc_ceiling(state, pnl=-5.0, is_win=False)
         assert state["closed_trades"] == 10
+        assert state["lifetime_trades"] == 10
         expected_rate = round(max(0.01, bankroll.GROWTH_RATE - 0.003), 4)
         assert state["growth_rate"] == pytest.approx(expected_rate)
         assert state["growth_rate"] < bankroll.GROWTH_RATE
+
+    def test_growth_rate_gated_by_lifetime_not_session(self, bankroll_file):
+        """The actual 2026-07-27 bug: a --reset wiped session wins/closed_trades
+        but the acceleration used to key off those, not lifetime_* -- so a real
+        sustained 70% win-rate track record spanning a reset never triggered
+        the bonus. Confirms it now does."""
+        state = bankroll.read_bankroll()
+        state["ceiling"] = 100.0
+        # session counters look freshly reset (post --reset), but lifetime
+        # evidence of a strong track record exists
+        state["closed_trades"] = 0
+        state["wins"] = 0
+        state["losses"] = 0
+        state["lifetime_trades"] = 9
+        state["lifetime_wins"] = 6
+        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        expected_rate = round(min(0.08, bankroll.GROWTH_RATE + 0.0225), 4)
+        assert state["growth_rate"] == pytest.approx(expected_rate)
 
     def test_growth_rate_untouched_below_10_trades(self, bankroll_file):
         state = bankroll.read_bankroll()
@@ -435,6 +507,8 @@ class TestLifetimeCountersSurviveReset:
         bankroll.recalc_ceiling(state, pnl=-2.0, is_win=False)
         assert state["lifetime_trades"] == 2
         assert state["lifetime_net_pnl"] == pytest.approx(3.0)
+        assert state["lifetime_wins"] == 1
+        assert state["lifetime_losses"] == 1
 
     def test_lifetime_counters_round_trip_through_write_read(self, bankroll_file):
         state = bankroll.read_bankroll()
@@ -448,6 +522,7 @@ class TestLifetimeCountersSurviveReset:
         state = bankroll.read_bankroll()
         bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
         bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        bankroll.record_deployment(state, 200.0)
         bankroll.write_bankroll(state)
 
         # simulate main()'s --reset handler
@@ -457,13 +532,19 @@ class TestLifetimeCountersSurviveReset:
         reset_state["wins"] = 0
         reset_state["losses"] = 0
         reset_state["net_pnl"] = 0.0
+        reset_state["total_deployed"] = 0.0
         reset_state["history"] = ["reset to defaults"]
         bankroll.write_bankroll(reset_state)
 
         reread = bankroll.read_bankroll()
         assert reread["closed_trades"] == 0
+        assert reread["total_deployed"] == 0.0
         assert reread["lifetime_trades"] == 2
         assert reread["lifetime_net_pnl"] == pytest.approx(10.0)
+        # lifetime_wins/losses aren't zeroed by --reset either (same rule as
+        # lifetime_trades/lifetime_net_pnl above) -- reset_state didn't touch
+        # them, so they carry the values read from disk before the reset.
+        assert reread["lifetime_wins"] == 2
 
 
 class TestHistoryRoundTripDoesNotDoublePrefix:
