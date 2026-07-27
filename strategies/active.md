@@ -1,10 +1,13 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:05 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:10 ET
 
-## MON 09:05 ET — Pre-Market Tick
-- **Same as 09:00 tick.** Pre-market, 25 min to open. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos.
-- BFST $31.16 (+0.6%), BOX $29.48 (+2.2%), F $14.81 (+4.8%), FHB $28.19 (-1.4%), IP $42.39 (+10.3%). No stop breaches.
-- 📡 Data bus down. 🛡️ GTC audit clean (no open orders). 🔔 F SELL at open confirmed. IP above 8% profit target guide — monitor MACDh at open.
-- 🧹 Watchlist: VTEX→21 approaching threshold. 12 candidates. Merge discoveries idempotent (all 9 already merged at 09:00).
+## MON 09:10 ET — Pre-Market Tick
+- **Same as 09:05 tick.** Pre-market, 17 min to open. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos.
+- BFST $31.16 (+0.6%), BOX $29.48 (+2.2%), F $14.81 (+4.8%), FHB $28.19 (-1.4%), IP $42.39 (+10.3%). No stop breaches (check-stops clean).
+- 📡 Data bus down (empty quotes). yfinance down. Sentiment cache fresh (00:02 UTC): BFST +0.514, FHB +0.281, F -0.044. MCP tools unavailable (subagent).
+- 📊 MACDh via Alpaca trading API (1-min): F -0.001058 🔴 (already red, no flip, declining bars). SPY -0.016662 🔴 (flipped — was 🟢 Friday, now bearish 5-bar decline). BFST/BOX/FHB/IP insufficient bars (thin small-caps).
+- 🔔 **F SELL at open**: executor hours gate blocked at 09:13 (market closed). Will execute at 09:30 tick. Q2 earnings tomorrow 7/28, MACD bearish, Geely overhang.
+- ⚠️ **IP +10.3%**: above 8% profit target guide, MACDh unknown (16 bars insufficient). Prior tick said HOLD but monitor. No reversal signal — hold pending MACD data at open.
+- 🧹 Watchlist: VTEX→21 approaching threshold (24). 12 candidates, merge discoveries idempotent (all 9 skipped). No qualifying entries (degraded data infra).
 
 ## MON 09:00 ET — Pre-Market Tick
 - **Pre-market.** Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos. All 5 HOLD.
