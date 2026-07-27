@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:33 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:37 ET
+
+## MON 09:37 ET — Market Tick
+- ✅ **F SOLD**: 2 shares @ ~$14.71, P&L +$1.15 (+4.07%). Pre-earnings exit (Q2 tomorrow 7/28) per Sunday journal base case. Matching engine recovered from 09:33 outage. Decision #5976.
+- **4 pos.** Regime CHOPPY/FEAR (last known). PV $10,415, cash $10,240. BFST $31.35 (+1.2%), BOX $29.51 (+2.3%), FHB $28.02 (-2.0%), IP $42.89 (+11.6%). No stop breaches.
+- 📊 MACDh unavailable (Alpaca data API returns 0-16 bars for small caps — IEX/SIP/daily all degraded). Data bus empty quotes, null momentum, F&G TLS error. Sentiment cache stale (00:02 UTC).
+- ⚠️ **IP +11.6%**: above 8% guide. RBC PT $48 (+12%), momentum intact. MACDh check unavailable — holding on thesis strength. Monitor for stall.
+- 🧹 Watchlist: VTEX dropped (idle_ticks=24). 11 candidates. Merge discoveries no-op. No qualifying entries (degraded data infra).
 
 ## MON 09:33 ET — Market Open Tick
 - 🚨 **PAPER TRADING MATCHING ENGINE DOWN** — neither buys nor sells fill (AAPL test buy also stuck). All trades queued. F SELL cannot execute.
