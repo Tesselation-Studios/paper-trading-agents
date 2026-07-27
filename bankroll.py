@@ -226,10 +226,20 @@ def recalc_ceiling(state: dict, pnl: float, is_win: bool):
     state["net_pnl"] += pnl
     state["lifetime_trades"] = state.get("lifetime_trades", 0) + 1
     state["lifetime_net_pnl"] = state.get("lifetime_net_pnl", 0.0) + pnl
+    if is_win:
+        state["lifetime_wins"] = state.get("lifetime_wins", 0) + 1
+    else:
+        state["lifetime_losses"] = state.get("lifetime_losses", 0) + 1
 
-    # Dynamic calibration: growth rate accelerates with consistent wins
-    if trade_count >= 10 and state["wins"] > 0:
-        win_rate = state["wins"] / trade_count
+    # Dynamic calibration: growth rate accelerates with consistent wins.
+    # Uses lifetime_wins/lifetime_trades (survive --reset), not the session
+    # counters above (wins/closed_trades) -- those get wiped by --reset,
+    # which was silently resetting this calibration's evidence back to zero
+    # every time (2026-07-27 fix).
+    lifetime_trades = state.get("lifetime_trades", 0)
+    lifetime_wins = state.get("lifetime_wins", 0)
+    if lifetime_trades >= 10 and lifetime_wins > 0:
+        win_rate = lifetime_wins / lifetime_trades
         if win_rate > 0.55:
             bonus = min(0.03, (win_rate - 0.55) * 0.15)
             state["growth_rate"] = round(min(0.08, GROWTH_RATE + bonus), 4)
