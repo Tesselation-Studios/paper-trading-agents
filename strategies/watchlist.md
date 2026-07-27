@@ -77,4 +77,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-27 11:25 ET (idle_ticks=11. 10 candidates. No qualifying entries — BCS closest (vol 0.99x, MACD 🟢) but conviction weak (no flow/insiders/sentiment). TOST vol 0.38x too thin. 5 bearish MACD. Pipeline starved 2 sessions, Tavily rate-limited.)_
+_Last touched: 2026-07-27 11:35 ET (BCS entered. 9 candidates idle→12. No qualifying entries — TOST vol 0.38x too thin, DXC MACD near-zero, 5 bearish MACD. Pipeline starved 2 sessions, Tavily rate-limited.)_
