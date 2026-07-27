@@ -29,20 +29,20 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- KRC — idle_ticks: 2 — $39.40, RSI 56.9 🟢, vol 1.97x. Scotiabank PT $41. Real Estate.
-- NTRS — idle_ticks: 2 — $180.44, RSI 51.7 🟢, vol 1.70x. MS UW PT $173. Financial.
-- BCS — idle_ticks: 2 — $27.91, RSI 57.3 🟢, vol 1.42x. Bloomberg: pulled $1B debt deal (sent -0.30). Financial.
-- GL — idle_ticks: 2 — $173.51, RSI 45.4 🟢 in-band, vol 1.29x. KBW Outperform PT $190. Insurance.
-- DXC — idle_ticks: 2 — $10.05, RSI 59.5 🟢, vol 1.01x marginal. TD Cowen Hold PT $10. Technology.
-- RMD — idle_ticks: 2 — $195.32, RSI 46.2 🟢, vol 0.98x marginal. Mizuho Outperform PT $220. Healthcare.
-- AVEX — idle_ticks: 2 — $14.29. USAF contracts $67.5M, analyst PT $35.75. Defense/aerospace.
-- PL — idle_ticks: 2 — $34.77. 157% backlog growth, EPS +65.4% CAGR, FCF turning positive. Earth obs satellites.
-- TOST — idle_ticks: 2 — $24.80. 28% ARR growth, 19.9% rev growth. Restaurant tech platform.
+- KRC — idle_ticks: 3 — $39.40, RSI 56.9 🟢, vol 1.97x. Scotiabank PT $41. Real Estate.
+- NTRS — idle_ticks: 3 — $180.44, RSI 51.7 🟢, vol 1.70x. MS UW PT $173. Financial.
+- BCS — idle_ticks: 3 — $27.91, RSI 57.3 🟢, vol 1.42x. Bloomberg: pulled $1B debt deal (sent -0.30). Financial.
+- GL — idle_ticks: 3 — $173.51, RSI 45.4 🟢 in-band, vol 1.29x. KBW Outperform PT $190. Insurance.
+- DXC — idle_ticks: 3 — $10.05, RSI 59.5 🟢, vol 1.01x marginal. TD Cowen Hold PT $10. Technology.
+- RMD — idle_ticks: 3 — $195.32, RSI 46.2 🟢, vol 0.98x marginal. Mizuho Outperform PT $220. Healthcare.
+- AVEX — idle_ticks: 3 — $14.29. USAF contracts $67.5M, analyst PT $35.75. Defense/aerospace.
+- PL — idle_ticks: 3 — $34.77. 157% backlog growth, EPS +65.4% CAGR, FCF turning positive. Earth obs satellites.
+- TOST — idle_ticks: 3 — $24.80. 28% ARR growth, 19.9% rev growth. Restaurant tech platform.
 
-- BKSY — idle_ticks: 2 — from 2026-07-24.md (no price/RSI yet)
-- RCAT — idle_ticks: 2 — from 2026-07-24.md (no price/RSI yet, sent -0.102)
+- BKSY — idle_ticks: 3 — from 2026-07-24.md (no price/RSI yet)
+- RCAT — idle_ticks: 3 — from 2026-07-24.md (no price/RSI yet, sent -0.102)
 
-- VTEX — idle_ticks: 22 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
+- VTEX — idle_ticks: 23 — from 2026-07-24.md ($3.88, RSI 46.5, MACDh +0.0826 🟢, vol 0.45x extremely thin, SaaS e-commerce platform. Earnings est. Aug 6. No entry — too thin.)
 
 ~~MFAO~~ — dropped 2026-07-24 14:45 (idle_ticks=24 threshold, vol 0.59x, never crossed 1.0x entry bar)
 ~~DBX~~ — dropped 2026-07-24 14:40 (idle_ticks=24 threshold, vol 0.95x never crossed 1.0x entry bar)
@@ -76,4 +76,4 @@ _Dropped 2026-07-20 nightly: HOOD (realized -12% loss, above universe cap), COIN
 _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
-_Last touched: 2026-07-27 09:16 ET (idle_ticks bumped. VTEX→21 approaching threshold. 12 candidates. Pre-market — no trades.)_
+_Last touched: 2026-07-27 09:20 ET (idle_ticks bumped. VTEX→23 approaching threshold. 12 candidates. Pre-market — no trades.)_

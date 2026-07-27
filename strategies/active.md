@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:16 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:20 ET
+
+## MON 09:20 ET — Pre-Market Tick
+- **Same as 09:16 tick.** Pre-market, 10 min to open. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos.
+- BFST $31.16 (+0.6%), BOX $29.48 (+2.2%), F $14.78 (+4.6%), FHB $28.19 (-1.4%), IP $42.57 (+10.8%). No stop breaches.
+- 📊 MACDh (Alpaca 1-min): F +0.001832 🟢 (near-zero pre-market — prior decision stands: SELL at open), SPY -0.009540 🔴. IP/BFST/BOX/FHB insufficient bars.
+- 🔔 **F SELL at open**: unchanged — Q2 earnings tomorrow 7/28. IP +10.8% above 8% guide → monitor at open for MACD confirmation.
+- 🧹 Watchlist: VTEX→22 approaching threshold (24). 12 candidates, merge discoveries no-op. No qualifying entries (pre-market).
 
 ## MON 09:16 ET — Pre-Market Tick
 - **Same as 09:10 tick.** Pre-market, 14 min to open. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos.
