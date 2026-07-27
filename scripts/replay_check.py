@@ -59,7 +59,7 @@ from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.data.enums import DataFeed
 
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
+sys.path.insert(0, "/home/openclaw/paper-trading-rebuild")
 from src.replay import Tick, TraderDecision, replay_trader  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

@@ -299,7 +299,7 @@ def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool
     if cost <= 0:
         return True, "no price data, skipped (fail-open)"
 
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     import bankroll
     state = bankroll.read_bankroll()
     portfolio_value = float(context.get("portfolio_value", 0) or 0)
@@ -677,7 +677,7 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     pnl = (exit_price - entry_price) * qty
     return_pct = (exit_price - entry_price) / entry_price * 100 if entry_price else 0.0
 
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     import bankroll
     state = bankroll.read_bankroll()
     bankroll.recalc_ceiling(state, pnl, is_win=(pnl > 0))

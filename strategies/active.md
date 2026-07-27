@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:25 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:33 ET
+
+## MON 09:33 ET — Market Open Tick
+- 🚨 **PAPER TRADING MATCHING ENGINE DOWN** — neither buys nor sells fill (AAPL test buy also stuck). All trades queued. F SELL cannot execute.
+- Regime CHOPPY/FEAR (last known, MCP unavailable subagent). PV $10,416, cash $10,211, 5 pos.
+- BFST $31.36 (+1.2%), BOX $29.58 (+2.6%), F $14.71 (+4.0%), FHB $28.45 (-0.5%), IP $43.06 (+12.1%). No stop breaches.
+- 📊 MACDh (Alpaca 1-min): F -0.001363 🔴 (near-zero improving, no flip). SPY -0.032378 🔴 (bearish open). IP/BFST/BOX/FHB insufficient bars. ⚠️ F SELL decision confirmed (MACDh bearish, Q2 earnings tomorrow) — queued, cannot execute.
+- ⚠️ **IP +12.1%**: above 8% profit target guide. Insufficient MACD bars (12). Momentum intact, RBC PT $48. HOLD — monitor for stall/reversal signal.
+- 🧹 Watchlist: VTEX→24 at threshold — dropping. 11 candidates remain (KRC/NTRS/BCS/GL/DXC/RMD/AVEX/PL/TOST/BKSY/RCAT idle→4). Merge discoveries no-op. No qualifying entries.
+- 🔔 Escalation needed: paper matching engine down >1 session (persisted from Fri data bus issues).
 
 ## MON 09:25 ET — Pre-Market Tick
 - **Same as 09:20 tick.** Pre-market, 5 min to open. Regime CHOPPY/FEAR (last known). PV $10,415, cash $10,211, 5 pos.
