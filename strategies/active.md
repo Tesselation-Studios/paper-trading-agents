@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 FRI JUL 24, 2026 — 15:55 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:00 ET
+
+## MON 09:00 ET — Pre-Market Tick
+- **Pre-market.** Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos. All 5 HOLD.
+- BFST $31.16 (+0.6%), BOX $29.48 (+2.2%), F $14.83 (+4.9%), FHB $28.19 (-1.4%), IP $42.39 (+10.3%). No stop breaches.
+- 📡 MACDh unavailable (pre-market). Fri last known: BFST +0.4561 🟢, BOX +1.0364 🟢, F -0.0407 🔴, FHB +0.3141 🟢, IP +0.5506 🟢.
+- 🔔 **F SELL at open**: Sunday journal decided exit before Q2 earnings 7/28 (tomorrow). MACD bearish, 90d estimates -7.9%, Geely overhang, asymmetric binary risk in CHOPPY.
+- 📊 **IP profit target**: +10.3% above 8% guide. Fri +11.2% single-day surge. RBC PT $48 (+13% from here), momentum intact. HOLD but monitor MACDh at open — stall or reversal = exit.
+- 🆕 Watchlist: 9 new merged (KRC/NTRS/BCS/GL/DXC/RMD/AVEX/PL/TOST), pipeline now 12 strong. BKSY/RCAT idle→0. VTEX→20 approaching threshold.
+- 🛡️ GTC audit needed before open (flagged by Sunday prep). workspace_review gate clean. Merge discoveries +9.
 
 ## FRI 15:55 ET — Market Tick
 - **Same as 15:52 tick.** Regime CHOPPY/FEAR, F&G 28 (Fear). PV $10,412, cash $10,211, 5 pos. All 5 HOLD.
