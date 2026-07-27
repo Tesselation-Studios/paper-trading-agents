@@ -812,7 +812,8 @@ def main():
         cash_pct = (cash / equity * 100) if equity > 0 else 0.0
         params = load_params()
         threshold_pct = float(params.get("watchlist", {}).get("discovery_urgency", {}).get("cash_threshold_pct", 70.0))
-        pressure_state = deployment_pressure.record_tick(cash_pct, threshold_pct)
+        tick_interval_seconds = int(params.get("tick", {}).get("interval_seconds", deployment_pressure.DEFAULT_TICK_INTERVAL_SECONDS))
+        pressure_state = deployment_pressure.record_tick(cash_pct, threshold_pct, interval_seconds=tick_interval_seconds)
         risk = params.get("risk", {})
         eff_floor = deployment_pressure.conviction_floor(
             float(risk.get("conviction_floor", 0.5)), float(risk.get("conviction_floor_min", 0.35)),

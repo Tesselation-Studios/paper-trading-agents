@@ -35,24 +35,34 @@ class TestReadStateDefaults:
         assert state["consecutive_under_deployed_ticks"] == 0
 
 
-def _real_tick(n):
-    """A timestamp for the n-th simulated real tick, spaced far enough
-    apart (> MIN_TICK_INTERVAL_SECONDS) that each counts as a distinct
-    tick rather than a same-tick refresh."""
-    return datetime(2026, 7, 27, 10, 0, tzinfo=timezone.utc) + timedelta(seconds=n * dp.MIN_TICK_INTERVAL_SECONDS * 2)
+# 2026-07-27T10:00:00Z is bucket-aligned for any interval that divides
+# evenly into an hour (300s does: 36000s since midnight / 300 = 120).
+_TICK_BASE = datetime(2026, 7, 27, 10, 0, tzinfo=timezone.utc)
+
+
+def _tick(n, interval_seconds=dp.DEFAULT_TICK_INTERVAL_SECONDS):
+    """A timestamp landing in the n-th distinct real tick bucket."""
+    return _TICK_BASE + timedelta(seconds=n * interval_seconds)
+
+
+def _within_same_tick(n, offset_seconds, interval_seconds=dp.DEFAULT_TICK_INTERVAL_SECONDS):
+    """A timestamp still inside the n-th tick's bucket, offset_seconds after
+    its start -- must be < interval_seconds to stay in the same bucket."""
+    assert offset_seconds < interval_seconds
+    return _tick(n, interval_seconds) + timedelta(seconds=offset_seconds)
 
 
 class TestRecordTick:
     def test_increments_when_over_threshold(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
-        dp.record_tick(cash_pct=75.0, threshold_pct=70.0, now=_real_tick(1))
-        state = dp.record_tick(cash_pct=90.0, threshold_pct=70.0, now=_real_tick(2))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        dp.record_tick(cash_pct=75.0, threshold_pct=70.0, now=_tick(1))
+        state = dp.record_tick(cash_pct=90.0, threshold_pct=70.0, now=_tick(2))
         assert state["consecutive_under_deployed_ticks"] == 3
 
     def test_resets_when_under_threshold(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(1))
-        state = dp.record_tick(cash_pct=50.0, threshold_pct=70.0, now=_real_tick(2))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(1))
+        state = dp.record_tick(cash_pct=50.0, threshold_pct=70.0, now=_tick(2))
         assert state["consecutive_under_deployed_ticks"] == 0
 
     def test_exactly_at_threshold_counts_as_under_deployed(self, state_file):
@@ -67,39 +77,51 @@ class TestRecordTick:
 
     def test_call_within_same_tick_does_not_double_count(self, state_file):
         """2026-07-27 bug found live: status (and therefore record_tick) can
-        be called more than once within a single real ~5min tick -- e.g.
-        Stan re-checking status mid-tick. Without debouncing, the streak
-        inflated to 1481 in ~90 real minutes (should have been ~18).
-        Repeated calls seconds apart must count as ONE tick."""
-        t0 = _real_tick(0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
-        # three more calls, all within MIN_TICK_INTERVAL_SECONDS of t0
-        for i in range(1, 4):
+        be called more than once within a single real trade tick -- e.g.
+        Stan re-checking status mid-tick. The streak inflated to 1481 in
+        ~90 real minutes (should have been ~18) under the first (wrong)
+        fix, a sliding wall-clock debounce. Ticks are identified by which
+        schedule-aligned bucket they fall in, not elapsed time -- repeated
+        calls anywhere within the same tick's bucket must count as ONE."""
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        for offset in (10, 100, 250):  # all still within tick 0's bucket
             state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
-                                    now=t0 + timedelta(seconds=i * 10))
+                                    now=_within_same_tick(0, offset))
         assert state["consecutive_under_deployed_ticks"] == 1
 
     def test_same_tick_refresh_still_updates_cash_pct(self, state_file):
-        """The debounce skips incrementing the streak, but a same-tick call
-        with a different cash_pct reading should still be reflected."""
-        t0 = _real_tick(0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
-        state = dp.record_tick(cash_pct=85.0, threshold_pct=70.0, now=t0 + timedelta(seconds=30))
+        """Same-bucket calls skip incrementing the streak, but a later
+        reading within that same tick should still be reflected."""
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        state = dp.record_tick(cash_pct=85.0, threshold_pct=70.0, now=_within_same_tick(0, 30))
         assert state["consecutive_under_deployed_ticks"] == 1  # unchanged, still same tick
         assert state["last_cash_pct"] == 85.0  # but the reading itself is fresh
 
-    def test_call_after_interval_elapses_counts_as_new_tick(self, state_file):
-        t0 = _real_tick(0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
-        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
-                                now=t0 + timedelta(seconds=dp.MIN_TICK_INTERVAL_SECONDS + 1))
+    def test_next_bucket_counts_as_new_tick_even_if_called_seconds_after_a_slow_prior_tick(self, state_file):
+        """A tick session that runs long (spills close to the next bucket
+        boundary) must not suppress the next real tick's count -- bucket
+        identity, not 'how long since the last call', is what matters."""
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_within_same_tick(0, 295))  # tick 0, very late in its bucket
+        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(1))  # tick 1 starts moments later
         assert state["consecutive_under_deployed_ticks"] == 2
+
+    def test_custom_interval_seconds_respected(self, state_file):
+        """executor.py passes the real params.json tick.interval_seconds
+        through -- confirm a non-default interval changes bucket sizing."""
+        interval = 60
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0, interval), interval_seconds=interval)
+        same_bucket = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
+                                      now=_within_same_tick(0, 30, interval), interval_seconds=interval)
+        assert same_bucket["consecutive_under_deployed_ticks"] == 1
+        next_bucket = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
+                                      now=_tick(1, interval), interval_seconds=interval)
+        assert next_bucket["consecutive_under_deployed_ticks"] == 2
 
 
 class TestReset:
     def test_reset_zeroes_streak(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(1))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(1))
         state = dp.reset()
         assert state["consecutive_under_deployed_ticks"] == 0
 
@@ -109,12 +131,18 @@ class TestReset:
         assert dp.read_state()["consecutive_under_deployed_ticks"] == 0
 
     def test_next_tick_after_reset_recomputes_fresh(self, state_file):
-        t0 = _real_tick(0)
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=t0)
-        dp.reset(now=t0)
-        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0,
-                                now=t0 + timedelta(seconds=dp.MIN_TICK_INTERVAL_SECONDS + 1))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        dp.reset(now=_tick(0))
+        state = dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(1))
         assert state["consecutive_under_deployed_ticks"] == 1
+
+    def test_reset_does_not_get_reinflated_by_a_stray_same_tick_status_call(self, state_file):
+        """A BUY resets mid-tick; if something calls status again later in
+        that SAME tick, it must not re-increment back to 1."""
+        dp.record_tick(cash_pct=95.0, threshold_pct=70.0, now=_tick(0))
+        dp.reset(now=_within_same_tick(0, 50))
+        state = dp.record_tick(cash_pct=90.0, threshold_pct=70.0, now=_within_same_tick(0, 100))
+        assert state["consecutive_under_deployed_ticks"] == 0
 
 
 class TestConvictionFloor:
@@ -199,8 +227,8 @@ class TestMarkEscalated:
         assert state["last_backtest_escalation_ts"] is not None
 
     def test_mark_does_not_touch_tick_counter(self, state_file):
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(0))
-        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_real_tick(1))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(0))
+        dp.record_tick(cash_pct=80.0, threshold_pct=70.0, now=_tick(1))
         dp.mark_escalated("freeform")
         assert dp.read_state()["consecutive_under_deployed_ticks"] == 2
 
