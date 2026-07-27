@@ -8,9 +8,15 @@ On any BUY/SELL decision, for every signal that genuinely informed it, add an en
 
 `confidence` is *your* read on that specific signal given what it showed — not the final trade conviction. Keep them independent; `record_decision.py` reconciles them for you.
 
-## The reconciled read
+## Pre-trade: `reconcile` is now where conviction comes from
 
-Every `record_decision.py decision` call now echoes back `result.reconciled` — `signals.reconcile_signals()`'s combined recommendation, confidence, and per-signal detail (including a `scorecard_multiplier`, see below). It's informative, not a gate: your final action can differ from it, but if it does, say why in `--rationale` — that disagreement is itself useful signal for the scorecard.
+2026-07-27: before this, `--conviction` was a plain number you guessed at decision time — the reconciled score existed but was purely informative, computed *after* the trade. Now it's the other way around: before sizing/executing a BUY, run `python3 scripts/record_decision.py reconcile --features '...'` (same `--features` shape as above, no DB write, safe to call as many times as you want while still deciding) and use its `combined_confidence` as the `--conviction` you pass to both the executor's BUY call and the later `record_decision.py decision --conviction <same number>` log call for that same trade — see `tick_prompt.md` step 8. This is what feeds `gate_conviction`'s floor check (`scripts/executor.py`), which as of the same date is a *dynamic* floor (see `deployment_pressure.py`) — the number you compute here is a real gate input, not decoration.
+
+You may still deviate from the reconciled number (size up/down) if you have a concrete reason not captured in a scored signal — say why in `--rationale`, same as always.
+
+## The reconciled read, echoed post-trade too
+
+`record_decision.py decision` also still echoes back `result.reconciled` after logging — same computation as the pre-trade `reconcile` call above (recommendation, confidence, per-signal detail including `scorecard_multiplier`, see below), just confirming what was actually stored. If you passed an explicit `--conviction` that deviated from the pre-trade reconcile, this echo won't match it — that's expected and fine, the disagreement itself is useful signal for the scorecard.
 
 ## Signal scorecard — real track record, not a guess
 

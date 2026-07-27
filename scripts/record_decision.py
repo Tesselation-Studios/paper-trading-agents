@@ -40,9 +40,18 @@ def main():
     dec.add_argument("--ticker", required=True)
     dec.add_argument("--action", required=True, choices=["BUY", "SELL", "HOLD"])
     dec.add_argument("--rationale", default="")
-    dec.add_argument("--conviction", type=float, default=0.0)
+    dec.add_argument("--conviction", type=float, default=None,
+                      help="0-1. If omitted, self-computed from --features via "
+                           "reconcile_signals() rather than silently logging 0.0")
     dec.add_argument("--regime", default=None)
     dec.add_argument("--features", default="{}", help="JSON string, per-signal shape (see signals.py)")
+
+    rec = sub.add_parser("reconcile", help="Preview combined_confidence for signal features "
+                          "before trading — no DB write, safe to call before the executor "
+                          "decides anything. Its combined_confidence is what tick_prompt.md "
+                          "now passes as --conviction to both the executor BUY call and the "
+                          "later 'decision' log call for the same trade.")
+    rec.add_argument("--features", default="{}")
 
     close = sub.add_parser("close", help="Label a closed trade's outcome")
     close.add_argument("--trader-id", default="stonks")
@@ -52,15 +61,31 @@ def main():
 
     args = parser.parse_args()
 
+    if args.command == "reconcile":
+        try:
+            features = json.loads(args.features)
+        except json.JSONDecodeError as e:
+            print(json.dumps({"error": f"--features not valid JSON: {e}"}))
+            sys.exit(1)
+        print(json.dumps(signals.reconcile_signals(features, scorecard=_load_scorecard())))
+        return
+
     if args.command == "decision":
         try:
             features = json.loads(args.features)
         except json.JSONDecodeError as e:
             print(json.dumps({"error": f"--features not valid JSON: {e}"}))
             sys.exit(1)
+        reconciled = signals.reconcile_signals(features, scorecard=_load_scorecard())
+        conviction = args.conviction
+        if conviction is None:
+            # No explicit --conviction: self-compute rather than the old
+            # silent default=0.0, which would have logged every omitted
+            # call as zero conviction regardless of the actual signals.
+            conviction = reconciled["combined_confidence"]
         result = decisions.record_decision(
             trader_id=args.trader_id, ticker=args.ticker, action=args.action,
-            rationale=args.rationale, conviction=args.conviction,
+            rationale=args.rationale, conviction=conviction,
             regime=args.regime, features=features,
         )
         # Echo the reconciled cross-signal read back so it's visible in the
@@ -68,7 +93,7 @@ def main():
         # but nothing ever surfaced its result until now. Scorecard-adjusted
         # if state/signal_scorecard.json exists and has scored signals, plain
         # fixed-weight otherwise.
-        result["reconciled"] = signals.reconcile_signals(features, scorecard=_load_scorecard())
+        result["reconciled"] = reconciled
     else:
         result = decisions.record_trade_close(
             trader_id=args.trader_id, ticker=args.ticker,

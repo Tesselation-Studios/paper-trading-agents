@@ -33,6 +33,7 @@ state/recent_orders.json
 state/peak_equity.json
 state/signal_scorecard.json
 state/watches.json
+state/deployment_pressure.json
 
 # Secrets — never commit these
 .secrets/
