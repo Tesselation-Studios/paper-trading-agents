@@ -1,5 +1,12 @@
 # Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 11:30 ET
 
+## MON 11:35 ET — Market Tick
+- ✅ **BCS BOUGHT**: 1 share @ $28.28, conviction 0.52. RSI 56.6 in-band, MACDh +0.6383 🟢, vol 0.99x near threshold. SUSTAINABLE regime (0.92) normal size. Financial — large UK bank, different subsector from BFST. Decision #5982, training example #56.
+- **4 pos.** Regime SUSTAINABLE (0.92). PV $10,415, cash $10,216. BFST $31.32 (+1.10%), BOX $29.01 (+0.59%), KRC 2sh $39.36 (-0.38%), BCS $28.28 (just filled). No stop breaches (check-stops clean).
+- 📡 Data bus LIVE: all 4 MACDh bullish 🟢 (BFST +0.4544, BOX +0.9925, KRC +0.7403, BCS +0.6383). No flips. Sentiment: BFST +0.514, TOST +0.768. workspace_review clean.
+- 📊 Scale-in: BFST +1.10%, BOX +0.59% — both below 3% v1.7 threshold. KRC red. None qualify.
+- 🧹 Watchlist: BCS entered. 9 candidates idle→12. Merge discoveries no-op. Pipeline 2 sessions stale.
+
 ## MON 11:30 ET — Market Tick
 - **All HOLD.** 3 pos. Regime **SUSTAINABLE** (0.92). PV $10,415, cash $10,244. BFST $31.35 (+1.19%), BOX $29.02 (+0.62%), KRC 2sh $39.38 (-0.33%). No stop breaches. Prices flat vs 11:25.
 - 📡 MACDh unchanged bullish 🟢 (BFST +0.4544, BOX +0.9925, KRC +0.7403). No flips. Sentiment: BFST +0.514, TOST +0.768, NTRS +0.573. workspace_review clean.
