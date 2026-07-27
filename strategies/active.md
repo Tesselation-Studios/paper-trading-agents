@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:20 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:25 ET
+
+## MON 10:25 ET — Market Tick
+- **All HOLD.** 3 pos. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,314. BFST $31.12 (+0.47%), BOX $30.03 (+4.13%), KRC $39.52 (+0.08%). No stop breaches (check-stops clean).
+- 📡 MACDh from 10:20 parallel (data bus recovered): BFST +0.4544 🟢, BOX +0.9925 🟢. MCP tools unavailable (subagent). Sentiment: BFST +0.514, TOST +0.768. F&G 30 Fear.
+- 📊 BOX +4.13% approaching deeper winner zone for v1.7 scale-in. MACDh strong, RSI 54.7 in-band. Monitor next tick for 5%+ threshold.
+- 🧹 Watchlist: 10 candidates (idle=7→8). Merge discoveries no-op. No qualifying entries (MCP unavailable; bankroll disqualifies GL/NTRS).
 
 ## MON 10:20 ET — Market Tick
 - ✅ **KRC BOUGHT**: 1 share @ $39.49, probe entry (CHOPPY). RSI 56.7 in-band, MACDh +0.7403 🟢, vol 1.28x. Scotiabank PT $41. Real Estate — diversifies from Financial (BFST)/Technology (BOX). Decision #5980, training example #54.
