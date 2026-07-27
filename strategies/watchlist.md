@@ -7,6 +7,7 @@ Format: `TICKER — idle_ticks: N — note`
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
 - BOX — open position (1 share @ $28.84, entry 2026-07-24 11:50 — v1.5 probe, Technology)
+- KRC — open position (1 share @ $39.49, entry 2026-07-27 10:38 — v1.5 probe, Real Estate)
 
 ## Closed Positions
 - ~~FHB~~ — closed 2026-07-27 09:59 (MACDh flip, v1.9 mandatory exit, -2.41%)
@@ -29,18 +30,18 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- KRC — idle_ticks: 7 — $39.40, RSI 56.9 🟢, vol 1.97x. Scotiabank PT $41. Real Estate.
-- NTRS — idle_ticks: 7 — $180.44, RSI 51.7 🟢, vol 1.70x. MS UW PT $173. Financial.
-- BCS — idle_ticks: 7 — $27.91, RSI 57.3 🟢, vol 1.42x. Bloomberg: pulled $1B debt deal (sent -0.30). Financial.
-- GL — idle_ticks: 7 — $173.51, RSI 45.4 🟢 in-band, vol 1.29x. KBW Outperform PT $190. Insurance.
-- DXC — idle_ticks: 7 — $10.05, RSI 59.5 🟢, vol 1.01x marginal. TD Cowen Hold PT $10. Technology.
-- RMD — idle_ticks: 7 — $195.32, RSI 46.2 🟢, vol 0.98x marginal. Mizuho Outperform PT $220. Healthcare.
-- AVEX — idle_ticks: 7 — $14.29. USAF contracts $67.5M, analyst PT $35.75. Defense/aerospace.
-- PL — idle_ticks: 7 — $34.77. 157% backlog growth, EPS +65.4% CAGR, FCF turning positive. Earth obs satellites.
-- TOST — idle_ticks: 7 — $24.80. 28% ARR growth, 19.9% rev growth. Restaurant tech platform.
+- ~~KRC~~ — entered 2026-07-27 10:38, 1 share @ $39.49, probe entry
+- NTRS — idle_ticks: 8 — $180.52, RSI 53.6 🟢, vol 1.19x. MS UW PT $173 BELOW current price — disqualified. Financial.
+- BCS — idle_ticks: 8 — $27.91, RSI 56.6 🟢, vol 0.99x marginal <1.0x. Financial.
+- GL — idle_ticks: 8 — $173.48, RSI 45.1 🟢, vol 1.18x. KBW Outperform PT $190. DISQUALIFIED: bankroll ceiling $54.25. Insurance.
+- DXC — idle_ticks: 8 — $10.05, RSI 59.2 🟢, vol 0.77x <1.0x. Technology.
+- RMD — idle_ticks: 8 — $195.27, RSI 45.7 🟢, MACD bearish (-0.2514), vol 0.66x. Healthcare.
+- AVEX — idle_ticks: 8 — $14.29, RSI 39.3 below band, MACD bearish, vol 0.36x. Defense/aerospace.
+- PL — idle_ticks: 8 — $20.47, RSI 27.9 oversold, MACD bearish, vol 1.21x. Earth obs satellites.
+- TOST — idle_ticks: 8 — $29.04, RSI 53.5 🟢, MACD 🟢 +0.9865, vol 0.38x too thin. Truist PT $33. Restaurant tech.
 
-- BKSY — idle_ticks: 7 — from 2026-07-24.md (no price/RSI yet)
-- RCAT — idle_ticks: 7 — from 2026-07-24.md (no price/RSI yet, sent -0.102)
+- BKSY — idle_ticks: 8 — $21.57, RSI 35.8 below band, MACD bearish, vol 0.86x. Defense imaging.
+- RCAT — idle_ticks: 8 — $7.64, RSI 37.4 below band, MACD bearish, vol 0.69x. Defense/drones.
 
 - ~~VTEX~~ — dropped 2026-07-27 09:33 (idle_ticks=24 threshold, vol 0.45x never crossed 1.0x entry bar)
 
