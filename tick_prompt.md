@@ -4,9 +4,9 @@
 
 ## Core Loop
 
-1. **Read strategy.md and params.json** → fresh, every tick, no exceptions. Confirmed 2026-07-22: a same-day strategy revert (v1.2.1→v1.3, dropping the regime gate) didn't take effect for several ticks because this step was previously skipped on the wrong assumption these files were already warm in context. They're small; the read is cheap. Correctness > saving a few tokens.
+1. **Read strategy.md and params.json** → fresh, every tick, no exceptions. They're small; the read is cheap. Correctness > saving a few tokens.
 
-   Before trading, run `python3 scripts/workspace_review.py --gate` (see `skills/workspace-review.md`). If it reports critical findings (`state/.workspace_blocked` set), **do not trade this tick** — note the reason in active.md and `HEARTBEAT_OK`. Warnings alone don't block; just carry them into active.md so they don't go unnoticed (this is exactly how the Jul 22 CHOPPY-gate lag went undetected for 2 hours).
+   Before trading, run `python3 scripts/workspace_review.py --gate` (see `skills/workspace-review.md`). If it reports critical findings (`state/.workspace_blocked` set), **do not trade this tick** — note the reason in active.md and `HEARTBEAT_OK`. Warnings alone don't block; just carry them into active.md so they don't go unnoticed.
 
    Also call `memory_search("<today's regime> <top watchlist/position tickers>")` once — feeds the recall store dreaming promotes from. Skip only on tool error, never block the tick.
 
@@ -18,7 +18,7 @@
 
 5. **Market snapshot (best-effort)** → data bus per `skills/data-bus-fallback.md` for quotes/momentum/fear-greed; sentiment is separate — read `state/sentiment_cache.json` per `skills/sentiment-cache.md` (refreshed independently every ~15min, not fetched live per tick). Skip either if stale/down/missing, never block the tick.
 
-   Also call `get_market_regime` and `get_risk` (MCP tools, not the REST curl) — real regime/risk data, not a price-action guess. These were built and available the whole time but never actually called; use them now instead of inferring regime from raw price action alone. Skip on error, same as everything else here.
+   Also call `get_market_regime` and `get_risk` (MCP tools, not the REST curl) — real regime/risk data, not a price-action guess. Skip on error, same as everything else here.
 
    Once per day only (first tick after 09:30 ET, or if active.md shows no macro entry yet today): call `get_macro` too — yield curve/CPI/FOMC context doesn't change tick-to-tick, no need to re-fetch every 5 minutes.
 
@@ -28,7 +28,7 @@
 
 8. **Decide** → BUY/SELL/HOLD with structured JSON, one entry per ticker considered. Keep rationale tight. Remember the mandate: **small-cap, wide and diverse** — many small positions over concentrated bets, no hard cap on position count (v1.6). **Doing nothing is a cost** — a qualifying watchlist candidate (RSI-in-band, volume-confirmed) is a real entry, sized by regime (`get_market_regime`: probe 1-3 shares if uncertain, normal if clear) rather than skipped (v1.5). Also weigh **scaling into an existing winning position** (thesis intact, real momentum — not mechanically averaging up) as a real decision alongside new watchlist entries this tick, not a fallback only for when nothing new qualifies — reconsider it every tick it still qualifies, not just once, and size the add to how strong the winner actually is rather than a fixed probe increment (v1.7, see strategy.md's Scaling into Winners). **Exit**: a MACD histogram flip (positive→negative) triggers an immediate exit, in addition to the fixed stop-loss/profit-target. Read strategy.md fresh each tick — don't carry forward last tick's rule set from memory.
 
-   Before entering any new position specifically (not for HOLD/routine ticks): call `get_flow` (options flow) and `get_insiders` (Form-4 filings) as a conviction check, and `get_fundamentals` for valuation context (P/E, ROE, analyst target — see `skills/fundamentals.md`). Not `get_technical_scan` — permanently paywalled on LoneStarOracle's free tier, always unavailable (`skills/data-bus-fallback.md`), not worth the call. These are heavier calls, so only spend them on names you're actually about to buy, not the whole watchlist every tick. Fold whatever they show into the conviction score passed to the executor. Skip any that error — none of these block a trade, they only inform it.
+   Before entering any new position specifically (not for HOLD/routine ticks): call `get_flow` (options flow) and `get_insiders` (Form-4 filings) as a conviction check, and `get_fundamentals` for valuation context (P/E, ROE, analyst target — see `skills/fundamentals.md`). Skip `get_technical_scan` — permanently paywalled on LoneStarOracle's free tier. These are heavier calls, so only spend them on names you're actually about to buy, not the whole watchlist every tick. Fold whatever they show into the conviction score passed to the executor. Skip any that error — none of these block a trade, they only inform it.
 
 9. **Execute** → via executor (`skills/tool-invocation.md`) if trade — pass `--price`/`--conviction`/`--sector` so the executor's built-in guardrail check (position size, max positions, sector concentration, market hours, conviction floor, bankroll ceiling) can evaluate it; a rejected order exits non-zero with the blocking gate's reason — do not retry the same trade, note it in active.md and move on. Update the position's thesis file if it changed. On any BUY/SELL (not routine HOLD), log the decision via `record_decision.py` (same skill) with per-signal features, scored independently, not pre-blended — see `skills/self-improving-agent.md` for exactly how to score each signal and what the echoed-back `reconciled` result means. If the SELL closes a position, also log the outcome (pnl/return_pct from entry vs. exit).
 

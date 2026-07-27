@@ -1,11 +1,11 @@
 # IP Position Thesis
 
 - **Entry**: $38.43 avg | 2 shares
-- **Current**: $42.01 (+9.32% unrealized)
-- **Market Value**: $84.02
-- **Unrealized P&L**: $+7.16 (+9.32%)
+- **Current**: $42.36 (+10.23% unrealized)
+- **Market Value**: $84.72
+- **Unrealized P&L**: $+7.86 (+10.23%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-24 23:30:12 UTC
+- **Last sync**: 2026-07-27 12:00:07 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

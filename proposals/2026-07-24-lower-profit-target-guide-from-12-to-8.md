@@ -1,6 +1,6 @@
 # Proposal: Lower profit target guide from 12% to 8%
 
-**Status**: open
+**Status**: applied
 **Tier**: auto
 **Created**: 2026-07-24T23:05:50.114018+00:00
 **Files changed**: params.json
@@ -14,3 +14,7 @@ Competition context: Tier 1/4 (Stocks), 17 trades, $+0.00 expectancy, improving 
 ## Evidence
 
 replay_check.py --sweep: (-10.0, 8.0) Sharpe 1.912, first_half 3.17, second_half 1.204, robust=true, 52 trades, +4.74% return. Current (-10.0, 12.0): Sharpe 1.379, first_half 2.302, second_half 1.024, 42 trades, +3.60% return. Next-best (-10.0, 10.0): Sharpe 1.729, first_half 3.18, second_half 0.836. All three pass both-halves-positive bar; 8.0% target is the global optimum.
+
+## Resolution
+
+applied at 2026-07-24T23:31:09.529414+00:00
