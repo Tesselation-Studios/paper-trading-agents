@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 10:35 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 11:21 ET
+
+## MON 11:21 ET — Market Tick
+- **All HOLD.** 3 pos. Regime **SUSTAINABLE** (0.92 confidence — major shift from CHOPPY/FEAR). PV $10,415, cash $10,244. BFST $31.16 (+0.58%), BOX $29.01 (+0.59%), KRC 2sh $39.42 (-0.23%). No stop breaches (check-stops clean).
+- 📡 Data bus LIVE: all 3 MACDh bullish 🟢 (BFST +0.4544, BOX +0.9925, KRC +0.7403). No flips. Sentiment: BFST +0.514, TOST +0.768. F&G no update. MCP tools: flow empty for BCS, insiders timed out, risk unavailable. workspace_review clean.
+- 📊 **Regime SUSTAINABLE (0.92)**: first clear regime signal in many sessions — sizing flips from probe to normal for qualifying entries. None qualify this tick: BCS vol 0.99x still marginal + no flow/sentiment/insiders confluence; TOST vol 0.38x; DXC MACD near-zero; rest disqualified (bearish MACD/RSI).
+- 📊 Scale-in: BFST +0.58%, BOX +0.59% — both below 5% threshold. BOX dropped from $30.04 last tick (was +4.16%) to $29.01 now. KRC slightly red, not a winner. None qualify for v1.7 scale-in.
+- 🧹 Watchlist: 10 candidates (idle=10→11). Merge discoveries no-op. Pipeline needs fresh names that clear all bars in SUSTAINABLE.
 
 ## MON 10:35 ET — Market Tick
 - **All HOLD.** 3 pos. Regime CHOPPY/FEAR (data bus strong_bull large-cap only, F&G no update — last known 30 Fear). PV $10,414, cash $10,274. BFST $31.16 (+0.58%), BOX $30.04 (+4.16%), KRC 2sh $39.49 (-0.05%). No stop breaches (check-stops clean).
