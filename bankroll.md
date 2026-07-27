@@ -1,15 +1,15 @@
 # Bankroll — Stonks
 
-Ceiling: $53.06
+Ceiling: $53.58
 Growth/decay rate: 0.02 / 0.01
 Target profit: 0.01%
-Closed trades this session: 4
-Wins: 3 | Losses: 1
-Net: +5.33%
+Closed trades this session: 6
+Wins: 4 | Losses: 2
+Net: +13.39%
 Total deployed: $0.00
-Lifetime trades: 19
-Lifetime net PnL: $+2.34
-Updated: 2026-07-27 13:37 UTC
+Lifetime trades: 21
+Lifetime net PnL: $+10.40
+Updated: 2026-07-27 13:59 UTC
 
 ## History
 -- reset to defaults
@@ -17,3 +17,5 @@ Updated: 2026-07-27 13:37 UTC
 -- 07/23 13:33 WIN $+3.45 → $51.00
 -- 07/27 13:33 WIN $+1.19 → $52.02
 -- 07/27 13:37 WIN $+1.15 → $53.06
+-- 07/27 13:58 WIN $+8.06 → $54.12
+-- 07/27 13:59 LOSS $+0.00 → $53.58

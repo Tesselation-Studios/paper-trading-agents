@@ -1,11 +1,11 @@
 # BOX Position Thesis
 
 - **Entry**: $28.84 avg | 1 shares
-- **Current**: $29.58 (+2.57% unrealized)
-- **Market Value**: $29.58
-- **Unrealized P&L**: $+0.74 (+2.57%)
+- **Current**: $29.64 (+2.77% unrealized)
+- **Market Value**: $29.64
+- **Unrealized P&L**: $+0.80 (+2.77%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-27 13:40:06 UTC
+- **Last sync**: 2026-07-27 14:00:08 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
