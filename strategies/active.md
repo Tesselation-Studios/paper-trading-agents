@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:10 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:16 ET
+
+## MON 09:16 ET — Pre-Market Tick
+- **Same as 09:10 tick.** Pre-market, 14 min to open. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos.
+- BFST $31.16 (+0.6%), BOX $29.48 (+2.2%), F $14.78 (+4.6%), FHB $28.19 (-1.4%), IP $42.57 (+10.8%). No stop breaches (check-stops clean).
+- 📡 Data bus down (empty quotes, momentum null, F&G CA error). Sentiment cache unchanged (00:02 UTC). MCP tools unavailable (subagent). 0 GTC orders open — audit clean.
+- 📊 MACDh via Alpaca (1-min, 100 bars): F **+0.001832 🟢** (FLIPPED GREEN — was -0.001058 at 09:10). SPY -0.009540 🔴 (bearish). BFST 0 bars, BOX 1 bar, FHB 6 bars, IP 16 bars — all insufficient for MACD.
+- 🔔 **F SELL at open**: F MACDh flipped green near-zero (+0.001832) in pre-market — Sunday journal anticipated this exact scenario ("If F rallies Monday and MACDh flips green, reconsider"). Reconsidered: near-zero flip in thin pre-market doesn't change the binary earnings risk. Base case remains SELL. Q2 earnings tomorrow 7/28.
+- ⚠️ **IP +10.8%**: above 8% guide, 16 pre-market bars insufficient for MACD. RBC PT $48. Momentum intact — HOLD monitor.
+- 🧹 Watchlist: VTEX→21 approaching threshold (24). 12 candidates, merge discoveries no-op. No qualifying entries.
 
 ## MON 09:10 ET — Pre-Market Tick
 - **Same as 09:05 tick.** Pre-market, 17 min to open. Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,211, 5 pos.
