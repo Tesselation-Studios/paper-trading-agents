@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:50 ET
+# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 09:59 ET
+
+## MON 09:59 ET — Market Tick
+- ✅ **IP SOLD**: 2sh @ ~$42.46 (+10.5%). Broke $42.50 stall watch — persistent drift from $43.27 peak over 22min, lower highs confirming momentum exhaustion. Recorded as training example #46.
+- **3 pos.** Regime CHOPPY/FEAR (last known). PV $10,414, cash $10,325. BFST $31.41 (+1.4%), BOX $29.70 (+3.0%), FHB $27.89 (-2.5%). No stop breaches (check-stops clean).
+- 📡 Data bus still down. Alpaca data API empty. No fresh MACD anywhere. Merge discoveries no-op (9 skipped, all already in watchlist).
+- 🧹 Watchlist: VTEX idle→24 (threshold) — dropping. 11 names remain. No qualifying entries.
 
 ## MON 09:50 ET — Market Tick
 - **Same as 09:45 tick.** Regime CHOPPY/FEAR (last known). PV $10,415, cash $10,240, 4 pos. All 4 HOLD.
