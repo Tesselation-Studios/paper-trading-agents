@@ -31,6 +31,8 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 
 ## What I'm Learning
 
+- **10-order daily limit is a binding constraint (Jul 27)**: Alpaca free-tier caps at 10 orders/day. The "small and wide, scale into winners" approach burned through 6+ orders by 11:40 AM, leaving 4+ hours of completely gated trading in a SUSTAINABLE regime. BOX hit the 3% scale-in floor 5+ times but couldn't execute. STVN passed all signal gates every tick from 12:20 through close but was blocked. Need to budget the 10 slots — front-load the highest conviction, treat each order as a scarce resource, and consider batching multiple scale-ins into one session. This isn't a strategy philosophy change (still small/wide), but an operational ceiling that must be respected.
+- **Parallel tick collision — 2nd occurrence (Jul 27)**: KRC got 2 shares instead of 1 due to parallel tick collision at 10:20/10:25, same bug as IP Jul 24. The order-idempotency guard (documented Jul 24 in MEMORY.md) was never implemented. Two occurrences in 3 sessions — this is no longer an edge case. Before submitting a buy order, the executor MUST check for existing pending/active orders on that symbol.
 - One outsized loser wipes out several small winners — sizing > pick quality.
 - High conviction ≠ high accuracy — keep calibrating.
 - Stale pipeline is worse than no pipeline — fall back to price action honestly.

@@ -1,5 +1,5 @@
 # Casper's Durable Memory
-*Last updated: 2026-07-26 — weekly review*
+*Last updated: 2026-07-27 — nightly learning*
 
 ## Raf's Preferences
 - **Directness**: Follow commands — no scope creep.
@@ -57,6 +57,17 @@
 - **Sentiment pipeline blind**: FinBERT/Praesentire offline since Jul 7 (Day 19). Primary edge unavailable. All entry decisions are technical-only with no conviction overlay. Past the Day 21 threshold — escalation filed Jul 20, Jul 22, Jul 23; zero response. Now treated as permanent constraint — optimize technical-only workflow, treat sentiment as bonus layer if/when restored.
 - **Parallel tick collision guard (NEW Jul 24)**: Two ticks firing simultaneously can submit duplicate buy orders for the same ticker. Jul 24: IP got 2 shares instead of 1 due to parallel tick collision at 10:05 — outcome was favorable (+9.7%) but the symmetry works both ways. Before submitting a buy order, check for existing active/pending orders on that symbol.
 - **Preferred stock screening (NEW Jul 24)**: Alpaca paper trading does NOT support OTC preferred stocks. Jul 24: OZKAP buy order submitted @ $16.40, never filled — order appeared in recent_orders but position absent from account. Screen ticker type (common/ETF/preferred/OTC) at watchlist qualification stage, not execution stage. Flag OTC/preferred as "do-not-retry."
+
+### 10-Order Daily Limit — Binding Operational Ceiling (NEW Jul 27)
+- **Alpaca free-tier caps at 10 orders/day**: Today (Jul 27), the "small and wide, scale into winners" approach burned through 6+ orders by 11:40 AM — the remaining 4 hours 20 minutes were completely gated. BOX hit the 3% scale-in floor at least 5 times but couldn't execute. STVN passed all signal gates every tick from 12:20 through close but was blocked. First SUSTAINABLE regime signal (0.92) in many sessions — couldn't capitalize.
+- **Budget the 10 slots**: Each order is a scarce resource. Front-load highest conviction. Batch multi-ticker entries where possible. Scale-ins on the same ticker might combine into one modification order. 6 orders in 2 hours leaves 4 hours of dead weight — that's 65% of the trading day frozen.
+- **Strategy philosophy unchanged** — still small/wide — but execution must respect this ceiling. Revisit once bankroll grows enough to justify a paid Alpaca tier.
+
+### KRC Parallel Tick Collision — 2nd Occurrence (Jul 27)
+- **Same bug as IP (Jul 24)**: Two ticks (10:20 and 10:25) fired simultaneously, resulting in 2 KRC shares instead of 1. The order-idempotency guard documented Jul 24 was never implemented. Outcome this time was neutral (KRC ended -0.38%), but the symmetry works both ways — next collision could double a loser. Guard MUST be implemented, not just documented.
+
+### Experience Counter Not Tracking Exits (NEW Jul 27)
+- **3 morning exits not reflected**: F (+4.07%), IP (+10.5%), FHB (-2.41%) — all sold before 10:00. `experience.json` still shows 29 total trades (unchanged from Friday). Self-stats reported "0 trades logged today (3 morning exits not reflected)." Either `record_decision.py` isn't being called on exits, or there's a counting methodology gap. 6 trades today (3 exits + 2 entries + 1 scale-in) unaccounted for.
 
 ### Evolve→Execute Pipeline Leak (NEW Jul 26)
 - **Action items from nightly syntheses don't survive overnight**: The next session's tick agent starts fresh from strategy.md + active.md — it never reads the prior day's synthesis. Action items (NVDA trim took 5 days/3 cycles, weekend homework from Jul 17 never resolved) accumulate because there's no carry-forward mechanism. This is a process design gap, not an execution failure. Consider a `tasks/pending.md` or carry-forward section in active.md to bridge the overnight gap.
