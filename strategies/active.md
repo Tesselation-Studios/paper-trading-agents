@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 12:57 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 15:25 ET
+
+## TUE 15:25 ET — Market Tick
+- ✅ **BOX SCALE-IN**: +1sh @ ~$31.48, conviction 0.475. v1.7 winner add: +3.69% from avg entry $30.342, MACDh +0.96 🟢 strong, RSI 60.6 in-band, SUSTAINABLE 0.92. Reconciled 0.475 > 0.415 effective floor — first pass today after floor dropped. Now 6sh. Decision #2, training #2.
+- **6 pos.** Regime **SUSTAINABLE** (0.92). PV $10,407, cash $10,049 (96.6%). BOX 6sh +3.1%, BFST +2.6%, BFH +0.6%, HLN +0.6%, STVN -0.1%. All MACDh 🟢 (68-bar cache). No breaches.
+- 🔍 **Batch eval** (NTRS/GL/DXC/RMD/AVEX/PL, all idle 21): all 6 pre-disqualified. NTRS PT $173 below $182.52 + sector 2/2 blocked. GL bankroll ceiling. DXC MACDh +0.0257 near-zero + vol 0.76x. RMD/AVEX/PL bearish MACD. Batch marked evaluated, rotation advances.
+- 📡 Merge/promote no-op (max_size 30). Pipeline healthy. ⚠️ escalate_freeform_research flag ON (46 ticks under-deployed) but web-search APIs rate-limited — will retry when available. workspace_review ✅.
+
 
 ## TUE 12:57 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,407, cash $10,081 (96.9%). BOX 5sh +3.8%, BFST +3.0%, BFH +0.6%, HLN +0.4%, STVN +0.2%. All MACDh 🟢 (68-bar cache). No breaches.
