@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:12 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:15 ET
+
+## TUE 9:15 ET — Pre-Market Tick
+- 🚨 **BCS SELL queued for 9:30**: trailing stop breach confirmed, $26.75 (-5.4% entry, -6.3% off peak $28.55). Hours gate blocks until open. Mandatory full exit.
+- 🆕 **STVN BUY queued for 9:30**: 1sh probe @ $19.80, conviction 0.37 (above 0.35 floor). RSI 58.7 🟢, MACDh +0.4302 🟢, vol 1.24x ✅. SUSTAINABLE regime. All non-hour gates passed. No flow/insiders, neutral sentiment.
+- **3 HOLD.** Regime **SUSTAINABLE** (0.92). PV $10,412.71, cash $10,185.25 (97.8%). BFST $31.47 (+1.6%), BOX 3sh $30.15 (+1.3%), KRC 2sh $39.41 (-0.3%). All MACDh 🟢: BFST +0.4529, BOX +0.96, KRC +0.7051. No flips.
+- 📡 Data bus LIVE (68 bars), sentiment fresh (13:01 UTC): BFST +0.771, BOX +0.385, KRC -0.580, BCS +0.711. Merge + promote no-op (all already present). Pipeline healthy — STVN/HLN top qualifiers. 166 under-deployed ticks, conv floor 0.35. workspace_review clean.
+- 📝 2 orders queued for open. Scale-in: none qualify (BFST +1.6%, BOX +1.3% — both below 3% v1.7 floor). Macro already fetched today.
 
 ## TUE 9:12 ET — Pre-Market Tick
 - 🚨 **BCS trailing stop confirmed breached**: $26.76 (-5.38% from entry, -6.3% off peak $28.55). check-stops returns `breaches: [BCS]`. **SELL queued for 9:30** — hours gate blocks pre-market. Mandatory full exit.
