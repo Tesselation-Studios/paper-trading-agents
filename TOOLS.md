@@ -9,8 +9,8 @@ Append to `journal/YYYY-MM-DD.md` during nightly maintenance only — strategy v
 
 ## Workspace Conventions
 - `params.json` / `strategy.md` — read every tick
-- `strategies/active.md` — working memory; `strategies/watchlist.md` — discovery list
-- `positions/*.md` — thesis per position; `off_hours/` — research notes
+- `strategies/active.md` — working memory; discovery/positions in `state/trader.db`
+- `off_hours/` — research notes
 - `scripts/` — executor + supporting tools, `ls scripts/` for the current list
 - `state/` — machine-written local caches, not hand-edited
 - `proposals/` — evolution proposals awaiting review, see `skills/evolution-proposals.md`

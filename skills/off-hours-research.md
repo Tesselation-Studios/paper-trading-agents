@@ -1,6 +1,6 @@
 # Skill: Off-Hours Research Routine
 
-Runs daily 20:00 ET via the `stonks-off-hours` cron. Market closed — no trading, don't call `scripts/executor.py`. Read `strategies/watchlist.md` + `positions/*.md` for current tickers first, pass them explicitly to the scripts below (no stale defaults).
+Runs daily 20:00 ET via the `stonks-off-hours` cron. Market closed — no trading, don't call `scripts/executor.py`. Read current tickers first via `python3 scripts/trader_query.py positions` + `watchlist`, pass them explicitly to the scripts below (no stale defaults).
 
 | Step | Command | Output |
 |---|---|---|
