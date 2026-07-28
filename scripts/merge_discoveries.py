@@ -42,41 +42,37 @@ def extract_candidates(text: str) -> list[str]:
     return TICKER_HEADER_RE.findall(text)
 
 
-def merge(dry_run: bool = False, date: str = None) -> dict:
-    disc_file = latest_discoveries_file(date)
-    if disc_file is None:
-        return {"merged": [], "skipped": [], "error": "no discoveries file found"}
-
-    candidates = extract_candidates(disc_file.read_text())
-    if not candidates:
-        return {"merged": [], "skipped": [], "error": f"no ticker headers found in {disc_file.name}"}
-
+def insert_into_watchlist(tickers: list[str], source_label: str, dry_run: bool = False) -> dict:
+    """The '## Candidates' text-splice: dedup against every ticker anywhere
+    in watchlist.md (held, listed, or dropped-note — deliberately
+    conservative rather than trying to parse "dropped for cause"
+    reasoning), respect params.json's watchlist.max_size, write
+    '- TICKER — idle_ticks: 0 — from {source_label}' lines. Extracted
+    2026-07-27 from merge()'s inline body so promote_candidates.py (the
+    discovery-pool -> watchlist bridge) can reuse the exact same
+    dedup/cap/format contract instead of reimplementing it."""
     watchlist_text = WATCHLIST_PATH.read_text()
     max_size = json.loads(PARAMS_PATH.read_text()).get("watchlist", {}).get("max_size", 30)
 
-    # Anything already anywhere in the file (held, listed, dropped-note) is
-    # skipped — this is deliberately conservative rather than trying to
-    # parse "dropped for cause" reasoning.
     existing_tickers = set(re.findall(r"\b([A-Z]{1,5})\b", watchlist_text))
     active_candidate_count = len(re.findall(r"^- [A-Z]{1,5} — idle_ticks:", watchlist_text, re.MULTILINE))
 
     merged, skipped = [], []
     new_lines = []
-    for ticker in candidates:
+    for ticker in tickers:
         if ticker in existing_tickers:
             skipped.append(ticker)
             continue
         if active_candidate_count + len(new_lines) >= max_size:
             skipped.append(f"{ticker} (max_size {max_size} reached)")
             continue
-        new_lines.append(f"- {ticker} — idle_ticks: 0 — from {disc_file.name}")
+        new_lines.append(f"- {ticker} — idle_ticks: 0 — from {source_label}")
         merged.append(ticker)
 
     if not new_lines:
-        return {"merged": [], "skipped": skipped, "source": disc_file.name}
+        return {"merged": [], "skipped": skipped}
 
     if not dry_run:
-        marker = "_(All 8 candidates dropped"
         insertion = "\n".join(new_lines) + "\n\n"
         if "## Candidates\n" in watchlist_text:
             watchlist_text = watchlist_text.replace(
@@ -86,7 +82,21 @@ def merge(dry_run: bool = False, date: str = None) -> dict:
             watchlist_text += "\n## Candidates\n" + insertion
         WATCHLIST_PATH.write_text(watchlist_text)
 
-    return {"merged": merged, "skipped": skipped, "source": disc_file.name}
+    return {"merged": merged, "skipped": skipped}
+
+
+def merge(dry_run: bool = False, date: str = None) -> dict:
+    disc_file = latest_discoveries_file(date)
+    if disc_file is None:
+        return {"merged": [], "skipped": [], "error": "no discoveries file found"}
+
+    candidates = extract_candidates(disc_file.read_text())
+    if not candidates:
+        return {"merged": [], "skipped": [], "error": f"no ticker headers found in {disc_file.name}"}
+
+    result = insert_into_watchlist(candidates, source_label=disc_file.name, dry_run=dry_run)
+    result["source"] = disc_file.name
+    return result
 
 
 def main():

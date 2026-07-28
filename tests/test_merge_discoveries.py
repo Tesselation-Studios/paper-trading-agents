@@ -183,3 +183,51 @@ class TestMerge:
         merge_discoveries.merge()
         text = merge_env["watchlist_path"].read_text()
         assert "- ZZZ — idle_ticks: 0 — from 2026-07-22.md" in text
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# insert_into_watchlist — extracted 2026-07-27 so promote_candidates.py
+# (discovery-pool -> watchlist bridge) reuses the exact same splice logic
+# instead of reimplementing it. merge()'s own tests above already cover
+# this indirectly; these exercise the helper directly with an arbitrary
+# source_label instead of always a discoveries/*.md filename.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestInsertIntoWatchlist:
+    def test_skips_ticker_already_held(self, merge_env):
+        result = merge_discoveries.insert_into_watchlist(["NVDA", "ZZZ"], source_label="discovery_pool gen 1")
+        assert result["merged"] == ["ZZZ"]
+        assert "NVDA" in result["skipped"]
+
+    def test_respects_max_size(self, merge_env):
+        merge_env["watchlist_path"].write_text(
+            DEFAULT_WATCHLIST
+            + "- EXA — idle_ticks: 0 — from prior\n"
+            + "- EXB — idle_ticks: 0 — from prior\n"
+        )
+        merge_env["params_path"].write_text(json.dumps({"watchlist": {"max_size": 3}}))
+        result = merge_discoveries.insert_into_watchlist(
+            ["NEA", "NEB", "NEC"], source_label="discovery_pool gen 1"
+        )
+        assert result["merged"] == ["NEA"]
+        assert any("max_size 3 reached" in s for s in result["skipped"])
+
+    def test_dry_run_does_not_write(self, merge_env):
+        before = merge_env["watchlist_path"].read_text()
+        result = merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="discovery_pool gen 1", dry_run=True)
+        after = merge_env["watchlist_path"].read_text()
+        assert result["merged"] == ["ZZZ"]
+        assert before == after
+
+    def test_uses_given_source_label_not_a_filename(self, merge_env):
+        merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="discovery_pool gen 7")
+        text = merge_env["watchlist_path"].read_text()
+        assert "- ZZZ — idle_ticks: 0 — from discovery_pool gen 7" in text
+
+    def test_no_result_source_key_left_to_caller(self, merge_env):
+        """Unlike merge(), this helper doesn't know about a discoveries
+        file at all -- callers (merge() itself, promote_candidates.py) are
+        responsible for adding their own 'source' key if they want one."""
+        result = merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="anything")
+        assert "source" not in result
