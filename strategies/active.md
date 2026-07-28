@@ -1,4 +1,18 @@
-# Current Playbook — Stonks 🚀 MON JUL 27, 2026 — 3:55 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:12 ET
+
+## TUE 9:12 ET — Pre-Market Tick
+- 🚨 **BCS trailing stop confirmed breached**: $26.76 (-5.38% from entry, -6.3% off peak $28.55). check-stops returns `breaches: [BCS]`. **SELL queued for 9:30** — hours gate blocks pre-market. Mandatory full exit.
+- **3 others HOLD.** Regime **SUSTAINABLE** (0.92). PV $10,412.72, cash $10,185.25 (97.8%). BFST $31.47, BOX 3sh $30.15, KRC 2sh $39.41 — all MACDh 🟢 (68-bar cache, yesterday's data). No other breaches.
+- 📊 New day — order_count_audit resets to 0/10 (was 10/10 yesterday, gating all afternoon). 166 under-deployed ticks, conv floor 0.35.
+- 🆕 Promote +1 ISHP ($34.98, vol 4.63x but 686 shares — ETF, too thin). HLN vol 2.72x ✅ new qualifier (RSI 59.0, MACDh +0.1803 🟢, sentiment neutral). STVN remains top entry candidate (RSI 58.7, MACDh +0.4302 🟢, vol 1.24x, also neutral sentiment).
+- 📝 Same as 9:05 — BCS mandatory sell queued. STVN/HLN top candidates for 9:30 open. workspace_review clean.
+
+## TUE 9:05 ET — Pre-Market Tick
+- 🚨 **BCS trailing stop BREACHED**: $26.77 (-5.38% from entry $28.28, -6.3% off peak $28.55). Mandatory SELL queued for 9:30 open. Q2 earnings beat ($0.90 vs $0.89 est) but trailing stop is non-negotiable.
+- 3 pos remain. Regime **SUSTAINABLE** (0.92). PV $10,412.72, cash $10,185.25 (97.8%). BFST $31.47 (+1.58%), BOX 3sh $30.14 (+1.30%), KRC $39.41 (-0.25%).
+- 📡 MACDh all 🟢 (68-bar cache): BFST +0.4529, BOX +0.960, KRC +0.7051 — no flips. Sentiment fresh (9:01): BFST +0.771, BOX +0.385, KRC -0.580. workspace_review clean.
+- 🆕 Merge +8 (TTEC/MPAA/ATKR/PKBK/ZBRA/MPWR/VIR/PMN), promote +1 (HLN). Pipeline healthy. STVN $19.80 (RSI 58.7, MACDh +0.4302 🟢, vol 1.24x) top entry candidate for open.
+- 📊 New day — order_count_audit 0/10. 165 under-deployed ticks, conv floor 0.35. Escalation marked. Macro: 10Y 4.69%/2Y 4.33%, spread 0.36% flat, FOMC 3.50-3.75%.
 
 ## MON 3:55 ET — Market Tick
 - **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,414.67, cash $10,185.27 (97.8%). BFST $31.50 (+1.66%), BOX 3sh $30.23 (+1.59%), KRC $39.36 (-0.38%), BCS $28.48 (+0.69%). No stop breaches.
