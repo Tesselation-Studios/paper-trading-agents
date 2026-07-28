@@ -28,10 +28,7 @@ FLOOR = 50.00              # absolute minimum per tick
 # blocking real qualified candidates outright on price alone (e.g. GL at
 # $173/share couldn't even buy 1 share). Raf: bump the start, keep the
 # win/loss-earned growth mechanism intact rather than removing it.
-STARTING_CEILING = 350.00  # 2026-07-27: $200 fixed "zero trades possible" but still
-# failed the split-window Sharpe bar under 2-share probe sizing (-0.567 second half)
-# and still couldn't clear GL's 2-share threshold -- see research/2026-07-27.md.
-# $350 clears both halves positive under both sizing conventions tested.
+STARTING_CEILING = 700.00  # per-tick spending budget; grows/decays with win/loss track record
 MAX_CEILING = 2000.00       # hard cap
 GROWTH_RATE = 0.02          # +2% per win
 DECAY_RATE = 0.01           # -1% per loss
