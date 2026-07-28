@@ -171,7 +171,21 @@ def refresh_universe_if_stale(conn, cursor_state: dict, refresh_interval_seconds
         stale = elapsed >= refresh_interval_seconds
 
     if not stale:
-        return discovery_db.get_universe_snapshot(conn), cursor_state, False
+        # cursor_state (state/discovery_daemon.json) is not tied to any one
+        # db file -- verify the connection actually passed in agrees with
+        # what the cursor claims before trusting it. Without this, a
+        # --db-path swap (or a deleted/recreated db file) leaves the
+        # cursor looking "fresh" while pointing at a db with an empty or
+        # mismatched universe_snapshot table -- confirmed live 2026-07-27
+        # during dry-run verification: a scratch --db-path run warmed the
+        # cursor file, then the real db run silently got zero candidates
+        # because it trusted the stale-but-fresh-looking timestamp instead
+        # of checking its own snapshot table.
+        db_generation = discovery_db.get_universe_generation(conn)
+        db_universe = discovery_db.get_universe_snapshot(conn)
+        if db_universe and db_generation == cursor_state.get("universe_generation"):
+            return db_universe, cursor_state, False
+        stale = True
 
     universe = universe_scan.fetch_broad_universe(sample_size=None)
     generation = (cursor_state.get("universe_generation") or 0) + 1

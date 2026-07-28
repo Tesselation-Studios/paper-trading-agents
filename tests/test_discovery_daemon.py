@@ -113,6 +113,42 @@ class TestRefreshUniverseIfStale:
         )
         assert refreshed is True
 
+    def test_refetches_when_cursor_fresh_but_db_snapshot_missing(self, conn, monkeypatch):
+        """Regression: cursor_state (state/discovery_daemon.json) is not
+        tied to any one db file. Confirmed live 2026-07-27 -- a --db-path
+        override run warmed the cursor file's universe_last_refreshed_at,
+        then a run against the real (different) db silently got zero
+        candidates because it trusted the fresh-looking timestamp instead
+        of checking whether THIS db actually has that snapshot."""
+        monkeypatch.setattr(discovery_daemon.universe_scan, "fetch_broad_universe",
+                             lambda **k: ["REAL1", "REAL2"])
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        cursor_state["universe_last_refreshed_at"] = "2026-07-27T12:00:00+00:00"
+        cursor_state["universe_generation"] = 1
+        # conn has NO universe_snapshot rows at all -- simulates a fresh/
+        # different db file despite the cursor claiming generation 1 is current.
+        universe, new_state, refreshed = discovery_daemon.refresh_universe_if_stale(
+            conn, cursor_state, refresh_interval_seconds=86400, now="2026-07-27T12:05:00+00:00",
+        )
+        assert refreshed is True
+        assert universe == ["REAL1", "REAL2"]
+        assert new_state["universe_generation"] == 2
+
+    def test_refetches_when_db_generation_mismatches_cursor(self, conn, monkeypatch):
+        """Same class of bug, different trigger: the db has SOME snapshot,
+        but from a different generation than the cursor claims is current."""
+        monkeypatch.setattr(discovery_daemon.universe_scan, "fetch_broad_universe",
+                             lambda **k: ["NEW"])
+        discovery_db.upsert_universe_snapshot(conn, ["OLD_GEN"], generation=1, fetched_at="2026-07-27T11:00:00+00:00")
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        cursor_state["universe_last_refreshed_at"] = "2026-07-27T12:00:00+00:00"
+        cursor_state["universe_generation"] = 2  # cursor thinks gen 2, db only has gen 1
+        universe, new_state, refreshed = discovery_daemon.refresh_universe_if_stale(
+            conn, cursor_state, refresh_interval_seconds=86400, now="2026-07-27T12:05:00+00:00",
+        )
+        assert refreshed is True
+        assert universe == ["NEW"]
+
     def test_generation_increments_only_on_real_refresh(self, conn, monkeypatch):
         monkeypatch.setattr(discovery_daemon.universe_scan, "fetch_broad_universe", lambda **k: ["A"])
         cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
