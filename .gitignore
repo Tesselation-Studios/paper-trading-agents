@@ -38,6 +38,9 @@ state/discovery_daemon.json
 state/discovery_pool.db
 state/discovery_pool.db-wal
 state/discovery_pool.db-shm
+state/trader.db
+state/trader.db-wal
+state/trader.db-shm
 state/*.lock
 
 # Secrets — never commit these
