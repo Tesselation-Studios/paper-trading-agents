@@ -107,3 +107,52 @@ Every trailing-stop variant tested (flat 5%, vol-scaled at 4 trail_k values) fai
 - `python3 scripts/replay_check.py --sweep-trail` — same universe, sweep TRAIL_K [10, 20, 30, 40] at current live -8%/-10% stop/profit-target
 - Both fetch real Alpaca IEX daily bars — same 36-ticker universe, 200-day lookback, 103 trading days
 - No `executor.py`/`params.json`/`strategy.md` modified — investigation-only, fully unwired from live trading
+
+---
+
+## 4. Controlled Comparison — Same Stop/Target Params
+
+### Setup
+
+The `--sweep-trail` grid now includes `trail_k: null` as a genuine no-trailing-stop control point in the SAME sweep, at identical -8%/-10% stop/target parameters as every trail_k candidate. This eliminates the confound flagged in section 3, where the earlier "no trailing stop" baseline (v1.0, run via `--split-window`) used different stop/target params (-10/-12) than the sweep candidates (-8/-10). All 5 candidates below are strictly comparable — the only variable is trail_k.
+
+### Results (all at identical -8%/-10% stop/profit-target)
+
+| trail_k | Full Sharpe | 1st Half Sharpe | 2nd Half Sharpe | Win Rate | Total Return % | Trades | Robust |
+|---|---|---|---|---|---|---|---|
+| **null (no trail)** | **0.479** | **0.880** | 0.279 | **45.5%** | +2.51% | 176 | true |
+| 10 | 0.978 | 0.750 | 0.385 | 42.4% | +4.72% | 443 | true |
+| 20 | 0.902 | 0.320 | 0.898 | 42.6% | +4.34% | 401 | true |
+| 30 | 1.007 | 0.837 | 1.071 | 43.3% | +4.99% | 365 | true |
+| 40 | 1.080 | 0.845 | **1.084** | 44.7% | **+5.41%** | 349 | true |
+
+### Analysis: does adding a trailing stop change win rate?
+
+**Yes — it reduces it.** The no-trail control has the highest win rate in the entire grid: 45.5%. Every trailing-stop variant scores lower:
+
+- trail_k=10: 42.4% (−3.1pp vs no-trail)
+- trail_k=20: 42.6% (−2.9pp)
+- trail_k=30: 43.3% (−2.2pp)
+- trail_k=40: 44.7% (−0.8pp)
+
+The earlier finding ("trailing stop reduces win rate") is **confirmed**, and the section 3 confound (different stop/target params for baseline vs sweep) is now resolved — the gap was real, not an artifact. At identical -8/-10 stop/target params, zero trailing stop beats every trailing-stop variant on pure win rate.
+
+### But that's not the whole story
+
+While win rate drops, **every other metric improves substantially** with a trailing stop:
+
+- **Sharpe**: 0.479 (no-trail) → 1.080 (trail_k=40) — more than doubles
+- **Total return**: +2.51% → +5.41% — more than doubles
+- **Trade count**: 176 → 349 — the trail creates 2× the opportunities by cycling capital through positions rather than letting them sit idle waiting for the hard stop or profit target
+
+The no-trail control's second-half Sharpe is notably weak at 0.279 — the strategy without a trail is more fragile out-of-sample, even though it posts the best first-half Sharpe (0.880). The trailing-stop variants, especially at higher trail_k, are more consistent across both halves.
+
+### Interpretation
+
+The trailing stop is a **trade-frequency and risk-adjusted-return amplifier**, not a win-rate improver. It generates more trades by exiting positions earlier on both the downside (stopping out before the hard -8% stop) and the upside (locking in gains before the +10% profit target via the ratchet). More trades = more total return even at a slightly lower win rate. And because those exits happen at tighter, volatility-aware levels, Sharpe improves dramatically — the returns are smoother, less drawdown-prone.
+
+The bootstrap-phase strategy (v1.12) prioritizes win rate because bankroll ceiling growth is win-COUNT-driven. Under that lens, the trailing stop is mildly counterproductive — it sacrifices ~0.8-3.1pp of win rate. But if/when the ceiling threshold crosses and the strategy shifts to normal let-winners-run mode, the trailing stop's Sharpe and return benefits become the dominant consideration.
+
+### Recommendation update
+
+The original recommendation ("consider removing the trailing stop") still holds for the bootstrap phase if win rate is the sole optimization target. But the controlled comparison reveals that the trailing stop isn't just noise — it's a genuine risk-adjusted-return tool whose cost (lower win rate) must be weighed against its benefit (higher Sharpe, higher total return, more consistent out-of-sample performance). The right call may be to keep it but with trail_k=40 (the minimum-win-rate-penalty point, only -0.8pp) rather than removing it entirely. The no-trail control's weak second-half Sharpe (0.279) is a warning sign that a trail-free strategy may not generalize well.
