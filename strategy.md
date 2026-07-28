@@ -29,7 +29,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 
 ## What I'm Learning
 
-- **10-order daily limit was a self-imposed cap, not an Alpaca constraint (Jul 27, corrected Jul 28)**: this was misdiagnosed as "Alpaca free-tier caps at 10 orders/day" — it isn't. `risk_guards.order_count_audit_threshold_daily` is Stan's own rogue-trading-loop backstop (see `scripts/executor.py::gate_daily_order_count`), and Alpaca's actual free-tier limit is a 200-req/min API rate cap, not an order-count cap (verified against Alpaca's docs Jul 28). Raised 10→30. The underlying incident was real, just misattributed: burned through 6+ orders by 11:40 AM, BOX hit the 3% scale-in floor 5+ times but couldn't execute, STVN passed all signal gates every tick from 12:20 through close but was blocked.
+- Daily order-count guardrail (`risk_guards.order_count_audit_threshold_daily`, currently 30) is a self-imposed rogue-loop backstop, not an Alpaca limit — Alpaca's actual constraint is a 200 req/min API rate cap.
 - **Parallel tick collision — 2nd occurrence (Jul 27)**: KRC got 2 shares instead of 1 due to parallel tick collision at 10:20/10:25, same bug as IP Jul 24. The order-idempotency guard (documented Jul 24 in MEMORY.md) was never implemented. Two occurrences in 3 sessions — this is no longer an edge case. Before submitting a buy order, the executor MUST check for existing pending/active orders on that symbol.
 - One outsized loser wipes out several small winners — sizing > pick quality.
 - High conviction ≠ high accuracy — keep calibrating.
