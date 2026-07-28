@@ -77,6 +77,8 @@ CHOPPY_VOL_THRESHOLD = 0.035  # 20d rolling stdev of daily returns
 # Mirrors params.json's current values.
 STOP_LOSS_PCT = -10.0
 PROFIT_TARGET_PCT = 12.0
+TRAILING_STOP_PCT = 5.0             # risk.trailing_stop_pct — opt-in via make_trader(trailing_stop_pct=...),
+                                     # not simulated by any variant unless explicitly requested (2026-07-28)
 RSI_EXHAUSTION_EXIT = 75.0          # exit_rules.rsi_exhaustion_hard_exit
 MAX_HOLDING_DAYS = 5                # risk_guards.max_holding_days
 PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not full close)
@@ -180,7 +182,7 @@ def build_tick_stream(frames):
 
 def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
                  max_positions=None, scale_into_winners=False, scale_in_max_per_day=None,
-                 scale_in_max_multiple=None):
+                 scale_in_max_multiple=None, trailing_stop_pct=None):
     """Build a trader function closing over per-ticker indicator lookups
     (Tick only carries rsi) and a small amount of flip-detection state.
 
@@ -213,6 +215,17 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
     better Sharpe while still rewarding bigger winners more than a flat
     size would. None (default) uses the module constant (3.0, v1.7's
     shipped value).
+    trailing_stop_pct: 2026-07-28 addition. None (default) means "not
+    simulated" — every existing variant (v1.0/v1.1/v1.2/v1.7*) is
+    byte-for-byte unchanged, since none of them pass this. When set,
+    ratchets from the highest close observed since entry and exits if
+    price drops trailing_stop_pct below that peak, mirroring executor.py's
+    real check_stops() (peak_price = max(prior, current); exit if
+    current < peak * (1 - pct/100)) — same formula, ported not reinvented.
+    Checked after the variant-specific conviction-based exits (MACDh flip,
+    RSI exhaustion, time-stop) but before the flat stop_loss_pct check, so
+    a trail breach fires first if it would trigger before the from-entry
+    stop does.
     """
     assert variant in ("v1.0", "v1.1", "v1.2")
     stop_loss_pct = STOP_LOSS_PCT if stop_loss_pct is None else stop_loss_pct
@@ -226,6 +239,7 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
     last_scale_in_date = {}
     prev_hist = {}
     prev_rsi = {}
+    peak_price = {}
 
     def trader(tick, portfolio):
         row = lookup.get((tick.ticker, tick.timestamp))
@@ -261,6 +275,14 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
             if variant == "v1.2" and held_days >= MAX_HOLDING_DAYS:
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
                                        conviction=1.0, rationale=f"v1.2: time-stop, held {held_days}d >= {MAX_HOLDING_DAYS}d")
+
+            if trailing_stop_pct is not None:
+                peak = max(peak_price.get(tick.ticker, held.entry_price), tick.close)
+                peak_price[tick.ticker] = peak
+                trail_stop_price = peak * (1 - trailing_stop_pct / 100)
+                if tick.close < trail_stop_price:
+                    return TraderDecision(ticker=tick.ticker, decision="SELL", conviction=1.0,
+                                           rationale=f"trailing_stop_pct breached (peak ${peak:.2f}, stop ${trail_stop_price:.2f})")
 
             if pnl_pct <= stop_loss_pct:
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
@@ -350,6 +372,10 @@ STRATEGY_BUILDERS = {
     "v1.7": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True),
     "v1.7-daily": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True, scale_in_max_per_day=1),
     "v1.7-gentle": lambda frames: make_trader(frames, "v1.1", scale_into_winners=True, scale_in_max_multiple=1.5),
+    # 2026-07-28: same v1.0 entry/exit rules, plus a flat trailing stop
+    # simulated for the first time (see make_trader's trailing_stop_pct
+    # docstring) -- win-rate investigation, not yet a promotion candidate.
+    "v1.0-trail": lambda frames: make_trader(frames, "v1.0", trailing_stop_pct=TRAILING_STOP_PCT),
 }
 
 
@@ -486,6 +512,9 @@ VARIANT_LABELS = {
                   "no-op vs v1.7 here, not a real test of intraday pacing (see module docstring)",
     "v1.7-gentle": "same as v1.7 but scale_in_max_multiple=1.5 instead of 3.0 — tests whether a "
                    "gentler size-scaling cap recovers some of v1.6's better Sharpe",
+    "v1.0-trail": "v1.0 rules + a flat trailing_stop_pct simulated for the first time (win-rate "
+                  "investigation, 2026-07-28 — trailing stops are the dominant loss category in "
+                  "real trade history; see make_trader's trailing_stop_pct docstring)",
 }
 
 

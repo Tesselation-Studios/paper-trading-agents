@@ -1,5 +1,5 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-07-24 — nightly learning*
+*Updated: 2026-07-28 — nightly learning*
 
 ### Operational
 - **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
@@ -8,16 +8,17 @@
 - **Parallel tick collision guard (NEW Jul 24)**: Two ticks firing simultaneously can submit duplicate buy orders for the same ticker. Jul 24: IP got 2 shares instead of 1 due to parallel tick collision at 10:05 — outcome was favorable (+9.7%) but the symmetry works both ways. Before submitting a buy order, check for existing active/pending orders on that symbol.
 - **Preferred stock screening (NEW Jul 24)**: Alpaca paper trading does NOT support OTC preferred stocks. Jul 24: OZKAP buy order submitted @ $16.40, never filled — order appeared in recent_orders but position absent from account. Screen ticker type (common/ETF/preferred/OTC) at watchlist qualification stage, not execution stage. Flag OTC/preferred as "do-not-retry."
 
-### 10-Order Daily Limit — Binding Operational Ceiling (NEW Jul 27)
-- **Alpaca free-tier caps at 10 orders/day**: Today (Jul 27), the "small and wide, scale into winners" approach burned through 6+ orders by 11:40 AM — the remaining 4 hours 20 minutes were completely gated. BOX hit the 3% scale-in floor at least 5 times but couldn't execute. STVN passed all signal gates every tick from 12:20 through close but was blocked. First SUSTAINABLE regime signal (0.92) in many sessions — couldn't capitalize.
-- **Budget the 10 slots**: Each order is a scarce resource. Front-load highest conviction. Batch multi-ticker entries where possible. Scale-ins on the same ticker might combine into one modification order. 6 orders in 2 hours leaves 4 hours of dead weight — that's 65% of the trading day frozen.
-- **Strategy philosophy unchanged** — still small/wide — but execution must respect this ceiling. Revisit once bankroll grows enough to justify a paid Alpaca tier.
+### 10-Order Daily Limit Was a Phantom — DEBUNKED Jul 28
+- **The "10 orders/day" cap was NEVER real**: Alpaca's actual constraint is a 200 req/min API rate cap — not a daily order limit. The 10-order figure originated as a self-imposed guardrail (`params.json: risk_guards.order_count_audit_threshold_daily`) that got miscategorized in MEMORY.md as an Alpaca rule, then propagated into the tick agent's manual counting as gospel. The actual params.json threshold was **30**, and the guardrail gate (`guardrail_gates.order_count_audit`) was already **disabled** (`false`). **Two full sessions (Jul 27-28) were needlessly self-gated at 10 orders** — Jul 27 lost 4+ hours of a SUSTAINABLE (0.92) regime; Jul 28 self-gated by 11:07 AM. Raf caught it mid-session and debunked it. Strategy.md had the correct information all along.
+- **Root cause**: MEMORY.md propagated a false constraint as if it were an external limit. The tick agent treated the MEMORY.md entry as binding without cross-referencing params.json. Lesson: any operational ceiling claimed in MEMORY.md must be traceable to either a real external limit (Alpaca API docs) or an explicit, enabled guardrail in params.json — if neither, it's noise.
+- **Aftermath**: Once unshackled, the afternoon was productive — BOX scaled from 4→6sh, BFH entered, new candidates evaluated freely. The "small and wide" strategy works when it's actually allowed to fire.
 
 ### KRC Parallel Tick Collision — 2nd Occurrence (Jul 27)
 - **Same bug as IP (Jul 24)**: Two ticks (10:20 and 10:25) fired simultaneously, resulting in 2 KRC shares instead of 1. The order-idempotency guard documented Jul 24 was never implemented. Outcome this time was neutral (KRC ended -0.38%), but the symmetry works both ways — next collision could double a loser. Guard MUST be implemented, not just documented.
 
-### Experience Counter Not Tracking Exits (NEW Jul 27)
-- **3 morning exits not reflected**: F (+4.07%), IP (+10.5%), FHB (-2.41%) — all sold before 10:00. `experience.json` still shows 29 total trades (unchanged from Friday). Self-stats reported "0 trades logged today (3 morning exits not reflected)." Either `record_decision.py` isn't being called on exits, or there's a counting methodology gap. 6 trades today (3 exits + 2 entries + 1 scale-in) unaccounted for.
+### Experience Counter Partially Fixed (Jul 28 update)
+- **Jul 27 gap partially closed**: `experience.json` now shows 40 total trades (was 29). The 11-trade gap from Jul 27 was partially backfilled — but `total_wins` (12) + `total_losses` (16) = 28, leaving 12 trades unclassified. Self-stats pipeline consistently reports "0 trades logged today" in every heartbeat. The `record_decision.py` → self-stats pipeline still has a structural disconnect. Wins/losses tracked manually in experience.json but the automated pipeline doesn't see them.
+- **Consecutive losses: 4** — a concerning streak. The last 4 classified closes were all losses. This doesn't match the visible EOD book (all green Jul 27-28), suggesting at least some of these are from closed positions where the P&L was negative. Needs monitoring — if the streak continues into tomorrow, flag for deeper review.
 
 ### Evolve→Execute Pipeline Leak (NEW Jul 26)
 - **Action items from nightly syntheses don't survive overnight**: The next session's tick agent starts fresh from strategy.md + active.md — it never reads the prior day's synthesis. Action items (NVDA trim took 5 days/3 cycles, weekend homework from Jul 17 never resolved) accumulate because there's no carry-forward mechanism. This is a process design gap, not an execution failure. Consider a `tasks/pending.md` or carry-forward section in active.md to bridge the overnight gap.
@@ -40,6 +41,12 @@
 - **Rule of thumb**: If MACDh magnitude is < 0.005 on a stock trading above $5 and price is flat (<0.3% change), it's near-zero oscillation — HOLD. If MACDh magnitude > 0.005 AND declining across multiple bars AND price confirming, it's a real flip.
 
 ### Strategy Version History
+- **v1.12 (Jul 28)**: Bootstrap-phase profit-taking bias. While bankroll ceiling < $1,000 (`params.json: bootstrap_phase.ceiling_threshold`), tilt exit judgment toward quick positive wins (past 1% return) over holding for full profit target — ceiling growth is win-COUNT-driven, so frequent small wins compound capital faster in the early account stage. Fades once ceiling crosses threshold, reverting to normal let-winners-run judgment. Never sell at a loss to force a "win."
+- **v1.11 (Jul 27)**: Degraded-data entries — when MACDh is stale/unavailable for held positions, use price stability + last-known MACDh as proxy. Near-zero oscillation heuristic validated across multiple sessions.
+- **v1.10 (Jul 27)**: Discovery daemon live, stop_patience reverted, deployment_pressure conviction floor graduated to params.json.
+- **v1.9 (Jul 26)**: Order-idempotency guard documented.
+- **v1.8 (Jul 25)**: Stop-loss patience graduated (later reverted Jul 27).
+- **v1.7 (Jul 25)**: Scale-into-winners formalized with 3%/1% thresholds.
 - **v1.6 (Jul 24)**: Removed hard position-count ceiling. Cash, max_position_pct, and bankroll ceiling are the real limiters. Enabled scaling into winners (add to held winners with intact thesis). Added freeform discovery cron with real web search/tavily for catalyst hunting.
 - **v1.5 (Jul 24)**: CHOPPY/FEAR no longer blocks entries — regime sizes entries (probe/1-share in uncertain, normal in clear). Validated same day: 4 probe entries in CHOPPY, all profitable by close.
 - **v1.4 (Jul 23)**: Near-zero MACDh oscillation heuristic graduated from observation to validated knowledge. No other rules changed.
