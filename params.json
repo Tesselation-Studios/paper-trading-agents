@@ -2,7 +2,7 @@
   "agent": "stonks",
   "account": "stonks",
   "phase": "mvp-1",
-  "strategy_version": "stonks.strat:v1.11",
+  "strategy_version": "stonks.strat:v1.12",
 
   "tick": {
     "interval_seconds": 300,
@@ -40,6 +40,12 @@
     "order_count_audit_threshold_daily": 30,
     "_source": "concentration/rogue-trading guards",
     "_order_count_audit_threshold_daily_source": "Self-imposed rogue-loop backstop (see gate_daily_order_count), not an Alpaca limit -- Alpaca's actual constraint is a 200 req/min API rate cap. 30 is a real tripwire against a stuck loop without gating a normal active 'small and wide, scale into winners' day."
+  },
+
+  "bootstrap_phase": {
+    "ceiling_threshold": 1000.0,
+    "quick_exit_min_return_pct": 1.0,
+    "_source": "2026-07-28: while bankroll.py's ceiling (start $700, cap $2000, +2%/win -1%/loss -- see recalc_ceiling) is still below ceiling_threshold, strategy.md's Exit judgment biases toward banking small, fast, clearly-positive wins over letting them run -- ceiling growth is win-COUNT-driven (is_win boolean, magnitude-blind), so more frequent small wins compound the ceiling faster while capital is small. Fades out once ceiling crosses the threshold, reverting to the normal profit_target_pct-is-a-guide/let-winners-run judgment. Checked via trader_query.py bankroll's ceiling field, not lifetime_trades (see git log params.json for why)."
   },
 
   "watchlist": {
