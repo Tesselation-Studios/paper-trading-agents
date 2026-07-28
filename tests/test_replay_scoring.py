@@ -274,6 +274,30 @@ class TestSweepThresholds:
         assert len(candidates) == 2  # 1 x 1 x 2
         assert {c["trail_k"] for c in candidates} == {10.0, 30.0}
 
+    def test_none_inside_trail_k_grid_is_a_genuine_no_trail_control_point(self):
+        """2026-07-28 follow-up: an apples-to-apples 'no trailing stop, same
+        stop/target params' baseline needs to live in the SAME sweep call as
+        the trail_k candidates, not a separate run with different params
+        (exactly the confound the first real investigation run flagged).
+        None inside the grid list must behave as no-trail-at-all, not a
+        degenerate vol_scaled_trail=True/trail_k=None call."""
+        # Steady decline that a trail would exit early but a plain
+        # stop_loss_pct/profit_target_pct-only run would ride out longer.
+        frames = {"AAA": make_sweep_frame(n_days=15, entry_day=1, daily_pct_change=-0.03)}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-20.0], profit_target_grid=[50.0],
+            trail_k_grid=[None, 40.0])
+        assert len(candidates) == 2
+        by_trail_k = {c["trail_k"]: c for c in candidates}
+        assert None in by_trail_k and 40.0 in by_trail_k
+        # A tight trail_k=40 exits sooner on a steady decline than no trail
+        # at all (which rides the full -20% stop_loss_pct down) -- different
+        # trade counts/returns proves the None entry really skipped the
+        # trailing-stop code path rather than silently reusing trail_k=40's.
+        assert by_trail_k[None]["n_trades"] != by_trail_k[40.0]["n_trades"] \
+            or by_trail_k[None]["total_return_pct"] != by_trail_k[40.0]["total_return_pct"]
+
     def test_make_trader_uses_overridden_thresholds_not_module_defaults(self):
         # A -3% stop should exit long before the module default -10%, on a
         # steadily declining path, given the same entry.

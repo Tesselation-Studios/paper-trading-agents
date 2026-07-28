@@ -632,7 +632,12 @@ DEFAULT_PROFIT_TARGET_GRID = [8.0, 10.0, 12.0, 15.0, 18.0]
 # conflating it with a full 3-axis grid.
 CURRENT_LIVE_STOP_LOSS_PCT = -8.0
 CURRENT_LIVE_PROFIT_TARGET_PCT = 10.0
-DEFAULT_TRAIL_K_GRID = [10.0, 20.0, 30.0, 40.0]
+# None is a genuine no-trailing-stop-at-all control point at the same
+# stop/target params as the trail_k candidates -- 2026-07-28 follow-up: the
+# first investigation run's only "no trail" data point used different
+# stop/target params than the trail_k sweep, an apples-to-oranges confound
+# flagged in research/2026-07-28-trailing-stop.md. This closes that gap.
+DEFAULT_TRAIL_K_GRID = [None, 10.0, 20.0, 30.0, 40.0]
 
 
 def main():
