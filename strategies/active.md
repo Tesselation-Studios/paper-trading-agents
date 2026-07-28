@@ -6,6 +6,12 @@
 - 🆕 **MPAA/PMN/GIND/IBTH** all disqualified: MPAA vol 0.67x, PMN RSI 42.6 + -3.9% today, GIND MACDh +0.0386 near-zero, IBTH bearish MACD. Mandate fulfilled via ITRI.
 - 📊 Scale-in: BOX +2.8% below 3% v1.7 floor (closest). BFST +2.4%. HLN/STVN <1%. None qualify. Merge/promote no-op. Pipeline healthy. workspace_review ✅.
 
+## TUE 10:15 ET — Market Tick
+- **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.8%, BOX 4sh +2.7%, HLN +0.7%, STVN flat. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders.
+- 🔍 **ITRI unchanged** (5th eval): $84.78, same inputs → 0.458 < 0.50 floor. Flow empty, insiders empty unchanged. Correctly gated.
+- 🆕 **DXC evaluated** (step 8 mandate, 98.2% cash): $10.36 +3.1%, RSI 62.6 🟢, MACDh +0.0257 near-zero ❌, vol 0.76x ❌, live sentiment 0.0 neutral (cache +0.862 stale). Disqualified on vol + MACDh. Mandate fulfilled.
+- 📊 Scale-in: BOX +2.7% / BFST +2.8% below 3% v1.7 floor. HLN/STVN <1%. None qualify. Merge/promote no-op. Pipeline healthy. workspace_review ✅.
+
 ## TUE 9:55 ET — Market Tick
 - **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.2%, BOX 4sh +2.6%, HLN +0.3%, STVN +1.1%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders.
 - 🔍 Step 8 mandate (98.2% cash): ITRI evaluated 3x this session (9:40/9:45/9:50), all correctly gated 0.41 < 0.50. GBLI gated 9:45. LDRX/JCTC disqualified on vol/RSI. New checks: TTEC/ATKR MACD bearish, ZBRA vol 0.83x, MPWR bearish+$1339, PKBK vol 0.59x, VIR RSI 38.1 bearish, GMEX +22% pump-chase. All merge candidates disqualified. Mandate fulfilled via ITRI.
