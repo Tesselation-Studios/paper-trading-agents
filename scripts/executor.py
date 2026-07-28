@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import db_writer
+import trader_db
 
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
@@ -288,21 +289,25 @@ def gate_max_positions(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple
 
 
 def _sector_of(ticker: str) -> Optional[str]:
-    thesis_path = WORKSPACE_DIR / "positions" / f"{ticker.upper()}.md"
-    if not thesis_path.exists():
-        return None
+    """2026-07-28: was a positions/<ticker>.md 'Sector:' line read -- none
+    of the real position files ever had one (no script wrote it, and the
+    LLM agent never filled it in either), so this gate was silently
+    fail-open in practice. Now reads the positions table, populated
+    directly by main()'s BUY handler from --sector at open time."""
     try:
-        for line in thesis_path.read_text().splitlines():
-            if line.strip().lower().startswith("sector:"):
-                return line.split(":", 1)[1].strip()
-    except OSError:
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, ticker.upper())
+        finally:
+            conn.close()
+    except Exception:
         return None
-    return None
+    return row["sector"] if row else None
 
 
 def gate_sector_concentration(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
-    """Sector lookup reads positions/<ticker>.md 'Sector:' line if present.
-    No sector data available -> skip (fail-open), not a block."""
+    """Sector lookup reads the positions table (populated at BUY time from
+    --sector). No sector data available -> skip (fail-open), not a block."""
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
     max_per_sector = int(load_params().get("risk_guards", {}).get("max_positions_per_sector", 2))
@@ -968,7 +973,12 @@ def main():
     parser.add_argument("--qty", type=int)
     parser.add_argument("--price", type=float, help="current/estimated price, used by guardrail checks")
     parser.add_argument("--conviction", type=float, help="0-1, used by the conviction gate on BUY")
-    parser.add_argument("--sector", help="used by the sector-concentration gate")
+    parser.add_argument("--sector", help="used by the sector-concentration gate; also persisted to positions on BUY")
+    parser.add_argument("--thesis", help="why this trade -- reuse the same rationale passed to record_decision.py. "
+                         "Persisted to the positions table on BUY. Soft-required: a missing thesis logs a warning, "
+                         "never blocks the order.")
+    parser.add_argument("--close-reason", help="SELL only -- why (breach type, thesis break, manual). "
+                         "Defaults to a generic 'manual SELL' if omitted.")
     parser.add_argument("--skip-guardrails", action="store_true", help="bypass guardrail checks (debug only)")
 
     args = parser.parse_args()
@@ -1051,14 +1061,18 @@ def main():
             print(json.dumps({"error": f"guardrail: {reason}", "gates": gate_results}, indent=2))
             sys.exit(1)
 
-    # Capture entry price BEFORE selling — position may be gone from
-    # get_positions() afterward (full close), and this is what lets a SELL
-    # feed a real win/loss back into bankroll.py's adaptive ceiling.
+    # Capture entry price + pre-sell share count BEFORE selling — position
+    # may be gone from get_positions() afterward (full close), and this is
+    # what lets a SELL feed a real win/loss back into bankroll.py's
+    # adaptive ceiling, and tells positions-table bookkeeping below whether
+    # this was a full exit or a trim.
     entry_price = None
+    pre_sell_qty = None
     if args.action == "SELL":
         for p in get_positions(args.account):
             if p["symbol"].upper() == args.ticker.upper():
                 entry_price = float(p["avg_entry_price"])
+                pre_sell_qty = float(p["qty"])
                 break
 
     side = args.action.lower()
@@ -1072,6 +1086,30 @@ def main():
         if outcome["outcome_label_warning"]:
             print(json.dumps({"outcome_label_warning": outcome["outcome_label_warning"]}), file=sys.stderr)
 
+        # positions table bookkeeping -- best-effort, never blocks the
+        # trade (the order already executed by the time this runs, same
+        # fail-open philosophy as close_trade_outcome's Postgres/experience
+        # side already documented above).
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            conn = trader_db.get_conn()
+            try:
+                remaining = (pre_sell_qty or 0) - args.qty
+                if remaining <= 0:
+                    trader_db.close_position(
+                        conn, ticker=args.ticker, closed_at=now_iso,
+                        close_reason=args.close_reason or "manual SELL",
+                        realized_pnl=outcome["pnl"], realized_return_pct=outcome["return_pct"],
+                    )
+                else:
+                    trader_db.upsert_position(
+                        conn, ticker=args.ticker, shares=remaining, entry_price=entry_price, entry_time=now_iso,
+                    )
+            finally:
+                conn.close()
+        except Exception as e:
+            print(json.dumps({"warning": f"positions table write failed: {e}"}), file=sys.stderr)
+
     if args.action == "BUY" and args.price is not None:
         # bankroll.py's total_deployed was write-only until 2026-07-27 --
         # nothing ever called into it on the BUY side. See bankroll.py's
@@ -1081,6 +1119,31 @@ def main():
         bankroll_state = bankroll.read_bankroll()
         bankroll.record_deployment(bankroll_state, args.qty * args.price)
         bankroll.write_bankroll(bankroll_state)
+
+        # positions table bookkeeping -- best-effort, never blocks the
+        # trade. shares comes from a fresh get_positions() call (Alpaca's
+        # own post-fill total) rather than adding args.qty to whatever we
+        # think was held before, so a scale-in's stored share count can
+        # never drift from reality.
+        if not args.thesis:
+            print(json.dumps({"warning": "BUY executed with no --thesis provided"}), file=sys.stderr)
+        try:
+            now_iso = datetime.now(timezone.utc).isoformat()
+            total_shares = args.qty
+            for p in get_positions(args.account):
+                if p["symbol"].upper() == args.ticker.upper():
+                    total_shares = float(p["qty"])
+                    break
+            conn = trader_db.get_conn()
+            try:
+                trader_db.upsert_position(
+                    conn, ticker=args.ticker, shares=total_shares, entry_price=args.price,
+                    entry_time=now_iso, sector=args.sector, thesis=args.thesis,
+                )
+            finally:
+                conn.close()
+        except Exception as e:
+            print(json.dumps({"warning": f"positions table write failed: {e}"}), file=sys.stderr)
 
         # A real BUY is evidence deployment pressure eased -- reset the
         # consecutive-under-deployed streak so the next status call
