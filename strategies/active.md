@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 12:40 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 12:57 ET
+
+## TUE 12:57 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,407, cash $10,081 (96.9%). BOX 5sh +3.8%, BFST +3.0%, BFH +0.6%, HLN +0.4%, STVN +0.2%. All MACDh 🟢 (68-bar cache). No breaches.
+- 📊 **BOX scale-in**: +3.83% crosses 3% v1.7 floor but reconciled 0.442 < 0.49 floor — 2 neutral signals (flow empty, insiders empty) drag bullish tech 0.75/regime 0.80/sent 0.55/vol 0.55. Correctly gated.
+- 🔍 **GBLI** (step 8 mandate, 96.9% cash): reconciled 0.225 < 0.49 — thin 30k shares + generic sentiment + empty flow/timed-out insiders. CLBR MACDh +0.0145 near-zero, BEAG zero vol, JCTC 0.44x vol, ISHP 686-share ETF. All candidates gated. Mandate fulfilled.
+- 📡 Merge/promote no-op (max_size 30). Pipeline healthy. workspace_review ✅.
 
 ## TUE 12:40 ET — Market Tick
 - 🚨 **ITRI SOLD**: 1sh trailing stop breach, -5.2% off peak $104.23 (-4.38% realized, -$4.53). Bought 10:22 @ $103.29 on Q2 earnings beat — faded post-pop.
