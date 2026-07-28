@@ -79,6 +79,17 @@ STOP_LOSS_PCT = -10.0
 PROFIT_TARGET_PCT = 12.0
 TRAILING_STOP_PCT = 5.0             # risk.trailing_stop_pct — opt-in via make_trader(trailing_stop_pct=...),
                                      # not simulated by any variant unless explicitly requested (2026-07-28)
+
+# Volatility-scaled trailing stop (2026-07-28, win-rate investigation) —
+# deliberately NOT calendar-time-based like the already-rejected
+# stop_patience.py (research/2026-07-27.md: flat beat every time-widened
+# variant on Sharpe and return, both halves). trail_pct = TRAILING_STOP_PCT
+# * (1 + TRAIL_K * vol_20d), clamped to [TRAIL_MIN_PCT, TRAIL_MAX_PCT] so a
+# noisy ticker can't get an unboundedly wide trail — the exact failure mode
+# that made time-based widening let real losers run further.
+TRAIL_K = 25.0
+TRAIL_MIN_PCT = 4.0
+TRAIL_MAX_PCT = 12.0
 RSI_EXHAUSTION_EXIT = 75.0          # exit_rules.rsi_exhaustion_hard_exit
 MAX_HOLDING_DAYS = 5                # risk_guards.max_holding_days
 PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not full close)
@@ -182,7 +193,8 @@ def build_tick_stream(frames):
 
 def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
                  max_positions=None, scale_into_winners=False, scale_in_max_per_day=None,
-                 scale_in_max_multiple=None, trailing_stop_pct=None):
+                 scale_in_max_multiple=None, trailing_stop_pct=None,
+                 vol_scaled_trail=False, trail_k=None):
     """Build a trader function closing over per-ticker indicator lookups
     (Tick only carries rsi) and a small amount of flip-detection state.
 
@@ -226,11 +238,18 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
     RSI exhaustion, time-stop) but before the flat stop_loss_pct check, so
     a trail breach fires first if it would trigger before the from-entry
     stop does.
+    vol_scaled_trail: when True, the trail distance is computed per-tick
+    from that ticker's vol_20d (see TRAIL_K/TRAIL_MIN_PCT/TRAIL_MAX_PCT)
+    instead of using a fixed trailing_stop_pct — overrides trailing_stop_pct
+    when both are set. Falls back to the flat TRAILING_STOP_PCT base when
+    vol_20d is unavailable for a row. trail_k overrides the module-level
+    TRAIL_K for this trader instance (None = use the module default).
     """
     assert variant in ("v1.0", "v1.1", "v1.2")
     stop_loss_pct = STOP_LOSS_PCT if stop_loss_pct is None else stop_loss_pct
     profit_target_pct = PROFIT_TARGET_PCT if profit_target_pct is None else profit_target_pct
     scale_in_max_multiple = SCALE_IN_MAX_MULTIPLE if scale_in_max_multiple is None else scale_in_max_multiple
+    trail_k = TRAIL_K if trail_k is None else trail_k
     lookup = {}
     for sym, df in frames.items():
         for _, row in df.iterrows():
@@ -276,13 +295,20 @@ def make_trader(frames, variant, stop_loss_pct=None, profit_target_pct=None,
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
                                        conviction=1.0, rationale=f"v1.2: time-stop, held {held_days}d >= {MAX_HOLDING_DAYS}d")
 
-            if trailing_stop_pct is not None:
+            if trailing_stop_pct is not None or vol_scaled_trail:
+                if vol_scaled_trail:
+                    v = vol_20d if (vol_20d is not None and not np.isnan(vol_20d)) else 0.0
+                    effective_trail_pct = min(TRAIL_MAX_PCT, max(TRAIL_MIN_PCT,
+                                               TRAILING_STOP_PCT * (1 + trail_k * v)))
+                else:
+                    effective_trail_pct = trailing_stop_pct
                 peak = max(peak_price.get(tick.ticker, held.entry_price), tick.close)
                 peak_price[tick.ticker] = peak
-                trail_stop_price = peak * (1 - trailing_stop_pct / 100)
+                trail_stop_price = peak * (1 - effective_trail_pct / 100)
                 if tick.close < trail_stop_price:
                     return TraderDecision(ticker=tick.ticker, decision="SELL", conviction=1.0,
-                                           rationale=f"trailing_stop_pct breached (peak ${peak:.2f}, stop ${trail_stop_price:.2f})")
+                                           rationale=f"trailing_stop_pct breached (peak ${peak:.2f}, "
+                                                     f"stop ${trail_stop_price:.2f}, trail {effective_trail_pct:.2f}%)")
 
             if pnl_pct <= stop_loss_pct:
                 return TraderDecision(ticker=tick.ticker, decision="SELL",
@@ -518,50 +544,68 @@ VARIANT_LABELS = {
 }
 
 
-def sweep_thresholds(frames, ticks, stop_loss_grid, profit_target_grid, variant="v1.0"):
-    """Small grid sweep over stop_loss_pct/profit_target_pct for a given
-    strategy variant (default v1.0, the live strategy's entry/exit logic).
-    For each combo, runs the SAME both-halves split-window robustness check
-    used to decide the v1.1 promotion (2026-07-23) — Sharpe positive in
-    BOTH halves, not just a single aggregate number — rather than trusting
-    one full-window backtest. Only sweeps the two thresholds the harness
-    actually models; trailing_stop_pct isn't simulated here at all (a
-    separate, real gap — the harness only ever tested fixed full-exit
-    stops, never the trailing mechanism live in executor.py).
+def sweep_thresholds(frames, ticks, stop_loss_grid, profit_target_grid, variant="v1.0",
+                      trail_k_grid=None):
+    """Small grid sweep over stop_loss_pct/profit_target_pct (and, when
+    trail_k_grid is given, TRAIL_K for a volatility-scaled trailing stop —
+    2026-07-28 win-rate investigation) for a given strategy variant
+    (default v1.0, the live strategy's entry/exit logic). For each combo,
+    runs the SAME both-halves split-window robustness check used to decide
+    the v1.1 promotion (2026-07-23) — Sharpe positive in BOTH halves, not
+    just a single aggregate number — rather than trusting one full-window
+    backtest.
+
+    trail_k_grid=None (default) preserves the exact prior behavior: a 2D
+    sweep over stop_loss_pct x profit_target_pct only, no trailing stop
+    simulated at all — same as before this parameter existed. When given,
+    adds a third dimension: each (stop_loss_pct, profit_target_pct, trail_k)
+    combo is tried with vol_scaled_trail=True.
 
     Returns candidates sorted by full-window Sharpe (robust ones first),
-    each with "robust": bool (Sharpe > 0 in both halves).
+    each with "robust": bool (Sharpe > 0 in both halves) and "win_rate"
+    (from summarize()) — the goal-specific metric this investigation is
+    actually optimizing, not just Sharpe/return.
     """
     first_half, second_half = split_ticks_by_midpoint(ticks)
     candidates = []
+    trail_k_values = trail_k_grid if trail_k_grid is not None else [None]
     for stop_loss_pct in stop_loss_grid:
         for profit_target_pct in profit_target_grid:
-            def build_trader(frames, sl=stop_loss_pct, pt=profit_target_pct):
-                return make_trader(frames, variant, stop_loss_pct=sl, profit_target_pct=pt)
+            for trail_k in trail_k_values:
+                vol_scaled = trail_k is not None
 
-            full_result = replay_trader(ticks, build_trader(frames), initial_balance=10_000.0,
-                                         max_position_pct=0.06, require_conviction=0.5)
-            first_result = replay_trader(first_half, build_trader(frames), initial_balance=10_000.0,
-                                          max_position_pct=0.06, require_conviction=0.5)
-            second_result = replay_trader(second_half, build_trader(frames), initial_balance=10_000.0,
-                                           max_position_pct=0.06, require_conviction=0.5)
+                def build_trader(frames, sl=stop_loss_pct, pt=profit_target_pct,
+                                  tk=trail_k, vs=vol_scaled):
+                    return make_trader(frames, variant, stop_loss_pct=sl, profit_target_pct=pt,
+                                        vol_scaled_trail=vs, trail_k=tk)
 
-            full_summary = summarize(full_result, variant)
-            first_sharpe = compute_risk_metrics(first_result)["sharpe"]
-            second_sharpe = compute_risk_metrics(second_result)["sharpe"]
-            robust = bool(first_sharpe is not None and second_sharpe is not None
-                          and first_sharpe > 0 and second_sharpe > 0)
+                full_result = replay_trader(ticks, build_trader(frames), initial_balance=10_000.0,
+                                             max_position_pct=0.06, require_conviction=0.5)
+                first_result = replay_trader(first_half, build_trader(frames), initial_balance=10_000.0,
+                                              max_position_pct=0.06, require_conviction=0.5)
+                second_result = replay_trader(second_half, build_trader(frames), initial_balance=10_000.0,
+                                               max_position_pct=0.06, require_conviction=0.5)
 
-            candidates.append({
-                "stop_loss_pct": float(stop_loss_pct),
-                "profit_target_pct": float(profit_target_pct),
-                "sharpe": full_summary["sharpe"],
-                "first_half_sharpe": None if first_sharpe is None else float(first_sharpe),
-                "second_half_sharpe": None if second_sharpe is None else float(second_sharpe),
-                "robust": robust,
-                "total_return_pct": full_summary["total_return_pct"],
-                "n_trades": full_summary["n_trades"],
-            })
+                full_summary = summarize(full_result, variant)
+                first_sharpe = compute_risk_metrics(first_result)["sharpe"]
+                second_sharpe = compute_risk_metrics(second_result)["sharpe"]
+                robust = bool(first_sharpe is not None and second_sharpe is not None
+                              and first_sharpe > 0 and second_sharpe > 0)
+
+                candidate = {
+                    "stop_loss_pct": float(stop_loss_pct),
+                    "profit_target_pct": float(profit_target_pct),
+                    "sharpe": full_summary["sharpe"],
+                    "first_half_sharpe": None if first_sharpe is None else float(first_sharpe),
+                    "second_half_sharpe": None if second_sharpe is None else float(second_sharpe),
+                    "robust": robust,
+                    "total_return_pct": full_summary["total_return_pct"],
+                    "n_trades": full_summary["n_trades"],
+                    "win_rate": full_summary["win_rate"],
+                }
+                if trail_k_grid is not None:
+                    candidate["trail_k"] = None if trail_k is None else float(trail_k)
+                candidates.append(candidate)
 
     def sort_key(c):
         return (c["robust"], c["sharpe"] if c["sharpe"] is not None else -999)

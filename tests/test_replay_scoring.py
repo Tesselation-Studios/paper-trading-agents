@@ -248,6 +248,32 @@ class TestSweepThresholds:
         # Once sorted, True (robust) values must not appear after False ones.
         assert robust_flags == sorted(robust_flags, reverse=True)
 
+    def test_win_rate_key_present_without_trail_k_grid(self):
+        """2026-07-28: win-rate investigation needs this metric surfaced
+        alongside Sharpe -- present regardless of trail_k_grid."""
+        frames = {"AAA": make_sweep_frame()}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-8.0], profit_target_grid=[12.0])
+        assert "win_rate" in candidates[0]
+        assert "trail_k" not in candidates[0]  # prior shape unchanged when not swept
+
+    def test_trail_k_grid_none_preserves_prior_grid_size(self):
+        frames = {"AAA": make_sweep_frame()}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-15.0, -10.0], profit_target_grid=[10.0, 15.0, 20.0])
+        assert len(candidates) == 6  # 2 x 3, same as before trail_k_grid existed
+
+    def test_trail_k_grid_adds_third_dimension(self):
+        frames = {"AAA": make_sweep_frame()}
+        ticks = replay_check.build_tick_stream(frames)
+        candidates = replay_check.sweep_thresholds(
+            frames, ticks, stop_loss_grid=[-10.0], profit_target_grid=[12.0],
+            trail_k_grid=[10.0, 30.0])
+        assert len(candidates) == 2  # 1 x 1 x 2
+        assert {c["trail_k"] for c in candidates} == {10.0, 30.0}
+
     def test_make_trader_uses_overridden_thresholds_not_module_defaults(self):
         # A -3% stop should exit long before the module default -10%, on a
         # steadily declining path, given the same entry.
