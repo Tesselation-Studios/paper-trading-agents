@@ -9,6 +9,7 @@ Format: `TICKER — idle_ticks: N — note`
 - BOX — open position (4 shares @ ~$30.05, entry 2026-07-24 11:50 + scale-ins 2026-07-27 11:40, 2026-07-28 9:35 — Technology)
 - STVN — open position (1 share @ ~$19.97, entry 2026-07-28 9:30 — Healthcare)
 - HLN — open position (1 share @ ~$10.19, entry 2026-07-28 9:30 — Consumer Defensive)
+- ITRI — open position (1 share @ ~$103.29, entry 2026-07-28 10:22 — Technology/Utilities)
 
 ## Closed Positions
 - ~~KRC~~ — closed 2026-07-28 9:41 (trailing stop breach, -5.7%, 2sh via parallel collision)
@@ -34,7 +35,8 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
-- ITRI — idle_ticks: 0 — from discovery_pool gen 2
+- LDRX — idle_ticks: 0 — from discovery_pool gen 2
+
 - JCTC — idle_ticks: 0 — from discovery_pool gen 2
 
 - ISHP — idle_ticks: 0 — from discovery_pool gen 2

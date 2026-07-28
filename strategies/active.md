@@ -1,6 +1,12 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 10:10 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 10:22 ET
 
-## TUE 10:10 ET — Market Tick
+## TUE 10:22 ET — Market Tick
+- ✅ **ITRI BOUGHT**: 1sh @ $103.29 (Alpaca live fill), conviction 0.52. Decision #5991, training #65. Q2 earnings beat, raised FY26 EPS guidance ($6.30-$6.50 vs $5.96 est), sentiment +0.648 (4 articles). MACDh +0.3832 🟢, RSI 51.8, vol 3.95x. 6th evaluation today — improved sentiment cache (14:15 UTC) pushed over 0.50 floor. ⚠️ Data bus 68-bar cache stale ($84.78 vs live $103.29, 22% gap).
+- **5 pos.** Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,120 (97.2%). BFST +2.7%, BOX 4sh +3.2%, HLN +1.0%, ITRI -0.5%, STVN -0.2%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
+- 📊 Scale-in: **BOX +3.2%** crosses 3% v1.7 floor but conviction 0.475 < 0.50 floor — correctly gated. BFST +2.7% below floor. HLN/STVN <1%. ITRI just entered.
+- 🔍 Mandate fulfilled via ITRI. Merge/promote no-op (max_size 30, LDRX already in). Pipeline healthy. workspace_review ✅.
+
+## TUE 10:15 ET — Market Tick
 - **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.4%, BOX 4sh +2.8%, HLN +0.6%, STVN +0.1%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders.
 - 🔍 **ITRI BUY re-evaluated** (step 8 mandate, 98.2% cash): $84.78, RSI 51.8 🟢, MACDh +0.3832 🟢, vol 3.95x ✅, sentiment +0.546. Reconciled 0.458 < 0.50 floor — neutral flow (empty)/insiders (timeout) drag. Correctly gated. 4th evaluation this session.
 - 🆕 **MPAA/PMN/GIND/IBTH** all disqualified: MPAA vol 0.67x, PMN RSI 42.6 + -3.9% today, GIND MACDh +0.0386 near-zero, IBTH bearish MACD. Mandate fulfilled via ITRI.
