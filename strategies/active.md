@@ -1,13 +1,13 @@
 # Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 11:20 ET
 
-## TUE 11:20 ET — Market Tick
-- **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,410, cash $10,014 (96.2%). BFH flat (-0.1%), BFST +3.4%, BOX 4sh +5.0%, HLN +0.7%, ITRI -1.3%, STVN -0.9%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
-- ⚠️ **BFH discovered**: 1sh @ $106.02, previously unrecorded in active.md. Bought at some point today — MACDh +1.0203 🟢 strong, RSI 65.0 in-band, vol 1.66x, sentiment +0.93 (Evercore PT $120). Position healthy, now properly tracked.
-- 📊 **BOX scale-in**: +5.0% crosses 3% v1.7 floor but reconciled 0.475 < 0.50 — 2 neutral signals (flow empty, insiders timeout) drag. Correctly gated.
-- 🔍 **GBLI re-evaluated** (step 8 mandate, 96.2% cash): $27.12, RSI 59.3 🟢, MACDh +0.2028 🟢, vol 2.85x thin. Reconciled 0.30 < 0.50. Thin absolute volume (30k) + neutral sentiment/flow/insiders drag. Correctly gated. Mandate fulfilled.
-- 📡 Merge/promote no-op. All other candidates pre-disqualified (PMN -3.9% RSI 42.6, LDRX RSI 42.3, DXC MACDh near-zero, ATKR/TTEC bearish MACD, TMED 15.7k shares thin). workspace_review ✅. BFH now tracked in watchlist.md + positions/.
+## TUE 11:25 ET — Market Tick
+- **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,410, cash $10,014 (96.2%). BOX 4sh +5.1%, BFST +3.4%, HLN +0.6%, BFH -0.1%, STVN -0.8%, ITRI -1.0%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
+- 📊 **BOX scale-in**: +5.11% crosses 3% v1.7 floor but reconciled 0.41 < 0.497 — 3 neutral signals (flow empty, insiders timeout, fundamentals unchecked) drag. Sentiment +0.77/technical +0.75/regime +0.80 all bullish but neutral weight too heavy. Correctly gated.
+- 📊 **BFST scale-in**: +3.36% crosses 3% floor but reconciled 0.21 < 0.497 — vol 0.75x + 4 neutral signals (no sentiment, flow empty, insiders timeout, fundamentals unchkd) drag. Correctly gated.
+- 🔍 **GBLI re-evaluated** (step 8 mandate, 96.2% cash): reconciled 0.26 < 0.497 — same thin vol (30k shares) + neutral-signal drag as all prior evals. Mandate fulfilled.
+- 📡 Merge/promote no-op. 4 pool names blocked (max_size 30): MKDW/MYCG/WHFCL/SPBC. All other candidates pre-disqualified. workspace_review ✅.
 
-## TUE 11:04 ET — Market Tick
+## TUE 11:20 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,408, cash $10,120 (97.2%). BFST +3.3%, BOX 4sh +4.0%, HLN +0.3%, ITRI -1.9%, STVN -0.5%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
 - 📊 **BOX scale-in**: +4.0% crosses 3% v1.7 floor but reconciled 0.44 < 0.50 — 4/6 signals neutral (sentiment/vol/flow/insiders). **BFST** crosses 3% too (+3.3%) but vol 0.75x + no sentiment — lower. Both correctly gated.
 - 🔍 **GBLI** (0.33) / **TMED** (0.25) — same neutral-signal drag. All watchlist candidates disqualified. Merge/promote no-op. Mandate fulfilled. workspace_review ✅.
