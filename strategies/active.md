@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 12:26 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 12:35 ET
+
+## TUE 12:35 ET — Market Tick
+- **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,407, cash $9,982 (95.9%). BOX 5sh +3.5%, BFST +3.1%, HLN +0.5%, BFH +0.4%, STVN -0.3%, ITRI -3.6%. All MACDh 🟢 (68-bar cache). No breaches.
+- 📊 **BOX scale-in**: +3.47% crosses 3% v1.7 floor but reconciled 0.45 < 0.50 — flow empty + insiders empty neutral drag bullish tech 0.75/regime 0.80/sentiment 0.70. Correctly gated.
+- 🔍 Step 8 mandate (95.9% cash): all watchlist candidates pre-disqualified (PMN RSI 42.6, DXC MACDh near-zero, LDRX RSI 42.3, GMEX +22% pump, GBLI thin vol 30k, others unchanged). Mandate fulfilled via BOX eval.
+- 📡 Merge/promote no-op (max_size 30). Pipeline healthy. workspace_review ✅.
 
 ## TUE 12:26 ET — Market Tick
 - **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,408, cash $9,982 (95.9%). BOX 5sh +3.5%, BFST +3.2%, HLN +0.3%, BFH -0.1%, STVN -0.5%, ITRI -2.4%. All MACDh 🟢 (68-bar cache). No breaches.
