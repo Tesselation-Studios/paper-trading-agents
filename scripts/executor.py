@@ -294,6 +294,28 @@ def gate_hours(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, s
     return True, f"{now.strftime('%H:%M %Z')} — market open"
 
 
+def _is_regular_trading_hours() -> bool:
+    """True during 09:30-16:00 ET, Mon-Fri — same window as gate_hours.
+
+    2026-07-27: the heartbeat calls the `status` action until 23:00 ET, well
+    past the 09:30-16:00 ET `stonks-tick` cron window that actually trades.
+    Anything driven by `status` that should only count real trading activity
+    (deployment_pressure's tick counter) must check this first, or it
+    inflates off-hours with no corresponding trades.
+    """
+    import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.datetime.now(ZoneInfo("America/New_York"))
+    except Exception:
+        now = datetime.datetime.now()
+    if now.weekday() >= 5:
+        return False
+    market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+    return market_open <= now <= market_close
+
+
 def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     """Reject BUYs that exceed bankroll.py's current self-calibrating ceiling.
 
@@ -931,13 +953,21 @@ def main():
         # so gate_conviction's floor can drop (with a hard minimum) and
         # research effort can escalate. Zero extra API cost: cash/equity are
         # already fetched above for every status call.
+        # 2026-07-27 (later same day): status is also called by the heartbeat
+        # outside the 09:30-16:00 ET trading window (heartbeat runs until
+        # 23:00 ET) -- only record_tick during real trading hours, or the
+        # streak inflates with no corresponding trades. Off-hours calls just
+        # read the existing state instead.
         sys.path.insert(0, str(WORKSPACE_DIR))
         import deployment_pressure
         cash_pct = (cash / equity * 100) if equity > 0 else 0.0
         params = load_params()
         threshold_pct = float(params.get("watchlist", {}).get("discovery_urgency", {}).get("cash_threshold_pct", 70.0))
         tick_interval_seconds = int(params.get("tick", {}).get("interval_seconds", deployment_pressure.DEFAULT_TICK_INTERVAL_SECONDS))
-        pressure_state = deployment_pressure.record_tick(cash_pct, threshold_pct, interval_seconds=tick_interval_seconds)
+        if _is_regular_trading_hours():
+            pressure_state = deployment_pressure.record_tick(cash_pct, threshold_pct, interval_seconds=tick_interval_seconds)
+        else:
+            pressure_state = deployment_pressure.read_state()
         risk = params.get("risk", {})
         eff_floor = deployment_pressure.conviction_floor(
             float(risk.get("conviction_floor", 0.5)), float(risk.get("conviction_floor_min", 0.35)),
