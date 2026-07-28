@@ -63,6 +63,11 @@ def fetch_broad_universe(sample_size=200, seed=None):
     (default) means a same-day rerun is reproducible but the sample
     rotates day to day — same spirit as the live discovery cron's
     "rotate session to session" rule.
+
+    sample_size=None returns the full sorted candidate list, no sampling
+    -- 2026-07-27, added for discovery_daemon.py's continuous scanner,
+    which needs the whole tradable universe (to build its own persisted
+    rotation cursor over it) rather than one day-seeded draw.
     """
     key = os.environ.get("ALPACA_STONKS_KEY")
     secret = os.environ.get("ALPACA_STONKS_SECRET")
@@ -80,6 +85,9 @@ def fetch_broad_universe(sample_size=200, seed=None):
         and a.exchange in (AssetExchange.NASDAQ, AssetExchange.NYSE)
         and PLAIN_TICKER_RE.match(a.symbol)
     })
+
+    if sample_size is None:
+        return candidates
 
     rng = random.Random(seed if seed is not None else _today_seed())
     if len(candidates) <= sample_size:

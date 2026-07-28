@@ -99,6 +99,17 @@ class TestFetchBroadUniverse:
         result = universe_scan.fetch_broad_universe(sample_size=200, seed="s")
         assert sorted(result) == sorted(symbols)
 
+    def test_sample_size_none_returns_full_sorted_list(self, monkeypatch):
+        """2026-07-27: discovery_daemon.py needs the whole tradable universe
+        (to build its own persisted rotation cursor), not a capped sample."""
+        from alpaca.trading.enums import AssetExchange
+        symbols = self._symbol_pool(30)
+        assets = [self._mock_asset(s, exchange=AssetExchange.NASDAQ) for s in symbols]
+        self._patch_client(monkeypatch, assets)
+        result = universe_scan.fetch_broad_universe(sample_size=None)
+        assert result == sorted(symbols)
+        assert len(result) == 30
+
 
 class TestFilterByPriceBand:
     def test_keeps_ticker_in_band(self):
