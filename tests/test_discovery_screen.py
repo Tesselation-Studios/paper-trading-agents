@@ -75,3 +75,25 @@ class TestScreenTickers:
         monkeypatch.setattr(discovery_screen.replay_check, "fetch_history", lambda tickers: frames)
         result = discovery_screen.screen_tickers(["LOW", "HIGH"], 1.0, 50.0)
         assert [c["ticker"] for c in result] == ["HIGH", "LOW"]
+
+    def test_return_all_includes_failures_tagged_in_band_false(self, monkeypatch):
+        frames = {
+            "WINNER": make_frame(rsi=55.0, volume=150_000, volume_ma20=100_000),
+            "LOSER": make_frame(rsi=80.0, volume=150_000, volume_ma20=100_000),
+        }
+        monkeypatch.setattr(discovery_screen.replay_check, "fetch_history", lambda tickers: frames)
+        result = discovery_screen.screen_tickers(["WINNER", "LOSER"], 1.0, 50.0, return_all=True)
+        by_ticker = {c["ticker"]: c for c in result}
+        assert len(result) == 2
+        assert by_ticker["WINNER"]["in_band"] is True
+        assert by_ticker["LOSER"]["in_band"] is False
+        assert by_ticker["LOSER"]["price"] == 20.0  # data present even though it failed
+
+    def test_default_return_shape_unaffected_by_in_band_key(self, monkeypatch):
+        """Existing callers (discovery_scan.screen_candidates) get only
+        survivors, sorted -- the new 'in_band' key is additive, not a
+        behavior change."""
+        frames = {"AAA": make_frame(rsi=55.0, volume=150_000, volume_ma20=100_000)}
+        monkeypatch.setattr(discovery_screen.replay_check, "fetch_history", lambda tickers: frames)
+        result = discovery_screen.screen_tickers(["AAA"], 1.0, 50.0)
+        assert result[0]["in_band"] is True
