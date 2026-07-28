@@ -1,4 +1,9 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:50 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:55 ET
+
+## TUE 9:55 ET — Market Tick
+- **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.2%, BOX 4sh +2.6%, HLN +0.3%, STVN +1.1%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders.
+- 🔍 Step 8 mandate (98.2% cash): ITRI evaluated 3x this session (9:40/9:45/9:50), all correctly gated 0.41 < 0.50. GBLI gated 9:45. LDRX/JCTC disqualified on vol/RSI. New checks: TTEC/ATKR MACD bearish, ZBRA vol 0.83x, MPWR bearish+$1339, PKBK vol 0.59x, VIR RSI 38.1 bearish, GMEX +22% pump-chase. All merge candidates disqualified. Mandate fulfilled via ITRI.
+- 📊 Scale-in: BOX +2.6% < 3% v1.7 floor. BFST +2.2%. None qualify. Merge/promote no-op. Pipeline healthy. workspace_review ✅.
 
 ## TUE 9:50 ET — Market Tick
 - **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.2%, BOX 4sh +2.1%, HLN +0.3%, STVN +1.8%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders.
