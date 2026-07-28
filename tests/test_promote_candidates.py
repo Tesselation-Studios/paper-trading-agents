@@ -70,10 +70,17 @@ class TestSelectPromotable:
         assert [c["ticker"] for c in result] == ["BBB", "AAA"]
 
 
+FIXED_NOW = "2026-07-27T12:05:00+00:00"  # just after _seed's default screened_at -- keeps
+# these tests deterministic regardless of real wall-clock date (promote() defaults to
+# real time when `now` isn't passed; a prior version of these tests relied on that
+# default staying "close enough" to the hardcoded seed timestamp and broke the moment
+# the real date rolled past it -- see 2026-07-28 fix).
+
+
 class TestPromote:
     def test_merges_pool_candidates_into_watchlist(self, env):
         _seed(env["db_path"], [("ZZZ", 1.5)])
-        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400)
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
         assert result["merged"] == ["ZZZ"]
         text = env["watchlist_path"].read_text()
         assert "- ZZZ — idle_ticks: 0 — from discovery_pool gen 1" in text
@@ -81,38 +88,38 @@ class TestPromote:
     def test_dedup_against_existing_watchlist(self, env):
         env["watchlist_path"].write_text(DEFAULT_WATCHLIST + "- AAA — idle_ticks: 0 — from prior\n")
         _seed(env["db_path"], [("AAA", 1.0), ("BBB", 2.0)])
-        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400)
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
         assert result["merged"] == ["BBB"]
         assert "AAA" in result["skipped"]
 
     def test_respects_max_size(self, env):
         env["params_path"].write_text(json.dumps({"watchlist": {"max_size": 1}}))
         _seed(env["db_path"], [("AAA", 2.0), ("BBB", 1.0)])
-        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400)
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
         assert result["merged"] == ["AAA"]
         assert any("max_size 1 reached" in s for s in result["skipped"])
 
     def test_dry_run_does_not_write(self, env):
         _seed(env["db_path"], [("ZZZ", 1.5)])
         before = env["watchlist_path"].read_text()
-        result = promote_candidates.promote(db_path=env["db_path"], dry_run=True, max_age_seconds=86400)
+        result = promote_candidates.promote(db_path=env["db_path"], dry_run=True, max_age_seconds=86400, now=FIXED_NOW)
         after = env["watchlist_path"].read_text()
         assert result["merged"] == ["ZZZ"]
         assert before == after
 
     def test_empty_pool_is_noop(self, env):
-        result = promote_candidates.promote(db_path=env["db_path"])
+        result = promote_candidates.promote(db_path=env["db_path"], now=FIXED_NOW)
         assert result["merged"] == []
         assert result["pool_candidates_considered"] == 0
 
     def test_respects_max_age_seconds(self, env):
         _seed(env["db_path"], [("STALE", 1.0)], screened_at="2020-01-01T00:00:00+00:00")
-        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=3600)
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=3600, now=FIXED_NOW)
         assert result["merged"] == []
         assert result["pool_candidates_considered"] == 0
 
     def test_top_n_caps_pool_candidates_considered(self, env):
         _seed(env["db_path"], [("A", 1.0), ("B", 2.0), ("C", 3.0)])
-        result = promote_candidates.promote(db_path=env["db_path"], top_n=2, max_age_seconds=86400)
+        result = promote_candidates.promote(db_path=env["db_path"], top_n=2, max_age_seconds=86400, now=FIXED_NOW)
         assert result["pool_candidates_considered"] == 2
         assert set(result["merged"]) == {"B", "C"}

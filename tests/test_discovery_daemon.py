@@ -8,6 +8,7 @@ daemon's outer while-True loop itself is NOT tested, matching this repo's
 precedent (discovery_scan.main()/discovery_urgency_check.main() don't
 test their own entrypoint loops either) -- only the functions it calls.
 """
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -288,6 +289,36 @@ class TestDaemonHealth:
             max_staleness_seconds=60, now="2026-07-27T12:05:00+00:00", cursor_state_path=path,
         )
         assert result["healthy"] is False
+
+
+class TestCheckHealthCLI:
+    """Locks in the --check-health exit-code contract a health-check cron
+    depends on: exit 0 when healthy, nonzero when not. No daemon loop, no
+    network -- just daemon_health() + a JSON print, so this (unlike the
+    while-True loop) is worth testing directly through main()."""
+
+    def _run(self, monkeypatch, cursor_state_path, capsys):
+        monkeypatch.setattr(discovery_daemon, "CURSOR_STATE_PATH", cursor_state_path)
+        monkeypatch.setattr(sys, "argv", ["discovery_daemon.py", "--check-health"])
+        with pytest.raises(SystemExit) as exc_info:
+            discovery_daemon.main()
+        captured = capsys.readouterr()
+        return exc_info.value.code, json.loads(captured.out)
+
+    def test_healthy_exits_zero(self, tmp_path, monkeypatch, capsys):
+        path = tmp_path / "state.json"
+        state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        state["last_cycle_completed_at"] = discovery_daemon._now_iso()
+        state["last_cycle_status"] = "ok"
+        discovery_daemon.save_cursor_state(state, path=path)
+        code, payload = self._run(monkeypatch, path, capsys)
+        assert code == 0
+        assert payload["healthy"] is True
+
+    def test_missing_state_exits_nonzero(self, tmp_path, monkeypatch, capsys):
+        code, payload = self._run(monkeypatch, tmp_path / "nope.json", capsys)
+        assert code != 0
+        assert payload["healthy"] is False
 
 
 class TestCursorStatePersistence:

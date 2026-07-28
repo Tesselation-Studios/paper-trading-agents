@@ -304,7 +304,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--once", action="store_true", help="Run a single cycle then exit")
     parser.add_argument("--db-path", default=None, help="Override state/discovery_pool.db (dry-run/tests)")
+    parser.add_argument("--check-health", action="store_true",
+                         help="Print daemon_health() as JSON and exit 0 if healthy, 1 if not. "
+                              "No daemon loop, no network -- just reads state/discovery_daemon.json. "
+                              "Meant for a cron's trigger-script/command gate, e.g. "
+                              "'python3 scripts/discovery_daemon.py --check-health' exits nonzero "
+                              "only when the daemon is actually down/stale, so a health-check cron "
+                              "can stay silent on every healthy run and only alert on failure.")
     args = parser.parse_args()
+
+    if args.check_health:
+        health = daemon_health()
+        print(json.dumps(health, indent=2))
+        sys.exit(0 if health["healthy"] else 1)
 
     db_path = Path(args.db_path) if args.db_path else None
     config = load_config()

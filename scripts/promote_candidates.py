@@ -57,14 +57,15 @@ def select_promotable(conn, top_n: int = DEFAULT_TOP_N, max_age_seconds: int = D
     return discovery_db.get_top_candidates(conn, limit=top_n, max_age_seconds=max_age_seconds, now=now)
 
 
-def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_age_seconds: int = None) -> dict:
+def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_age_seconds: int = None,
+            now: str = None) -> dict:
     config = _load_config()
     top_n = top_n if top_n is not None else config["promote_top_n"]
     max_age_seconds = max_age_seconds if max_age_seconds is not None else config["promote_max_age_seconds"]
 
     conn = discovery_db.get_conn(db_path)
     generation = discovery_db.get_universe_generation(conn)
-    candidates = select_promotable(conn, top_n=top_n, max_age_seconds=max_age_seconds)
+    candidates = select_promotable(conn, top_n=top_n, max_age_seconds=max_age_seconds, now=now)
     conn.close()
 
     if not candidates:
