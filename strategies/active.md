@@ -1,4 +1,9 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 15:40 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 15:45 ET
+
+## TUE 15:45 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,407, cash $10,049 (96.6%). BOX 6sh +3.2%, BFST +2.8%, BFH +0.6%, HLN +0.8%, STVN +0.3%. All MACDh 🟢 (68-bar cache). No breaches. 15 min to close.
+- 🔍 **Batch** (NTRS/RMD/AVEX/PL/TOST/BKSY, idle 22): all 6 pre-disqualified. NTRS PT $173 below $182.52 + sector 2/2. RMD/AVEX/PL/BKSY bearish MACD. TOST vol 0.87x <1.0x. Rotation advances.
+- 📊 BOX +3.2% crosses v1.7 floor but effective 0.50 (counter reset at 4 ticks), historically 0.44-0.49 today — correctly gated. Sentiment cache empty. No further actionable triggers.
 
 ## TUE 15:40 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,407, cash $10,049 (96.6%). BOX 6sh +3.1%, BFST +2.7%, BFH +0.5%, HLN +0.6%, STVN flat. All MACDh 🟢 (68-bar cache). No breaches.
