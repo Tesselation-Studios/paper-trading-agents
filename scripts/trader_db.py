@@ -83,6 +83,73 @@ CREATE TABLE IF NOT EXISTS alpaca_audit_log (
     latency_ms        INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_alpaca_audit_ts ON alpaca_audit_log(timestamp);
+
+-- positions: replaces positions/*.md's structured fields (entry price,
+-- shares, sector, thesis). Deliberately does NOT store current
+-- price/market_value/unrealized_pnl -- Alpaca stays the live source of
+-- truth for those, matching the existing "thesis storage, not a price
+-- mirror" principle (tick_prompt.md step 9).
+CREATE TABLE IF NOT EXISTS positions (
+    ticker          TEXT PRIMARY KEY,
+    shares          REAL NOT NULL,
+    entry_price     REAL NOT NULL,
+    entry_time      TEXT NOT NULL,
+    sector          TEXT,
+    thesis          TEXT,
+    status          TEXT NOT NULL DEFAULT 'open',  -- 'open' | 'closed'
+    closed_at       TEXT,
+    close_reason    TEXT,
+    realized_pnl    REAL,
+    realized_return_pct REAL,
+    updated_at      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
+
+-- watchlist_candidates: replaces strategies/watchlist.md's ## Candidates
+-- section. note holds Stan's own reasoning text (why it's on the list,
+-- signal read), same role watchlist.md's inline note played.
+CREATE TABLE IF NOT EXISTS watchlist_candidates (
+    ticker          TEXT PRIMARY KEY,
+    price           REAL,
+    rsi             REAL,
+    volume_ratio    REAL,
+    macd_hist       REAL,
+    idle_ticks      INTEGER NOT NULL DEFAULT 0,
+    source          TEXT,
+    note            TEXT,
+    added_at        TEXT NOT NULL,
+    last_touched_at TEXT NOT NULL
+);
+
+-- bankroll_state: singleton row (id=1), replaces bankroll.md's
+-- regex-parsed header fields.
+CREATE TABLE IF NOT EXISTS bankroll_state (
+    id                      INTEGER PRIMARY KEY CHECK (id = 1),
+    ceiling                 REAL NOT NULL,
+    growth_rate             REAL NOT NULL,
+    decay_rate              REAL NOT NULL,
+    target_profit_pct       REAL NOT NULL,
+    closed_trades_session   INTEGER NOT NULL DEFAULT 0,
+    wins_session            INTEGER NOT NULL DEFAULT 0,
+    losses_session          INTEGER NOT NULL DEFAULT 0,
+    net_pnl_session         REAL NOT NULL DEFAULT 0.0,
+    total_deployed_session  REAL NOT NULL DEFAULT 0.0,
+    lifetime_trades         INTEGER NOT NULL DEFAULT 0,
+    lifetime_net_pnl        REAL NOT NULL DEFAULT 0.0,
+    lifetime_wins           INTEGER NOT NULL DEFAULT 0,
+    lifetime_losses         INTEGER NOT NULL DEFAULT 0,
+    updated_at              TEXT NOT NULL
+);
+
+-- bankroll_history: replaces bankroll.md's ## History log lines.
+CREATE TABLE IF NOT EXISTS bankroll_history (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp       TEXT NOT NULL,
+    label           TEXT NOT NULL,  -- 'WIN' | 'LOSS'
+    pnl             REAL NOT NULL,
+    ceiling_after   REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_bankroll_history_ts ON bankroll_history(timestamp);
 """
 
 
@@ -249,3 +316,169 @@ def prune_alpaca_audit_log(conn: sqlite3.Connection, retention_days: int, now: s
             (now, retention_days),
         )
         return cur.rowcount
+
+
+# ── Positions ─────────────────────────────────────────────────────────────
+# Deliberately no current_price/market_value/unrealized_pnl columns --
+# Alpaca is the live source of truth for those (tick_prompt.md step 9's
+# "thesis storage, not a price mirror" principle carries over unchanged).
+
+def upsert_position(conn: sqlite3.Connection, ticker: str, shares: float, entry_price: float,
+                     entry_time: str, sector: str = None, thesis: str = None, now: str = None) -> None:
+    """Open a new position or update an existing one's thesis/shares (e.g.
+    a scale-in). Does not touch status/close fields."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with conn:
+        conn.execute(
+            """INSERT INTO positions (ticker, shares, entry_price, entry_time, sector, thesis, status, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, 'open', ?)
+               ON CONFLICT(ticker) DO UPDATE SET
+                   shares = excluded.shares,
+                   sector = COALESCE(excluded.sector, positions.sector),
+                   thesis = COALESCE(excluded.thesis, positions.thesis),
+                   updated_at = excluded.updated_at""",
+            (ticker, shares, entry_price, entry_time, sector, thesis, now),
+        )
+
+
+def close_position(conn: sqlite3.Connection, ticker: str, closed_at: str, close_reason: str,
+                    realized_pnl: float, realized_return_pct: float) -> None:
+    with conn:
+        conn.execute(
+            """UPDATE positions SET status = 'closed', closed_at = ?, close_reason = ?,
+                   realized_pnl = ?, realized_return_pct = ?, updated_at = ?
+               WHERE ticker = ?""",
+            (closed_at, close_reason, realized_pnl, realized_return_pct, closed_at, ticker),
+        )
+
+
+def get_open_positions(conn: sqlite3.Connection) -> list:
+    rows = conn.execute("SELECT * FROM positions WHERE status = 'open' ORDER BY entry_time").fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_position(conn: sqlite3.Connection, ticker: str):
+    row = conn.execute("SELECT * FROM positions WHERE ticker = ?", (ticker,)).fetchone()
+    return dict(row) if row else None
+
+
+# ── Watchlist candidates ─────────────────────────────────────────────────
+
+def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: float = None,
+                                rsi: float = None, volume_ratio: float = None, macd_hist: float = None,
+                                source: str = None, note: str = None, now: str = None) -> None:
+    """Adds a new candidate or touches an existing one -- idle_ticks resets
+    to 0 on touch, matching watchlist.md's existing convention."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with conn:
+        conn.execute(
+            """INSERT INTO watchlist_candidates
+                   (ticker, price, rsi, volume_ratio, macd_hist, idle_ticks, source, note, added_at, last_touched_at)
+               VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+               ON CONFLICT(ticker) DO UPDATE SET
+                   price = excluded.price,
+                   rsi = excluded.rsi,
+                   volume_ratio = excluded.volume_ratio,
+                   macd_hist = excluded.macd_hist,
+                   idle_ticks = 0,
+                   source = COALESCE(excluded.source, watchlist_candidates.source),
+                   note = COALESCE(excluded.note, watchlist_candidates.note),
+                   last_touched_at = excluded.last_touched_at""",
+            (ticker, price, rsi, volume_ratio, macd_hist, source, note, now, now),
+        )
+
+
+def increment_idle_ticks(conn: sqlite3.Connection, except_tickers: list = None) -> None:
+    """Bumps idle_ticks for every candidate not explicitly touched this
+    tick. Call once per tick after any upsert_watchlist_candidate() calls
+    for names actually reasoned about."""
+    except_tickers = except_tickers or []
+    with conn:
+        if except_tickers:
+            placeholders = ",".join("?" * len(except_tickers))
+            conn.execute(
+                f"UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1 WHERE ticker NOT IN ({placeholders})",
+                except_tickers,
+            )
+        else:
+            conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
+
+
+def drop_stale_watchlist_candidates(conn: sqlite3.Connection, idle_ticks_threshold: int) -> list:
+    """Deletes candidates at/over the idle threshold. Returns dropped tickers."""
+    with conn:
+        rows = conn.execute(
+            "SELECT ticker FROM watchlist_candidates WHERE idle_ticks >= ?", (idle_ticks_threshold,)
+        ).fetchall()
+        dropped = [r["ticker"] for r in rows]
+        conn.execute("DELETE FROM watchlist_candidates WHERE idle_ticks >= ?", (idle_ticks_threshold,))
+    return dropped
+
+
+def get_watchlist_candidates(conn: sqlite3.Connection) -> list:
+    rows = conn.execute("SELECT * FROM watchlist_candidates ORDER BY idle_ticks, added_at").fetchall()
+    return [dict(r) for r in rows]
+
+
+def remove_watchlist_candidate(conn: sqlite3.Connection, ticker: str) -> None:
+    """Used when a candidate is promoted into an actual position."""
+    with conn:
+        conn.execute("DELETE FROM watchlist_candidates WHERE ticker = ?", (ticker,))
+
+
+# ── Bankroll ──────────────────────────────────────────────────────────────
+# Singleton row (id=1). Caller (bankroll.py, once migrated) owns the
+# growth/decay math -- these are plain read/write, no business logic here.
+
+def get_bankroll_state(conn: sqlite3.Connection):
+    row = conn.execute("SELECT * FROM bankroll_state WHERE id = 1").fetchone()
+    return dict(row) if row else None
+
+
+def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate: float, decay_rate: float,
+                           target_profit_pct: float, closed_trades_session: int = 0, wins_session: int = 0,
+                           losses_session: int = 0, net_pnl_session: float = 0.0,
+                           total_deployed_session: float = 0.0, lifetime_trades: int = 0,
+                           lifetime_net_pnl: float = 0.0, lifetime_wins: int = 0, lifetime_losses: int = 0,
+                           now: str = None) -> None:
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with conn:
+        conn.execute(
+            """INSERT INTO bankroll_state
+                   (id, ceiling, growth_rate, decay_rate, target_profit_pct, closed_trades_session,
+                    wins_session, losses_session, net_pnl_session, total_deployed_session,
+                    lifetime_trades, lifetime_net_pnl, lifetime_wins, lifetime_losses, updated_at)
+               VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(id) DO UPDATE SET
+                   ceiling = excluded.ceiling, growth_rate = excluded.growth_rate,
+                   decay_rate = excluded.decay_rate, target_profit_pct = excluded.target_profit_pct,
+                   closed_trades_session = excluded.closed_trades_session, wins_session = excluded.wins_session,
+                   losses_session = excluded.losses_session, net_pnl_session = excluded.net_pnl_session,
+                   total_deployed_session = excluded.total_deployed_session,
+                   lifetime_trades = excluded.lifetime_trades, lifetime_net_pnl = excluded.lifetime_net_pnl,
+                   lifetime_wins = excluded.lifetime_wins, lifetime_losses = excluded.lifetime_losses,
+                   updated_at = excluded.updated_at""",
+            (ceiling, growth_rate, decay_rate, target_profit_pct, closed_trades_session, wins_session,
+             losses_session, net_pnl_session, total_deployed_session, lifetime_trades, lifetime_net_pnl,
+             lifetime_wins, lifetime_losses, now),
+        )
+
+
+def record_bankroll_history(conn: sqlite3.Connection, timestamp: str, label: str, pnl: float,
+                             ceiling_after: float) -> int:
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO bankroll_history (timestamp, label, pnl, ceiling_after) VALUES (?, ?, ?, ?)",
+            (timestamp, label, pnl, ceiling_after),
+        )
+        return cur.lastrowid
+
+
+def get_bankroll_history(conn: sqlite3.Connection, limit: int = 50) -> list:
+    rows = conn.execute(
+        "SELECT * FROM bankroll_history ORDER BY timestamp DESC LIMIT ?", (limit,)
+    ).fetchall()
+    return [dict(r) for r in rows]
