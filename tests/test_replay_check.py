@@ -213,5 +213,83 @@ class TestMaxPositionsCap:
 class TestStrategyBuildersRegistered:
     def test_v17_and_capped25_present_alongside_existing_variants(self):
         assert set(replay_check.STRATEGY_BUILDERS.keys()) == {
-            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7", "v1.7-daily", "v1.7-gentle"}
+            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7", "v1.7-daily", "v1.7-gentle", "v1.0-trail"}
         assert set(replay_check.VARIANT_LABELS.keys()) == set(replay_check.STRATEGY_BUILDERS.keys())
+
+
+class TestTrailingStop:
+    """2026-07-28: win-rate investigation — trailing-stop breaches are the
+    dominant real-world loss category (11 of 14 losses), but the harness
+    never modeled a trailing stop at all before this. trailing_stop_pct
+    defaults to None (not simulated) so every pre-existing variant is
+    unaffected unless it explicitly opts in."""
+
+    def _held_tick_portfolio(self, close_price, entry_price=10.0, entry_time=TS):
+        pos = Position(ticker="XYZ", shares=10, entry_price=entry_price, entry_time=entry_time,
+                        current_price=close_price)
+        portfolio = Portfolio(cash=5000.0, positions={"XYZ": pos})
+        tick = Tick(timestamp=TS, ticker="XYZ", open=close_price, high=close_price,
+                     low=close_price, close=close_price, volume=100_000, rsi=55.0)
+        return tick, portfolio
+
+    def test_disabled_by_default(self):
+        """A drop from peak that would breach a 5% trail stays a HOLD when
+        trailing_stop_pct isn't passed — proves existing variants (none of
+        which pass it) are unaffected."""
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.make_trader(frames, "v1.0")  # trailing_stop_pct defaults None
+        tick1, portfolio = self._held_tick_portfolio(close_price=10.8)  # peak
+        trader(tick1, portfolio)
+        tick2, _ = self._held_tick_portfolio(close_price=10.2)  # -5.6% from peak, still +2% from entry
+        decision = trader(tick2, portfolio)
+        assert decision.decision == "HOLD"
+
+    def test_breaches_on_drop_from_peak_even_when_pnl_still_positive(self):
+        """The whole point of a trailing stop: it fires on drop-from-peak,
+        not drop-from-entry — so it can trigger even while pnl_pct is still
+        positive (locking in a gain), something the flat stop_loss_pct
+        check alone could never do."""
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.make_trader(frames, "v1.0", trailing_stop_pct=5.0)
+        tick1, portfolio = self._held_tick_portfolio(close_price=10.8)  # peak, +8% pnl
+        first = trader(tick1, portfolio)
+        assert first.decision == "HOLD"
+        tick2, _ = self._held_tick_portfolio(close_price=10.2)  # peak*0.95 = 10.26, 10.2 < 10.26
+        second = trader(tick2, portfolio)
+        assert second.decision == "SELL"
+        assert "trailing_stop_pct breached" in second.rationale
+
+    def test_no_sell_while_price_stays_above_trail_line(self):
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.make_trader(frames, "v1.0", trailing_stop_pct=5.0)
+        tick1, portfolio = self._held_tick_portfolio(close_price=10.8)
+        trader(tick1, portfolio)
+        tick2, _ = self._held_tick_portfolio(close_price=10.3)  # above 10.26 trail line
+        decision = trader(tick2, portfolio)
+        assert decision.decision == "HOLD"
+
+    def test_peak_only_ratchets_up(self):
+        """A pullback that doesn't breach the trail must not lower the
+        tracked peak — a later new high still raises it, and the trail
+        stays anchored to the true peak, not the most recent price."""
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.make_trader(frames, "v1.0", trailing_stop_pct=5.0)
+        tick1, portfolio = self._held_tick_portfolio(close_price=10.5)
+        tick2, _ = self._held_tick_portfolio(close_price=10.3)  # pullback, above 10.5*0.95=9.975
+        tick3, _ = self._held_tick_portfolio(close_price=11.0)  # new peak
+        tick4, _ = self._held_tick_portfolio(close_price=10.5)  # above 11.0*0.95=10.45, but WOULD
+                                                                  # breach if trail were still anchored to 10.3
+        assert trader(tick1, portfolio).decision == "HOLD"
+        assert trader(tick2, portfolio).decision == "HOLD"
+        assert trader(tick3, portfolio).decision == "HOLD"
+        assert trader(tick4, portfolio).decision == "HOLD"
+
+    def test_v1_0_trail_variant_registered_and_simulates_trailing_stop(self):
+        frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
+        trader = replay_check.STRATEGY_BUILDERS["v1.0-trail"](frames)
+        tick1, portfolio = self._held_tick_portfolio(close_price=10.8)
+        trader(tick1, portfolio)
+        tick2, _ = self._held_tick_portfolio(close_price=10.2)
+        decision = trader(tick2, portfolio)
+        assert decision.decision == "SELL"
+        assert "trailing_stop_pct breached" in decision.rationale
