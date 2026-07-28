@@ -1,6 +1,6 @@
 # Proposal: v1.11: Revert to v1.1 rules + sweep-optimized -8/10 stop/target
 
-**Status**: open
+**Status**: applied
 **Tier**: auto
 **Created**: 2026-07-27T23:04:05.126432+00:00
 **Files changed**: strategy.md, params.json
@@ -12,3 +12,7 @@ v1.7's scale-into-winners (added post-v1.1) underperforms v1.1 on every risk-adj
 ## Evidence
 
 split-window (103 trading days, 18 tickers): v1.1 Sharpe 3.535 (1H 1.439 / 2H 5.340) vs v1.7 Sharpe 1.893 (1H 0.607 / 2H 3.136). sweep (same universe, 200d lookback): -8/10 combo Sharpe 2.045 (1H 4.123 / 2H 0.819) vs current -10/8 Sharpe 1.573 (1H 3.030 / 2H 0.725), 96 trades, 8.50% return.
+
+## Resolution
+
+applied at 2026-07-27T23:32:28.480260+00:00

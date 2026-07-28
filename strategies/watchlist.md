@@ -6,11 +6,14 @@ Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
-- BOX — open position (3 shares @ $29.75, entry 2026-07-24 11:50 + scale-in 2026-07-27 11:40 — Technology)
+- BOX — open position (4 shares @ ~$30.04, entry 2026-07-24 11:50 + scale-ins 2026-07-27 11:40, 2026-07-28 9:35 — Technology)
 - KRC — open position (2 shares @ $39.51, entry 2026-07-27 10:38 — Real Estate)
-- BCS — open position (1 share @ $28.28, entry 2026-07-27 11:35 — Financial)
+- STVN — open position (1 share @ ~$19.97, entry 2026-07-28 9:30 — Healthcare)
+- HLN — open position (1 share @ ~$10.19, entry 2026-07-28 9:30 — Consumer Defensive)
 
 ## Closed Positions
+- ~~FRNM~~ — closed 2026-07-28 9:36 (trailing stop breach, -6.4%, ⚠️ parallel collision 2sh)
+- ~~BCS~~ — closed 2026-07-28 9:30 (trailing stop breach, +1.1%)
 - ~~FHB~~ — closed 2026-07-27 09:59 (MACDh flip, v1.9 mandatory exit, -2.41%)
 - ~~IP~~ — closed 2026-07-27 09:58 (unintentional parallel-process sale, +10.62%)
 - ~~F~~ — closed 2026-07-27 09:37 (pre-earnings exit before Q2 7/28, +4.07%)
@@ -31,6 +34,21 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- ISHP — idle_ticks: 0 — from discovery_pool gen 2
+
+- TTEC — idle_ticks: 0 — from 2026-07-28.md
+- MPAA — idle_ticks: 0 — from 2026-07-28.md
+- ATKR — idle_ticks: 0 — from 2026-07-28.md
+- PKBK — idle_ticks: 0 — from 2026-07-28.md
+- ZBRA — idle_ticks: 0 — from 2026-07-28.md
+- MPWR — idle_ticks: 0 — from 2026-07-28.md
+- VIR — idle_ticks: 0 — from 2026-07-28.md
+- PMN — idle_ticks: 0 — from 2026-07-28.md
+
+- GBLI — idle_ticks: 0 — from discovery_pool gen 2
+- GIND — idle_ticks: 0 — from discovery_pool gen 2
+- GMEX — idle_ticks: 0 — from discovery_pool gen 2
+- IBTH — idle_ticks: 0 — from discovery_pool gen 2
 - STVN — idle_ticks: 1 — $19.68, RSI 57.7 🟢, MACDh +0.4344 🟢, vol 1.20x ✅. Qualifying signal — gates TBD next tick. Healthcare/Pharma.
 - TMED — idle_ticks: 1 — $34.26, RSI 55.9 🟢, MACDh +0.6131 🟢, vol 3.66x but 25k shares thin. Monitor — absolute liquidity suspect.
 - BSVO — idle_ticks: 1 — $29.32, RSI 56.5 🟢, MACDh +0.2847 🟢, vol 0.56x ❌. Low volume — disqualified.
@@ -84,3 +102,4 @@ _Dropped 2026-07-21: AMC (closed position -- trailing stop breach, -1.69%)._
 _Dropped 2026-07-22 11:20: BROS ($65), BWA ($65), ROKU ($143), PLTR ($127) — above $50 universe cap._
 _Dropped 2026-07-22 11:55: JOBY, ACHR, RIG, MYGN — hit idle_ticks=24 threshold._
 _Last touched: 2026-07-27 14:05 ET (all HOLD. Merge +5: STVN/TMED/BSVO/YSXT/TKLF. 2 qualified (STVN vol 1.2x, TMED thin), 3 disqualified. Legacy 9 idle→20.)_
+5: STVN/TMED/BSVO/YSXT/TKLF. 2 qualified (STVN vol 1.2x, TMED thin), 3 disqualified. Legacy 9 idle→20.)_

@@ -1,9 +1,9 @@
-# KRC Position Thesis
+# HLN Position Thesis
 
-- **Entry**: $39.51 avg | 2 shares
-- **Current**: $38.02 (-3.77% unrealized)
-- **Market Value**: $76.04
-- **Unrealized P&L**: $-2.98 (-3.77%)
+- **Entry**: $10.20 avg | 1 shares
+- **Current**: $10.21 (+0.10% unrealized)
+- **Market Value**: $10.21
+- **Unrealized P&L**: $+0.01 (+0.10%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-28 13:35:05 UTC
 

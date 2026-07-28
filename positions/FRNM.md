@@ -1,11 +1,11 @@
-# BCS Position Thesis
+# FRNM Position Thesis
 
-- **Entry**: $28.28 avg | 1 shares
-- **Current**: $28.65 (+1.31% unrealized)
-- **Market Value**: $28.65
-- **Unrealized P&L**: $+0.37 (+1.31%)
+- **Entry**: $11.88 avg | 2 shares
+- **Current**: $11.25 (-5.30% unrealized)
+- **Market Value**: $22.50
+- **Unrealized P&L**: $-1.26 (-5.30%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-27 20:30:09 UTC
+- **Last sync**: 2026-07-28 13:35:05 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

@@ -1,9 +1,9 @@
-# KRC Position Thesis
+# STVN Position Thesis
 
-- **Entry**: $39.51 avg | 2 shares
-- **Current**: $38.02 (-3.77% unrealized)
-- **Market Value**: $76.04
-- **Unrealized P&L**: $-2.98 (-3.77%)
+- **Entry**: $19.97 avg | 1 shares
+- **Current**: $19.83 (-0.70% unrealized)
+- **Market Value**: $19.83
+- **Unrealized P&L**: $-0.14 (-0.70%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-28 13:35:05 UTC
 

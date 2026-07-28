@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:26 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:35 ET
+
+## TUE 9:35 ET — Market Open Tick
+- ✅ **BCS SOLD** at open, 1sh @ ~$28.60 (+$0.32, +1.1%). Trailing stop breach was correct per pre-market rules — but BCS rallied to $28.56 (+2.3%) post-sale. Stop was non-negotiable.
+- ✅ **STVN BOUGHT** at open, 1sh @ ~$19.97. uPL -$0.11 (-0.6%). MACDh +0.4302 🟢. HOLD.
+- ✅ **HLN BOUGHT** at open, 1sh @ ~$10.19. uPL +$0.04 (+0.4%). MACDh +0.1803 🟢. HOLD.
+- 🚨 **FRNM BOUGHT & SOLD**: 2sh filled at open (⚠️ parallel collision — 1sh queued, 2sh filled @ ~$11.88 avg). Trailing stop breached immediately: -5.3% off peak $11.88, sold 2sh @ ~$11.12. P&L -$1.52 (-6.4%). Decision #5989, training #63.
+- ✅ **BOX SCALE-IN**: +1sh @ ~$30.88, conviction 0.70. v1.7 winner add: +3.9%, MACDh +0.96 🟢 strong, RSI 60.6 in-band. Now 4sh. Decision #5988, training #62.
+- **5 pos.** Regime **SUSTAINABLE** (0.92). PV $10,409.90, cash $10,148.97 (97.5%). BFST +2.5%, BOX 4sh +2.8%, HLN +0.4%, KRC -4.4%, STVN -0.6%. All MACDh 🟢.
+- 📊 6/10 orders used. ⚠️ FRNM parallel collision — 3rd occurrence (IP 7/24, KRC 7/27, FRNM 7/28). Order idempotency gate still not catching it. Pipeline healthy. workspace_review ✅.
 
 ## TUE 9:26 ET — Pre-Market Tick
 - 🚨 **BCS SELL** queued for 9:30: trailing stop -6.6% off peak $28.55 (Alpaca $26.66 vs data bus stale $28.56). Mandatory full exit.
