@@ -10,11 +10,12 @@ Format: `TICKER — idle_ticks: N — note`
 - BOX — open position (4 shares @ ~$30.05, entry 2026-07-24 11:50 + scale-ins 2026-07-27 11:40, 2026-07-28 9:35 — Technology)
 - STVN — open position (1 share @ ~$19.97, entry 2026-07-28 9:30 — Healthcare)
 - HLN — open position (1 share @ ~$10.19, entry 2026-07-28 9:30 — Consumer Defensive)
-- ITRI — open position (1 share @ ~$103.29, entry 2026-07-28 10:22 — Technology/Utilities)
+~~ITRI~~ — closed 2026-07-28 12:41 (trailing stop breach, -4.38%)
 
 ## Closed Positions
 - ~~KRC~~ — closed 2026-07-28 9:41 (trailing stop breach, -5.7%, 2sh via parallel collision)
 - ~~FRNM~~ — closed 2026-07-28 9:36 (trailing stop breach, -6.4%, ⚠️ parallel collision 2sh)
+- ~~ITRI~~ — closed 2026-07-28 12:41 (trailing stop breach, -4.38%)
 - ~~BCS~~ — closed 2026-07-28 9:30 (trailing stop breach, +1.1%)
 - ~~FHB~~ — closed 2026-07-27 09:59 (MACDh flip, v1.9 mandatory exit, -2.41%)
 - ~~IP~~ — closed 2026-07-27 09:58 (unintentional parallel-process sale, +10.62%)
