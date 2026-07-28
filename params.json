@@ -18,9 +18,7 @@
 
   "risk": {
     "stop_loss_pct": -8.0,
-    "stop_loss_pct_max": -20.0,
     "trailing_stop_pct": 5.0,
-    "trailing_stop_pct_max": 12.0,
     "profit_target_pct": 10.0,
     "profit_target_is_guide": true,
     "max_position_pct": 6.0,
@@ -33,8 +31,8 @@
     "_trailing_stop_source": "ratchets up from peak price since entry, mechanically enforced in scripts/guardrails.py check-stops, not LLM-judgment",
     "_duplicate_order_source": "cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries",
     "_drawdown_source": "competition mode's circuit breaker, measured from peak equity (state/peak_equity.json), not starting capital. Blocks new BUYs only — SELLs (including stop-losses) always pass. drawdown_halt_pct is a harder stop than pause but same BUY-only scope; see gate_drawdown_circuit_breaker.",
-    "_stop_patience_source": "2026-07-27: stop_loss_pct/trailing_stop_pct are day-zero distances now, widening toward stop_loss_pct_max/trailing_stop_pct_max the longer a position is held (stop_patience.py), compressing back to base inside the endgame window before bankroll.COMPETITION_END. See scripts/executor.py check_stops().",
-    "_conviction_floor_source": "2026-07-27: conviction_floor is the grace-period value; it drops toward conviction_floor_min (never below) the longer the account sits under-deployed. See deployment_pressure.py / scripts/executor.py gate_conviction()."
+    "_conviction_floor_source": "2026-07-27: conviction_floor is the grace-period value; it drops toward conviction_floor_min (never below) the longer the account sits under-deployed. See deployment_pressure.py / scripts/executor.py gate_conviction().",
+    "_stop_patience_reverted": "2026-07-27: stop_loss_pct_max/trailing_stop_pct_max (stop_patience.py's widening-with-holding-time mechanism) were tried and reverted same day -- overnight split-window backtest (research/2026-07-27.md) found flat stops beat every patience variant tested on Sharpe and return, in both halves. stop_patience.py stays on disk (tests intact) for a future redesign, unwired from check_stops() for now."
   },
 
   "risk_guards": {

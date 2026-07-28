@@ -12,7 +12,6 @@ import datetime
 import json
 import sys
 import time
-from datetime import date, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -38,12 +37,7 @@ DEFAULT_PARAMS = {
     "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5,
               "conviction_floor_min": 0.35,
               "duplicate_order_cooldown_seconds": 60, "stop_loss_pct": -10.0,
-              # Baseline matches stop_loss_pct (no extra headroom by default in
-              # this fixture) so existing gate_max_portfolio_risk arithmetic is
-              # unchanged unless a test explicitly widens it -- see
-              # TestGateMaxPortfolioRisk.test_wider_max_stop_lowers_headroom.
-              "stop_loss_pct_max": -10.0,
-              "trailing_stop_pct": 5.0, "trailing_stop_pct_max": 5.0,
+              "trailing_stop_pct": 5.0,
               "max_portfolio_risk_pct": 8.0,
               "drawdown_pause_pct": 15.0, "drawdown_halt_pct": 20.0},
     "risk_guards": {"max_positions_per_sector": 2, "order_count_audit_threshold_daily": 10},
@@ -191,32 +185,12 @@ class TestGateMaxPortfolioRisk:
         granted, _ = executor.gate_max_portfolio_risk(context, action)
         assert granted is True
 
-    def test_wider_max_stop_lowers_headroom(self, params):
-        # 2026-07-27: this gate now reads stop_loss_pct_max (the patience
-        # outer bound), not stop_loss_pct (the day-zero distance) -- see
-        # stop_patience.py / check_stops(). Same exposure as test_within_cap
-        # but a 20% max-stop instead of 10% -- risk doubles to 12%, now over
-        # the 8% cap.
-        params["risk"]["stop_loss_pct_max"] = -20.0
+    def test_tighter_stop_lowers_headroom(self, params):
+        # Same exposure as test_within_cap but a 20% stop instead of 10% -
+        # risk doubles to 12%, now over the 8% cap.
+        params["risk"]["stop_loss_pct"] = -20.0
         context = {"portfolio_value": 10000, "positions": [{"symbol": "NVDA", "market_value": 5000.0}]}
         action = {"action": "BUY", "ticker": "SOFI", "quantity": 100, "price": 10.0}
-        granted, reason = executor.gate_max_portfolio_risk(context, action)
-        assert granted is False
-        assert "12.0%" in reason
-
-    def test_uses_outer_bound_not_actual_stop(self, params):
-        """Confirms the gate reads stop_loss_pct_max specifically -- widening
-        stop_loss_pct_max changes the computed risk even when stop_loss_pct
-        (the day-zero distance) is untouched, and vice versa."""
-        context = {"portfolio_value": 10000, "positions": [{"symbol": "NVDA", "market_value": 5000.0}]}
-        action = {"action": "BUY", "ticker": "SOFI", "quantity": 100, "price": 10.0}
-
-        params["risk"]["stop_loss_pct"] = -50.0  # day-zero distance changed, max untouched (-10.0 baseline)
-        granted, reason = executor.gate_max_portfolio_risk(context, action)
-        assert granted is True
-        assert "6.0%" in reason  # unaffected -- still computed off stop_loss_pct_max, not stop_loss_pct
-
-        params["risk"]["stop_loss_pct_max"] = -20.0  # now widen the actual input this gate uses
         granted, reason = executor.gate_max_portfolio_risk(context, action)
         assert granted is False
         assert "12.0%" in reason
@@ -1007,93 +981,6 @@ class TestCheckStops:
         stop_types = {b["ticker"]: b["stop_type"] for b in breaches}
         assert stop_types.get("NVDA") == "oversized"
         assert stop_types.get("GME") == "hard"
-
-    # ── Stop patience (entry_date-based widening) — added 2026-07-27 ─────
-
-    def test_widened_hard_stop_after_days_held(self, params, monkeypatch, tmp_path):
-        """A price drop that would breach the base -10% stop must NOT breach
-        once a position has been held long enough to fully widen toward
-        stop_loss_pct_max."""
-        state_path = tmp_path / "guardrail_stops.json"
-        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
-        monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
-        params["risk"] = {"stop_loss_pct": -10.0, "stop_loss_pct_max": -20.0,
-                           "trailing_stop_pct": 50.0, "trailing_stop_pct_max": 50.0}  # wide, won't trigger
-        params["guardrail_gates"]["position_size_trim"] = False
-
-        import stop_patience
-        today = date(2026, 8, 1)
-        entry_date = today - timedelta(days=stop_patience.PATIENCE_RAMP_DAYS)  # fully ramped
-        state_path.write_text(json.dumps({
-            "SOFI": {"peak_price": 10.0, "entry_price": 10.0, "entry_date": entry_date.isoformat()},
-        }))
-        # -15%: would breach the base -10% stop, but not the fully-widened -20%
-        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
-        breaches = executor.check_stops("stonks", today=today)
-        assert breaches == []
-
-    def test_endgame_compresses_back_to_base(self, params, monkeypatch, tmp_path):
-        """Deep inside the endgame window before the competition deadline, a
-        long-held position's patience compresses back down -- it should
-        breach much closer to the base -10% distance, not stay widened."""
-        state_path = tmp_path / "guardrail_stops.json"
-        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
-        monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
-        params["risk"] = {"stop_loss_pct": -10.0, "stop_loss_pct_max": -20.0,
-                           "trailing_stop_pct": 50.0, "trailing_stop_pct_max": 50.0}
-        params["guardrail_gates"]["position_size_trim"] = False
-
-        import bankroll
-        today = bankroll.COMPETITION_END - timedelta(days=1)  # deep in the endgame window
-        entry_date = date(2026, 1, 1)  # long held, fully ramped by day count alone
-        state_path.write_text(json.dumps({
-            "SOFI": {"peak_price": 10.0, "entry_price": 10.0, "entry_date": entry_date.isoformat()},
-        }))
-        # -15%: would NOT breach the fully-widened -20% stop, but DOES breach
-        # once compressed back near -10% at the deadline.
-        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
-        breaches = executor.check_stops("stonks", today=today)
-        assert len(breaches) == 1
-        assert breaches[0]["stop_type"] == "hard"
-
-    def test_entry_date_persisted_and_stable_across_ticks(self, params, monkeypatch, tmp_path):
-        state_path = tmp_path / "guardrail_stops.json"
-        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
-        monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
-        params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 50.0}
-        params["guardrail_gates"]["position_size_trim"] = False
-        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.8)])
-
-        day1 = date(2026, 8, 1)
-        executor.check_stops("stonks", today=day1)
-        first_entry_date = json.loads(state_path.read_text())["SOFI"]["entry_date"]
-        assert first_entry_date == day1.isoformat()
-
-        day2 = date(2026, 8, 5)
-        executor.check_stops("stonks", today=day2)
-        second_entry_date = json.loads(state_path.read_text())["SOFI"]["entry_date"]
-        assert second_entry_date == first_entry_date  # unchanged -- not reset to day2
-
-    def test_missing_legacy_entry_date_falls_back_to_today(self, params, monkeypatch, tmp_path):
-        """Pre-2026-07-27 state files have peak_price/entry_price but no
-        entry_date -- must be treated as first-seen-today, not an error, and
-        never LESS protective than the old flat behavior (day 0 == base)."""
-        state_path = tmp_path / "guardrail_stops.json"
-        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
-        monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
-        params["risk"] = {"stop_loss_pct": -10.0, "stop_loss_pct_max": -20.0, "trailing_stop_pct": 50.0}
-        params["guardrail_gates"]["position_size_trim"] = False
-        state_path.write_text(json.dumps({"SOFI": {"peak_price": 10.0, "entry_price": 10.0}}))  # legacy schema
-
-        today = date(2026, 8, 1)
-        # -15%: would NOT breach the widened -20%, but must breach the base
-        # -10% since a legacy/missing entry_date gets zero patience head start.
-        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
-        breaches = executor.check_stops("stonks", today=today)
-        assert len(breaches) == 1
-        assert breaches[0]["stop_type"] == "hard"
-        # and entry_date now gets backfilled going forward
-        assert json.loads(state_path.read_text())["SOFI"]["entry_date"] == today.isoformat()
 
 
 # ─────────────────────────────────────────────────────────────────────────────

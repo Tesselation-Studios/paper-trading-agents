@@ -21,7 +21,7 @@ import math
 import os
 import sys
 import time
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -194,26 +194,15 @@ def gate_position_size(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple
 def gate_max_portfolio_risk(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     """Portfolio-level stop-loss exposure: if every open position (plus this
     proposed buy) hit its hard stop simultaneously, what % of equity would be
-    lost?
-
-    2026-07-27: per-position stops are no longer a single flat value --
-    stop_patience.py widens a position's effective stop the longer it's
-    held (up to risk.stop_loss_pct_max). This gate deliberately uses that
-    OUTER bound uniformly for all exposure (existing + proposed), not each
-    position's actual current (narrower) distance: any open position could
-    still ramp all the way to the outer bound before it stops out, so sizing
-    this backstop off today's narrower distance would understate real tail
-    risk. Also avoids coupling this gate to a second state file / entry-date
-    lookup, which would break its current zero-file-I/O test isolation.
-    A BUY-blocking gate should err toward over-restriction, not under --
-    this mechanically ~doubles the computed exposure vs. the pre-patience
-    flat -10%, which is the direct, intended cost of loosening the
-    per-position stop, not a bug."""
+    lost? stop_loss_pct is a single global value (risk.stop_loss_pct, applied
+    uniformly to every position -- see gate_drawdown_circuit_breaker/check_stops),
+    so this reduces to gross_exposure_value * stop_loss_pct / equity rather than
+    needing a per-position stop distance."""
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
     params = load_params()
     max_risk_pct = float(params.get("risk", {}).get("max_portfolio_risk_pct", 8.0))
-    stop_loss_frac = abs(float(params.get("risk", {}).get("stop_loss_pct_max", -20.0))) / 100.0
+    stop_loss_frac = abs(float(params.get("risk", {}).get("stop_loss_pct", -10.0))) / 100.0
     price = float(action.get("price", 0) or 0)
     qty = float(action.get("quantity", 0))
     proposed_value = qty * price
@@ -739,23 +728,21 @@ def _save_stop_state(state: Dict[str, Any]) -> None:
     STOPS_STATE_PATH.write_text(json.dumps(state, indent=2))
 
 
-def check_stops(account: str, today: Optional[date] = None) -> List[Dict[str, Any]]:
+def check_stops(account: str) -> List[Dict[str, Any]]:
     """Scan open positions for hard-stop, trailing-stop, or oversized-position
     breaches.
 
-    Hard stop / trailing stop: risk.stop_loss_pct / risk.trailing_stop_pct
-    are the DAY-ZERO distances. 2026-07-27: both now widen the longer a
-    position is held (stop_patience.py), up to risk.stop_loss_pct_max /
-    risk.trailing_stop_pct_max, compressing back toward the base distance
-    inside the endgame window before bankroll.COMPETITION_END — "Stan can
-    turn bad buys into good ones by holding longer... we have a few months"
-    (Raf). entry_date is tracked in state/guardrail_stops.json alongside the
-    existing peak_price/entry_price (set on first-seen, persisted while
-    held). A ticker with no entry_date on disk (pre-2026-07-27 state, or a
-    position that's never survived a non-breaching tick) is treated as
-    first-seen today — day 0 == the base distance, i.e. never LESS
-    protective than the old flat behavior, just without a patience head
-    start.
+    Hard stop: risk.stop_loss_pct below entry price (fixed floor).
+    Trailing stop: risk.trailing_stop_pct below the highest price observed
+    since entry (ratchets up only; persisted to state/guardrail_stops.json).
+    2026-07-27: briefly replaced with stop_patience.py (widening distances
+    the longer a position is held) same day, then REVERTED same night —
+    overnight split-window backtest (research/2026-07-27.md) found flat
+    stops beat every patience variant tested (shipped params + 2 alternate
+    ramp/bound speeds) on Sharpe and return, in both halves. Not a "wrong
+    numbers" problem: rescued 6 trades, made 9 worse, net P&L down
+    $268.58->$212.87 on the tested universe/window. stop_patience.py stays
+    on disk (tests intact) for a future redesign, just unwired from here.
     Oversized: current market_value / portfolio_value exceeds
     risk.max_position_pct — this happens when a position grows past the cap
     via price appreciation (gate_position_size only blocks new BUYs from
@@ -773,19 +760,9 @@ def check_stops(account: str, today: Optional[date] = None) -> List[Dict[str, An
     params = load_params()
     toggles = params.get("guardrail_gates", {})
     risk = params.get("risk", {})
-    # Base distances stay signed as params.json stores them (hard stop
-    # negative, trailing positive) so they pass straight into
-    # stop_patience.py without sign-juggling -- see that module's docstring
-    # on why juggling signs twice is a real bug risk here.
-    hard_stop_pct_base = float(risk.get("stop_loss_pct", -10.0))
-    hard_stop_pct_max = float(risk.get("stop_loss_pct_max", -20.0))
-    trailing_pct_base = float(risk.get("trailing_stop_pct", 5.0))
-    trailing_pct_max = float(risk.get("trailing_stop_pct_max", 12.0))
+    hard_stop_pct = abs(float(risk.get("stop_loss_pct", -10.0)))
+    trailing_pct = float(risk.get("trailing_stop_pct", 5.0))
     max_position_pct = float(risk.get("max_position_pct", 6.0))
-
-    sys.path.insert(0, str(WORKSPACE_DIR))
-    import stop_patience
-    today = today or datetime.now(timezone.utc).date()
 
     positions = get_positions(account)
     portfolio_value = None
@@ -805,12 +782,6 @@ def check_stops(account: str, today: Optional[date] = None) -> List[Dict[str, An
         market_value = float(p["market_value"])
         qty_held = int(float(p["qty"]))
 
-        entry = state.get(ticker, {})
-        entry_date_str = entry.get("entry_date")
-        entry_date = date.fromisoformat(entry_date_str) if entry_date_str else today
-        if not entry_date_str:
-            entry_date_str = today.isoformat()
-
         if portfolio_value and portfolio_value > 0 and current_price > 0:
             current_pct = market_value / portfolio_value * 100
             if current_pct > max_position_pct:
@@ -828,43 +799,31 @@ def check_stops(account: str, today: Optional[date] = None) -> List[Dict[str, An
                 # stops below, don't skip them the way a full-exit breach does.
 
         if toggles.get("hard_stop", True):
-            eff_hard_pct = abs(stop_patience.effective_hard_stop_pct(
-                entry_date, today, base_pct=hard_stop_pct_base, max_pct=hard_stop_pct_max))
-            hard_stop_price = entry_price * (1 - eff_hard_pct / 100)
+            hard_stop_price = entry_price * (1 - hard_stop_pct / 100)
             if current_price <= hard_stop_price:
                 loss_pct = (current_price - entry_price) / entry_price * 100
-                days_held = (today - entry_date).days
                 breaches.append({
                     "ticker": ticker, "stop_type": "hard",
-                    "reason": f"{ticker}: {loss_pct:.1f}% loss >= {eff_hard_pct:.1f}% hard stop "
-                              f"(${entry_price:.2f} -> ${current_price:.2f}, {days_held}d held)",
+                    "reason": f"{ticker}: {loss_pct:.1f}% loss >= {hard_stop_pct:.0f}% hard stop "
+                              f"(${entry_price:.2f} -> ${current_price:.2f})",
                     "loss_pct": loss_pct,
                 })
-                # Persist entry_date even on a breach (legacy/first-seen
-                # tickers would otherwise never get it backfilled if this
-                # position isn't actually sold this tick) -- doesn't touch
-                # peak_price, matching the original code's choice not to
-                # update that on a hard-stop breach either.
-                state[ticker] = {**entry, "entry_date": entry_date_str}
                 continue  # already breached, don't also report trailing
 
         # Track peak regardless of whether trailing-stop gate is enabled, so
         # re-enabling it later doesn't start from a stale/reset peak.
+        entry = state.get(ticker, {"peak_price": entry_price})
         peak_price = max(float(entry.get("peak_price", entry_price)), current_price)
-        state[ticker] = {"peak_price": peak_price, "entry_price": entry_price, "entry_date": entry_date_str}
+        state[ticker] = {"peak_price": peak_price, "entry_price": entry_price}
 
         if toggles.get("trailing_stop", True):
-            eff_trail_pct = stop_patience.effective_trailing_stop_pct(
-                entry_date, today, base_pct=trailing_pct_base, max_pct=trailing_pct_max)
-            trail_stop_price = peak_price * (1 - eff_trail_pct / 100)
+            trail_stop_price = peak_price * (1 - trailing_pct / 100)
             if current_price <= trail_stop_price:
                 drop_from_peak = (current_price - peak_price) / peak_price * 100
-                days_held = (today - entry_date).days
                 breaches.append({
                     "ticker": ticker, "stop_type": "trailing",
                     "reason": f"{ticker}: trailing stop breached, {drop_from_peak:.1f}% off peak "
-                              f"${peak_price:.2f} (stop ${trail_stop_price:.2f} at {eff_trail_pct:.1f}% trail, "
-                              f"current ${current_price:.2f}, {days_held}d held)",
+                              f"${peak_price:.2f} (stop ${trail_stop_price:.2f}, current ${current_price:.2f})",
                     "loss_pct": (current_price - entry_price) / entry_price * 100,
                 })
 
