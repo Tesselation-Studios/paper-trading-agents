@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import db_writer
+
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 STATE_DIR = WORKSPACE_DIR / "state"
@@ -77,20 +79,54 @@ def get_headers(account):
     }
 
 
+def _record_alpaca_call(endpoint: str, method: str, request_summary: Optional[dict],
+                         status_code: Optional[int], start_time: float) -> None:
+    """Best-effort Alpaca API audit log (2026-07-28) -- never raises, never
+    blocks or slows the real trading call it's instrumenting. request_summary
+    is a small dict (ticker/qty/side), never headers/keys."""
+    try:
+        db_writer.enqueue("alpaca_audit_log", {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "endpoint": endpoint,
+            "method": method,
+            "request_summary": json.dumps(request_summary) if request_summary else None,
+            "status_code": status_code,
+            "response_summary": None,
+            "latency_ms": int((time.time() - start_time) * 1000),
+        })
+        db_writer.flush_all()
+    except Exception:
+        pass
+
+
 def get_account(account):
     import urllib.request
     url = f"{ALPACA_BASE_URL}/v2/account"
     req = urllib.request.Request(url, headers=get_headers(account))
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("account", "GET", None, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("account", "GET", None, getattr(e, "code", None), start)
+        raise
 
 
 def get_positions(account):
     import urllib.request
     url = f"{ALPACA_BASE_URL}/v2/positions"
     req = urllib.request.Request(url, headers=get_headers(account))
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("positions", "GET", None, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("positions", "GET", None, getattr(e, "code", None), start)
+        raise
 
 
 def get_open_orders(account, ticker=None):
@@ -105,8 +141,15 @@ def get_open_orders(account, ticker=None):
     if ticker:
         url += f"&symbols={urllib.parse.quote(str(ticker).upper())}"
     req = urllib.request.Request(url, headers=get_headers(account))
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("orders", "GET", {"ticker": ticker} if ticker else None, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("orders", "GET", {"ticker": ticker} if ticker else None, getattr(e, "code", None), start)
+        raise
 
 
 def place_order(account, ticker, qty, side):
@@ -133,8 +176,16 @@ def place_order(account, ticker, qty, side):
         headers=get_headers(account),
         method="POST",
     )
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())
+    request_summary = {"ticker": ticker, "qty": qty, "side": side}
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("orders", "POST", request_summary, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("orders", "POST", request_summary, getattr(e, "code", None), start)
+        raise
 
 
 def load_params() -> Dict[str, Any]:
