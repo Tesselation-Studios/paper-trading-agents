@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:20 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:26 ET
+
+## TUE 9:26 ET — Pre-Market Tick
+- 🚨 **BCS SELL** queued for 9:30: trailing stop -6.6% off peak $28.55 (Alpaca $26.66 vs data bus stale $28.56). Mandatory full exit.
+- 🆕 **FRNM BUY queued for 9:30**: 1sh @ ~$11.38, conviction **0.52**. FDA approval + $100M milestone from Abbott (SimpleScreen CRC). Sentiment +0.923 🚀, RSI 47.5 (room to run), MACDh +0.2288 🟢, vol 4.2x ✅. Healthcare — will be 2/2 sector with STVN.
+- 🆕 **STVN BUY re-confirmed**: 1sh @ ~$19.80, conviction 0.36 (barely above 0.35 floor, dragged by 4 neutral signals). RSI 58.7 🟢, MACDh +0.4302 🟢, vol 1.24x ✅. Healthcare/Pharma.
+- 🆕 **HLN BUY queued for 9:30**: 1sh @ ~$9.94, conviction 0.36. RSI 59.0 🟢, MACDh +0.1803 🟢, vol 2.72x ✅. Consumer Defensive diversifier.
+- **3 HOLD.** Regime **SUSTAINABLE** (0.92). PV $10,412.62, cash $10,185.25 (97.8%). BFST $31.47 (+1.6%), BOX 3sh $30.15 (+1.3%), KRC 2sh $39.41 (-0.3%). All MACDh 🟢: BFST +0.4529, BOX +0.96, KRC +0.7051. No flips.
+- 📡 Data bus LIVE (68 bars). Sentiment fresh (13:15 UTC): FRNM +0.923, BOX +0.385, BCS +0.711, KRC -0.58. GBLI thin (30k shares) skipped. Scale-in: none qualify (all below 3% v1.7 floor). 165 under-deployed ticks, conv floor 0.35.
+- 📊 4 orders queued for 9:30 (BCS SELL + STVN/FRNM/HLN BUY = 4/10 daily budget). workspace_review ✅. Merge + promote no-op. Candidates pipeline healthy.
 
 ## TUE 9:20 ET — Pre-Market Tick
 - 🚨 **BCS SELL blocked by hours gate** (9:21). Trailing stop breach confirmed, $26.69 (-5.6%). Queued for 9:30 open.
