@@ -34,6 +34,11 @@ state/peak_equity.json
 state/signal_scorecard.json
 state/watches.json
 state/deployment_pressure.json
+state/discovery_daemon.json
+state/discovery_pool.db
+state/discovery_pool.db-wal
+state/discovery_pool.db-shm
+state/*.lock
 
 # Secrets — never commit these
 .secrets/

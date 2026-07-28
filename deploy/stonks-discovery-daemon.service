@@ -1,0 +1,21 @@
+[Unit]
+Description=Stonks Continuous Discovery Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=openclaw
+WorkingDirectory=/home/openclaw/.openclaw/workspace-trader-stonks
+Environment=HOME=/home/openclaw
+# TODO before first enable: confirm where ALPACA_STONKS_KEY/ALPACA_STONKS_SECRET
+# (and FINBERT_HOST/FINBERT_PORT if not using the news_collector.py defaults)
+# actually get into cron-executed scripts' environment today -- that path goes
+# through the OpenClaw agent's own session init, which this standalone systemd
+# unit does NOT inherit. Add an EnvironmentFile= drop-in pointing at the real
+# source once confirmed; do not guess a path here.
+ExecStart=/usr/bin/python3 /home/openclaw/.openclaw/workspace-trader-stonks/scripts/discovery_daemon.py
+Restart=on-failure
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

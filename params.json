@@ -57,6 +57,19 @@
     "lookback_n_entries": 10
   },
 
+  "discovery_daemon": {
+    "chunk_size": 75,
+    "market_hours_interval_seconds": 120,
+    "off_hours_interval_seconds": 900,
+    "universe_refresh_interval_seconds": 86400,
+    "finbert_confirm_interval_seconds": 1800,
+    "finbert_confirm_top_n": 6,
+    "promote_top_n": 5,
+    "promote_max_age_seconds": 10800,
+    "daemon_health_stale_multiplier": 3,
+    "_source": "2026-07-27: scripts/discovery_daemon.py (a real systemd-supervised background process, deploy/stonks-discovery-daemon.service -- not another OpenClaw cron, this repo's one deliberate exception) reads chunk_size/*_interval_seconds/finbert_confirm_*; scripts/promote_candidates.py (called every tick from tick_prompt.md step 7) reads promote_top_n/promote_max_age_seconds; scripts/discovery_urgency_check.py reads daemon_health_stale_multiplier via discovery_daemon.daemon_health() to flag the daemon unhealthy in its output (informational only, does not change its own trigger logic -- stays armed as defense-in-depth if the daemon ever dies). Standalone: zero dependency on data_bus.py (see skills/data-bus-fallback.md). Pool lives in state/discovery_pool.db, never touched by anything but discovery_daemon.py (writer) and promote_candidates.py (reader)."
+  },
+
   "alpaca": {
     "base_url": "https://paper-api.alpaca.markets",
     "time_in_force": "day",
