@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 10:25 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 10:30 ET
+
+## TUE 10:30 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,120 (97.2%). BFST +2.7%, BOX 4sh +3.2%, HLN +0.9%, ITRI +0.1%, STVN -0.1%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
+- 📊 **BOX scale-in**: +3.2% crosses 3% v1.7 floor but reconciled 0.43 < 0.50 floor — 2 neutral signals (flow/insiders empty) drag. Technical +0.70/regime +0.80/sentiment +0.55/volume +0.55 positive but neutral weight too heavy. Correctly gated.
+- 🔍 **GBLI re-evaluated** (step 8 mandate): RSI 59.3 🟢, MACDh +0.2028 🟢, vol 2.85x (30k shares thin), reconciled 0.23 < 0.50. 4 neutral signals (sentiment unknown, flow/insiders empty, thin abs volume). Correctly gated.
+- 🔍 **TMED evaluated**: RSI 57.3 🟢, MACDh +0.5722 🟢 strong, vol 1.97x (15.7k shares thin), reconciled 0.25 < 0.50. Same 4-neutral drag. Correctly gated.
+- 📡 Sentiment fresh (14:15 UTC). Live FinBERT returning generic headline feed for all tickers — not ticker-specific. Relying on cache. Merge/promote no-op. Pipeline healthy. workspace_review ✅.
 
 ## TUE 10:25 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,120 (97.2%). BFST +2.7%, BOX 4sh +3.5%, HLN +1.0%, ITRI -0.4%, STVN -0.1%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
