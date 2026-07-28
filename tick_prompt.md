@@ -26,6 +26,8 @@
 
 7. **Discovery pass** → run `python3 scripts/merge_discoveries.py` unconditionally, every tick — mechanically merges any unconsumed `discoveries/*.md` candidates into `watchlist.md` (idempotent, no-op if nothing new). Don't rely on remembering to do this manually; the script exists because that failed for days.
 
+   Then run `python3 scripts/promote_candidates.py` unconditionally, every tick — pulls the top fresh (in-band, not stale) candidates out of the continuous `discovery_daemon.py` scanner's pool (`state/discovery_pool.db`, a real systemd-supervised background process, not a cron — always rotating through the tradable universe) into `watchlist.md`, same dedup/`max_size` contract as the merge above. Idempotent, no-op if the pool has nothing new or fresh enough — zero real cost either way, this is a local SQLite read.
+
    Then check the watchlist's `## Candidates` section (excluding held positions and struck-through entries) — the merge above may not have refilled it. **If it's empty**, don't wait for the 45-min `stonks-discovery-urgent` cron: run `python3 scripts/discovery_urgency_check.py` right now. Its empty-pipeline check fires regardless of cash deployment, so it'll run a fresh scan and write straight to `discoveries/*.md` immediately — next tick's merge step picks the results up automatically. This is the only branch of step 7 that costs a real API call; skip it whenever Candidates already has entries — don't run it "just in case."
 
    Otherwise, light touch: anything gone stale (idle_ticks over threshold in `params.json`)? Drop it. Noticed a new name worth watching from your own scan? Add it too — the script only covers probe-discovery's output, not your own noticing.

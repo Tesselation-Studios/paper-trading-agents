@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import discovery_scan  # noqa: E402
+import discovery_daemon  # noqa: E402
 import executor  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -97,6 +98,8 @@ def check_and_maybe_discover(cash_threshold_pct: float = None,
     thin_pipeline = candidate_count < min_candidates
     pipeline_empty = candidate_count <= empty_floor
 
+    health = discovery_daemon.daemon_health()
+
     result = {
         "cash_pct": round(cash_pct, 2),
         "candidate_count": candidate_count,
@@ -104,6 +107,13 @@ def check_and_maybe_discover(cash_threshold_pct: float = None,
         "thin_pipeline": thin_pipeline,
         "pipeline_empty": pipeline_empty,
         "triggered": (under_deployed and thin_pipeline) or pipeline_empty,
+        # 2026-07-27: informational only -- does NOT change triggered logic
+        # above. The continuous discovery_daemon.py (systemd, not a cron)
+        # is the primary source of fresh watchlist candidates now; this
+        # trigger stays armed exactly as before as defense-in-depth if the
+        # daemon ever dies, now with an honest breadcrumb for why it fired.
+        "daemon_healthy": health["healthy"],
+        "daemon_last_cycle_completed_at": health["last_cycle_completed_at"],
     }
 
     if result["triggered"]:

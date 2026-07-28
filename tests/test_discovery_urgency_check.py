@@ -41,6 +41,17 @@ class TestCountWatchlistCandidates:
 
 
 class TestCheckAndMaybeDiscover:
+    @pytest.fixture(autouse=True)
+    def isolated_daemon_health(self, monkeypatch):
+        """check_and_maybe_discover() now calls discovery_daemon.daemon_health()
+        every time (informational output keys, doesn't affect triggered logic)
+        -- without isolation these tests would read whatever real
+        state/discovery_daemon.json happens to be on disk. Default healthy;
+        TestDaemonHealthKeys below overrides per-state."""
+        monkeypatch.setattr(urgency.discovery_daemon, "daemon_health",
+                             lambda: {"healthy": True, "last_cycle_completed_at": "2026-07-27T12:00:00+00:00",
+                                       "last_cycle_status": "ok"})
+
     def _mock_account(self, monkeypatch, cash, equity):
         monkeypatch.setattr(urgency.executor, "get_account",
                              lambda account: {"cash": str(cash), "equity": str(equity)})
@@ -178,3 +189,46 @@ class TestCheckAndMaybeDiscover:
         result = urgency.check_and_maybe_discover()
         assert result["pipeline_empty"] is True
         assert result["triggered"] is True
+
+
+class TestDaemonHealthKeys:
+    """daemon_healthy/daemon_last_cycle_completed_at are purely
+    informational -- confirms all three states surface correctly without
+    ever changing triggered/under_deployed/thin_pipeline/pipeline_empty."""
+
+    def _mock_account(self, monkeypatch, cash, equity):
+        monkeypatch.setattr(urgency.executor, "get_account",
+                             lambda account: {"cash": str(cash), "equity": str(equity)})
+
+    def _healthy_watchlist(self, monkeypatch, tmp_path):
+        self._mock_account(monkeypatch, cash=2000, equity=10000)  # 20% cash, no trigger
+        watchlist = tmp_path / "watchlist.md"
+        watchlist.write_text("## Candidates\n- AAA\n- BBB\n- CCC\n")
+        monkeypatch.setattr(urgency, "WATCHLIST_PATH", watchlist)
+
+    def test_daemon_missing_reports_unhealthy(self, monkeypatch, tmp_path):
+        self._healthy_watchlist(monkeypatch, tmp_path)
+        monkeypatch.setattr(urgency.discovery_daemon, "daemon_health",
+                             lambda: {"healthy": False, "last_cycle_completed_at": None, "last_cycle_status": None})
+        result = urgency.check_and_maybe_discover()
+        assert result["daemon_healthy"] is False
+        assert result["daemon_last_cycle_completed_at"] is None
+        assert result["triggered"] is False  # unaffected by daemon health
+
+    def test_daemon_fresh_reports_healthy(self, monkeypatch, tmp_path):
+        self._healthy_watchlist(monkeypatch, tmp_path)
+        monkeypatch.setattr(urgency.discovery_daemon, "daemon_health",
+                             lambda: {"healthy": True, "last_cycle_completed_at": "2026-07-27T12:00:00+00:00",
+                                       "last_cycle_status": "ok"})
+        result = urgency.check_and_maybe_discover()
+        assert result["daemon_healthy"] is True
+        assert result["daemon_last_cycle_completed_at"] == "2026-07-27T12:00:00+00:00"
+
+    def test_daemon_stale_reports_unhealthy(self, monkeypatch, tmp_path):
+        self._healthy_watchlist(monkeypatch, tmp_path)
+        monkeypatch.setattr(urgency.discovery_daemon, "daemon_health",
+                             lambda: {"healthy": False, "last_cycle_completed_at": "2020-01-01T00:00:00+00:00",
+                                       "last_cycle_status": "ok"})
+        result = urgency.check_and_maybe_discover()
+        assert result["daemon_healthy"] is False
+        assert result["daemon_last_cycle_completed_at"] == "2020-01-01T00:00:00+00:00"
