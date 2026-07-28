@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
 Unit tests for scripts/promote_candidates.py -- the discovery-pool ->
-watchlist.md bridge. Mirrors test_merge_discoveries.py's TestMerge shape:
-isolated watchlist.md/params.json under tmp_path, plus a seeded pool db
-under tmp_path (no mocking needed for the pool -- real sqlite3).
+watchlist_candidates table bridge. Mirrors test_merge_discoveries.py's
+TestMerge shape: isolated trader_db.DB_PATH/params.json under tmp_path,
+plus a seeded pool db under tmp_path (no mocking needed for the pool --
+real sqlite3). Note: promote()'s own db_path param is the discovery POOL
+db (state/discovery_pool.db) -- a different database from trader_db.py's
+state/trader.db, which insert_into_watchlist() always uses via its own
+default (promote() never threads its db_path through to that call, since
+they're different databases). trader_db.DB_PATH must be monkeypatched
+separately for that reason.
 """
 import json
 import sys
@@ -16,35 +22,34 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 import promote_candidates  # noqa: E402
 import merge_discoveries  # noqa: E402
+import trader_db  # noqa: E402
 import discovery_db  # noqa: E402
-
-
-DEFAULT_WATCHLIST = """# Watchlist — Growing/Shrinking Candidate List
-
-Format: `TICKER — idle_ticks: N — note`
-
-## Currently Held (always on the list, idle_ticks doesn't apply while open)
-- NVDA — open position
-
-## Candidates
-"""
 
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
-    watchlist_path = tmp_path / "strategies" / "watchlist.md"
-    watchlist_path.parent.mkdir()
-    watchlist_path.write_text(DEFAULT_WATCHLIST)
     params_path = tmp_path / "params.json"
     params_path.write_text(json.dumps({"watchlist": {"max_size": 30},
                                         "discovery_daemon": {"promote_top_n": 5, "promote_max_age_seconds": 10800}}))
 
-    monkeypatch.setattr(merge_discoveries, "WATCHLIST_PATH", watchlist_path)
-    monkeypatch.setattr(merge_discoveries, "PARAMS_PATH", params_path)
+    monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
     monkeypatch.setattr(promote_candidates, "PARAMS_PATH", params_path)
+    monkeypatch.setattr(merge_discoveries, "PARAMS_PATH", params_path)
+
+    conn = trader_db.get_conn(tmp_path / "trader.db")
+    trader_db.upsert_position(conn, ticker="NVDA", shares=1.0, entry_price=500.0, entry_time="t1")
+    conn.close()
 
     db_path = tmp_path / "pool.db"
-    return {"watchlist_path": watchlist_path, "params_path": params_path, "db_path": db_path}
+    return {"params_path": params_path, "db_path": db_path}
+
+
+def _candidates():
+    conn = trader_db.get_conn()
+    try:
+        return {c["ticker"]: c for c in trader_db.get_watchlist_candidates(conn)}
+    finally:
+        conn.close()
 
 
 def _seed(db_path, tickers_volume_ratios, generation=1, screened_at="2026-07-27T12:00:00+00:00"):
@@ -82,11 +87,13 @@ class TestPromote:
         _seed(env["db_path"], [("ZZZ", 1.5)])
         result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
         assert result["merged"] == ["ZZZ"]
-        text = env["watchlist_path"].read_text()
-        assert "- ZZZ — idle_ticks: 0 — from discovery_pool gen 1" in text
+        candidates = _candidates()
+        assert candidates["ZZZ"]["source"] == "discovery_pool gen 1"
 
     def test_dedup_against_existing_watchlist(self, env):
-        env["watchlist_path"].write_text(DEFAULT_WATCHLIST + "- AAA — idle_ticks: 0 — from prior\n")
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", source="prior")
+        conn.close()
         _seed(env["db_path"], [("AAA", 1.0), ("BBB", 2.0)])
         result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
         assert result["merged"] == ["BBB"]
@@ -101,11 +108,9 @@ class TestPromote:
 
     def test_dry_run_does_not_write(self, env):
         _seed(env["db_path"], [("ZZZ", 1.5)])
-        before = env["watchlist_path"].read_text()
         result = promote_candidates.promote(db_path=env["db_path"], dry_run=True, max_age_seconds=86400, now=FIXED_NOW)
-        after = env["watchlist_path"].read_text()
         assert result["merged"] == ["ZZZ"]
-        assert before == after
+        assert _candidates() == {}
 
     def test_empty_pool_is_noop(self, env):
         result = promote_candidates.promote(db_path=env["db_path"], now=FIXED_NOW)

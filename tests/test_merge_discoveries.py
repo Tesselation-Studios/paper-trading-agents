@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 Unit tests for scripts/merge_discoveries.py — mechanical feed of
-discoveries/YYYY-MM-DD.md ticker candidates into strategies/watchlist.md.
+discoveries/YYYY-MM-DD.md ticker candidates into the local
+watchlist_candidates table.
 
-DISCOVERIES_DIR, WATCHLIST_PATH, and PARAMS_PATH are monkeypatched to
-tmp_path fixtures in every test that touches the filesystem, so tests never
-read or write the real discoveries/ dir, watchlist.md, or params.json.
+DISCOVERIES_DIR and PARAMS_PATH are monkeypatched to tmp_path fixtures;
+trader_db.DB_PATH is monkeypatched to an isolated tmp_path db (2026-07-28,
+migrated off a regex-parsed watchlist.md) — no test ever touches the real
+discoveries/ dir, state/trader.db, or params.json.
 """
 import json
 import sys
@@ -17,17 +19,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import merge_discoveries  # noqa: E402
-
-
-DEFAULT_WATCHLIST = """# Watchlist — Growing/Shrinking Candidate List
-
-Format: `TICKER — idle_ticks: N — note`
-
-## Currently Held (always on the list, idle_ticks doesn't apply while open)
-- NVDA — open position
-
-## Candidates
-"""
+import trader_db  # noqa: E402
 
 
 def make_discoveries_file(dir_path: Path, date: str, tickers_and_prices):
@@ -46,24 +38,46 @@ def make_discoveries_file(dir_path: Path, date: str, tickers_and_prices):
 
 @pytest.fixture
 def merge_env(tmp_path, monkeypatch):
-    """Isolated discoveries/, watchlist.md, and params.json under tmp_path."""
+    """Isolated discoveries/, trader_db.DB_PATH, and params.json under
+    tmp_path. Seeds NVDA as an open position, mirroring the old fixture's
+    'Currently Held' concept."""
     discoveries_dir = tmp_path / "discoveries"
     discoveries_dir.mkdir()
-    watchlist_path = tmp_path / "strategies" / "watchlist.md"
-    watchlist_path.parent.mkdir()
-    watchlist_path.write_text(DEFAULT_WATCHLIST)
+    db_path = tmp_path / "trader.db"
     params_path = tmp_path / "params.json"
     params_path.write_text(json.dumps({"watchlist": {"max_size": 30}}))
 
     monkeypatch.setattr(merge_discoveries, "DISCOVERIES_DIR", discoveries_dir)
-    monkeypatch.setattr(merge_discoveries, "WATCHLIST_PATH", watchlist_path)
     monkeypatch.setattr(merge_discoveries, "PARAMS_PATH", params_path)
+    monkeypatch.setattr(trader_db, "DB_PATH", db_path)
 
-    return {
-        "discoveries_dir": discoveries_dir,
-        "watchlist_path": watchlist_path,
-        "params_path": params_path,
-    }
+    conn = trader_db.get_conn(db_path)
+    trader_db.upsert_position(conn, ticker="NVDA", shares=1.0, entry_price=500.0, entry_time="t1")
+    conn.close()
+
+    return {"discoveries_dir": discoveries_dir, "params_path": params_path, "db_path": db_path}
+
+
+def _candidates(db_path):
+    conn = trader_db.get_conn(db_path)
+    try:
+        return {c["ticker"]: c for c in trader_db.get_watchlist_candidates(conn)}
+    finally:
+        conn.close()
+
+
+def _seed_candidates(db_path, tickers):
+    conn = trader_db.get_conn(db_path)
+    for t in tickers:
+        trader_db.upsert_watchlist_candidate(conn, ticker=t, source="prior")
+    conn.close()
+
+
+def _seed_closed_position(db_path, ticker):
+    conn = trader_db.get_conn(db_path)
+    trader_db.upsert_position(conn, ticker=ticker, shares=1.0, entry_price=10.0, entry_time="t1")
+    trader_db.close_position(conn, ticker=ticker, closed_at="t2", close_reason="exit", realized_pnl=1.0, realized_return_pct=1.0)
+    conn.close()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -112,20 +126,24 @@ class TestMerge:
         assert "NVDA" in result["skipped"]
 
     def test_skips_ticker_already_listed_as_candidate(self, merge_env):
-        merge_env["watchlist_path"].write_text(
-            DEFAULT_WATCHLIST + "- AAA — idle_ticks: 0 — from prior\n"
-        )
+        _seed_candidates(merge_env["db_path"], ["AAA"])
         make_discoveries_file(merge_env["discoveries_dir"], "2026-07-22", [("AAA", "10"), ("BBB", "20")])
         result = merge_discoveries.merge()
         assert result["merged"] == ["BBB"]
         assert "AAA" in result["skipped"]
 
+    def test_skips_ticker_already_closed(self, merge_env):
+        """2026-07-28: dedup now also covers closed positions -- a ticker
+        that was already bought and sold shouldn't come right back as a
+        fresh candidate either."""
+        _seed_closed_position(merge_env["db_path"], "OLD")
+        make_discoveries_file(merge_env["discoveries_dir"], "2026-07-22", [("OLD", "10"), ("NEW", "20")])
+        result = merge_discoveries.merge()
+        assert result["merged"] == ["NEW"]
+        assert "OLD" in result["skipped"]
+
     def test_respects_max_size(self, merge_env):
-        merge_env["watchlist_path"].write_text(
-            DEFAULT_WATCHLIST
-            + "- EXA — idle_ticks: 0 — from prior\n"
-            + "- EXB — idle_ticks: 0 — from prior\n"
-        )
+        _seed_candidates(merge_env["db_path"], ["EXA", "EXB"])
         merge_env["params_path"].write_text(json.dumps({"watchlist": {"max_size": 3}}))
         make_discoveries_file(
             merge_env["discoveries_dir"], "2026-07-22",
@@ -138,13 +156,11 @@ class TestMerge:
         assert any("NEC" in s for s in result["skipped"])
         assert any("max_size 3 reached" in s for s in result["skipped"])
 
-    def test_dry_run_does_not_write_file(self, merge_env):
+    def test_dry_run_does_not_write(self, merge_env):
         make_discoveries_file(merge_env["discoveries_dir"], "2026-07-22", [("ZZZ", "10")])
-        before = merge_env["watchlist_path"].read_text()
         result = merge_discoveries.merge(dry_run=True)
-        after = merge_env["watchlist_path"].read_text()
         assert result["merged"] == ["ZZZ"]
-        assert before == after
+        assert _candidates(merge_env["db_path"]) == {}
 
     def test_no_discoveries_file_found(self, merge_env):
         # discoveries dir exists but is empty
@@ -178,56 +194,68 @@ class TestMerge:
         result = merge_discoveries.merge(date="2099-01-01")
         assert result["error"] == "no discoveries file found"
 
-    def test_new_candidates_written_into_candidates_section(self, merge_env):
+    def test_new_candidates_written_to_db(self, merge_env):
         make_discoveries_file(merge_env["discoveries_dir"], "2026-07-22", [("ZZZ", "10")])
         merge_discoveries.merge()
-        text = merge_env["watchlist_path"].read_text()
-        assert "- ZZZ — idle_ticks: 0 — from 2026-07-22.md" in text
+        candidates = _candidates(merge_env["db_path"])
+        assert "ZZZ" in candidates
+        assert candidates["ZZZ"]["source"] == "2026-07-22.md"
+        assert candidates["ZZZ"]["idle_ticks"] == 0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # insert_into_watchlist — extracted 2026-07-27 so promote_candidates.py
-# (discovery-pool -> watchlist bridge) reuses the exact same splice logic
-# instead of reimplementing it. merge()'s own tests above already cover
-# this indirectly; these exercise the helper directly with an arbitrary
-# source_label instead of always a discoveries/*.md filename.
+# (discovery-pool -> watchlist bridge) reuses the exact same dedup/cap
+# logic instead of reimplementing it. merge()'s own tests above already
+# cover this indirectly; these exercise the helper directly with an
+# arbitrary source_label instead of always a discoveries/*.md filename.
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 class TestInsertIntoWatchlist:
     def test_skips_ticker_already_held(self, merge_env):
-        result = merge_discoveries.insert_into_watchlist(["NVDA", "ZZZ"], source_label="discovery_pool gen 1")
+        result = merge_discoveries.insert_into_watchlist(
+            ["NVDA", "ZZZ"], source_label="discovery_pool gen 1", db_path=merge_env["db_path"],
+        )
         assert result["merged"] == ["ZZZ"]
         assert "NVDA" in result["skipped"]
 
     def test_respects_max_size(self, merge_env):
-        merge_env["watchlist_path"].write_text(
-            DEFAULT_WATCHLIST
-            + "- EXA — idle_ticks: 0 — from prior\n"
-            + "- EXB — idle_ticks: 0 — from prior\n"
-        )
+        _seed_candidates(merge_env["db_path"], ["EXA", "EXB"])
         merge_env["params_path"].write_text(json.dumps({"watchlist": {"max_size": 3}}))
         result = merge_discoveries.insert_into_watchlist(
-            ["NEA", "NEB", "NEC"], source_label="discovery_pool gen 1"
+            ["NEA", "NEB", "NEC"], source_label="discovery_pool gen 1", db_path=merge_env["db_path"],
         )
         assert result["merged"] == ["NEA"]
         assert any("max_size 3 reached" in s for s in result["skipped"])
 
     def test_dry_run_does_not_write(self, merge_env):
-        before = merge_env["watchlist_path"].read_text()
-        result = merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="discovery_pool gen 1", dry_run=True)
-        after = merge_env["watchlist_path"].read_text()
+        result = merge_discoveries.insert_into_watchlist(
+            ["ZZZ"], source_label="discovery_pool gen 1", dry_run=True, db_path=merge_env["db_path"],
+        )
         assert result["merged"] == ["ZZZ"]
-        assert before == after
+        assert _candidates(merge_env["db_path"]) == {}
 
-    def test_uses_given_source_label_not_a_filename(self, merge_env):
-        merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="discovery_pool gen 7")
-        text = merge_env["watchlist_path"].read_text()
-        assert "- ZZZ — idle_ticks: 0 — from discovery_pool gen 7" in text
+    def test_uses_given_source_label(self, merge_env):
+        merge_discoveries.insert_into_watchlist(
+            ["ZZZ"], source_label="discovery_pool gen 7", db_path=merge_env["db_path"],
+        )
+        candidates = _candidates(merge_env["db_path"])
+        assert candidates["ZZZ"]["source"] == "discovery_pool gen 7"
 
     def test_no_result_source_key_left_to_caller(self, merge_env):
         """Unlike merge(), this helper doesn't know about a discoveries
         file at all -- callers (merge() itself, promote_candidates.py) are
         responsible for adding their own 'source' key if they want one."""
-        result = merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="anything")
+        result = merge_discoveries.insert_into_watchlist(
+            ["ZZZ"], source_label="anything", db_path=merge_env["db_path"],
+        )
         assert "source" not in result
+
+    def test_default_db_path_uses_trader_db_default(self, merge_env):
+        """No db_path passed -- should fall back to trader_db.DB_PATH
+        (already monkeypatched by the fixture), same as every other
+        migrated script's convention."""
+        result = merge_discoveries.insert_into_watchlist(["ZZZ"], source_label="x")
+        assert result["merged"] == ["ZZZ"]
+        assert "ZZZ" in _candidates(merge_env["db_path"])

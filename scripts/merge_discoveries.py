@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Merge unconsumed probe-discovery candidates into strategies/watchlist.md.
+"""Merge unconsumed probe-discovery candidates into the local watchlist_candidates table.
 
 Deterministic, no LLM call — fixes the gap where stonks-probe-discovery
 generates good candidates into discoveries/YYYY-MM-DD.md but nothing
@@ -7,8 +7,8 @@ mechanically feeds them into the watchlist (previously relied on the LLM
 remembering to do it manually each session; strategy.md v1.2.1 wrote a
 prose rule about this on 2026-07-21 but the watchlist stayed empty).
 
-Idempotent — safe to run every tick. Skips tickers already anywhere in
-watchlist.md (held or listed), respects params.json's watchlist.max_size.
+Idempotent — safe to run every tick. Skips tickers already held/closed or
+already a candidate, respects params.json's watchlist.max_size.
 
 Usage:
     python3 scripts/merge_discoveries.py            # merge most recent discoveries file
@@ -22,9 +22,11 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import trader_db  # noqa: E402
+
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 DISCOVERIES_DIR = WORKSPACE_DIR / "discoveries"
-WATCHLIST_PATH = WORKSPACE_DIR / "strategies" / "watchlist.md"
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 
 TICKER_HEADER_RE = re.compile(r"^## ([A-Z]{1,5}) — \$", re.MULTILINE)
@@ -42,45 +44,46 @@ def extract_candidates(text: str) -> list[str]:
     return TICKER_HEADER_RE.findall(text)
 
 
-def insert_into_watchlist(tickers: list[str], source_label: str, dry_run: bool = False) -> dict:
-    """The '## Candidates' text-splice: dedup against every ticker anywhere
-    in watchlist.md (held, listed, or dropped-note — deliberately
-    conservative rather than trying to parse "dropped for cause"
-    reasoning), respect params.json's watchlist.max_size, write
-    '- TICKER — idle_ticks: 0 — from {source_label}' lines. Extracted
-    2026-07-27 from merge()'s inline body so promote_candidates.py (the
-    discovery-pool -> watchlist bridge) can reuse the exact same
-    dedup/cap/format contract instead of reimplementing it."""
-    watchlist_text = WATCHLIST_PATH.read_text()
-    max_size = json.loads(PARAMS_PATH.read_text()).get("watchlist", {}).get("max_size", 30)
+def insert_into_watchlist(tickers: list[str], source_label: str, dry_run: bool = False,
+                           db_path: Path = None) -> dict:
+    """Dedup against every real ticker in the positions table (open AND
+    closed -- a closed ticker shouldn't be re-added as a fresh candidate
+    either) plus every existing watchlist candidate, respect params.json's
+    watchlist.max_size, upsert via trader_db.upsert_watchlist_candidate().
 
-    existing_tickers = set(re.findall(r"\b([A-Z]{1,5})\b", watchlist_text))
-    active_candidate_count = len(re.findall(r"^- [A-Z]{1,5} — idle_ticks:", watchlist_text, re.MULTILINE))
+    Migrated 2026-07-28 from a blunt text-splice into watchlist.md whose
+    dedup (`re.findall(r"\\b([A-Z]{1,5})\\b", watchlist_text)`) matched any
+    1-5 uppercase token anywhere in the file, including note text -- a
+    note like "MS UW PT $173" would permanently phantom-block tickers
+    MS/UW/PT from ever being added. Dedup against real ticker columns
+    fixes this structurally. Signature unchanged (db_path is new and
+    optional) so promote_candidates.py needs zero changes."""
+    conn = trader_db.get_conn(db_path)
+    try:
+        max_size = json.loads(PARAMS_PATH.read_text()).get("watchlist", {}).get("max_size", 30)
 
-    merged, skipped = [], []
-    new_lines = []
-    for ticker in tickers:
-        if ticker in existing_tickers:
-            skipped.append(ticker)
-            continue
-        if active_candidate_count + len(new_lines) >= max_size:
-            skipped.append(f"{ticker} (max_size {max_size} reached)")
-            continue
-        new_lines.append(f"- {ticker} — idle_ticks: 0 — from {source_label}")
-        merged.append(ticker)
+        existing_tickers = {p["ticker"] for p in trader_db.get_all_positions(conn)}
+        existing_tickers |= {c["ticker"] for c in trader_db.get_watchlist_candidates(conn)}
+        active_candidate_count = len(trader_db.get_watchlist_candidates(conn))
 
-    if not new_lines:
-        return {"merged": [], "skipped": skipped}
+        merged, skipped = [], []
+        to_add = []
+        for ticker in tickers:
+            ticker = ticker.upper()
+            if ticker in existing_tickers:
+                skipped.append(ticker)
+                continue
+            if active_candidate_count + len(to_add) >= max_size:
+                skipped.append(f"{ticker} (max_size {max_size} reached)")
+                continue
+            to_add.append(ticker)
+            merged.append(ticker)
 
-    if not dry_run:
-        insertion = "\n".join(new_lines) + "\n\n"
-        if "## Candidates\n" in watchlist_text:
-            watchlist_text = watchlist_text.replace(
-                "## Candidates\n", "## Candidates\n" + insertion, 1
-            )
-        else:
-            watchlist_text += "\n## Candidates\n" + insertion
-        WATCHLIST_PATH.write_text(watchlist_text)
+        if not dry_run:
+            for ticker in to_add:
+                trader_db.upsert_watchlist_candidate(conn, ticker=ticker, source=source_label)
+    finally:
+        conn.close()
 
     return {"merged": merged, "skipped": skipped}
 

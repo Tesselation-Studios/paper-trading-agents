@@ -17,7 +17,6 @@ here (falling back to the module constants below if that's also missing).
 """
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -25,9 +24,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import discovery_scan  # noqa: E402
 import discovery_daemon  # noqa: E402
 import executor  # noqa: E402
+import trader_db  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-WATCHLIST_PATH = REPO_ROOT / "strategies" / "watchlist.md"
 PARAMS_PATH = REPO_ROOT / "params.json"
 
 DEFAULT_CASH_THRESHOLD_PCT = 70.0
@@ -53,28 +52,13 @@ def _params_defaults() -> dict:
     }
 
 
-def count_watchlist_candidates(text: str) -> int:
-    """Active (non-struck-through) entries under '## Candidates' only —
-    same section-boundary parsing convention as
-    replay_check.load_live_universe(), but scoped to just the candidate
-    pipeline's depth, not held positions (which don't indicate whether
-    discovery itself is starved)."""
-    count = 0
-    in_candidates = False
-    for line in text.splitlines():
-        stripped = line.strip()
-        if stripped.startswith("## Candidates"):
-            in_candidates = True
-            continue
-        if in_candidates and stripped.startswith("##"):
-            break
-        if not in_candidates or not stripped.startswith("-"):
-            continue
-        if "~~" in stripped:
-            continue
-        if re.match(r"-\s*([A-Z]{1,5})\b", stripped):
-            count += 1
-    return count
+def count_watchlist_candidates(conn) -> int:
+    """Depth of the candidate pipeline, scoped to just candidates (not held
+    positions, which don't indicate whether discovery itself is starved).
+    Migrated 2026-07-28 from struck-through-line text parsing -- dropped
+    rows are actually deleted from watchlist_candidates now, so a plain
+    count needs no skip logic at all."""
+    return len(trader_db.get_watchlist_candidates(conn))
 
 
 def check_and_maybe_discover(cash_threshold_pct: float = None,
@@ -91,8 +75,11 @@ def check_and_maybe_discover(cash_threshold_pct: float = None,
     cash = float(account_data.get("cash", 0))
     cash_pct = (cash / equity * 100) if equity > 0 else 0.0
 
-    watchlist_text = WATCHLIST_PATH.read_text() if WATCHLIST_PATH.exists() else ""
-    candidate_count = count_watchlist_candidates(watchlist_text)
+    conn = trader_db.get_conn()
+    try:
+        candidate_count = count_watchlist_candidates(conn)
+    finally:
+        conn.close()
 
     under_deployed = cash_pct >= cash_threshold_pct
     thin_pipeline = candidate_count < min_candidates
