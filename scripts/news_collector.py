@@ -20,9 +20,9 @@ stonks-sentiment-refresh cron), so the tick loop gets a fast local read
 instead of a live network round-trip mid-tick.
 
 Fetches from free RSS feeds (no API keys) + Alpaca News (ALPACA_STONKS_KEY/
-SECRET), deduplicates by URL, stores results in the shared Postgres
-`public.news_cache` table (additive-only, idempotent CREATE IF NOT EXISTS
-— doesn't touch any other table).
+SECRET), deduplicates by URL, stores results in the local trader_db.py
+news_cache table (additive-only, migrated 2026-07-28 from remote Postgres
+on docker.klo).
 
 Usage:
     python3 scripts/news_collector.py [TICKER ...]
@@ -47,6 +47,7 @@ from typing import Any, Dict, List, Optional, Set
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import trader_db  # noqa: E402
 
 log = logging.getLogger("news_collector")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -167,23 +168,6 @@ KNOWN_TICKERS: Set[str] = {
     "UPST", "CHWY", "WOLF", "ON", "STM", "UMC", "TSM",
     "FUBO", "MVST", "OPEN",
 }
-
-_DSN: Optional[str] = None
-
-
-def _get_dsn() -> str:
-    global _DSN
-    if _DSN is None:
-        host = os.getenv("PGHOST", "docker.klo")
-        port = os.getenv("PGPORT", "5433")
-        dbname = os.getenv("PGDATABASE", "trading")
-        user = os.getenv("PGUSER", "trader")
-        pw = os.getenv("PGPASSWORD", "")
-        _DSN = f"host={host} port={port} dbname={dbname} user={user}"
-        if pw:
-            _DSN += f" password={pw}"
-    return _DSN
-
 
 def _compute_sentiment(text: str) -> float:
     if not text:
@@ -440,112 +424,64 @@ def fetch_all_feeds(timeout: int = 15) -> List[Dict[str, Any]]:
     return deduped
 
 
-def ensure_news_cache_table() -> None:
-    """Additive-only, idempotent — same public.news_cache table the
-    unmerged trader/news-collector branch defines, so this stays
-    compatible if that branch ever merges."""
-    import psycopg2
-    sql = """
-    CREATE TABLE IF NOT EXISTS public.news_cache (
-        id SERIAL PRIMARY KEY,
-        url TEXT UNIQUE NOT NULL,
-        title TEXT NOT NULL,
-        summary TEXT,
-        source TEXT NOT NULL,
-        published_at TIMESTAMPTZ NOT NULL,
-        collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        tickers TEXT[],
-        sentiment_score FLOAT DEFAULT 0.0,
-        full_text TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_news_cache_published ON public.news_cache(published_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_news_cache_tickers ON public.news_cache USING GIN(tickers);
-    CREATE INDEX IF NOT EXISTS idx_news_cache_source ON public.news_cache(source);
-    """
-    conn = psycopg2.connect(_get_dsn())
-    try:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-        conn.commit()
-    finally:
-        conn.close()
+def ensure_news_cache_table(db_path: Path = None) -> None:
+    """Schema is created automatically by trader_db.get_conn() -- this just
+    exercises that path so main()'s explicit call keeps working, kept for
+    structural parity with the pre-migration (Postgres) flow."""
+    conn = trader_db.get_conn(db_path)
+    conn.close()
 
 
-def upsert_articles(articles: List[Dict[str, Any]]) -> int:
-    import psycopg2
-    import psycopg2.extras
-
+def upsert_articles(articles: List[Dict[str, Any]], db_path: Path = None) -> int:
     if not articles:
         return 0
 
-    conn = psycopg2.connect(_get_dsn())
+    rows = []
+    for a in articles:
+        published = a.get("published", "")
+        if published:
+            try:
+                dt = datetime.fromisoformat(published)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                published = dt.isoformat()
+            except (ValueError, TypeError):
+                published = datetime.now(timezone.utc).isoformat()
+        else:
+            published = datetime.now(timezone.utc).isoformat()
+        tickers = a.get("tickers", [])
+        rows.append({
+            "url": a.get("url", ""), "title": a.get("title", ""), "summary": a.get("summary"),
+            "source": a.get("source", ""), "published_at": published,
+            "collected_at": datetime.now(timezone.utc).isoformat(),
+            "tickers": json.dumps(tickers if isinstance(tickers, list) else []),
+            "sentiment_score": float(a.get("sentiment_score", 0.0)), "full_text": a.get("full_text"),
+        })
+
     try:
-        with conn.cursor() as cur:
-            rows = []
-            for a in articles:
-                published = a.get("published", "")
-                if published:
-                    try:
-                        dt = datetime.fromisoformat(published)
-                        if dt.tzinfo is None:
-                            dt = dt.replace(tzinfo=timezone.utc)
-                        published = dt.isoformat()
-                    except (ValueError, TypeError):
-                        published = datetime.now(timezone.utc).isoformat()
-                else:
-                    published = datetime.now(timezone.utc).isoformat()
-                tickers = a.get("tickers", [])
-                rows.append((
-                    a.get("url", ""), a.get("title", ""), a.get("summary", None),
-                    a.get("source", ""), published,
-                    tickers if isinstance(tickers, list) else [],
-                    float(a.get("sentiment_score", 0.0)), a.get("full_text", None),
-                ))
-            psycopg2.extras.execute_values(
-                cur,
-                """INSERT INTO public.news_cache
-                   (url, title, summary, source, published_at, tickers, sentiment_score, full_text)
-                   VALUES %s
-                   ON CONFLICT (url) DO NOTHING""",
-                rows, template="""(%s, %s, %s, %s, %s::timestamptz, %s::text[], %s, %s)""",
-            )
-            n = cur.rowcount
-        conn.commit()
-        return n
+        conn = trader_db.get_conn(db_path)
+    except Exception as e:
+        log.warning("Failed to open news cache DB: %s", e)
+        return 0
+    try:
+        return trader_db.upsert_news_articles(conn, rows)
     except Exception as e:
         log.warning("Failed to upsert articles: %s", e)
-        conn.rollback()
         return 0
     finally:
         conn.close()
 
 
-def recent_watchlist_articles(watchlist_tickers, hours=24):
+def recent_watchlist_articles(watchlist_tickers, hours=24, db_path: Path = None):
     """Query the accumulated cache (not just this run's fresh fetch) for
     anything touching the watchlist in the last N hours — a single
     collection pass often won't catch a relevant article for every ticker,
     but the accumulated cache usually will."""
-    import psycopg2
-
     if not watchlist_tickers:
         return []
-    watchlist = [t.upper() for t in watchlist_tickers]
-    conn = psycopg2.connect(_get_dsn())
+    conn = trader_db.get_conn(db_path)
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """SELECT title, tickers, sentiment_score, source, published_at
-               FROM public.news_cache
-               WHERE tickers && %s AND published_at > NOW() - (%s || ' hours')::interval
-               ORDER BY published_at DESC LIMIT 50""",
-            (watchlist, hours),
-        )
-        rows = cur.fetchall()
-        return [
-            {"title": r[0], "ticker_hits": r[1], "sentiment": round(float(r[2]), 2),
-             "source": r[3], "published_at": r[4].isoformat()}
-            for r in rows
-        ]
+        return trader_db.recent_watchlist_articles(conn, watchlist_tickers, hours=hours)
     finally:
         conn.close()
 

@@ -20,6 +20,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import news_collector  # noqa: E402
+import trader_db  # noqa: E402
 
 
 class TestExtractTickersRegressions:
@@ -104,6 +105,65 @@ class TestMainFailOpenOnDbOutage:
         news_collector.main()  # must not raise
 
         assert written.get("called") is True
+
+
+class TestNewsCacheMigratedToLocalDb:
+    """Migrated 2026-07-28 from remote Postgres (docker.klo) to local
+    trader_db.py -- real sqlite3 under tmp_path via db_path=."""
+
+    def test_ensure_table_creates_schema(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        news_collector.ensure_news_cache_table(db_path=db_path)
+        conn = trader_db.get_conn(db_path)
+        try:
+            assert conn.execute("SELECT COUNT(*) AS n FROM news_cache").fetchone()["n"] == 0
+        finally:
+            conn.close()
+
+    def test_upsert_articles_stores_and_returns_count(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        n = news_collector.upsert_articles([
+            {"url": "http://a", "title": "AAA news", "source": "rss",
+             "published": "2026-07-28T11:00:00Z", "tickers": ["AAA"], "sentiment_score": 0.5},
+        ], db_path=db_path)
+        assert n == 1
+        conn = trader_db.get_conn(db_path)
+        try:
+            row = conn.execute("SELECT * FROM news_cache WHERE url = 'http://a'").fetchone()
+            assert row["title"] == "AAA news"
+            assert json.loads(row["tickers"]) == ["AAA"]
+        finally:
+            conn.close()
+
+    def test_upsert_articles_duplicate_url_not_reinserted(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        article = {"url": "http://a", "title": "AAA news", "source": "rss",
+                    "published": "2026-07-28T11:00:00Z", "tickers": ["AAA"]}
+        news_collector.upsert_articles([article], db_path=db_path)
+        n = news_collector.upsert_articles([article], db_path=db_path)
+        assert n == 0
+
+    def test_upsert_articles_empty_list_no_db_touch(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        assert news_collector.upsert_articles([], db_path=db_path) == 0
+        assert not db_path.exists()
+
+    def test_recent_watchlist_articles_filters_by_ticker(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        news_collector.upsert_articles([
+            {"url": "http://a", "title": "AAA news", "source": "rss",
+             "published": "2026-07-28T11:00:00Z", "tickers": ["AAA"]},
+            {"url": "http://b", "title": "unrelated", "source": "rss",
+             "published": "2026-07-28T11:00:00Z", "tickers": ["ZZZ"]},
+        ], db_path=db_path)
+        result = news_collector.recent_watchlist_articles(["AAA"], hours=24 * 365, db_path=db_path)
+        assert len(result) == 1
+        assert result[0]["title"] == "AAA news"
+
+    def test_recent_watchlist_articles_no_tickers_returns_empty_no_db_touch(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        assert news_collector.recent_watchlist_articles([], db_path=db_path) == []
+        assert not db_path.exists()
 
 
 class TestExtractTickersEdgeCases:
