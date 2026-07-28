@@ -5,6 +5,7 @@ This is the discovery mechanism for the MVP: no ML, no news-source aggregation y
 Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
+- BFH — open position (1 share @ ~$106.02, entry 2026-07-28 — Financial/Consumer Credit, Evercore PT $120, sentiment +0.93)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
 - BOX — open position (4 shares @ ~$30.05, entry 2026-07-24 11:50 + scale-ins 2026-07-27 11:40, 2026-07-28 9:35 — Technology)
 - STVN — open position (1 share @ ~$19.97, entry 2026-07-28 9:30 — Healthcare)

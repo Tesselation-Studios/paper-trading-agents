@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 11:04 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 11:20 ET
+
+## TUE 11:20 ET — Market Tick
+- **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,410, cash $10,014 (96.2%). BFH flat (-0.1%), BFST +3.4%, BOX 4sh +5.0%, HLN +0.7%, ITRI -1.3%, STVN -0.9%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
+- ⚠️ **BFH discovered**: 1sh @ $106.02, previously unrecorded in active.md. Bought at some point today — MACDh +1.0203 🟢 strong, RSI 65.0 in-band, vol 1.66x, sentiment +0.93 (Evercore PT $120). Position healthy, now properly tracked.
+- 📊 **BOX scale-in**: +5.0% crosses 3% v1.7 floor but reconciled 0.475 < 0.50 — 2 neutral signals (flow empty, insiders timeout) drag. Correctly gated.
+- 🔍 **GBLI re-evaluated** (step 8 mandate, 96.2% cash): $27.12, RSI 59.3 🟢, MACDh +0.2028 🟢, vol 2.85x thin. Reconciled 0.30 < 0.50. Thin absolute volume (30k) + neutral sentiment/flow/insiders drag. Correctly gated. Mandate fulfilled.
+- 📡 Merge/promote no-op. All other candidates pre-disqualified (PMN -3.9% RSI 42.6, LDRX RSI 42.3, DXC MACDh near-zero, ATKR/TTEC bearish MACD, TMED 15.7k shares thin). workspace_review ✅. BFH now tracked in watchlist.md + positions/.
 
 ## TUE 11:04 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,408, cash $10,120 (97.2%). BFST +3.3%, BOX 4sh +4.0%, HLN +0.3%, ITRI -1.9%, STVN -0.5%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
