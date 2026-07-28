@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 10:22 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 10:25 ET
+
+## TUE 10:25 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,120 (97.2%). BFST +2.7%, BOX 4sh +3.5%, HLN +1.0%, ITRI -0.4%, STVN -0.1%. All MACDh 🟢 (68-bar cache). No breaches. 8/10 orders.
+- 📊 **BOX scale-in**: +3.5% crosses 3% v1.7 floor but reconciled 0.30 < 0.50 floor — 3/5 signals neutral (sentiment 0.0, flow empty, insiders empty). Technical +0.70/regime +0.80 positive but neutral drag too heavy. Correctly gated.
+- 🔍 Step 8 mandate (97.2% cash): **NDAA** only new candidate (promote +1) — disqualified: RSI 44.8 ❌, MACDh +0.0166 near-zero ❌, vol 11k shares extremely thin ❌. All 14+ other candidates pre-disqualified unchanged (stale 68-bar cache). Mandate fulfilled via BOX scale-in attempt.
+- 📡 Merge no-op (8 skipped), promote +1 NDAA (disqualified). Pipeline healthy. workspace_review ✅.
 
 ## TUE 10:22 ET — Market Tick
 - ✅ **ITRI BOUGHT**: 1sh @ $103.29 (Alpaca live fill), conviction 0.52. Decision #5991, training #65. Q2 earnings beat, raised FY26 EPS guidance ($6.30-$6.50 vs $5.96 est), sentiment +0.648 (4 articles). MACDh +0.3832 🟢, RSI 51.8, vol 3.95x. 6th evaluation today — improved sentiment cache (14:15 UTC) pushed over 0.50 floor. ⚠️ Data bus 68-bar cache stale ($84.78 vs live $103.29, 22% gap).

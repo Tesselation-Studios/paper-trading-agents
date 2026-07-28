@@ -35,6 +35,8 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- NDAA — idle_ticks: 0 — $23.61, RSI 44.8 ❌ below band, MACDh +0.0166 near-zero ❌, vol 11k shares thin ❌. Disqualified.
+
 - LDRX — idle_ticks: 0 — from discovery_pool gen 2
 
 - JCTC — idle_ticks: 0 — from discovery_pool gen 2
