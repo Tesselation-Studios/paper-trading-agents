@@ -47,7 +47,6 @@ the comparison can't be accidentally cherry-picked.
 """
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -61,6 +60,9 @@ from alpaca.data.enums import DataFeed
 
 sys.path.insert(0, "/home/openclaw/paper-trading-rebuild")
 from src.replay import Tick, TraderDecision, replay_trader  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import trader_db  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 # Only used if load_live_universe() finds nothing (e.g. fresh checkout with
@@ -99,34 +101,16 @@ MAX_POSITION_PCT = 0.06              # mirrors params.json risk.max_position_pct
 
 def load_live_universe():
     """Build the ticker universe from what's actually live right now:
-    every open position (a positions/TICKER.md file exists) plus every
-    active watchlist candidate (not struck-through with ~~, meaning
-    closed/dropped). Falls back to FALLBACK_TICKERS if both are empty.
-    """
-    tickers = set()
-
-    positions_dir = REPO_ROOT / "positions"
-    if positions_dir.is_dir():
-        for f in positions_dir.glob("*.md"):
-            tickers.add(f.stem.upper())
-
-    watchlist_path = REPO_ROOT / "strategies" / "watchlist.md"
-    if watchlist_path.exists():
-        text = watchlist_path.read_text()
-        in_candidates = False
-        for line in text.splitlines():
-            if line.strip().startswith("## Candidates"):
-                in_candidates = True
-                continue
-            if in_candidates and line.strip().startswith("##"):
-                break
-            if not in_candidates or not line.strip().startswith("-"):
-                continue
-            if "~~" in line:
-                continue  # struck-through = dropped, not active
-            m = re.match(r"-\s*([A-Z]{1,5})\b", line.strip())
-            if m:
-                tickers.add(m.group(1))
+    every open position plus every active watchlist candidate. Falls back
+    to FALLBACK_TICKERS if both are empty. Migrated 2026-07-28 from
+    globbing positions/*.md + regex-parsing watchlist.md to querying
+    trader_db.py directly."""
+    conn = trader_db.get_conn()
+    try:
+        tickers = {p["ticker"] for p in trader_db.get_open_positions(conn)}
+        tickers |= {c["ticker"] for c in trader_db.get_watchlist_candidates(conn)}
+    finally:
+        conn.close()
 
     return sorted(tickers) if tickers else list(FALLBACK_TICKERS)
 

@@ -20,7 +20,6 @@ Usage:
 
 import argparse
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -28,18 +27,14 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
-POSITIONS_DIR = WORKSPACE_DIR / "positions"
-WATCHLIST_PATH = WORKSPACE_DIR / "strategies" / "watchlist.md"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import trader_db  # noqa: E402
 
 ENGINE_REPO = Path("/home/openclaw/projects/paper-trading-rebuild")
 BACKFILL_SCRIPT = ENGINE_REPO / "scripts" / "backfill_bars_alpaca.py"
 
 load_dotenv(ENGINE_REPO / ".env")
-
-# Candidates line format: "- TICKER — idle_ticks: N — note" (see watchlist.md header)
-WATCHLIST_CANDIDATE_RE = re.compile(r"^- ([A-Z]{1,5}) — idle_ticks:", re.MULTILINE)
-# "Currently Held" line format: "- TICKER — open position (...)"
-WATCHLIST_HELD_RE = re.compile(r"^- ([A-Z]{1,5}) — open position", re.MULTILINE)
 
 
 # Always synced regardless of Stan's rotating universe — SPY bars feed
@@ -51,16 +46,17 @@ ALWAYS_SYNCED = ["SPY"]
 
 
 def current_universe() -> list[str]:
-    """Tickers actually relevant to Stan right now: open positions + active watchlist candidates."""
+    """Tickers actually relevant to Stan right now: open positions + active
+    watchlist candidates. Migrated 2026-07-28 from globbing positions/*.md
+    + regex-parsing watchlist.md to querying trader_db.py directly."""
     tickers = set(ALWAYS_SYNCED)
 
-    for pos_file in POSITIONS_DIR.glob("*.md"):
-        tickers.add(pos_file.stem.upper())
-
-    if WATCHLIST_PATH.exists():
-        text = WATCHLIST_PATH.read_text()
-        tickers.update(WATCHLIST_CANDIDATE_RE.findall(text))
-        tickers.update(WATCHLIST_HELD_RE.findall(text))
+    conn = trader_db.get_conn()
+    try:
+        tickers |= {p["ticker"] for p in trader_db.get_open_positions(conn)}
+        tickers |= {c["ticker"] for c in trader_db.get_watchlist_candidates(conn)}
+    finally:
+        conn.close()
 
     return sorted(tickers)
 
@@ -75,7 +71,7 @@ def main() -> int:
 
     tickers = current_universe()
     if not tickers:
-        print("No tickers found (empty positions/ and watchlist.md) — nothing to sync.")
+        print("No tickers found (empty positions and watchlist candidates) — nothing to sync.")
         return 0
 
     ticker_arg = ",".join(tickers)

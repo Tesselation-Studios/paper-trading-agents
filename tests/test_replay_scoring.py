@@ -137,61 +137,6 @@ class TestComputeRiskMetrics:
         assert summary["variant"] == "test-variant"
 
 
-class TestLoadLiveUniverse:
-    """load_live_universe() builds the default replay ticker list from
-    positions/*.md + active watchlist candidates instead of a hand-picked
-    static list, so nightly comparisons can't be accidentally cherry-picked.
-    Added 2026-07-22 alongside the v1.0-is-live-strategy clarification.
-    """
-
-    def _setup(self, tmp_path, monkeypatch, positions=(), watchlist_text=None):
-        (tmp_path / "positions").mkdir()
-        for ticker in positions:
-            (tmp_path / "positions" / f"{ticker}.md").write_text("# position\n")
-        (tmp_path / "strategies").mkdir()
-        if watchlist_text is not None:
-            (tmp_path / "strategies" / "watchlist.md").write_text(watchlist_text)
-        monkeypatch.setattr(replay_check, "REPO_ROOT", tmp_path)
-
-    def test_combines_positions_and_active_candidates(self, tmp_path, monkeypatch):
-        watchlist = (
-            "## Currently Held\n"
-            "- NVDA — open position\n"
-            "## Candidates\n"
-            "- RKT — idle_ticks: 10 — note\n"
-            "- CLF — idle_ticks: 10 — note\n"
-        )
-        self._setup(tmp_path, monkeypatch, positions=["NVDA", "CHWY"], watchlist_text=watchlist)
-        assert replay_check.load_live_universe() == ["CHWY", "CLF", "NVDA", "RKT"]
-
-    def test_struck_through_candidates_excluded(self, tmp_path, monkeypatch):
-        watchlist = (
-            "## Candidates\n"
-            "- RKT — idle_ticks: 10 — note\n"
-            "- ~~SOFI~~ — closed 2026-07-22 (broke support)\n"
-        )
-        self._setup(tmp_path, monkeypatch, positions=[], watchlist_text=watchlist)
-        assert replay_check.load_live_universe() == ["RKT"]
-
-    def test_stops_reading_candidates_at_next_heading(self, tmp_path, monkeypatch):
-        watchlist = (
-            "## Candidates\n"
-            "- RKT — idle_ticks: 10 — note\n"
-            "## Some Other Section\n"
-            "- ZZZZ — should not be picked up, past the Candidates section\n"
-        )
-        self._setup(tmp_path, monkeypatch, positions=[], watchlist_text=watchlist)
-        assert replay_check.load_live_universe() == ["RKT"]
-
-    def test_falls_back_to_static_list_when_nothing_live(self, tmp_path, monkeypatch):
-        self._setup(tmp_path, monkeypatch, positions=[], watchlist_text="## Candidates\n")
-        assert replay_check.load_live_universe() == replay_check.FALLBACK_TICKERS
-
-    def test_missing_watchlist_file_still_uses_positions(self, tmp_path, monkeypatch):
-        self._setup(tmp_path, monkeypatch, positions=["GME"], watchlist_text=None)
-        assert replay_check.load_live_universe() == ["GME"]
-
-
 def make_tick(ticker, day, rsi=50.0):
     ts = datetime.datetime(2026, 1, 1) + datetime.timedelta(days=day)
     return Tick(timestamp=ts, ticker=ticker, open=10.0, high=10.0, low=10.0,

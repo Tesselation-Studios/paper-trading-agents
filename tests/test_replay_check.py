@@ -20,9 +20,37 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
 
 import replay_check  # noqa: E402
+import trader_db  # noqa: E402
 from src.replay import Tick, Portfolio, Position  # noqa: E402
 
 TS = datetime(2026, 6, 1, 9, 30, 0)
+
+
+class TestLoadLiveUniverse:
+    """Migrated 2026-07-28 from globbing positions/*.md + regex-parsing
+    watchlist.md to querying trader_db.py directly."""
+
+    def test_unions_open_positions_and_candidates(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
+        conn.close()
+
+        assert replay_check.load_live_universe() == ["AAA", "BBB"]
+
+    def test_closed_positions_excluded(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.close_position(conn, ticker="AAA", closed_at="t2", close_reason="exit", realized_pnl=1.0, realized_return_pct=1.0)
+        conn.close()
+
+        assert replay_check.load_live_universe() == list(replay_check.FALLBACK_TICKERS)
+
+    def test_falls_back_when_both_empty(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
+        assert replay_check.load_live_universe() == list(replay_check.FALLBACK_TICKERS)
 
 
 def make_frames(ticker, rsi, macd_hist, vol_20d=0.01):
