@@ -32,13 +32,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import pandas as pd
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import replay_check  # noqa: E402
 import universe_scan  # noqa: E402
 import news_collector  # noqa: E402
 import merge_discoveries  # noqa: E402 — reuse extract_candidates(), single source of truth for the ticker-header format
+import discovery_screen  # noqa: E402 — shared screen_tickers(), also used by discovery_daemon.py
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DISCOVERIES_DIR = REPO_ROOT / "discoveries"
@@ -46,7 +45,6 @@ PARAMS_PATH = REPO_ROOT / "params.json"
 
 DEFAULT_SAMPLE_SIZE = 60
 DEFAULT_TOP_N = 6
-MIN_VOLUME_RATIO = 0.8  # below-average volume isn't "real volume" per strategy.md
 
 
 def get_universe_price_band():
@@ -67,31 +65,15 @@ def screen_candidates(sample_size=DEFAULT_SAMPLE_SIZE, seed=None):
     """Returns candidates currently in the RSI 45-65 entry band with real
     (not below-average) volume — same signal strategy.md's entry rule
     already uses, computed directly from Alpaca, no data-bus dependency.
+
+    2026-07-27: the actual screening logic (bars -> price band -> RSI/volume
+    filter -> sort) moved to discovery_screen.screen_tickers() so
+    discovery_daemon.py's continuous scanner can share it instead of
+    duplicating it. This function is now just sample selection + that call.
     """
     min_price, max_price = get_universe_price_band()
     sample = universe_scan.fetch_broad_universe(sample_size=sample_size, seed=seed)
-    frames = replay_check.fetch_history(sample)
-    in_band_frames = universe_scan.filter_by_price_band(frames, min_price, max_price)
-
-    candidates = []
-    for ticker, df in in_band_frames.items():
-        last = df.iloc[-1]
-        rsi = float(last["rsi_14"])
-        if not (universe_scan.ENTRY_RSI_LOW < rsi < universe_scan.ENTRY_RSI_HIGH):
-            continue
-        vol_ma20 = last.get("volume_ma20")
-        volume = float(last["volume"])
-        vol_ratio = volume / float(vol_ma20) if pd.notna(vol_ma20) and vol_ma20 else None
-        if vol_ratio is not None and vol_ratio < MIN_VOLUME_RATIO:
-            continue
-        candidates.append({
-            "ticker": ticker, "price": float(last["close"]), "rsi": rsi,
-            "volume_ratio": vol_ratio, "macd_hist": float(last["macd_hist"]),
-        })
-
-    candidates.sort(key=lambda c: c["volume_ratio"] if c["volume_ratio"] is not None else 0,
-                     reverse=True)
-    return candidates
+    return discovery_screen.screen_tickers(sample, min_price, max_price)
 
 
 def confirm_with_news(candidates, top_n=DEFAULT_TOP_N):
