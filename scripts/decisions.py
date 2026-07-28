@@ -34,7 +34,12 @@ def record_decision(trader_id, ticker, action, rationale="", conviction=0.0,
         log.warning("record_decision(%s/%s): features shape warnings: %s", trader_id, ticker, warnings)
     ts = datetime.now(timezone.utc)
 
-    conn = db.get_conn()
+    try:
+        conn = db.get_conn()
+    except Exception as e:
+        log.error("record_decision(%s/%s): DB unavailable, not logged: %s", trader_id, ticker, e)
+        return {"error": f"db unavailable: {e}", "decision_id": None, "training_example_id": None}
+
     try:
         cur = conn.cursor()
         cur.execute(
@@ -48,13 +53,20 @@ def record_decision(trader_id, ticker, action, rationale="", conviction=0.0,
         )
         decision_id = cur.fetchone()[0]
         conn.commit()
+    except Exception as e:
+        log.error("record_decision(%s/%s): DB write failed, not logged: %s", trader_id, ticker, e)
+        return {"error": f"db write failed: {e}", "decision_id": None, "training_example_id": None}
     finally:
         conn.close()
 
-    training_example_id = db.insert_training_example(
-        trader_id=trader_id, ticker=ticker, features=features,
-        decision_id=decision_id,
-    )
+    try:
+        training_example_id = db.insert_training_example(
+            trader_id=trader_id, ticker=ticker, features=features,
+            decision_id=decision_id,
+        )
+    except Exception as e:
+        log.error("record_decision(%s/%s): training_example insert failed: %s", trader_id, ticker, e)
+        training_example_id = None
     return {"decision_id": decision_id, "training_example_id": training_example_id}
 
 
@@ -62,7 +74,12 @@ def record_journal(trader_id, ticker, decision_text, rationale="", equity=0.0,
                     drawdown_pct=0.0, decision_id=None):
     """Write to trading.journal."""
     ts = datetime.now(timezone.utc)
-    conn = db.get_conn()
+    try:
+        conn = db.get_conn()
+    except Exception as e:
+        log.error("record_journal(%s/%s): DB unavailable, not logged: %s", trader_id, ticker, e)
+        return {"error": f"db unavailable: {e}", "journal_id": None}
+
     try:
         cur = conn.cursor()
         cur.execute(
@@ -78,6 +95,9 @@ def record_journal(trader_id, ticker, decision_text, rationale="", equity=0.0,
         row = cur.fetchone()
         conn.commit()
         return {"journal_id": row[0] if row else None}
+    except Exception as e:
+        log.error("record_journal(%s/%s): DB write failed, not logged: %s", trader_id, ticker, e)
+        return {"error": f"db write failed: {e}", "journal_id": None}
     finally:
         conn.close()
 
@@ -89,7 +109,12 @@ def record_trade_close(trader_id, ticker, trade_id, pnl, return_pct):
     trade_id must be the bigint trading.trades.id (the surrogate PK), not
     the separate VARCHAR trading.trades.trade_id business key. Get it from
     db.fetch_recent_trade(trader_id, ticker) rather than inventing one."""
-    conn = db.get_conn()
+    try:
+        conn = db.get_conn()
+    except Exception as e:
+        log.error("record_trade_close(%s/%s): DB unavailable, not labeled: %s", trader_id, ticker, e)
+        return {"error": f"db unavailable: {e}", "training_example_id": None, "labeled": False}
+
     try:
         cur = conn.cursor()
         cur.execute(
@@ -102,11 +127,18 @@ def record_trade_close(trader_id, ticker, trade_id, pnl, return_pct):
         if not row:
             return {"error": f"no unlabeled training_examples row found for {trader_id}/{ticker}"}
         training_example_id = row[0]
+    except Exception as e:
+        log.error("record_trade_close(%s/%s): DB query failed, not labeled: %s", trader_id, ticker, e)
+        return {"error": f"db query failed: {e}", "training_example_id": None, "labeled": False}
     finally:
         conn.close()
 
-    db.label_training_example(
-        training_example_id=training_example_id, trade_id=trade_id,
-        label_win=(pnl is not None and pnl > 0), label_return_pct=return_pct,
-    )
+    try:
+        db.label_training_example(
+            training_example_id=training_example_id, trade_id=trade_id,
+            label_win=(pnl is not None and pnl > 0), label_return_pct=return_pct,
+        )
+    except Exception as e:
+        log.error("record_trade_close(%s/%s): label write failed: %s", trader_id, ticker, e)
+        return {"error": f"label write failed: {e}", "training_example_id": training_example_id, "labeled": False}
     return {"training_example_id": training_example_id, "labeled": True}

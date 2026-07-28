@@ -600,7 +600,11 @@ def main():
         from replay_check import load_live_universe
         watchlist_tickers = load_live_universe()
 
-    ensure_news_cache_table()
+    try:
+        ensure_news_cache_table()
+    except Exception as e:
+        log.warning("news_cache table unavailable, skipping accumulated-cache writes this run: %s", e)
+
     articles = fetch_all_feeds()
     new_count = upsert_articles(articles)
 
@@ -609,7 +613,11 @@ def main():
         combined = f"{a.get('title', '')} {a.get('summary', '')}"
         a["sentiment_score"] = score_sentiment(combined)
 
-    relevant = recent_watchlist_articles(watchlist_tickers) if watchlist_tickers else []
+    try:
+        relevant = recent_watchlist_articles(watchlist_tickers) if watchlist_tickers else []
+    except Exception as e:
+        log.warning("recent_watchlist_articles failed, continuing without accumulated-cache articles: %s", e)
+        relevant = []
     avg_sentiment_by_ticker = {}
     for a in relevant:
         for t in a["ticker_hits"]:

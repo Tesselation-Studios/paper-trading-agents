@@ -27,10 +27,13 @@ Usage:
 """
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
 import db
+
+log = logging.getLogger("signal_scorecard")
 
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = WORKSPACE_DIR / "state" / "signal_scorecard.json"
@@ -39,7 +42,12 @@ MIN_SAMPLES = 10
 
 
 def fetch_labeled_examples(trader_id: str) -> list[dict]:
-    conn = db.get_conn()
+    try:
+        conn = db.get_conn()
+    except Exception as e:
+        log.error("fetch_labeled_examples(%s): DB unavailable: %s", trader_id, e)
+        return []
+
     try:
         cur = conn.cursor()
         cur.execute(
@@ -49,6 +57,9 @@ def fetch_labeled_examples(trader_id: str) -> list[dict]:
             (trader_id,),
         )
         rows = cur.fetchall()
+    except Exception as e:
+        log.error("fetch_labeled_examples(%s): query failed: %s", trader_id, e)
+        return []
     finally:
         conn.close()
     return [{"features": r[0], "label_win": r[1]} for r in rows]

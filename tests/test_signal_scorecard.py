@@ -81,3 +81,24 @@ class TestScoreSignals:
         examples = [{"features": "not a dict", "label_win": True}]
         result = signal_scorecard.score_signals(examples, min_samples=1)
         assert result == {}
+
+
+class TestFetchLabeledExamplesFailOpen:
+    """2026-07-28: fetch_labeled_examples had zero exception handling --
+    a DB outage would raise straight out of the off-hours scorecard job."""
+
+    def test_get_conn_failure_returns_empty_list_not_raise(self, monkeypatch):
+        def raise_get_conn():
+            raise ConnectionError("simulated DB outage")
+        monkeypatch.setattr(signal_scorecard.db, "get_conn", raise_get_conn)
+        assert signal_scorecard.fetch_labeled_examples("stonks") == []
+
+    def test_query_failure_returns_empty_list_not_raise(self, monkeypatch):
+        class FailingConn:
+            def cursor(self):
+                raise RuntimeError("simulated query failure")
+
+            def close(self):
+                pass
+        monkeypatch.setattr(signal_scorecard.db, "get_conn", lambda: FailingConn())
+        assert signal_scorecard.fetch_labeled_examples("stonks") == []

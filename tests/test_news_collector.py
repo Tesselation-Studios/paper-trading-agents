@@ -58,6 +58,54 @@ class TestExtractTickersLegitimateMatches:
         assert result == ["BRK.A"]
 
 
+class TestMainFailOpenOnDbOutage:
+    """2026-07-28: ensure_news_cache_table()/recent_watchlist_articles() had
+    zero exception handling -- a DB outage would raise before main() ever
+    reached write_sentiment_cache(), silently killing the live tick loop's
+    sentiment refresh. Both call sites are now wrapped so main() always
+    reaches write_sentiment_cache() regardless of DB availability."""
+
+    def _stub_main_deps(self, monkeypatch, written):
+        monkeypatch.setattr(news_collector, "fetch_all_feeds", lambda: [])
+        monkeypatch.setattr(news_collector, "upsert_articles", lambda articles: 0)
+        monkeypatch.setattr(news_collector, "fetch_alpaca_news", lambda tickers: [])
+
+        def fake_write(ticker_sentiment, path=news_collector.SENTIMENT_CACHE_PATH):
+            written["called"] = True
+            written["data"] = ticker_sentiment
+        monkeypatch.setattr(news_collector, "write_sentiment_cache", fake_write)
+
+    def test_ensure_table_failure_does_not_crash_main(self, monkeypatch):
+        monkeypatch.setattr(sys, "argv", ["news_collector.py", "AAA"])
+
+        def raise_ensure_table():
+            raise ConnectionError("simulated DB outage")
+        monkeypatch.setattr(news_collector, "ensure_news_cache_table", raise_ensure_table)
+        monkeypatch.setattr(news_collector, "recent_watchlist_articles", lambda tickers, hours=24: [])
+
+        written = {}
+        self._stub_main_deps(monkeypatch, written)
+
+        news_collector.main()  # must not raise
+
+        assert written.get("called") is True
+
+    def test_recent_watchlist_articles_failure_does_not_crash_main(self, monkeypatch):
+        monkeypatch.setattr(sys, "argv", ["news_collector.py", "AAA"])
+        monkeypatch.setattr(news_collector, "ensure_news_cache_table", lambda: None)
+
+        def raise_recent(tickers, hours=24):
+            raise ConnectionError("simulated DB outage")
+        monkeypatch.setattr(news_collector, "recent_watchlist_articles", raise_recent)
+
+        written = {}
+        self._stub_main_deps(monkeypatch, written)
+
+        news_collector.main()  # must not raise
+
+        assert written.get("called") is True
+
+
 class TestExtractTickersEdgeCases:
     def test_empty_text_returns_empty_list(self):
         assert news_collector.extract_tickers("", news_collector.KNOWN_TICKERS) == []
