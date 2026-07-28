@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Empirical per-signal hit rate from trading.training_examples.
+"""Empirical per-signal hit rate from training_examples (local trader_db.py,
+migrated 2026-07-28 from remote Postgres -- same query semantics, just no
+longer trader_id-scoped since trader_db.py is single-tenant).
 
 Not a learned model — that needs far more labeled rows than exist yet
 (11 as of 2026-07-23). This just tracks, per signal name (technical,
@@ -31,7 +33,7 @@ import logging
 import sys
 from pathlib import Path
 
-import db
+import trader_db
 
 log = logging.getLogger("signal_scorecard")
 
@@ -41,28 +43,35 @@ OUTPUT_PATH = WORKSPACE_DIR / "state" / "signal_scorecard.json"
 MIN_SAMPLES = 10
 
 
-def fetch_labeled_examples(trader_id: str) -> list[dict]:
+def fetch_labeled_examples(trader_id: str, db_path: Path = None) -> list[dict]:
+    """trader_id kept for CLI compatibility -- trader_db.py is single-tenant
+    now, no longer filters by it. features comes back as a JSON string from
+    SQLite (unlike the old Postgres JSONB, which psycopg2 auto-deserialized)
+    -- parsed here so score_signals() keeps getting dicts, same contract as
+    before the migration. A row with malformed JSON is skipped, not raised."""
     try:
-        conn = db.get_conn()
+        conn = trader_db.get_conn(db_path)
     except Exception as e:
         log.error("fetch_labeled_examples(%s): DB unavailable: %s", trader_id, e)
         return []
 
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """SELECT features, label_win
-               FROM trading.training_examples
-               WHERE trader_id = %s AND label_win IS NOT NULL""",
-            (trader_id,),
-        )
-        rows = cur.fetchall()
+        rows = trader_db.fetch_labeled_training_examples(conn)
     except Exception as e:
         log.error("fetch_labeled_examples(%s): query failed: %s", trader_id, e)
         return []
     finally:
         conn.close()
-    return [{"features": r[0], "label_win": r[1]} for r in rows]
+
+    examples = []
+    for r in rows:
+        try:
+            features = json.loads(r["features"]) if r["features"] else {}
+        except (json.JSONDecodeError, TypeError):
+            log.warning("fetch_labeled_examples(%s): skipping row with malformed features JSON", trader_id)
+            continue
+        examples.append({"features": features, "label_win": r["label_win"]})
+    return examples
 
 
 def score_signals(examples: list[dict], min_samples: int) -> dict:
@@ -110,9 +119,11 @@ def main() -> int:
     parser.add_argument("--trader-id", default="stonks")
     parser.add_argument("--min-samples", type=int, default=MIN_SAMPLES)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--db-path", default=None, help="Override state/trader.db (dry-run/tests)")
     args = parser.parse_args()
 
-    examples = fetch_labeled_examples(args.trader_id)
+    db_path = Path(args.db_path) if args.db_path else None
+    examples = fetch_labeled_examples(args.trader_id, db_path=db_path)
     scorecard = score_signals(examples, args.min_samples)
 
     output = {

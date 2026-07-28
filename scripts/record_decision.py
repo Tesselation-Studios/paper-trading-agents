@@ -33,6 +33,7 @@ def _load_scorecard():
 
 def main():
     parser = argparse.ArgumentParser(description="Log a trading decision or trade close")
+    parser.add_argument("--db-path", default=None, help="Override state/trader.db (dry-run/tests)")
     sub = parser.add_subparsers(dest="command", required=True)
 
     dec = sub.add_parser("decision", help="Log a BUY/SELL/HOLD decision")
@@ -60,6 +61,7 @@ def main():
     close.add_argument("--return-pct", type=float, required=True)
 
     args = parser.parse_args()
+    db_path = Path(args.db_path) if args.db_path else None
 
     if args.command == "reconcile":
         try:
@@ -86,7 +88,7 @@ def main():
         result = decisions.record_decision(
             trader_id=args.trader_id, ticker=args.ticker, action=args.action,
             rationale=args.rationale, conviction=conviction,
-            regime=args.regime, features=features,
+            regime=args.regime, features=features, db_path=db_path,
         )
         # Echo the reconciled cross-signal read back so it's visible in the
         # tick's tool output, not just stored — reconcile_signals() existed
@@ -98,7 +100,7 @@ def main():
         result = decisions.record_trade_close(
             trader_id=args.trader_id, ticker=args.ticker,
             trade_id=None,  # Stonks has no trading.trades sync of its own — see decisions.py
-            pnl=args.pnl, return_pct=args.return_pct,
+            pnl=args.pnl, return_pct=args.return_pct, db_path=db_path,
         )
 
     print(json.dumps(result))

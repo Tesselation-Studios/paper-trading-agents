@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Unit tests for scripts/signal_scorecard.py's pure scoring logic
-(score_signals). No DB — fetch_labeled_examples (the only DB-touching
-function) is exercised manually, not here."""
+"""Unit tests for scripts/signal_scorecard.py: score_signals (pure scoring
+logic) plus fetch_labeled_examples (real sqlite3 under tmp_path since the
+2026-07-28 migration off remote Postgres)."""
 import sys
 from pathlib import Path
 
@@ -9,6 +9,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import signal_scorecard  # noqa: E402
+import trader_db  # noqa: E402
 
 
 def ex(features, label_win):
@@ -83,22 +84,45 @@ class TestScoreSignals:
         assert result == {}
 
 
-class TestFetchLabeledExamplesFailOpen:
-    """2026-07-28: fetch_labeled_examples had zero exception handling --
-    a DB outage would raise straight out of the off-hours scorecard job."""
+class TestFetchLabeledExamples:
+    """Migrated 2026-07-28 from remote Postgres to local trader_db.py --
+    real sqlite3 under tmp_path, plus fail-open tests for a DB outage
+    (still relevant locally: a corrupt/locked file, not just network)."""
 
-    def test_get_conn_failure_returns_empty_list_not_raise(self, monkeypatch):
-        def raise_get_conn():
+    def test_returns_parsed_features_for_labeled_rows_only(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        conn = trader_db.get_conn(db_path)
+        labeled = trader_db.insert_training_example(
+            conn, ticker="AAA", features='{"technical": {"direction": "bullish"}}', created_at="t1",
+        )
+        trader_db.insert_training_example(
+            conn, ticker="BBB", features='{"technical": {"direction": "bearish"}}', created_at="t1",
+        )
+        trader_db.label_training_example(conn, labeled, trade_id=None, label_win=1, label_return_pct=1.0)
+        conn.close()
+
+        examples = signal_scorecard.fetch_labeled_examples("stonks", db_path=db_path)
+        assert len(examples) == 1
+        assert examples[0]["features"] == {"technical": {"direction": "bullish"}}
+        assert examples[0]["label_win"] == 1
+
+    def test_malformed_json_row_skipped_not_raised(self, tmp_path):
+        db_path = tmp_path / "trader.db"
+        conn = trader_db.get_conn(db_path)
+        te_id = trader_db.insert_training_example(conn, ticker="AAA", features="not valid json", created_at="t1")
+        trader_db.label_training_example(conn, te_id, trade_id=None, label_win=1, label_return_pct=1.0)
+        conn.close()
+
+        assert signal_scorecard.fetch_labeled_examples("stonks", db_path=db_path) == []
+
+    def test_get_conn_failure_returns_empty_list_not_raise(self, monkeypatch, tmp_path):
+        def raise_get_conn(db_path=None):
             raise ConnectionError("simulated DB outage")
-        monkeypatch.setattr(signal_scorecard.db, "get_conn", raise_get_conn)
-        assert signal_scorecard.fetch_labeled_examples("stonks") == []
+        monkeypatch.setattr(signal_scorecard.trader_db, "get_conn", raise_get_conn)
+        assert signal_scorecard.fetch_labeled_examples("stonks", db_path=tmp_path / "x.db") == []
 
-    def test_query_failure_returns_empty_list_not_raise(self, monkeypatch):
-        class FailingConn:
-            def cursor(self):
-                raise RuntimeError("simulated query failure")
-
-            def close(self):
-                pass
-        monkeypatch.setattr(signal_scorecard.db, "get_conn", lambda: FailingConn())
-        assert signal_scorecard.fetch_labeled_examples("stonks") == []
+    def test_query_failure_returns_empty_list_not_raise(self, monkeypatch, tmp_path):
+        def raise_fetch(conn):
+            raise RuntimeError("simulated query failure")
+        monkeypatch.setattr(signal_scorecard.trader_db, "fetch_labeled_training_examples", raise_fetch)
+        assert signal_scorecard.fetch_labeled_examples("stonks", db_path=tmp_path / "trader.db") == []
