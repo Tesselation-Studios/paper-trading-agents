@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:40 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:45 ET
+
+## TUE 9:45 ET — Market Tick
+- **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.1%, BOX 4sh +2.7%, HLN +0.3%, STVN +1.8%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders used.
+- 🔍 **ITRI BUY re-evaluated**: $84.78, RSI 51.8 🟢, MACDh +0.3832 🟢, vol 3.95x ✅. Reconciled 0.31 < 0.50 floor — neutral sentiment/flow/insiders drag. Correctly gated (same as 9:40).
+- 🔍 **GBLI BUY evaluated** (step 8 mandate, 98.2% cash): $27.12, RSI 59.3 🟢, MACDh +0.2028 🟢, vol 2.85x but 30k shares thin. Reconciled 0.28 < 0.50 floor. Correctly gated.
+- 📊 Scale-in: BOX +2.7% below 3% v1.7 floor (was +3.3% at 9:40). BFST +2.1%. STVN/HLN < 2%. None qualify. Merge/promote no-op. Pipeline healthy.
 
 ## TUE 9:40 ET — Market Tick
 - 🚨 **KRC SOLD**: trailing stop breach, 2sh @ ~$37.27 (-5.7% off peak $39.51). Bought 7/27 @ $39.51 avg (parallel collision). P&L -$4.47 (-5.7%). Decision #5990, training #64.
