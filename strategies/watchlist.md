@@ -6,12 +6,12 @@ Format: `TICKER — idle_ticks: N — note`
 
 ## Currently Held (always on the list, idle_ticks doesn't apply while open)
 - BFST — open position (1 share @ $30.98, entry 2026-07-24 10:05)
-- BOX — open position (4 shares @ ~$30.04, entry 2026-07-24 11:50 + scale-ins 2026-07-27 11:40, 2026-07-28 9:35 — Technology)
-- KRC — open position (2 shares @ $39.51, entry 2026-07-27 10:38 — Real Estate)
+- BOX — open position (4 shares @ ~$30.05, entry 2026-07-24 11:50 + scale-ins 2026-07-27 11:40, 2026-07-28 9:35 — Technology)
 - STVN — open position (1 share @ ~$19.97, entry 2026-07-28 9:30 — Healthcare)
 - HLN — open position (1 share @ ~$10.19, entry 2026-07-28 9:30 — Consumer Defensive)
 
 ## Closed Positions
+- ~~KRC~~ — closed 2026-07-28 9:41 (trailing stop breach, -5.7%, 2sh via parallel collision)
 - ~~FRNM~~ — closed 2026-07-28 9:36 (trailing stop breach, -6.4%, ⚠️ parallel collision 2sh)
 - ~~BCS~~ — closed 2026-07-28 9:30 (trailing stop breach, +1.1%)
 - ~~FHB~~ — closed 2026-07-27 09:59 (MACDh flip, v1.9 mandatory exit, -2.41%)
@@ -34,6 +34,9 @@ Format: `TICKER — idle_ticks: N — note`
 - ~~MARA~~ — closed 2026-07-21 (trailing stop breach, +2.11%)
 
 ## Candidates
+- ITRI — idle_ticks: 0 — from discovery_pool gen 2
+- JCTC — idle_ticks: 0 — from discovery_pool gen 2
+
 - ISHP — idle_ticks: 0 — from discovery_pool gen 2
 
 - TTEC — idle_ticks: 0 — from 2026-07-28.md
@@ -55,7 +58,6 @@ Format: `TICKER — idle_ticks: N — note`
 - YSXT — idle_ticks: 1 — $0.86, RSI 42.3 below band, MACD bearish, vol 0.03x ❌. Penny stock — disqualified.
 - TKLF — idle_ticks: 1 — $2.06, RSI 45.9 borderline, near-zero MACDh +0.0333, vol 0.02x ❌. Microcap — disqualified.
 
-- ~~KRC~~ — entered 2026-07-27 10:38, 1 share @ $39.49, probe entry
 - ~~BCS~~ — entered 2026-07-27 11:35, 1 share @ $28.28, probe entry
 - NTRS — idle_ticks: 21 — $180.52, RSI 53.6 🟢, vol 1.19x. MS UW PT $173 BELOW current price — disqualified. Financial.
 - GL — idle_ticks: 21 — $173.48, RSI 45.1 🟢, vol 1.18x. KBW Outperform PT $190. DISQUALIFIED: bankroll ceiling $54.25. Insurance.

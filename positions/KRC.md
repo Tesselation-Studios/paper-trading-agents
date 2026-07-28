@@ -1,12 +1,9 @@
-# KRC Position Thesis
+# KRC Position Thesis — CLOSED
 
 - **Entry**: $39.51 avg | 2 shares
-- **Current**: $38.02 (-3.77% unrealized)
-- **Market Value**: $76.04
-- **Unrealized P&L**: $-2.98 (-3.77%)
-- **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-28 13:35:05 UTC
-
-This position is managed through the Alpaca paper trading API.
-Entry, exit, and sizing are handled by the trader agent via executor.py.
-Stop-loss and take-profit levels are maintained in the trading.trader_positions table.
+- **Entry date**: 2026-07-27 10:38 (1sh) + parallel collision (2sh filled)
+- **Exit**: $37.27 | 2 shares | 2026-07-28 9:41
+- **P&L**: -$4.47 (-5.7%)
+- **Reason**: Trailing stop breach. Peak $39.51, trailing stop at $37.53, breached at $37.27.
+- **Sector**: Real Estate (REIT)
+- **Decision #**: 5990 | Training #64

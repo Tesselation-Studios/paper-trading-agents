@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:35 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:40 ET
+
+## TUE 9:40 ET — Market Tick
+- 🚨 **KRC SOLD**: trailing stop breach, 2sh @ ~$37.27 (-5.7% off peak $39.51). Bought 7/27 @ $39.51 avg (parallel collision). P&L -$4.47 (-5.7%). Decision #5990, training #64.
+- 🔍 **ITRI BUY attempted**: $84.78, RSI 51.8 🟢, MACDh +0.3832 🟢, vol 3.95x ✅. Reconciled 0.29 < 0.50 floor — correctly gated. Neutral sentiment/flow/insiders dragged score.
+- **4 pos.** Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.0%, BOX 4sh +3.3%, HLN +0.4%, STVN -0.7%. All MACDh 🟢 (68-bar cache). No breaches.
+- 📊 7/10 orders used (2 buys + BCS/FRNM/KRC sells). Merge no-op, promote +2 (ITRI/JCTC). JCTC vol 0.44x ❌, ITRI above floor but gated. BOX scale-in: +3.3% qualifies but just added 9:35 — hold. Pipeline healthy.
 
 ## TUE 9:35 ET — Market Open Tick
 - ✅ **BCS SOLD** at open, 1sh @ ~$28.60 (+$0.32, +1.1%). Trailing stop breach was correct per pre-market rules — but BCS rallied to $28.56 (+2.3%) post-sale. Stop was non-negotiable.
