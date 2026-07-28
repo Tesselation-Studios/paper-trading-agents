@@ -71,6 +71,13 @@
     "_source": "2026-07-27: scripts/discovery_daemon.py (a real systemd-supervised background process, deploy/stonks-discovery-daemon.service -- not another OpenClaw cron, this repo's one deliberate exception) reads chunk_size/*_interval_seconds/finbert_confirm_*; scripts/promote_candidates.py (called every tick from tick_prompt.md step 7) reads promote_top_n/promote_max_age_seconds; scripts/discovery_urgency_check.py reads daemon_health_stale_multiplier via discovery_daemon.daemon_health() to flag the daemon unhealthy in its output (informational only, does not change its own trigger logic -- stays armed as defense-in-depth if the daemon ever dies). Standalone: zero dependency on data_bus.py (see skills/data-bus-fallback.md). Pool lives in state/discovery_pool.db, never touched by anything but discovery_daemon.py (writer) and promote_candidates.py (reader)."
   },
 
+  "local_db": {
+    "path": "state/trader.db",
+    "max_batch_size": 25,
+    "alpaca_audit_retention_days": 90,
+    "_source": "scripts/trader_db.py (schema/CRUD) + scripts/db_writer.py (write-behind buffer, flushed synchronously at end-of-tick) read path/max_batch_size. alpaca_audit_retention_days bounds scripts/alpaca_audit.py's table growth. Local SQLite, not docker.klo Postgres -- schema kept plain/portable in case of a later migration."
+  },
+
   "alpaca": {
     "base_url": "https://paper-api.alpaca.markets",
     "time_in_force": "day",
