@@ -1,4 +1,17 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 11:55 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 12:26 ET
+
+## TUE 12:26 ET — Market Tick
+- **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,408, cash $9,982 (95.9%). BOX 5sh +3.5%, BFST +3.2%, HLN +0.3%, BFH -0.1%, STVN -0.5%, ITRI -2.4%. All MACDh 🟢 (68-bar cache). No breaches.
+- 📊 **BOX scale-in**: +3.49% crosses 3% v1.7 floor but reconciled 0.467 < 0.50 — 2 neutral signals (flow empty/insiders timeout) drag bullish tech 0.75/regime 0.80/sentiment 0.70/vol 0.55. Correctly gated.
+- 📊 **BFST scale-in**: +3.16% crosses 3% floor but reconciled 0.425 < 0.50 — vol 0.75x marginal + 2 neutral (flow empty/insiders timeout) drag. Correctly gated.
+- 🔍 **GBLI** (step 8 mandate, 95.9% cash): reconciled 0.325 < 0.50 — thin 30k shares + generic sentiment feed + empty flow/timed-out insiders. All candidates gated. Mandate fulfilled.
+- 📡 Merge/promote no-op. Pipeline healthy. workspace_review ✅.
+
+## TUE 12:15 ET — Market Tick
+- **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,407, cash $9,982 (95.9%). BOX 5sh +3.3%, BFST +3.1%, HLN +0.4%, BFH -0.6%, STVN -0.5%, ITRI -2.3%. All MACDh 🟢 (68-bar cache). No breaches.
+- 📊 **BOX scale-in**: +3.34% crosses 3% v1.7 floor but reconciled 0.40 < 0.50 — 3 neutral signals (flow empty/insiders timeout/fundamentals unchecked) drag bullish tech 0.75/regime 0.80/sentiment 0.70/vol 0.55. Correctly gated.
+- 🔍 **GBLI evaluated** (step 8 mandate, 95.9% cash): reconciled 0.07 < 0.50 — live sentiment -0.78 bearish + thin 30k shares drag. Fresh discovery pool names: BEAG zero vol, MKDW 6.8k thin, MYCG bearish MACD, JCTC vol 0.44x, CLBR MACDh near-zero. All candidates correctly gated.
+- 📡 Merge/promote no-op. Pipeline healthy. workspace_review ✅.
 
 ## TUE 11:55 ET — Market Tick
 - **All HOLD.** 6 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $9,982 (95.91%). BOX 5sh +2.7%, BFST +3.4%, HLN +0.5%, BFH -0.3%, STVN -0.3%, ITRI -0.7%. All MACDh 🟢 (68-bar cache). No breaches.
