@@ -2,4 +2,3 @@ requests
 pandas
 pandas-ta
 alpaca-py
-psycopg2-binary

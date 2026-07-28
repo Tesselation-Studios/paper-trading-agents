@@ -20,7 +20,7 @@ You may still deviate from the reconciled number (size up/down) if you have a co
 
 ## Signal scorecard — real track record, not a guess
 
-`scripts/signal_scorecard.py` computes each signal's actual empirical hit rate from `trading.training_examples` (did that signal's stated direction match the eventual win/loss), writing `state/signal_scorecard.json`. It runs off-hours (`skills/off-hours-research.md`), not every tick — it's a stats job, not something that needs to be fresh to the minute.
+`scripts/signal_scorecard.py` computes each signal's actual empirical hit rate from `state/trader.db`'s `training_examples` table (did that signal's stated direction match the eventual win/loss), writing `state/signal_scorecard.json`. It runs off-hours (`skills/off-hours-research.md`), not every tick — it's a stats job, not something that needs to be fresh to the minute.
 
 **Signals with fewer than 10 labeled examples are marked `insufficient_data`, not given a hit rate.** As of 2026-07-24 every signal is still below that threshold (11 labeled rows total across all signals combined) — don't read anything into today's numbers, and don't be surprised if `reconcile_signals()`'s output looks identical to the pre-scorecard baseline for a while yet. Check `state/signal_scorecard.json` yourself periodically (off-hours is a good time) to see when signals actually cross the threshold — that's when their `scorecard_multiplier` starts moving off 1.0 and their weight in the reconciled read starts actually shifting based on whether they've been right.
 

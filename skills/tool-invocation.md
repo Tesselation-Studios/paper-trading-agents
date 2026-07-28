@@ -40,4 +40,4 @@ python3 scripts/record_decision.py decision --ticker SOFI --action BUY --convict
 python3 scripts/record_decision.py close --ticker SOFI --pnl 12.50 --return-pct 4.2
 ```
 
-BUY/SELL only, not HOLD. Writes to Postgres `trading.decisions` + `trading.training_examples` — signal-level data for "which signal predicted wins."
+BUY/SELL only, not HOLD. Writes to local `state/trader.db`'s `decisions` + `training_examples` tables — signal-level data for "which signal predicted wins."

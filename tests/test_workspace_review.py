@@ -11,6 +11,7 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+import trader_db  # noqa: E402
 import workspace_review  # noqa: E402
 
 VALID_PARAMS = {
@@ -210,6 +211,43 @@ class TestCheckDeadParams:
         monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
         params = {"risk": {"totally_unused_param": 1.0}}
         findings = workspace_review.check_dead_params(params)
+        assert findings[0][0] == "warning"
+
+
+class TestCheckLocalDbHealth:
+    def test_missing_db_file_no_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        assert workspace_review.check_local_db_health() == []
+
+    def test_valid_schema_no_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        conn = trader_db.get_conn(state_dir / "trader.db")
+        conn.close()
+        assert workspace_review.check_local_db_health() == []
+
+    def test_missing_tables_flagged_warning(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        import sqlite3
+        conn = sqlite3.connect(str(state_dir / "trader.db"))
+        conn.execute("CREATE TABLE decisions (id INTEGER PRIMARY KEY)")
+        conn.commit()
+        conn.close()
+        findings = workspace_review.check_local_db_health()
+        assert len(findings) == 1
+        assert findings[0][0] == "warning"
+        assert "missing expected tables" in findings[0][1]
+
+    def test_corrupt_file_flagged_warning(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "trader.db").write_bytes(b"not a real sqlite file")
+        findings = workspace_review.check_local_db_health()
+        assert len(findings) == 1
         assert findings[0][0] == "warning"
 
 

@@ -206,6 +206,38 @@ def check_dead_params(params: Dict[str, Any]) -> List[Finding]:
     return findings
 
 
+def check_local_db_health() -> List[Finding]:
+    """state/trader.db, if present, should be a valid, readable SQLite file
+    with the expected schema -- catches accidental corruption/deletion.
+    Deliberately doesn't try to inspect db_writer.py's pending-write
+    buffer: that's an in-process module-level list, not persisted, so a
+    separate `workspace_review.py` process has nothing meaningful to read
+    there once the writing process has exited."""
+    db_path = REPO_ROOT / "state" / "trader.db"
+    if not db_path.exists():
+        return []  # never written to yet -- not a problem this check should flag
+
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=2)
+        try:
+            tables = {r[0] for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()}
+        finally:
+            conn.close()
+    except sqlite3.Error as e:
+        return [("warning", f"state/trader.db exists but failed to open/query: {e}")]
+
+    expected = {"decisions", "journal", "training_examples", "news_cache",
+                "alpaca_audit_log", "positions", "watchlist_candidates",
+                "bankroll_state", "bankroll_history"}
+    missing = expected - tables
+    if missing:
+        return [("warning", f"state/trader.db is missing expected tables: {sorted(missing)}")]
+    return []
+
+
 def run_all_checks() -> Dict[str, Any]:
     params_raw = _load_params_raw()
     strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
@@ -218,6 +250,7 @@ def run_all_checks() -> Dict[str, Any]:
     findings += check_version_sync(params, strategy_text)
     findings += check_guardrail_gates_drift(params, executor_text)
     findings += check_dead_params(params)
+    findings += check_local_db_health()
 
     critical = [msg for sev, msg in findings if sev == "critical"]
     warnings = [msg for sev, msg in findings if sev == "warning"]
