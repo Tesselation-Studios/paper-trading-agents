@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:45 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:50 ET
+
+## TUE 9:50 ET — Market Tick
+- **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.2%, BOX 4sh +2.1%, HLN +0.3%, STVN +1.8%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders.
+- 🔍 **ITRI BUY re-evaluated**: $84.78, RSI 51.8 🟢, MACDh +0.3832 🟢, vol 3.95x ✅. Raised FY26 EPS guidance ($6.30-$6.50 vs $5.96 est), sentiment +0.546. Reconciled 0.41 < 0.50 floor — neutral flow/insiders drag. Correctly gated.
+- 🔍 **LDRX BUY evaluated** (new promote): $34.98, RSI 42.3 ❌, MACDh +0.0652 near-zero, vol 0.72x ❌. Disqualified.
+- 📊 Scale-in: BOX +2.1% / BFST +2.2% below 3% v1.7 floor. HLN/STVN < 2%. None qualify. Merge no-op, promote +1 LDRX (disqualified). Pipeline healthy.
 
 ## TUE 9:45 ET — Market Tick
 - **All HOLD.** 4 pos. Regime **SUSTAINABLE** (0.92). PV $10,409, cash $10,223 (98.2%). BFST +2.1%, BOX 4sh +2.7%, HLN +0.3%, STVN +1.8%. All MACDh 🟢 (68-bar cache). No breaches. 7/10 orders used.
