@@ -6,8 +6,9 @@ Covers read/write round-trip, win/loss ceiling adjustment, floor/max caps,
 growth-rate acceleration/deceleration based on win rate, target-profit-pct
 shrinkage above $500 ceiling, and history log formatting/capping.
 
-BANKROLL_FILE is monkeypatched to a tmp_path file in every test — this file
-is live production state and must never be touched by tests.
+trader_db.DB_PATH is monkeypatched to an isolated tmp_path file in every
+test (2026-07-28, migrated off a regex-parsed bankroll.md) — this file is
+live production state and must never be touched by tests.
 """
 import datetime
 import re
@@ -18,15 +19,19 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import bankroll  # noqa: E402
+import trader_db  # noqa: E402
 
 
 @pytest.fixture
 def bankroll_file(tmp_path, monkeypatch):
-    """Redirect BANKROLL_FILE to an isolated tmp path for every test."""
-    path = tmp_path / "bankroll.md"
-    monkeypatch.setattr(bankroll, "BANKROLL_FILE", path)
+    """Redirect trader_db.DB_PATH to an isolated tmp path for every test.
+    Name kept as `bankroll_file` for minimal diff against the many
+    existing call sites; it's a db path now, not a markdown file."""
+    path = tmp_path / "trader.db"
+    monkeypatch.setattr(trader_db, "DB_PATH", path)
     return path
 
 
@@ -336,12 +341,15 @@ class TestHistoryLog:
         stripped_reread = [h.removeprefix("-- ") for h in reread["history"]]
         assert stripped_reread == original_last_50
 
-    def test_no_history_placeholder_when_empty(self, bankroll_file):
+    def test_empty_history_round_trips_to_empty_list(self, bankroll_file):
+        """No markdown placeholder text to check anymore (2026-07-28
+        migration) -- an empty bankroll_history table is just empty,
+        directly queryable/representable, no placeholder needed."""
         state = bankroll.read_bankroll()
         state["history"] = []
         bankroll.write_bankroll(state)
-        text = bankroll_file.read_text()
-        assert "(no closed trades yet)" in text
+        reread = bankroll.read_bankroll()
+        assert reread["history"] == []
 
 
 class TestUniverseMaxPriceForCeiling:
@@ -552,14 +560,17 @@ class TestLifetimeCountersSurviveReset:
         assert reread["lifetime_wins"] == 2
 
 
-class TestHistoryRoundTripDoesNotDoublePrefix:
+class TestHistoryRoundTripDoesNotAccumulate:
     """2026-07-23: read_bankroll() used to store history entries WITH their
     '-- ' prefix, and write_bankroll() always re-added one -- every
     read-modify-write cycle doubled the prefix on pre-existing entries
-    ('-- entry' -> '-- -- entry' -> ...). Found via bankroll.md showing
-    '-- -- -- -- reset to defaults' after routine use."""
+    ('-- entry' -> '-- -- entry' -> ...). That specific failure mode is
+    structurally impossible now (2026-07-28 migration -- no prefix concept
+    in a DB row), but the general risk (repeated read/write cycles growing
+    or duplicating history) still needs a regression guard against
+    write_bankroll()'s delete+reinsert not being clean."""
 
-    def test_prefix_does_not_accumulate_across_multiple_writes(self, bankroll_file):
+    def test_repeated_read_write_cycles_do_not_grow_history(self, bankroll_file):
         state = bankroll.read_bankroll()
         bankroll.recalc_ceiling(state, pnl=1.0, is_win=True)
         bankroll.write_bankroll(state)
@@ -568,10 +579,8 @@ class TestHistoryRoundTripDoesNotDoublePrefix:
             state = bankroll.read_bankroll()
             bankroll.write_bankroll(state)
 
-        text = bankroll_file.read_text()
-        for line in text.splitlines():
-            if "WIN" in line or "LOSS" in line:
-                assert not line.strip().startswith("-- -- ")
+        reread = bankroll.read_bankroll()
+        assert len(reread["history"]) == 1
 
 
 class TestTierStatus:

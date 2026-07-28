@@ -23,7 +23,7 @@ Keys: `ALPACA_STONKS_KEY` / `ALPACA_STONKS_SECRET`.
 | `sector_concentration` | sector ≤ `risk_guards.max_positions_per_sector` | `--sector` |
 | `hours` | market open 09:30–16:00 ET Mon–Fri | — |
 | `conviction` | ≥ `risk.conviction_floor` | `--conviction` |
-| `bankroll` | cost ≤ `bankroll.md` ceiling | `--price` |
+| `bankroll` | cost ≤ current ceiling (`python3 bankroll.py`, backed by `state/trader.db`) | `--price` |
 
 Missing field → gate skips (fail-open), never blocks on missing data. Always pass `--price` on SELL — it's what lets the bankroll ceiling adapt.
 

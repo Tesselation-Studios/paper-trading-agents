@@ -15,11 +15,14 @@ Usage:
 
 import argparse
 import re
+import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+import trader_db  # noqa: E402
+
 # ── Config ─────────────────────────────────────────────────────────────────
-BANKROLL_FILE = Path(__file__).parent / "bankroll.md"
 STARTING_CASH = 10_000.00
 
 FLOOR = 50.00              # absolute minimum per tick
@@ -111,7 +114,13 @@ def effective_ceiling(state: dict, current_equity: float, today: date = None) ->
     return min(MAX_CEILING, state["ceiling"] * multiplier)
 
 
-def read_bankroll() -> dict:
+def read_bankroll(db_path: Path = None) -> dict:
+    """Reads from trader_db.py's bankroll_state (singleton row) +
+    bankroll_history (last 50 rows). Migrated 2026-07-28 from a
+    regex-parsed bankroll.md -- history is reconstructed as the same
+    formatted-string list (f"{ts} {label} ${pnl:+.2f} -> ${ceiling:.2f}")
+    recalc_ceiling()/expectancy_trend() already expect, so neither of
+    those needed to change, only the I/O boundary."""
     state = {
         "ceiling": STARTING_CEILING,
         "growth_rate": GROWTH_RATE,
@@ -128,93 +137,71 @@ def read_bankroll() -> dict:
         "lifetime_wins": 0,
         "lifetime_losses": 0,
     }
-    if not BANKROLL_FILE.exists():
-        return state
+    conn = trader_db.get_conn(db_path)
+    try:
+        db_state = trader_db.get_bankroll_state(conn)
+        if db_state:
+            state["ceiling"] = max(FLOOR, db_state["ceiling"])
+            state["growth_rate"] = db_state["growth_rate"]
+            state["decay_rate"] = db_state["decay_rate"]
+            state["target_profit_pct"] = db_state["target_profit_pct"]
+            state["closed_trades"] = db_state["closed_trades_session"]
+            state["wins"] = db_state["wins_session"]
+            state["losses"] = db_state["losses_session"]
+            state["net_pnl"] = db_state["net_pnl_session"]
+            state["total_deployed"] = db_state["total_deployed_session"]
+            state["lifetime_trades"] = db_state["lifetime_trades"]
+            state["lifetime_net_pnl"] = db_state["lifetime_net_pnl"]
+            state["lifetime_wins"] = db_state["lifetime_wins"]
+            state["lifetime_losses"] = db_state["lifetime_losses"]
 
-    text = BANKROLL_FILE.read_text()
-
-    m = re.search(r"Ceiling:\s*\$?([\d.]+)", text)
-    if m:
-        state["ceiling"] = max(FLOOR, float(m.group(1)))
-
-    m = re.search(r"Growth/decay rate:\s*([\d.]+)\s*/\s*([\d.]+)", text)
-    if m:
-        state["growth_rate"] = float(m.group(1))
-        state["decay_rate"] = float(m.group(2))
-
-    m = re.search(r"Target profit:\s*([\d.]+)%", text)
-    if m:
-        state["target_profit_pct"] = float(m.group(1))
-
-    m = re.search(r"Closed trades this session:\s*(\d+)", text)
-    if m:
-        state["closed_trades"] = int(m.group(1))
-
-    m = re.search(r"Wins:\s*(\d+)\s*\|?\s*Losses:\s*(\d+)", text)
-    if m:
-        state["wins"] = int(m.group(1))
-        state["losses"] = int(m.group(2))
-
-    m = re.search(r"Net:\s*([+-]?[\d.]+)%", text)
-    if m:
-        state["net_pnl"] = float(m.group(1))
-
-    # Was written by write_bankroll() but never parsed back in -- every read
-    # silently reset it to 0.0 regardless of what was persisted (2026-07-27).
-    m = re.search(r"Total deployed:\s*\$?([\d.]+)", text)
-    if m:
-        state["total_deployed"] = float(m.group(1))
-
-    m = re.search(r"Lifetime trades:\s*(\d+)", text)
-    if m:
-        state["lifetime_trades"] = int(m.group(1))
-
-    m = re.search(r"Lifetime net PnL:\s*\$?([+-]?[\d.]+)", text)
-    if m:
-        state["lifetime_net_pnl"] = float(m.group(1))
-
-    m = re.search(r"Lifetime W/L:\s*(\d+)\s*/\s*(\d+)", text)
-    if m:
-        state["lifetime_wins"] = int(m.group(1))
-        state["lifetime_losses"] = int(m.group(2))
-
-    state["history"] = []
-    in_history = False
-    for line in text.splitlines():
-        if line.strip() == "## History":
-            in_history = True
-            continue
-        if in_history and line.strip().startswith("-- "):
-            state["history"].append(line.strip().removeprefix("-- "))
-
+        history_rows = trader_db.get_bankroll_history(conn, limit=50)
+        state["history"] = [
+            f"{r['timestamp']} {r['label']} ${r['pnl']:+.2f} → ${r['ceiling_after']:.2f}"
+            for r in reversed(history_rows)
+        ]
+    finally:
+        conn.close()
     return state
 
 
-def write_bankroll(state: dict):
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    lines = [
-        "# Bankroll — Stonks",
-        "",
-        f"Ceiling: ${state['ceiling']:.2f}",
-        f"Growth/decay rate: {state['growth_rate']:.2f} / {state['decay_rate']:.2f}",
-        f"Target profit: {state['target_profit_pct']:.2f}%",
-        f"Closed trades this session: {state['closed_trades']}",
-        f"Wins: {state['wins']} | Losses: {state['losses']}",
-        f"Net: {state['net_pnl']:+.2f}%",
-        f"Total deployed: ${state['total_deployed']:.2f}",
-        f"Lifetime trades: {state['lifetime_trades']}",
-        f"Lifetime net PnL: ${state['lifetime_net_pnl']:+.2f}",
-        f"Lifetime W/L: {state.get('lifetime_wins', 0)} / {state.get('lifetime_losses', 0)}",
-        f"Updated: {now}",
-        "",
-        "## History",
-    ]
-    for entry in state["history"][-50:]:
-        lines.append(f"-- {entry}")
-    if not state["history"]:
-        lines.append("-- (no closed trades yet)")
+_HISTORY_ENTRY_RE = re.compile(r"(\S+ \S+) (WIN|LOSS) \$([+-]?[\d.]+) → \$([\d.]+)")
 
-    BANKROLL_FILE.write_text("\n".join(lines) + "\n")
+
+def write_bankroll(state: dict, db_path: Path = None):
+    """Upserts the singleton bankroll_state row, then fully replaces
+    bankroll_history (delete+reinsert from state['history'][-50:]) --
+    same bounded-list-replace pattern discovery_db.py's
+    upsert_universe_snapshot() already uses. Entries that don't match the
+    WIN/LOSS format (e.g. a "reset to defaults" marker) aren't
+    representable in the structured schema and are dropped -- cosmetic
+    only, never real financial data."""
+    conn = trader_db.get_conn(db_path)
+    try:
+        trader_db.upsert_bankroll_state(
+            conn, ceiling=state["ceiling"], growth_rate=state["growth_rate"],
+            decay_rate=state["decay_rate"], target_profit_pct=state["target_profit_pct"],
+            closed_trades_session=state["closed_trades"], wins_session=state["wins"],
+            losses_session=state["losses"], net_pnl_session=state["net_pnl"],
+            total_deployed_session=state.get("total_deployed", 0.0),
+            lifetime_trades=state.get("lifetime_trades", 0),
+            lifetime_net_pnl=state.get("lifetime_net_pnl", 0.0),
+            lifetime_wins=state.get("lifetime_wins", 0),
+            lifetime_losses=state.get("lifetime_losses", 0),
+        )
+        with conn:
+            conn.execute("DELETE FROM bankroll_history")
+            for entry in state["history"][-50:]:
+                m = _HISTORY_ENTRY_RE.match(entry)
+                if not m:
+                    continue
+                timestamp, label, pnl, ceiling_after = m.groups()
+                conn.execute(
+                    "INSERT INTO bankroll_history (timestamp, label, pnl, ceiling_after) VALUES (?, ?, ?, ?)",
+                    (timestamp, label, float(pnl), float(ceiling_after)),
+                )
+    finally:
+        conn.close()
 
 
 def record_deployment(state: dict, cost: float):
