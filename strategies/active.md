@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:15 ET
+# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 9:20 ET
+
+## TUE 9:20 ET — Pre-Market Tick
+- 🚨 **BCS SELL blocked by hours gate** (9:21). Trailing stop breach confirmed, $26.69 (-5.6%). Queued for 9:30 open.
+- 🆕 **STVN BUY queued for 9:30**: 1sh probe @ $19.80, conviction 0.37. RSI 58.7 🟢, MACDh +0.4302 🟢, vol 1.24x ✅. SUSTAINABLE regime.
+- **3 HOLD.** Regime **SUSTAINABLE** (0.92). PV $10,412.65, cash $10,185.25 (97.8%). BFST $31.47 (+1.6%), BOX 3sh $30.15 (+1.3%), KRC 2sh $39.41 (-0.3%). All MACDh 🟢: BFST +0.4529, BOX +0.96, KRC +0.7051. No flips.
+- 📡 Data bus LIVE (68 bars). Sentiment fresh (13:15 UTC): BOX +0.385, BCS +0.711, KRC -0.580, FRNM +0.923 (FDA approval). ⚠️ BCS data bus $28.56 vs Alpaca live $26.69 — cache stale on BCS. Merge + promote no-op. Pipeline healthy. 165 under-deployed ticks, conv floor 0.35. workspace_review clean.
+- 🔍 New open candidates: GBLI $27.12 (RSI 59.3, MACDh +0.2028, vol 2.85x but 30k shares thin), FRNM $11.38 (FDA catalyst, MACDh +0.2288, vol 4.2x, RSI 47.5 low), HLN $9.94 (RSI 59.0, MACDh +0.1803, vol 2.72x). Evaluate at 9:25.
 
 ## TUE 9:15 ET — Pre-Market Tick
 - 🚨 **BCS SELL queued for 9:30**: trailing stop breach confirmed, $26.75 (-5.4% entry, -6.3% off peak $28.55). Hours gate blocks until open. Mandatory full exit.
