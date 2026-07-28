@@ -20,6 +20,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 import discovery_scan  # noqa: E402
 import bankroll  # noqa: E402
+import trader_db  # noqa: E402
 
 
 def make_row(rsi=55.0, close=20.0, volume=100_000, volume_ma20=100_000, macd_hist=0.1):
@@ -37,10 +38,14 @@ class TestGetUniversePriceBand:
     def test_reads_min_price_from_params_and_max_from_bankroll(self, tmp_path, monkeypatch):
         params_path = tmp_path / "params.json"
         params_path.write_text(json.dumps({"universe": {"min_price": 2.0}}))
-        bankroll_file = tmp_path / "bankroll.md"
-        bankroll_file.write_text("Ceiling: $51.00\n")
         monkeypatch.setattr(discovery_scan, "PARAMS_PATH", params_path)
-        monkeypatch.setattr(bankroll, "BANKROLL_FILE", bankroll_file)
+        monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        trader_db.upsert_bankroll_state(
+            conn, ceiling=51.0, growth_rate=bankroll.GROWTH_RATE, decay_rate=bankroll.DECAY_RATE,
+            target_profit_pct=bankroll.TARGET_PROFIT_PCT,
+        )
+        conn.close()
         min_price, max_price = discovery_scan.get_universe_price_band()
         assert min_price == 2.0
         assert max_price == 500.0  # ceiling 51 -> first tier (widened 2026-07-24)
@@ -48,10 +53,14 @@ class TestGetUniversePriceBand:
     def test_higher_ceiling_widens_universe(self, tmp_path, monkeypatch):
         params_path = tmp_path / "params.json"
         params_path.write_text(json.dumps({"universe": {"min_price": 1.0}}))
-        bankroll_file = tmp_path / "bankroll.md"
-        bankroll_file.write_text("Ceiling: $500.00\n")
         monkeypatch.setattr(discovery_scan, "PARAMS_PATH", params_path)
-        monkeypatch.setattr(bankroll, "BANKROLL_FILE", bankroll_file)
+        monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        trader_db.upsert_bankroll_state(
+            conn, ceiling=500.0, growth_rate=bankroll.GROWTH_RATE, decay_rate=bankroll.DECAY_RATE,
+            target_profit_pct=bankroll.TARGET_PROFIT_PCT,
+        )
+        conn.close()
         _, max_price = discovery_scan.get_universe_price_band()
         assert max_price == 1500.0  # ceiling 500 -> third tier (rebased 2026-07-24)
 
