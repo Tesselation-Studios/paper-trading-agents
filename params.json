@@ -43,9 +43,10 @@
   },
 
   "watchlist": {
-    "path": "strategies/watchlist.md",
     "idle_ticks_before_drop": 24,
     "max_size": 30,
+    "eval_batch_size": 6,
+    "_eval_batch_size_source": "2026-07-28: stonks-tick cron (280s budget) blew its timeout evaluating the full watchlist every tick in step 8 -- trader_query.py watchlist --batch N + trader_write.py watchlist-mark-evaluated round-robin through idle_ticks (see trader_db.get_watchlist_batch/increment_idle_ticks) instead. 6 keeps a full rotation well under idle_ticks_before_drop at current list sizes (~31 candidates -> ~5-tick cycle).",
     "discovery_urgency": {
       "cash_threshold_pct": 70.0,
       "min_candidates": 3,
@@ -86,8 +87,7 @@
 
   "strategy_files": [
     "strategy.md",
-    "strategies/active.md",
-    "strategies/watchlist.md"
+    "strategies/active.md"
   ],
 
   "journal": {

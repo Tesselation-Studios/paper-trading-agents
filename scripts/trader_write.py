@@ -14,6 +14,7 @@ Usage:
     python3 scripts/trader_write.py watchlist-drop-stale
     python3 scripts/trader_write.py watchlist-drop-stale --threshold 24
     python3 scripts/trader_write.py watchlist-remove --ticker AAA
+    python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB,CCC
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --thesis "..."
 """
 import argparse
@@ -81,6 +82,18 @@ def cmd_watchlist_remove(args, conn) -> None:
     _print({"removed": ticker})
 
 
+def cmd_watchlist_mark_evaluated(args, conn) -> None:
+    """Bumps idle_ticks for every candidate NOT in --tickers (2026-07-28,
+    pairs with trader_query.py watchlist --batch N). Evaluated names are left
+    flat rather than reset to 0 -- they're not being re-discovered, just
+    looked at -- so the ones climbing fastest are always whoever's gone
+    longest without evaluation, giving a round-robin over several ticks with
+    no separate cursor to track."""
+    tickers = [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
+    trader_db.increment_idle_ticks(conn, except_tickers=tickers)
+    _print({"evaluated_this_tick": tickers})
+
+
 def cmd_position_update_thesis(args, conn) -> None:
     ticker = args.ticker.upper()
     existing = trader_db.get_position(conn, ticker)
@@ -114,6 +127,10 @@ def main() -> int:
     p = sub.add_parser("watchlist-remove", help="Remove a candidate (e.g. promoted to a position)")
     p.add_argument("--ticker", required=True)
 
+    p = sub.add_parser("watchlist-mark-evaluated",
+                        help="Bump idle_ticks for every candidate except --tickers (call after a batch eval)")
+    p.add_argument("--tickers", required=True, help="Comma-separated tickers evaluated this tick")
+
     p = sub.add_parser("position-update-thesis", help="Update an open position's thesis (not tied to a trade)")
     p.add_argument("--ticker", required=True)
     p.add_argument("--thesis", required=True)
@@ -126,6 +143,7 @@ def main() -> int:
             "watchlist-add": cmd_watchlist_add,
             "watchlist-drop-stale": cmd_watchlist_drop_stale,
             "watchlist-remove": cmd_watchlist_remove,
+            "watchlist-mark-evaluated": cmd_watchlist_mark_evaluated,
             "position-update-thesis": cmd_position_update_thesis,
         }[args.command](args, conn)
     finally:

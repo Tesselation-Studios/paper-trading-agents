@@ -57,6 +57,31 @@ class TestWatchlist:
         result = _run(monkeypatch, capsys, db_path, ["watchlist"])
         assert result[0]["ticker"] == "LDRX"
 
+    def test_no_batch_flag_returns_full_list(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        for t in ["AAA", "BBB", "CCC"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        conn.close()
+        result = _run(monkeypatch, capsys, db_path, ["watchlist"])
+        assert len(result) == 3
+
+    def test_batch_flag_bounds_result_count(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        for t in ["AAA", "BBB", "CCC"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        conn.close()
+        result = _run(monkeypatch, capsys, db_path, ["watchlist", "--batch", "2"])
+        assert len(result) == 2
+
+    def test_batch_flag_returns_most_neglected_first(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
+        trader_db.increment_idle_ticks(conn, except_tickers=["AAA"])
+        conn.close()
+        result = _run(monkeypatch, capsys, db_path, ["watchlist", "--batch", "1"])
+        assert result[0]["ticker"] == "BBB"
+
 
 class TestBankroll:
     def test_state_returns_current(self, monkeypatch, capsys, db_path):

@@ -430,6 +430,20 @@ def get_watchlist_candidates(conn: sqlite3.Connection) -> list:
     return [dict(r) for r in rows]
 
 
+def get_watchlist_batch(conn: sqlite3.Connection, limit: int) -> list:
+    """Most-neglected-first slice for bounded per-tick evaluation (2026-07-28,
+    fixes stonks-tick blowing its cron timeout evaluating the full list every
+    tick). Highest idle_ticks first -- pair with increment_idle_ticks(conn,
+    except_tickers=<this batch's tickers>) after evaluating, which leaves the
+    evaluated names flat while everyone else climbs, producing a round-robin
+    over several ticks without a separate cursor/offset to track."""
+    rows = conn.execute(
+        "SELECT * FROM watchlist_candidates ORDER BY idle_ticks DESC, added_at ASC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def remove_watchlist_candidate(conn: sqlite3.Connection, ticker: str) -> None:
     """Used when a candidate is promoted into an actual position."""
     with conn:

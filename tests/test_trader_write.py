@@ -135,6 +135,41 @@ class TestWatchlistRemove:
             conn.close()
 
 
+class TestWatchlistMarkEvaluated:
+    def test_bumps_everyone_not_in_tickers(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
+        trader_db.upsert_watchlist_candidate(conn, ticker="CCC")
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, ["watchlist-mark-evaluated", "--tickers", "aaa,bbb"])
+
+        assert result["evaluated_this_tick"] == ["AAA", "BBB"]
+        conn = trader_db.get_conn(db_path)
+        try:
+            rows = {r["ticker"]: r["idle_ticks"] for r in trader_db.get_watchlist_candidates(conn)}
+            assert rows == {"AAA": 0, "BBB": 0, "CCC": 1}
+        finally:
+            conn.close()
+
+    def test_repeated_calls_produce_rotation(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        for t in ["AAA", "BBB"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        conn.close()
+
+        _run(monkeypatch, capsys, db_path, ["watchlist-mark-evaluated", "--tickers", "AAA"])
+        _run(monkeypatch, capsys, db_path, ["watchlist-mark-evaluated", "--tickers", "AAA"])
+
+        conn = trader_db.get_conn(db_path)
+        try:
+            batch = trader_db.get_watchlist_batch(conn, 1)
+        finally:
+            conn.close()
+        assert batch[0]["ticker"] == "BBB"
+
+
 class TestPositionUpdateThesis:
     def test_updates_thesis_preserves_other_fields(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)

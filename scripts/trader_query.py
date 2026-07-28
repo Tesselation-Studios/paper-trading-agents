@@ -12,6 +12,7 @@ Usage:
     python3 scripts/trader_query.py positions
     python3 scripts/trader_query.py positions --ticker AAA
     python3 scripts/trader_query.py watchlist
+    python3 scripts/trader_query.py watchlist --batch 6
     python3 scripts/trader_query.py bankroll
     python3 scripts/trader_query.py bankroll --history
     python3 scripts/trader_query.py decisions --ticker AAA --limit 10
@@ -41,7 +42,10 @@ def cmd_positions(args, conn) -> None:
 
 
 def cmd_watchlist(args, conn) -> None:
-    _print(trader_db.get_watchlist_candidates(conn))
+    if args.batch:
+        _print(trader_db.get_watchlist_batch(conn, args.batch))
+    else:
+        _print(trader_db.get_watchlist_candidates(conn))
 
 
 def cmd_bankroll(args, conn) -> None:
@@ -96,7 +100,10 @@ def main() -> int:
     p = sub.add_parser("positions", help="Open positions, or one ticker's position")
     p.add_argument("--ticker", default=None)
 
-    sub.add_parser("watchlist", help="Current watchlist candidates")
+    p = sub.add_parser("watchlist", help="Current watchlist candidates")
+    p.add_argument("--batch", type=int, default=None,
+                    help="Return only the N most-neglected (highest idle_ticks) candidates, "
+                         "for bounded per-tick evaluation -- see params.json watchlist.eval_batch_size")
 
     p = sub.add_parser("bankroll", help="Current bankroll state, or recent history")
     p.add_argument("--history", action="store_true")

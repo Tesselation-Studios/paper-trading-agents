@@ -204,6 +204,34 @@ class TestWatchlistCandidates:
         rows = {r["ticker"]: r["idle_ticks"] for r in trader_db.get_watchlist_candidates(conn)}
         assert rows == {"AAA": 0, "BBB": 1}
 
+    def test_get_watchlist_batch_most_neglected_first(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
+        trader_db.upsert_watchlist_candidate(conn, ticker="CCC")
+        trader_db.increment_idle_ticks(conn, except_tickers=["AAA"])  # BBB, CCC -> 1
+        trader_db.increment_idle_ticks(conn, except_tickers=["AAA", "BBB"])  # CCC -> 2
+        batch = trader_db.get_watchlist_batch(conn, 2)
+        assert [c["ticker"] for c in batch] == ["CCC", "BBB"]
+
+    def test_get_watchlist_batch_respects_limit(self, conn):
+        for t in ["AAA", "BBB", "CCC"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        assert len(trader_db.get_watchlist_batch(conn, 1)) == 1
+        assert len(trader_db.get_watchlist_batch(conn, 10)) == 3
+
+    def test_mark_evaluated_then_increment_rotates(self, conn):
+        """The intended real-usage pattern: batch -> evaluate -> exempt those
+        from the next increment -- confirms a full rotation surfaces every
+        candidate exactly once before repeating."""
+        for t in ["AAA", "BBB", "CCC", "DDD"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        seen = []
+        for _ in range(4):
+            batch = trader_db.get_watchlist_batch(conn, 1)
+            seen.extend(c["ticker"] for c in batch)
+            trader_db.increment_idle_ticks(conn, except_tickers=[c["ticker"] for c in batch])
+        assert sorted(seen) == ["AAA", "BBB", "CCC", "DDD"]
+
     def test_touch_resets_idle_ticks(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
         trader_db.increment_idle_ticks(conn)
