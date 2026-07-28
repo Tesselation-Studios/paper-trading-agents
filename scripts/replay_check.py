@@ -402,6 +402,7 @@ STRATEGY_BUILDERS = {
     # simulated for the first time (see make_trader's trailing_stop_pct
     # docstring) -- win-rate investigation, not yet a promotion candidate.
     "v1.0-trail": lambda frames: make_trader(frames, "v1.0", trailing_stop_pct=TRAILING_STOP_PCT),
+    "v1.0-trail-vol": lambda frames: make_trader(frames, "v1.0", vol_scaled_trail=True),
 }
 
 
@@ -541,6 +542,9 @@ VARIANT_LABELS = {
     "v1.0-trail": "v1.0 rules + a flat trailing_stop_pct simulated for the first time (win-rate "
                   "investigation, 2026-07-28 — trailing stops are the dominant loss category in "
                   "real trade history; see make_trader's trailing_stop_pct docstring)",
+    "v1.0-trail-vol": "v1.0 rules + volatility-scaled trailing stop (TRAIL_K=25 default) instead of "
+                       "flat — deliberately NOT calendar-time-based like the already-rejected "
+                       "stop_patience.py, see make_trader's vol_scaled_trail docstring",
 }
 
 
@@ -621,12 +625,22 @@ def sweep_thresholds(frames, ticks, stop_loss_grid, profit_target_grid, variant=
 DEFAULT_STOP_LOSS_GRID = [-15.0, -12.0, -10.0, -8.0, -6.0]
 DEFAULT_PROFIT_TARGET_GRID = [8.0, 10.0, 12.0, 15.0, 18.0]
 
+# 2026-07-28 win-rate investigation: --sweep-trail holds stop_loss/profit_target
+# at the REAL current params.json values (not the drifted STOP_LOSS_PCT/
+# PROFIT_TARGET_PCT module constants above, which mirror an older params.json)
+# and sweeps only TRAIL_K, to isolate the trailing-stop question instead of
+# conflating it with a full 3-axis grid.
+CURRENT_LIVE_STOP_LOSS_PCT = -8.0
+CURRENT_LIVE_PROFIT_TARGET_PCT = 10.0
+DEFAULT_TRAIL_K_GRID = [10.0, 20.0, 30.0, 40.0]
+
 
 def main():
     args = sys.argv[1:]
     split_window = "--split-window" in args
     sweep = "--sweep" in args
-    tickers = [a for a in args if a not in ("--split-window", "--sweep")]
+    sweep_trail = "--sweep-trail" in args
+    tickers = [a for a in args if a not in ("--split-window", "--sweep", "--sweep-trail")]
     if not tickers:
         tickers = load_live_universe()
 
@@ -644,6 +658,20 @@ def main():
             "lookback_days": LOOKBACK_DAYS,
             "stop_loss_grid": DEFAULT_STOP_LOSS_GRID,
             "profit_target_grid": DEFAULT_PROFIT_TARGET_GRID,
+            "candidates": candidates,
+        }, indent=2))
+        return
+
+    if sweep_trail:
+        candidates = sweep_thresholds(
+            frames, ticks, [CURRENT_LIVE_STOP_LOSS_PCT], [CURRENT_LIVE_PROFIT_TARGET_PCT],
+            trail_k_grid=DEFAULT_TRAIL_K_GRID)
+        print(json.dumps({
+            "tickers_used": sorted(frames.keys()),
+            "lookback_days": LOOKBACK_DAYS,
+            "stop_loss_pct": CURRENT_LIVE_STOP_LOSS_PCT,
+            "profit_target_pct": CURRENT_LIVE_PROFIT_TARGET_PCT,
+            "trail_k_grid": DEFAULT_TRAIL_K_GRID,
             "candidates": candidates,
         }, indent=2))
         return

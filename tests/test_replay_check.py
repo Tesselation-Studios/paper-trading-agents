@@ -213,7 +213,8 @@ class TestMaxPositionsCap:
 class TestStrategyBuildersRegistered:
     def test_v17_and_capped25_present_alongside_existing_variants(self):
         assert set(replay_check.STRATEGY_BUILDERS.keys()) == {
-            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7", "v1.7-daily", "v1.7-gentle", "v1.0-trail"}
+            "v1.0", "v1.1", "v1.2", "v1.1-capped25", "v1.7", "v1.7-daily", "v1.7-gentle",
+            "v1.0-trail", "v1.0-trail-vol"}
         assert set(replay_check.VARIANT_LABELS.keys()) == set(replay_check.STRATEGY_BUILDERS.keys())
 
 
