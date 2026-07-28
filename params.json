@@ -37,8 +37,9 @@
 
   "risk_guards": {
     "max_positions_per_sector": 2,
-    "order_count_audit_threshold_daily": 10,
-    "_source": "concentration/rogue-trading guards"
+    "order_count_audit_threshold_daily": 30,
+    "_source": "concentration/rogue-trading guards",
+    "_order_count_audit_threshold_daily_source": "2026-07-28: raised 10->30. strategy.md had mislabeled 10 as an 'Alpaca free-tier' API limit -- verified against Alpaca's actual docs/pricing (Basic plan is a 200 req/min rate limit, not an order-count cap; Algo Trader Plus $99/mo unlocks market data, not order count) and confirmed in code (gate_daily_order_count's own docstring: this is a self-imposed rogue-loop backstop, not anything Alpaca enforces). 10 was gating real qualifying candidates dead by ~11:40am on active days (2026-07-27: BOX scale-in qualified 5+ times, STVN qualified every tick from 12:20 through close, both blocked the rest of the session) -- an artificial cap misattributed to an external constraint. 30 keeps it a real rogue-loop tripwire (a stuck loop still trips it fast) while giving the 'small and wide, scale into winners' strategy actual room on active days."
   },
 
   "watchlist": {
