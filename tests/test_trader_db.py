@@ -175,6 +175,13 @@ class TestPositions:
         open_tickers = [p["ticker"] for p in trader_db.get_open_positions(conn)]
         assert open_tickers == ["AAA"]
 
+    def test_get_all_positions_includes_open_and_closed(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.upsert_position(conn, ticker="BBB", shares=1.0, entry_price=10.0, entry_time="t2")
+        trader_db.close_position(conn, ticker="BBB", closed_at="t3", close_reason="exit", realized_pnl=1.0, realized_return_pct=1.0)
+        all_tickers = {p["ticker"] for p in trader_db.get_all_positions(conn)}
+        assert all_tickers == {"AAA", "BBB"}
+
 
 class TestWatchlistCandidates:
     def test_upsert_new_candidate_idle_ticks_zero(self, conn):

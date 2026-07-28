@@ -358,6 +358,14 @@ def get_open_positions(conn: sqlite3.Connection) -> list:
     return [dict(r) for r in rows]
 
 
+def get_all_positions(conn: sqlite3.Connection) -> list:
+    """Open + closed, no status filter -- used by merge_discoveries.py's
+    dedup (a closed ticker shouldn't be re-added as a fresh candidate
+    either) and by trader_query.py's closed-position lookup."""
+    rows = conn.execute("SELECT * FROM positions ORDER BY entry_time").fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_position(conn: sqlite3.Connection, ticker: str):
     row = conn.execute("SELECT * FROM positions WHERE ticker = ?", (ticker,)).fetchone()
     return dict(row) if row else None
