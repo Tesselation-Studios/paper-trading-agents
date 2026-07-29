@@ -1,4 +1,19 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:25 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:30 ET
+
+## WED 9:35 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,410, cash $10,049 (96.5%). BOX 6sh +4.09%, BFST +2.97%, BFH +1.60%, HLN -1.81%, STVN +0.50%. All MACDh 🟢 (69-bar). No breaches.
+- 📊 **BOX scale-in gated**: +4.09% crosses 3% v1.7 floor but reconciled 0.35 < 0.50 — 3 neutral (sent empty kw-fallback, flow empty, insiders empty) drag bullish tech 0.75/regime 0.80/vol 0.55.
+- 🔍 **KEX probe** (step 8 mandate, 96.5% cash): $145.39 +0.21%, RSI 55.0 🟢, MACDh +1.3694 🟢, vol 1.36x ✅. Reconciled 0.3583 < 0.50 — same neutral drag. Correctly gated.
+- 🔍 **Batch** (NTRS/NDAA/LDRX/JCTC/ISHP/TTEC, idle 15-23): all 6 disqualified. NTRS MS PT $173 < $180.86, NDAA RSI 44.0 + MACDh near-zero + vol 0.09x (100 shares), LDRX RSI 44.6 + thin 9.7k, JCTC vol 0.19x ultra-thin, ISHP 19-share ETF, TTEC MACD bearish. Rotation advances.
+- 📡 Quotes LIVE (69 bars). MCP regime/risk errored. Sentiment empty (kw-fallback all). Merge/promote no-ops (max_size 30). Stale drop none. Bootstrap $700. Pipeline healthy. workspace_review ✅.
+
+## WED 9:30 ET — Market Open Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,409, cash $10,049 (96.5%). BOX 6sh +4.61%, BFST +2.58%, BFH +0.61%, STVN +0.40%, HLN -1.86%. All MACDh 🟢 (69-bar). No breaches.
+- 📊 **BOX scale-in gated**: +4.61% crosses 3% v1.7 floor but reconciled 0.35 < 0.50 — 3 neutral (sent 0.30 kw-fallback, flow empty, insiders empty) drag bullish tech 0.75/regime 0.80/vol 0.55.
+- 🔍 **VSXY probe** (step 8 mandate, 96.5% cash): $89.31 +4.68%, MACDh +3.1761 🟢, RSI 64.3, vol 1.57x ✅. Reconciled 0.3417 < 0.50 — same neutral drag. Correctly gated.
+- 🔍 **Batch** (NTRS/NDAA/LDRX/JCTC/ISHP/TTEC, idle 10-23): all 6 disqualified. NTRS MS PT $173 < $180.86, NDAA RSI 44.0 + MACDh near-zero + vol 0.09x, LDRX RSI 44.6 + thin 9.7k, JCTC vol 0.19x ultra-thin, ISHP 19-share ETF, TTEC MACD bearish. Rotation advances.
+- 📡 Quotes LIVE (69 bars). MCP regime errored. Sentiment empty (kw-fallback all). Merge +7 (UTMD/AXIA/SLN/ANDG/VSXY/KEX/PCSA), promote no-op, 3+5 skipped (max_size 30). Stale drop none. Bootstrap $700. Pipeline healthy. workspace_review ✅.
+- 📝 Macro: 2Y 4.31%/10Y 4.65%, spread 0.34% flat, FOMC 3.50-3.75%.
 
 ## WED 9:25 ET — Pre-Market Tick
 - **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,408, cash $10,049 (96.55%). BOX 6sh +3.82%, BFST +3.55%, BFH +1.66%, HLN +0.78%, STVN +0.90%. All MACDh 🟢 (69-bar fresh). No breaches. Pre-market — hours gate active.
