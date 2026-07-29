@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:35 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:40 ET
+
+## WED 11:40 ET — Market Tick
+- ✅ **BOX SCALE-IN**: +1sh @ ~$31.50, conviction 0.65. v1.7 winner add: +4.34% from avg entry $30.34, MACDh +0.9562 🟢 strong, RSI 66.2 in-band, vol 1.08x. CHOPPY → probe 1sh. Reconciled 0.65 > 0.40 floor. Now 9sh. Decision #10, training #10.
+- **9 pos.** Regime **CHOPPY** (0.644) live. PV $10,413, cash $9,368 (90.0%). BOX 9sh +3.92%, BFH +2.34%, BFST 2sh +1.67%, STVN +0.83%, HLN +0.29%, VSXY -0.09%, ZBRA -0.06%, ANDG -0.43%, KEX -0.83%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/AXIA/SLN/ANDG/VSXY/KEX): 3 already pos. LDRX near-zero MACDh +0.0427 thin 9.7k, AXIA bearish MACD 🔴, SLN -4.31% dump + heavy sell vol (MACDh +0.80 but lagging). All 3 disqualified. Rotation advanced. Stale drop none. Merge/promote no-ops.
+- 📊 Scale-ins: BFH +2.34% below 3% v1.7 floor. BFST +1.67% below. Others <1% or just entered. Bootstrap $700. No further adds.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. workspace_review ✅.
 
 ## WED 11:35 ET — Market Tick
 - ✅ **VSXY BUY**: 1sh @ ~$89.31, conviction 0.675. Probe: RSI 64.3 in-band (40-70), MACDh +3.1761 🟢 very strong, vol 1.57x ✅. CHOPPY → probe size. Victoria's Secret — consumer cyclical diversifier. Reconciled 0.675 > 0.40 floor. Decision #9, training #9.
