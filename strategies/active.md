@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:40 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:45 ET
+
+## WED 11:45 ET — Market Tick
+- ✅ **UTMD BUY**: 1sh @ ~$70.96, conviction 0.50. Probe: RSI 54.7 in-band (40-70), MACDh +0.2379 🟢 weak, vol 1.97x ✅ (55k thin). CHOPPY → probe size. No insider filings. Reconciled 0.50 > 0.40 floor. Healthcare/Medical devices. Decision #11, training #11.
+- **10 pos.** Regime **CHOPPY** (0.644) live. PV $10,413, cash ~$9,297 (89.3%). BOX 9sh +4.16%, BFH +2.25%, BFST 2sh +1.60%, STVN +0.75%, HLN +0.44%, VSXY +0.03%, ZBRA +0.04%, ANDG -0.06%, KEX -0.75%, UTMD just entered. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/PCSA/UTMD/AXIA/SLN/ANDG): UTMD bought, 5 disqualified. LDRX near-zero MACDh +0.0427 thin 9.7k, PCSA +17.76% pump + near-zero MACDh, AXIA bearish MACD 🔴, SLN -4.31% dump + heavy sell vol, ANDG already pos. Rotation advanced.
+- 📊 Scale-ins: BOX +4.16% crosses 3% v1.7 floor but just added 11:40 (5 min ago). BFH/BFST below 3%. No further adds. Bootstrap $700.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. workspace_review ✅. Merge/promote no-ops.
 
 ## WED 11:40 ET — Market Tick
 - ✅ **BOX SCALE-IN**: +1sh @ ~$31.50, conviction 0.65. v1.7 winner add: +4.34% from avg entry $30.34, MACDh +0.9562 🟢 strong, RSI 66.2 in-band, vol 1.08x. CHOPPY → probe 1sh. Reconciled 0.65 > 0.40 floor. Now 9sh. Decision #10, training #10.
