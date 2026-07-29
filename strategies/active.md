@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 13:55 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 14:11 ET
+
+## WED 14:11 ET — Market Tick
+- **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,419, cash $9,067 (87.0%). BOX 10sh +3.76%, BFH +2.96%, VSXY +2.75%, STVN +2.70%, ZBRA +1.16%, BFST 4sh +1.01%, HLN +0.44%, UTMD +0.14%, KEX 2sh -0.70%, ANDG -2.17%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (AXIA/XSLL/AMIX/SYZ/BEAG/COLA): all 6 disqualified. AXIA bearish MACD 🔴 -0.1506, XSLL vol 0.37x ultra-thin 3.5k + near-zero MACDh, AMIX RSI 36.6 sub-band + $2.75, SYZ vol 0.17x 351sh + near-zero MACDh, BEAG near-zero MACDh +0.0073, COLA near-zero MACDh +0.0012. Rotation advanced.
+- 📊 Scale-ins: BOX +3.76% crosses 3% v1.7 floor but 10sh (4 adds today, 3.1% PV) — held on concentration. BFH +2.96% below floor. Step 8 mandate fulfilled via batch eval — all correctly gated. Bootstrap $700 — BOX/BFH/VSXY/STVN >1% quick-exit floor, MACDh all strong → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## WED 13:55 ET — Market Tick
 - **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,067 (87.1%). BOX 10sh +3.75%, BFH +2.38%, VSXY +1.93%, STVN +1.65%, BFST 4sh +0.76%, HLN +0.44%, ZBRA +0.47%, UTMD -0.56%, KEX 2sh -1.17%, ANDG -1.92%. All MACDh 🟢 (69-bar LIVE). No breaches.
