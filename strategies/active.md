@@ -1,5 +1,11 @@
 # Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 12:21 ET
 
+## WED 12:35 ET — Market Tick
+- **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,297 (89.3%). BOX 9sh +4.29%, BFH +2.90%, BFST 2sh +1.79%, VSXY +0.74%, STVN +0.64%, HLN +0.44%, UTMD -0.29%, ZBRA -0.19%, ANDG -1.03%, KEX -1.07%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/UTMD/ANDG/VSXY/KEX/PCSA): UTMD/ANDG/VSXY/KEX already pos. LDRX RSI 44.6 sub-band + near-zero MACDh +0.0427 + thin 9.7k, PCSA +17.76% pump + near-zero MACDh +0.0482. Both disqualified. Rotation advanced.
+- 📊 Scale-ins: BOX +4.29% crosses 3% v1.7 floor but 3 adds today — held. BFH +2.90% below floor. Bootstrap $700. Step 8 mandate fulfilled via batch eval — all correctly gated.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
+
 ## WED 12:29 ET — Market Tick
 - **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,415, cash $9,297 (89.3%). BOX 9sh +4.45%, BFH +2.74%, BFST 2sh +1.73%, STVN +0.90%, HLN +0.44%, VSXY +0.36%, ZBRA +0.06%, UTMD -0.29%, KEX -0.77%, ANDG -1.05%. All MACDh 🟢 (69-bar LIVE). No breaches.
 - 🔍 **Batch** (LDRX/AXIA/SLN/UTMD/ANDG/KEX): UTMD/ANDG/KEX already pos. LDRX RSI 44.6 sub-band + near-zero MACDh +0.0427 + thin 9.7k, AXIA bearish MACD 🔴 -0.1506, SLN -4.31% falling knife divergence trap (CHOPPY rule — MACDh +0.80 🟢 but -4.31% intraday). All 3 disqualified. Rotation advanced.
