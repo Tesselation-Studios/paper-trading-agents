@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:30 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:35 ET
+
+## WED 11:35 ET — Market Tick
+- ✅ **VSXY BUY**: 1sh @ ~$89.31, conviction 0.675. Probe: RSI 64.3 in-band (40-70), MACDh +3.1761 🟢 very strong, vol 1.57x ✅. CHOPPY → probe size. Victoria's Secret — consumer cyclical diversifier. Reconciled 0.675 > 0.40 floor. Decision #9, training #9.
+- **9 pos.** Regime **CHOPPY** (0.644) live. PV $10,413, cash $9,401 (90.3%). BOX 8sh +4.38%, BFH +2.40%, STVN +1.55%, BFST 2sh +1.44%, HLN flat, ZBRA -0.01%, VSXY just entered, ANDG -0.56%, KEX -0.53%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/PCSA/UTMD/VSXY/ANDG/KEX, ANDG/KEX already pos): VSXY bought, 3 disqualified. LDRX RSI 44.6 sub-band + near-zero MACDh + thin 9.7k, PCSA +17.76% pump + near-zero MACDh, UTMD MACDh +0.2379 weak. Rotation advanced. Stale drop none. Merge/promote no-ops.
+- 📊 Scale-ins: BOX +4.38% crosses 3% v1.7 floor but just added 11:15 (20 min ago). BFST/BFH/STVN below 3%. No further adds. Bootstrap $700 ceiling.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. workspace_review ✅.
 
 ## WED 11:30 ET — Market Tick
 - ✅ **KEX BUY**: 1sh @ ~$134.89, conviction 0.675. Probe: RSI 55.0 in-band (40-70), MACDh +1.3694 🟢 strong, vol 1.36x ✅. CHOPPY → probe size. Reconciled 0.675 > 0.40 floor. Industrials/Marine transport. Decision #8, training #8.
