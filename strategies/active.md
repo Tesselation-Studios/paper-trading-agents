@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:20 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:25 ET
+
+## WED 11:25 ET — Market Tick
+- ✅ **ANDG BUY**: 1sh @ ~$46.62, conviction 0.65. Probe: RSI 65.0 in-band (40-70), MACDh +1.5821 🟢 strong, vol 1.08x ✅. CHOPPY → probe size. No insider filings. Reconciled 0.65 > 0.40 floor. Decision #7, training #7.
+- **7 pos.** Regime **CHOPPY** (0.644) live. PV $10,413, cash $9,623 (92.4%). BOX 8sh +4.26%, HLN +3.32%, BFH +1.57%, BFST 2sh +1.32%, STVN +1.40%, ANDG -0.79%, ZBRA -0.05%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/UTMD/AXIA/SLN/ANDG/VSXY): ANDG bought, 5 disqualified. LDRX MACDh near-zero + thin 9.7k, UTMD MACDh +0.2379 weak, AXIA bearish MACD, SLN -4.31% dump, VSXY +4.68% pump-chase. Rotation advanced. Stale drop -18 (idle 24 batch). Merge +3 (SILC/OCGN/ALMU) all disqualified. Promote +1 TLNCU zero vol.
+- 📊 Scale-ins: BOX +4.26% crosses 3% v1.7 floor but just added 11:15 (10 min ago). BFST +1.32% below floor. No further adds.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment broken (empty). Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
 
 ## WED 11:20 ET — Market Tick
 - **All HOLD.** 6 pos. Regime **CHOPPY** (0.644) live. PV $10,416, cash $9,670 (92.8%). ZBRA +7.49% day 🚀 (entered 11:10 @ ~$282), HLN +3.32%, BOX 7sh +3.82% from entry, BFST 2sh +3.55%, BFH +1.66%, STVN +0.90%. All MACDh 🟢 (69-bar). No breaches.
