@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:47 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:55 ET
+
+## WED 10:55 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **CHOPPY** (0.644) live. PV $10,413, cash $10,017 (96.2%). BOX 7sh +4.72%, BFST +3.52%, BFH +2.29%, STVN +0.30%, HLN -0.54%. All MACDh 🟢 (69-bar). No breaches.
+- 📊 **BOX scale-in gated**: reconciled 0.125 < 0.38 floor — 1 bullish (tech 0.75) dragged by 4 neutral (regime CHOPPY 0.45, sent/flow/insiders/fund all 0.50). BFST same pattern.
+- 🔍 **Batch** (NTRS/TMED/BSVO/YSXT/TKLF/ULH): all 6 disqualified. NTRS PT below price, TMED vol 0.26x ultra-thin (2,222sh), BSVO vol 0.56x, YSXT penny bearish, TKLF microcap near-zero MACDh, ULH bearish MACD 🔴. Rotation advanced.
+- 📊 **UTMD probe** (step 8 mandate, 96.2% cash): reconciled 0.1786 < 0.38 — same neutral drag. Correctly gated.
+- 📡 Quotes LIVE (69-bar). Merge/promote no-ops (max_size 30). Sentiment cache empty. Bootstrap $700. workspace_review ✅.
 
 ## WED 10:47 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **CHOPPY** (0.644) live. PV $10,412, cash $10,017 (96.2%). BOX 7sh +4.63%, BFST +3.28%, BFH +1.77%, HLN -0.69%, STVN -0.10%. All MACDh 🟢 (69-bar). No breaches.
