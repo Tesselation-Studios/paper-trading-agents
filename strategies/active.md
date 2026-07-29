@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:15 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:20 ET
+
+## WED 9:20 ET — Pre-Market Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,408, cash $10,049 (96.55%). BOX 6sh +3.27%, BFST +3.91%, BFH +1.4%, HLN -1.57%, STVN +0.9%. All MACDh 🟢 (69-bar fresh). No breaches. Pre-market — hours gate active.
+- 📊 **Scale-ins**: BOX +3.27% crosses 3% v1.7 floor but reconciled 0.358 < 0.50 (neutral sent/flow/insiders drag). **BFST +3.91%** crosses 3% floor but reconciled 0.333 < 0.50 — same neutral drag from keyword_fallback sentiment + empty flow/insiders. Both correctly gated.
+- 🔍 **Batch** (BKSY/DXC/AVEX/TOST/RCAT/NTRS, idle 23-25): all 6 disqualified. BKSY RSI 37.4 bearish MACD, DXC RSI 67.4 above-band + MACDh +0.0634 near-zero, AVEX bearish MACD, TOST vol 0.38x thin, RCAT RSI 36.7 bearish MACD, NTRS MS PT $173 below $180.86. Rotation advances.
+- 📡 Quotes LIVE (69 bars fresh). MCP regime errored. Sentiment keyword_fallback (0.3 compound). Merge/promote no-ops (max_size 30). Bootstrap $700 ceiling. workspace_review ✅.
 
 ## WED 9:15 ET — Pre-Market Tick
 - **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,409, cash $10,049 (96.5%). BOX 6sh +3.8%, BFST +3.6%, BFH +1.7%, STVN +0.9%, HLN +0.7%. All MACDh 🟢 (69-bar fresh). No breaches. Pre-market — hours gate active.
