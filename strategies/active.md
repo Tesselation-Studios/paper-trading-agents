@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 TUE JUL 28, 2026 — 15:55 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:05 ET
+
+## WED 9:05 ET — Pre-Market Tick
+- **All HOLD.** 5 pos. Data bus 🔴 DOWN (all MCP calls errored). PV $10,409, cash $10,049 (96.5%). BOX 6sh +3.3%, BFST +3.9%, BFH +1.7%, STVN +0.9%, HLN -1.4%. No breaches. Pre-market — hours gate active.
+- 🔍 **Batch** (DXC/RCAT/NTRS/GL/PL/TOST, idle 24): all 6 pre-disqualified. DXC MACDh near-zero + vol 0.77x, RCAT bearish MACD+RSI 37.4, NTRS PT below price, GL bankroll ceiling, PL RSI 27.9 oversold+bearish MACD, TOST vol 0.38x thin. Rotation advances.
+- 📊 Scale-in: BOX +3.3%/BFST +3.9% cross 3% v1.7 floor but data bus down → no conviction scoring. Floor 0.50. Gated. Bootstrap $700 ceiling — bias tilt on BOX/BFST >1% quick-exit floor, held on thesis (no MACDh flip data).
+- 📡 Merge/promote no-ops (max_size 30). Pipeline healthy. workspace_review ✅. New day — order counts reset.
 
 ## TUE 15:55 ET — Market Close Tick
 - **All HOLD.** 5 pos. Regime **SUSTAINABLE** (0.92). PV $10,408, cash $10,049 (96.5%). BFST +3.4%, BOX 6sh +3.2%, BFH +1.4%, STVN +1.2%, HLN +0.7%. No breaches. Closing bell.
