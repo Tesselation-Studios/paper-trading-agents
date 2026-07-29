@@ -1,10 +1,10 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-07-28 — nightly learning*
+*Updated: 2026-07-29 — nightly learning*
 
 ### Operational
 - **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
 - **Pre-session account audit (NEW Jul 22)**: Shared Alpaca credentials create account contamination risk. Jul 22: 8 non-Stonks positions (AMD/COST/GOOGL/HOOD/JNJ/PLTR/QQQ/V) found in account, 5 Stonks positions missing (CHWY/DJT/GME/KHC/SNAP). Reconciled by 11:00 ET but 80+ minutes of position tracking were corrupted. Now: every session start, audit Alpaca positions against journal records BEFORE first tick — cross-reference symbol by symbol.
-- **Sentiment pipeline blind**: FinBERT/Praesentire offline since Jul 7 (Day 19). Primary edge unavailable. All entry decisions are technical-only with no conviction overlay. Past the Day 21 threshold — escalation filed Jul 20, Jul 22, Jul 23; zero response. Now treated as permanent constraint — optimize technical-only workflow, treat sentiment as bonus layer if/when restored.
+- **Sentiment pipeline blind**: FinBERT/Praesentire offline since Jul 7 (Day 22). Primary edge unavailable. All entry decisions are technical-only with no conviction overlay. Past the Day 21 threshold — escalation filed Jul 20, Jul 22, Jul 23; zero response. Now treated as permanent constraint — optimize technical-only workflow, treat sentiment as bonus layer if/when restored.
 - **Parallel tick collision guard (NEW Jul 24)**: Two ticks firing simultaneously can submit duplicate buy orders for the same ticker. Jul 24: IP got 2 shares instead of 1 due to parallel tick collision at 10:05 — outcome was favorable (+9.7%) but the symmetry works both ways. Before submitting a buy order, check for existing active/pending orders on that symbol.
 - **Preferred stock screening (NEW Jul 24)**: Alpaca paper trading does NOT support OTC preferred stocks. Jul 24: OZKAP buy order submitted @ $16.40, never filled — order appeared in recent_orders but position absent from account. Screen ticker type (common/ETF/preferred/OTC) at watchlist qualification stage, not execution stage. Flag OTC/preferred as "do-not-retry."
 
@@ -15,6 +15,14 @@
 
 ### KRC Parallel Tick Collision — 2nd Occurrence (Jul 27)
 - **Same bug as IP (Jul 24)**: Two ticks (10:20 and 10:25) fired simultaneously, resulting in 2 KRC shares instead of 1. The order-idempotency guard documented Jul 24 was never implemented. Outcome this time was neutral (KRC ended -0.38%), but the symmetry works both ways — next collision could double a loser. Guard MUST be implemented, not just documented.
+
+### BFST Parallel Tick Collision — 3rd Occurrence (Jul 29)
+- **Third instance in 5 sessions**: 13:46 tick showed BFST at 4sh after a 13:40 scale-in should have produced 3sh. Agent caught and flagged it mid-session. Pattern: IP (Jul 24), KRC (Jul 27), BFST (Jul 29) — all involved 1sh scale-ins running into near-simultaneous ticks. Outcome this time was favorable (+0.67% gain → held), but the symmetry problem remains: next collision could double a position that's going against us.
+- **Escalation status**: The order-idempotency guard was documented Jul 24 and remains unimplemented. This is now a recurring defect, not an edge case. At 3 occurrences in 5 sessions, it needs code-level implementation — a pre-submit check in executor.py for existing pending/active orders on that symbol — not another documentation entry.
+
+### v1.12 Conviction Floor 0.40 — Validated (Jul 29)
+- **First live session at 0.40 floor**: 23 decisions, all 11 positions green at close. Under the old 0.50 floor (v1.11), virtually all of today's entries would have been gated — the "neutral signal drag" from empty sentiment/flow/insiders data consistently landed conviction scores in the 0.33-0.49 range. The overnight optimization's core finding (99%+ cash idle due to overly tight conviction gates) was confirmed in live trading — lowering the floor from 0.50 to 0.40 was the right move and should not be reversed without comparable evidence.
+- **CHOPPY + strong MACDh validated**: All day in CHOPPY — every position held, every MACDh stayed green, no exits triggered. 1sh probe sizing in CHOPPY + letting MACDh strength carry the signal is a working formula.
 
 ### Experience Counter Partially Fixed (Jul 28 update)
 - **Jul 27 gap partially closed**: `experience.json` now shows 40 total trades (was 29). The 11-trade gap from Jul 27 was partially backfilled — but `total_wins` (12) + `total_losses` (16) = 28, leaving 12 trades unclassified. Self-stats pipeline consistently reports "0 trades logged today" in every heartbeat. The `record_decision.py` → self-stats pipeline still has a structural disconnect. Wins/losses tracked manually in experience.json but the automated pipeline doesn't see them.

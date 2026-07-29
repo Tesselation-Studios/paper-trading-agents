@@ -1,11 +1,11 @@
 # ZBRA Position Thesis
 
 - **Entry**: $282.53 avg | 1 shares
-- **Current**: $285.60 (+1.09% unrealized)
-- **Market Value**: $285.60
-- **Unrealized P&L**: $+3.07 (+1.09%)
+- **Current**: $282.98 (+0.16% unrealized)
+- **Market Value**: $282.98
+- **Unrealized P&L**: $+0.45 (+0.16%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-29 18:40:08 UTC
+- **Last sync**: 2026-07-29 20:15:04 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

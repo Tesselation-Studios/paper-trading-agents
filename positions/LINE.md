@@ -1,9 +1,9 @@
-# BFH Position Thesis
+# LINE Position Thesis
 
-- **Entry**: $107.72 avg | 2 shares
-- **Current**: $106.99 (-0.67% unrealized)
-- **Market Value**: $213.98
-- **Unrealized P&L**: $-1.45 (-0.67%)
+- **Entry**: $44.34 avg | 1 shares
+- **Current**: $44.35 (+0.02% unrealized)
+- **Market Value**: $44.35
+- **Unrealized P&L**: $+0.01 (+0.02%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-29 20:15:04 UTC
 

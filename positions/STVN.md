@@ -1,11 +1,11 @@
 # STVN Position Thesis
 
-- **Entry**: $20.34 avg | 2 shares
-- **Current**: $20.90 (+2.75% unrealized)
-- **Market Value**: $41.80
-- **Unrealized P&L**: $+1.12 (+2.75%)
+- **Entry**: $20.55 avg | 3 shares
+- **Current**: $20.41 (-0.70% unrealized)
+- **Market Value**: $61.23
+- **Unrealized P&L**: $-0.43 (-0.70%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-29 18:40:08 UTC
+- **Last sync**: 2026-07-29 20:15:04 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
