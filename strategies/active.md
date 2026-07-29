@@ -1,4 +1,19 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:40 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:50 ET
+
+## WED 9:50 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,409, cash $10,049 (96.5%). BOX 6sh +3.89%, BFST +3.00%, STVN +1.75%, BFH +1.01%, HLN -0.98%. All MACDh 🟢 (69-bar). No breaches.
+- 📊 **BOX scale-in** (+3.89%): reconciled 0.3417 < 0.50 — 3 neutral (sent 0.18 kw-fallback, flow/insiders empty) drag bullish tech 0.70/regime 0.80/vol 0.55. Correctly gated.
+- 📊 **BFST scale-in** (+3.00%): crosses 3% v1.7 floor but same neutral drag pattern — gated below 0.50.
+- 🔍 **Batch** (NTRS/NDAA/LDRX/JCTC/ISHP/IBTH): all 6 disqualified. NTRS PT below price, NDAA RSI 44.0 + MACDh near-zero + 100sh, LDRX RSI 44.6 + thin 9.7k, JCTC vol 0.19x ultra-thin, ISHP 19-share ETF, IBTH bearish MACD. Rotation advances.
+- 📡 Quotes LIVE (69 bars). MCP regime/risk errored. Sentiment kw-fallback. Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
+
+## WED 9:45 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,409, cash $10,049 (96.5%). BOX 6sh +3.89%, BFST +3.00%, STVN +1.75%, BFH +1.01%, HLN -0.98%. All MACDh 🟢 (69-bar). No breaches.
+- 📊 **BOX scale-in** (+3.89%): reconciled 0.30 < 0.50 — same 4-neutral drag (RSI 66.2 borderline, sentiment/flow/insiders empty) as all prior ticks. Correctly gated.
+- 📊 **BFST scale-in** (+3.00%): crosses 3% v1.7 floor but same neutral pattern — gated below 0.50.
+- 🔍 **ZBRA probe** (step 8 mandate, 96.5% cash): $284.40 +7.49%, MACDh +5.12 🟢, vol 1.94x. Reconciled 0.34 < 0.50 — 4 neutral (RSI 66.5, sent/flow/insiders empty) drag 3 bullish. Correctly gated.
+- 🔍 **Batch** (NTRS/MPAA/ATKR/PKBK/ZBRA/MPWR): all 6 disqualified. NTRS PT below price, MPAA vol 0.79x, ATKR bearish MACD, PKBK vol 0.76x, ZBRA gated conviction, MPWR bearish MACD + RSI 41.8. Rotation advances.
+- 📡 Quotes LIVE (69 bars). MCP regime/risk errored. Sentiment empty (kw-fallback all). Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
 
 ## WED 9:40 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,410, cash $10,049 (96.5%). BOX 6sh +4.09%, BFST +3.00%, STVN +1.75%, BFH +1.64%, HLN -0.93%. All MACDh 🟢 (69-bar). No breaches.
