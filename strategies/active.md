@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:05 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:15 ET
+
+## WED 9:15 ET — Pre-Market Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,409, cash $10,049 (96.5%). BOX 6sh +3.8%, BFST +3.6%, BFH +1.7%, STVN +0.9%, HLN +0.7%. All MACDh 🟢 (69-bar fresh). No breaches. Pre-market — hours gate active.
+- 📊 **BOX scale-in**: +3.82% crosses 3% v1.7 floor but reconciled 0.35 < 0.50 — 3 neutral signals (sent empty, flow empty, insiders empty) drag bullish tech 0.75/regime 0.80/vol 0.55. **BFST**: +3.55% crosses 3% floor but reconciled 0.325 < 0.50 — same neutral drag. Both correctly gated.
+- 🔍 **Batch** (DXC/RCAT/NTRS/GL/PL/RMD, idle 24-25): all 6 disqualified. DXC $10.87 +4.9% MACDh +0.0634 (weak, 0.29), RCAT bearish MACD+RSI 36.7, NTRS PT below price, GL bankroll ceiling, PL RSI 29.2 bearish, RMD MACD bearish. Rotation advances.
+- 📡 Quotes LIVE (69 bars fresh). MCP regime errored (workers), sentiment cache empty. Merge/promote no-ops (max_size 30). Bootstrap $700 ceiling. workspace_review ✅. New day — orders reset.
 
 ## WED 9:05 ET — Pre-Market Tick
 - **All HOLD.** 5 pos. Data bus 🔴 DOWN (all MCP calls errored). PV $10,409, cash $10,049 (96.5%). BOX 6sh +3.3%, BFST +3.9%, BFH +1.7%, STVN +0.9%, HLN -1.4%. No breaches. Pre-market — hours gate active.
