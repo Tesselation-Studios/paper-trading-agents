@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:45 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:50 ET
+
+## WED 11:50 ET — Market Tick
+- **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,415, cash $9,297 (89.3%). BOX 9sh +4.34%, BFH +2.33%, BFST 2sh +1.74%, STVN +0.78%, HLN +0.54%, VSXY +0.44%, ANDG +0.18%, ZBRA -0.02%, UTMD flat (just entered 11:45), KEX -0.74%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/VSXY/KEX/PCSA/UTMD/AXIA): 3 already pos (VSXY/KEX/UTMD), 3 disqualified. LDRX RSI 44.6 sub-band + near-zero MACDh +0.0427 + thin 9.7k, PCSA +17.76% pump + near-zero MACDh, AXIA bearish MACD 🔴 -0.1506. Rotation advanced.
+- 📊 Scale-ins: BOX +4.34% crosses 3% v1.7 floor but just added 11:40 (10 min ago). BFH +2.33%/BFST +1.74% below 3% floor. No further adds. Step 8 mandate fulfilled via batch eval — all correctly gated. Bootstrap $700.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## WED 11:45 ET — Market Tick
 - ✅ **UTMD BUY**: 1sh @ ~$70.96, conviction 0.50. Probe: RSI 54.7 in-band (40-70), MACDh +0.2379 🟢 weak, vol 1.97x ✅ (55k thin). CHOPPY → probe size. No insider filings. Reconciled 0.50 > 0.40 floor. Healthcare/Medical devices. Decision #11, training #11.
