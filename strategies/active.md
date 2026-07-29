@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:15 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:20 ET
+
+## WED 11:20 ET — Market Tick
+- **All HOLD.** 6 pos. Regime **CHOPPY** (0.644) live. PV $10,416, cash $9,670 (92.8%). ZBRA +7.49% day 🚀 (entered 11:10 @ ~$282), HLN +3.32%, BOX 7sh +3.82% from entry, BFST 2sh +3.55%, BFH +1.66%, STVN +0.90%. All MACDh 🟢 (69-bar). No breaches.
+- 🔍 **Batch** (TKLF/LDRX/PKBK/BSVO/ULH/GBLI): all 6 disqualified. TKLF RSI 43.3 + near-zero MACDh + vol 0.10x, LDRX RSI 44.6 + near-zero MACDh + thin 9.7k, PKBK vol 0.76x ❌, BSVO vol 0.84x ❌, ULH bearish MACD 🔴, GBLI vol 0.26x ultra-thin (2,875sh). Rotation advanced. Stale drop -4 (TKLF/NTRS/POLA/ULH).
+- 📊 Scale-ins: BOX +3.82%/BFST +3.55% cross 3% v1.7 floor but just added at 11:15/11:05 — no further add. Step 8 mandate fulfilled via batch eval. Bootstrap $700.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment broken (generic feed). Merge/promote no-ops (max_size 30). workspace_review ✅.
 
 ## WED 11:15 ET — Market Tick
 - ✅ **BOX SCALE-IN**: +1sh @ ~$31.50, conviction 0.75. v1.7 winner add: +3.82% from avg entry $30.34, MACDh +0.9562 🟢 strong, RSI 66.2 in-band (40-70), vol 1.08x. Reconciled 0.75 > 0.40 floor. Now 7sh. Decision #6, training #6.
