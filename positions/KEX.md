@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# KEX Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $10.29 (+0.83% unrealized)
-- **Market Value**: $10.29
-- **Unrealized P&L**: $+0.09 (+0.83%)
+- **Entry**: $134.19 avg | 2 shares
+- **Current**: $131.90 (-1.70% unrealized)
+- **Market Value**: $263.80
+- **Unrealized P&L**: $-4.57 (-1.70%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-29 18:40:08 UTC
 

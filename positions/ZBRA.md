@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# ZBRA Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $10.29 (+0.83% unrealized)
-- **Market Value**: $10.29
-- **Unrealized P&L**: $+0.09 (+0.83%)
+- **Entry**: $282.53 avg | 1 shares
+- **Current**: $285.60 (+1.09% unrealized)
+- **Market Value**: $285.60
+- **Unrealized P&L**: $+3.07 (+1.09%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-29 18:40:08 UTC
 

@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# UTMD Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $10.29 (+0.83% unrealized)
-- **Market Value**: $10.29
-- **Unrealized P&L**: $+0.09 (+0.83%)
+- **Entry**: $71.50 avg | 1 shares
+- **Current**: $71.44 (-0.08% unrealized)
+- **Market Value**: $71.44
+- **Unrealized P&L**: $-0.06 (-0.08%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-29 18:40:08 UTC
 

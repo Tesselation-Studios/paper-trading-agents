@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# VSXY Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $10.29 (+0.83% unrealized)
-- **Market Value**: $10.29
-- **Unrealized P&L**: $+0.09 (+0.83%)
+- **Entry**: $87.95 avg | 1 shares
+- **Current**: $90.15 (+2.50% unrealized)
+- **Market Value**: $90.15
+- **Unrealized P&L**: $+2.20 (+2.50%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-29 18:40:08 UTC
 

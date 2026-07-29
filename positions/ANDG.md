@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# ANDG Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $10.29 (+0.83% unrealized)
-- **Market Value**: $10.29
-- **Unrealized P&L**: $+0.09 (+0.83%)
+- **Entry**: $46.62 avg | 1 shares
+- **Current**: $45.59 (-2.21% unrealized)
+- **Market Value**: $45.59
+- **Unrealized P&L**: $-1.03 (-2.21%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-29 18:40:08 UTC
 
