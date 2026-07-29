@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 13:10 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 13:15 ET
+
+## WED 13:15 ET — Market Tick
+- **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,232 (88.7%). BOX 10sh +3.75%, BFH +2.56%, STVN +1.50%, VSXY +1.36%, BFST 3sh +0.89%, ZBRA +0.16%, HLN +0.21%, UTMD -0.56%, KEX -1.36%, ANDG -1.16%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/SLN/AXIA + 3 already pos): all 3 disqualified — LDRX RSI 44.6 sub-band + near-zero MACDh + thin 9.7k, SLN -4.31% falling knife (CHOPPY divergence trap), AXIA bearish MACD 🔴. Rotation advanced.
+- 📊 Scale-ins: BOX +3.75% crosses floor but 4 adds today — held on concentration. Step 8 mandate fulfilled via batch eval. Bootstrap $700 — BOX/BFH/STVN/VSXY/HLN/ZBRA/KEX >1% floor, MACDh strong → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## WED 13:10 ET — Market Tick
 - **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,232 (88.7%). BOX 10sh +3.75%, BFH +2.56%, STVN +1.50%, VSXY +1.36%, BFST 3sh +0.89%, ZBRA +0.16%, HLN +0.21%, UTMD -0.56%, KEX -1.36%, ANDG -1.16%. All MACDh 🟢 (69-bar LIVE). No breaches.
