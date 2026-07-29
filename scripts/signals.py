@@ -99,11 +99,19 @@ def reconcile_signals(features, scorecard=None):
         effective_weight = confidence * mult
         sign = _DIRECTION_SIGN.get(direction, 0.0)
         weighted_sum += sign * effective_weight
-        weight_total += effective_weight
+        # Only directional signals contribute to weight_total — neutral signals
+        # are non-informative and shouldn't dilute bullish/bearish conviction.
+        # A single 0.75-bullish signal with 4 neutrals should read as 0.75,
+        # not be dragged down to 0.15 (2026-07-29: proven by overnight data).
         if direction != "neutral":
+            weight_total += effective_weight
             directions_seen.add(direction)
         detail[name] = {"direction": direction, "confidence": confidence,
                          "scorecard_multiplier": mult}
+
+    # Count only directional signals for the average — neutrals aren't contributing
+    directional_signals = [s for s in signal_entries.values() if s["direction"] != "neutral"]
+    n_directional = len(directional_signals)
 
     lean = weighted_sum / weight_total if weight_total > 0 else 0.0
     agreement = len(directions_seen) <= 1
@@ -118,7 +126,7 @@ def reconcile_signals(features, scorecard=None):
     # Disagreement should erode confidence, not just average it away —
     # a 0.8-bullish vs 0.8-bearish split is NOT the same as mild 0.4 conviction,
     # it's a real conflict and should read as low-confidence, not neutral-confidence.
-    avg_confidence = weight_total / len(signal_entries)
+    avg_confidence = weight_total / n_directional if n_directional > 0 else 0.0
     combined_confidence = round(abs(lean) * avg_confidence if agreement else abs(lean) * avg_confidence * 0.5, 4)
 
     return {
