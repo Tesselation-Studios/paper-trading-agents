@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 14:15 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 14:20 ET
+
+## WED 14:20 ET — Market Tick
+- ✅ **BOX SCALE-IN**: +1sh @ ~$32.54, conviction 0.75. v1.7 winner add: +4.08% from entry, MACDh +0.9562 🟢 strong, RSI 66.2 in-band, vol 1.08x. CHOPPY → probe 1sh. Reconciled 0.75 > 0.40 floor. Now 11sh. Decision #16, training #16.
+- **10 pos.** Regime **CHOPPY** (0.644) live. PV $10,417, cash $9,034 (86.7%). BOX 11sh +3.53%, STVN +2.85%, BFH +2.74%, VSXY +2.33%, BFST 4sh +0.95%, ZBRA +0.88%, HLN +0.50%, UTMD +0.14%, KEX 2sh -0.93%, ANDG -2.85%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (AXIA/XSLL/AMIX/SYZ/BEAG/COLA): all 6 disqualified. AXIA bearish MACD 🔴 -0.1506, XSLL vol 0.37x ultra-thin 3.5k + near-zero MACDh, AMIX RSI 36.6 sub-band + $2.75, SYZ vol 0.17x 351sh + near-zero MACDh, BEAG near-zero MACDh +0.0073, COLA near-zero MACDh +0.0012. TLNCU newly promoted — RSI 86.7 + zero vol → disqualified. Rotation advanced.
+- 📊 Scale-ins: BOX +4.08% sustained winner, 80min since last add → 1sh probe. BFH +2.74% below 3% floor, STVN +2.85% close. No others qualify. Step 8 mandate fulfilled via BOX scale-in. Bootstrap $700 — >1% quick-exit positions held on MACDh strength.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. Merge/promote no-ops (TLNCU disqualified). workspace_review ✅.
 
 ## WED 14:15 ET — Market Tick
 - **All HOLD.** 10 pos. Regime **CHOPPY** (0.644) live. PV $10,419, cash $9,067 (87.0%). BOX 10sh +3.97%, BFH +2.96%, VSXY +2.84%, STVN +2.50%, ZBRA +1.47%, BFST 4sh +1.05%, HLN +0.54%, UTMD +0.14%, KEX 2sh -1.03%, ANDG -1.89%. All MACDh 🟢 (69-bar LIVE). No breaches.
