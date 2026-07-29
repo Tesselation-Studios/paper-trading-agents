@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 15:55 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 15:59 ET (LAST TICK)
+
+## WED 15:59 ET — Last Tick Before Close
+- **All HOLD.** 11 pos. Regime **CHOPPY** (0.644) live. PV $10,402, cash $8,683 (83.5%). ZBRA +7.49% 🚀, VSXY +4.68%, BOX 13sh +4.48%, HLN +3.32%, UTMD +2.69%, BFST 4sh +1.94%, STVN 3sh +1.77%, BFH 2sh +1.57%, KEX 2sh +0.21%, LINE +0.14%, ANDG -0.83%. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (OCGN/ALMU/LINE/NCNO/BYRN/DEI): all 6 disqualified. OCGN $1.24 penny bearish MACD 🔴 -0.0222 RSI 36.8, ALMU bearish MACD 🔴 -1.822 RSI 35.6 falling knife -4.38%, LINE already pos, NCNO bullish (+4.87% MACDh +0.35) but tech sector gate (BOX+ZBRA=2/2, 3rd tech), BYRN bearish MACD 🔴 -0.5988 RSI 41.7, DEI MACDh +0.101 ✅ but vol 0.85x <1.0. Rotation advanced.
+- 📊 Scale-ins: BOX +4.48% crosses 3% floor but 13sh (6 adds) concentrated. VSXY +4.68% crosses but last-minute close. ZBRA +7.49% near 10% PT guide but MACDh +5.12 🟢 extremely strong → HOLD. HLN +3.32% MACDh +0.18 weak. Step 8 mandate fulfilled via batch eval — all correctly gated. Bootstrap $700.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
+
 
 ## WED 15:55 ET — Market Tick
 - ✅ **LINE BUY**: 1sh @ ~$44.34, conviction 0.52. Probe: RSI 48.0 in-band (40-70), MACDh +0.2222 🟢, vol 1.09x. CHOPPY → probe 1sh. Lineage Logistics cold-storage REIT — Real Estate sector diversifier (zero REIT exposure pre-trade). Insiders clean, fundamentals unavailable. Reconciled 0.52 > 0.40 floor. Decision #23, training #23.
