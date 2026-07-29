@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:25 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:30 ET
+
+## WED 11:30 ET — Market Tick
+- ✅ **KEX BUY**: 1sh @ ~$134.89, conviction 0.675. Probe: RSI 55.0 in-band (40-70), MACDh +1.3694 🟢 strong, vol 1.36x ✅. CHOPPY → probe size. Reconciled 0.675 > 0.40 floor. Industrials/Marine transport. Decision #8, training #8.
+- **8 pos.** Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,489 (91.1%). BOX 8sh +4.23%, BFH +2.39%, STVN +1.50%, BFST 2sh +1.44%, ZBRA +0.13%, HLN -0.10%, ANDG -0.46%, KEX just entered. All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔍 **Batch** (LDRX/KEX/PCSA/UTMD/AXIA/SLN): KEX bought, 5 disqualified. LDRX RSI 44.6 sub-band + near-zero MACDh + thin 9.7k, PCSA +17.76% pump + near-zero MACDh, UTMD MACDh weak 0.2379 (skipped), AXIA bearish MACD, SLN -4.31% dump. Rotation advanced. Stale drop none. Merge no-op. Promote +4 (XSLL/AMIX/SYZ/BEAG) all disqualified: XSLL vol 0.37x 3.5k, AMIX vol 16x pump + RSI 36.6, SYZ vol 0.17x 351sh, BEAG MACDh near-zero 0.0073.
+- 📊 Scale-ins: BOX +4.23% crosses 3% v1.7 floor but just added 11:15 (15 min ago). HLN +3.32% but MACDh +0.1813 weak. BFST below 3%. No further adds.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment broken (generic feed). Bootstrap $700 (ceiling). workspace_review ✅.
 
 ## WED 11:25 ET — Market Tick
 - ✅ **ANDG BUY**: 1sh @ ~$46.62, conviction 0.65. Probe: RSI 65.0 in-band (40-70), MACDh +1.5821 🟢 strong, vol 1.08x ✅. CHOPPY → probe size. No insider filings. Reconciled 0.65 > 0.40 floor. Decision #7, training #7.
