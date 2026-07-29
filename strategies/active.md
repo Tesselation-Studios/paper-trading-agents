@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:20 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 9:25 ET
+
+## WED 9:25 ET — Pre-Market Tick
+- **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,408, cash $10,049 (96.55%). BOX 6sh +3.82%, BFST +3.55%, BFH +1.66%, HLN +0.78%, STVN +0.90%. All MACDh 🟢 (69-bar fresh). No breaches. Pre-market — hours gate active.
+- 📊 **Scale-ins**: BOX +3.82% crosses 3% v1.7 floor, BFST +3.55% crosses — both need full eval at open (flow/insiders/sentiment). Hours gate blocks until 9:30.
+- 🔍 **Batch** (NTRS/GBLI/TMED/BSVO/YSXT/TKLF, idle 9-23): all 6 disqualified. NTRS PT $173 below $180.86, GBLI vol 0.26x (2.9k shares), TMED 25k thin, BSVO vol 0.56x, YSXT $0.86 penny, TKLF $2.06 microcap near-zero MACDh. Rotation advances.
+- 📊 Bootstrap $700 ceiling — BOX/BFST >1% quick-exit floor but MACDh strong, thesis intact → HOLD.
+- 📡 Quotes LIVE (69 bars). Merge/promote no-ops (max_size 30). Stale drop -8 (GL/DXC/RMD/AVEX/PL/TOST/BKSY/RCAT). Pipeline healthy. workspace_review ✅.
 
 ## WED 9:20 ET — Pre-Market Tick
 - **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,408, cash $10,049 (96.55%). BOX 6sh +3.27%, BFST +3.91%, BFH +1.4%, HLN -1.57%, STVN +0.9%. All MACDh 🟢 (69-bar fresh). No breaches. Pre-market — hours gate active.
