@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:10 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:20 ET
+
+## WED 10:20 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **CHOPPY** (0.644) — live MCP flip from cached SUSTAINABLE. PV $10,413, cash $10,049 (96.5%). BOX 6sh +5.27%, BFST +2.74%, BFH +2.34%, STVN +1.50%, HLN -0.69%. All MACDh 🟢 (69-bar). No breaches.
+- ⚠️ **Regime flip**: cached SUSTAINABLE 0.92 → live CHOPPY 0.644. Entries now gated unless strong confluence. No positions threatened — all MACDh healthy.
+- 📊 **BOX scale-in**: +5.27% crosses 3% v1.7 floor but CHOPPY regime gates entries + same neutral drag (sent empty/flow empty/insiders empty) as all prior ticks. Correctly gated.
+- 🔍 **Batch** (NTRS/ZBRA/MPWR/VIR/PMN/GBLI): all 6 disqualified. NTRS PT $173 < $180.86, ZBRA RSI 66.5 above band +7.49% pump + CHOPPY, MPWR bearish MACD+RSI 41.8, VIR bearish MACD+RSI 39.1, PMN +23.89% pump-chase, GBLI vol 0.26x (2.9k shares) ultra-thin. Rotation advances.
+- 📡 Quotes LIVE (69 bars). MCP regime live (CHOPPY), risk errored. Sentiment cache empty. Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
 
 ## WED 10:10 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **MCP errored** (cached SUSTAINABLE 0.92). PV $10,412, cash $10,049 (96.5%). BOX 6sh +3.10%, BFST +7.55%, BFH +2.13%, STVN +0.90%, HLN +0.79%. All MACDh 🟢 (69-bar). No breaches.
