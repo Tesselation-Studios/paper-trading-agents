@@ -138,6 +138,7 @@ CREATE TABLE IF NOT EXISTS bankroll_state (
     lifetime_net_pnl        REAL NOT NULL DEFAULT 0.0,
     lifetime_wins           INTEGER NOT NULL DEFAULT 0,
     lifetime_losses         INTEGER NOT NULL DEFAULT 0,
+    ceiling_pct             REAL NOT NULL DEFAULT 0.067,
     updated_at              TEXT NOT NULL
 );
 
@@ -170,7 +171,21 @@ def get_conn(db_path: Path = None) -> sqlite3.Connection:
 
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    _migrate_add_column(conn, "bankroll_state", "ceiling_pct", "REAL NOT NULL DEFAULT 0.067")
     conn.commit()
+
+
+def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, coltype_and_default: str) -> None:
+    """First ALTER-TABLE-style migration in this file (2026-07-28) -- no
+    precedent to follow yet. CREATE TABLE IF NOT EXISTS above only creates
+    the column on a fresh DB; an already-existing live DB (real trading
+    state, not a test fixture) needs this to actually gain the column.
+    Idempotent: checks PRAGMA table_info first since SQLite has no ADD
+    COLUMN IF NOT EXISTS, and ALTER TABLE ADD COLUMN on an already-migrated
+    DB would raise 'duplicate column name'."""
+    existing_columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in existing_columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype_and_default}")
 
 
 def insert_decision(conn: sqlite3.Connection, ticker: str, timestamp: str, decision: str,
@@ -464,7 +479,14 @@ def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate:
                            losses_session: int = 0, net_pnl_session: float = 0.0,
                            total_deployed_session: float = 0.0, lifetime_trades: int = 0,
                            lifetime_net_pnl: float = 0.0, lifetime_wins: int = 0, lifetime_losses: int = 0,
-                           now: str = None) -> None:
+                           ceiling_pct: float = None, now: str = None) -> None:
+    """ceiling_pct defaults to None -- callers that don't know about the
+    2026-07-28 equity-scaled-ceiling addition (e.g. bankroll.py's existing
+    write_bankroll(), unchanged) must not silently reset an already-
+    accumulated ceiling_pct back to the schema default on every write. The
+    COALESCE in the ON CONFLICT branch preserves the stored value when None
+    is passed; the VALUES-clause COALESCE only matters for the very first
+    row (satisfies the NOT NULL constraint before any row exists)."""
     import datetime
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
@@ -472,8 +494,8 @@ def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate:
             """INSERT INTO bankroll_state
                    (id, ceiling, growth_rate, decay_rate, target_profit_pct, closed_trades_session,
                     wins_session, losses_session, net_pnl_session, total_deployed_session,
-                    lifetime_trades, lifetime_net_pnl, lifetime_wins, lifetime_losses, updated_at)
-               VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    lifetime_trades, lifetime_net_pnl, lifetime_wins, lifetime_losses, ceiling_pct, updated_at)
+               VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0.067), ?)
                ON CONFLICT(id) DO UPDATE SET
                    ceiling = excluded.ceiling, growth_rate = excluded.growth_rate,
                    decay_rate = excluded.decay_rate, target_profit_pct = excluded.target_profit_pct,
@@ -482,10 +504,11 @@ def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate:
                    total_deployed_session = excluded.total_deployed_session,
                    lifetime_trades = excluded.lifetime_trades, lifetime_net_pnl = excluded.lifetime_net_pnl,
                    lifetime_wins = excluded.lifetime_wins, lifetime_losses = excluded.lifetime_losses,
+                   ceiling_pct = COALESCE(?, bankroll_state.ceiling_pct),
                    updated_at = excluded.updated_at""",
             (ceiling, growth_rate, decay_rate, target_profit_pct, closed_trades_session, wins_session,
              losses_session, net_pnl_session, total_deployed_session, lifetime_trades, lifetime_net_pnl,
-             lifetime_wins, lifetime_losses, now),
+             lifetime_wins, lifetime_losses, ceiling_pct, now, ceiling_pct),
         )
 
 

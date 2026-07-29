@@ -5,6 +5,7 @@ Unit tests for scripts/trader_db.py -- local SQLite trading-state store
 sqlite3 files under tmp_path, no mocking needed. Lands unwired (2026-07-28,
 Phase 1 of the local-DB migration) -- nothing imports this module yet.
 """
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -283,6 +284,74 @@ class TestBankrollState:
         history = trader_db.get_bankroll_history(conn)
         assert history[0]["label"] == "LOSS"
         assert len(history) == 2
+
+    def test_ceiling_pct_defaults_when_omitted(self, conn):
+        """2026-07-28: equity-scaled ceiling addition -- a fresh row with no
+        ceiling_pct passed must still satisfy the NOT NULL schema default,
+        not error."""
+        trader_db.upsert_bankroll_state(conn, ceiling=700.0, growth_rate=0.02, decay_rate=0.01, target_profit_pct=0.01)
+        assert trader_db.get_bankroll_state(conn)["ceiling_pct"] == 0.067
+
+    def test_ceiling_pct_explicit_value_stored(self, conn):
+        trader_db.upsert_bankroll_state(
+            conn, ceiling=700.0, growth_rate=0.02, decay_rate=0.01, target_profit_pct=0.01, ceiling_pct=0.08,
+        )
+        assert trader_db.get_bankroll_state(conn)["ceiling_pct"] == 0.08
+
+    def test_ceiling_pct_preserved_when_later_write_omits_it(self, conn):
+        """The real risk this is guarding against: bankroll.py's existing
+        write_bankroll() doesn't know about ceiling_pct and will keep
+        calling upsert_bankroll_state() without it on every real trade --
+        that must NOT silently reset an already-accumulated ceiling_pct
+        back to the schema default."""
+        trader_db.upsert_bankroll_state(
+            conn, ceiling=700.0, growth_rate=0.02, decay_rate=0.01, target_profit_pct=0.01, ceiling_pct=0.09,
+        )
+        trader_db.upsert_bankroll_state(conn, ceiling=714.0, growth_rate=0.02, decay_rate=0.01, target_profit_pct=0.01)
+        assert trader_db.get_bankroll_state(conn)["ceiling_pct"] == 0.09
+        assert trader_db.get_bankroll_state(conn)["ceiling"] == 714.0
+
+
+class TestBankrollStateMigration:
+    def test_ceiling_pct_column_added_to_pre_existing_db(self, tmp_path):
+        """Simulates the real live DB: created before ceiling_pct existed
+        (no CREATE TABLE run with the new column), then opened by code that
+        knows about it -- init_schema()'s migration must add the column
+        without dropping existing data."""
+        db_path = tmp_path / "pre_migration.db"
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("""
+            CREATE TABLE bankroll_state (
+                id INTEGER PRIMARY KEY CHECK (id = 1), ceiling REAL NOT NULL,
+                growth_rate REAL NOT NULL, decay_rate REAL NOT NULL, target_profit_pct REAL NOT NULL,
+                closed_trades_session INTEGER NOT NULL DEFAULT 0, wins_session INTEGER NOT NULL DEFAULT 0,
+                losses_session INTEGER NOT NULL DEFAULT 0, net_pnl_session REAL NOT NULL DEFAULT 0.0,
+                total_deployed_session REAL NOT NULL DEFAULT 0.0, lifetime_trades INTEGER NOT NULL DEFAULT 0,
+                lifetime_net_pnl REAL NOT NULL DEFAULT 0.0, lifetime_wins INTEGER NOT NULL DEFAULT 0,
+                lifetime_losses INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
+            )
+        """)
+        conn.execute(
+            "INSERT INTO bankroll_state (id, ceiling, growth_rate, decay_rate, target_profit_pct, updated_at) "
+            "VALUES (1, 700.0, 0.02, 0.01, 0.01, 't1')"
+        )
+        conn.commit()
+        conn.close()
+
+        real_conn = trader_db.get_conn(db_path)
+        try:
+            state = trader_db.get_bankroll_state(real_conn)
+            assert state["ceiling"] == 700.0  # pre-existing data preserved
+            assert state["ceiling_pct"] == 0.067  # new column, default backfilled
+        finally:
+            real_conn.close()
+
+    def test_migration_is_idempotent_across_repeated_get_conn_calls(self, tmp_path):
+        db_path = tmp_path / "reopened.db"
+        conn1 = trader_db.get_conn(db_path)
+        conn1.close()
+        conn2 = trader_db.get_conn(db_path)  # would raise "duplicate column" if not guarded
+        conn2.close()
 
 
 class TestAlpacaAuditLog:

@@ -1,0 +1,4 @@
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L13] Assistant: Now let me write the overnight insights. The patterns are clear — 99%+ cash idle across all 150 variants mirrors our live problem exactly.
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L15] Assistant: Now let me commit and push per the immutable push rule.
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L17] Assistant: Done. Reflections filed to `research/overnight-insights.md` and pushed. **The one-sentence summary**: 99%+ cash idle across all 150 backtest variants isn't a parameter problem — it's structural. Our conviction reconciliation's "neutral signal drag
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L17] Assistant: **MACD crossover as dual entry signal** alongside RSI momentum Three open questions for Raf tagged at the bottom. 🚀
