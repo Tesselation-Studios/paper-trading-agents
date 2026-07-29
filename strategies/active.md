@@ -1,4 +1,10 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:55 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:05 ET
+
+## WED 11:05 ET — Market Tick
+- ✅ **BFST SCALE-IN**: +1sh @ ~$32.08, conviction 0.65. v1.7 winner add: +3.55% from entry $30.98, MACDh +0.4661 🟢, RSI 66.5 in-band (v1.12 40-70), vol 1.03x. CHOPPY floor 0.30 — first v1.12 lower-floor entry. Now 2sh. Decision #4, training #4.
+- **6 pos.** Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,985 (95.9%). BOX 7sh +4.87%, BFST 2sh +1.70%, BFH +2.42%, STVN +0.35%, HLN -0.57%. All MACDh 🟢 (69-bar). No breaches.
+- 🔍 **Batch** (NTRS/PKBK/ATKR/GIND/GMEX/IBTH): all 6 disqualified. NTRS PT below price, PKBK vol 0.76x, ATKR bearish MACD, GIND vol 0.05x ultra-thin, GMEX -13.33% dump, IBTH bearish MACD. Rotation advanced.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment broken (generic feed). Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
 
 ## WED 10:55 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **CHOPPY** (0.644) live. PV $10,413, cash $10,017 (96.2%). BOX 7sh +4.72%, BFST +3.52%, BFH +2.29%, STVN +0.30%, HLN -0.54%. All MACDh 🟢 (69-bar). No breaches.
