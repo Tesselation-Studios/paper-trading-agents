@@ -1,4 +1,17 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:25 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 10:47 ET
+
+## WED 10:47 ET — Market Tick
+- **All HOLD.** 5 pos. Regime **CHOPPY** (0.644) live. PV $10,412, cash $10,017 (96.2%). BOX 7sh +4.63%, BFST +3.28%, BFH +1.77%, HLN -0.69%, STVN -0.10%. All MACDh 🟢 (69-bar). No breaches.
+- 🔍 **Batch** (NTRS/ATKR/PKBK/GIND/GMEX/IBTH): all 6 disqualified. NTRS MS PT $173 < $180.86 + vol 0.96x, ATKR bearish MACD, PKBK vol 0.76x, GIND vol 0.05x ultra-thin + near-zero MACDh, GMEX -13.33% dump + vol 0.78x, IBTH bearish MACD. Rotation advanced.
+- 📊 **BOX scale-in gated**: +4.63% crosses 3% v1.7 floor, reconciled 0.15 < 0.383 — 4 neutral drag (regime/sent/flow/insiders). BFST +3.28% gated 0.13 < 0.383 — same pattern.
+- 📡 Quotes LIVE (69-bar). Merge/promote no-ops (max_size 30). Sentiment cache empty. Bootstrap $700. workspace_review ✅.
+
+## WED 10:38 ET — Market Tick
+- ✅ **BOX SCALE-IN**: +1sh @ ~$31.50, conviction 0.617. v1.7 winner add: +5.76% from avg entry, MACDh +0.9562 🟢 strong, RSI 66.2 in-band, vol 1.08x. Cleared v1.12 floor (0.387) — first pass today after floor lowered from 0.50. Now 7sh. Decision #3, training #3.
+- **5 pos.** Regime **CHOPPY** (0.644) live. PV $10,412, cash $10,017 (96.2%). BOX 7sh +4.72%, BFST +3.10%, BFH +1.67%, STVN +0.30%, HLN -0.44%. All MACDh 🟢 (69-bar). No breaches.
+- 🔍 **Batch** (NTRS/YSXT/TKLF/ULH/POLA/MPAA): all 6 disqualified. NTRS PT below price, YSXT penny, TKLF microcap thin, ULH bearish MACD, POLA bearish MACD + pump, MPAA vol 0.79x. Rotation advanced.
+- 📊 Scale-ins: BFST +3.10% crosses 3% floor but same neutral drag pattern. SLN/ANDG/KEX all 0.308-0.325 < 0.387. Probe mandate fulfilled via BOX.
+- 📡 Quotes LIVE (69 bars). Regime CHOPPY live. Sentiment cache empty (live feed returning unrelated GFL M&A text — treated as broken). Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
 
 ## WED 10:25 ET — Market Tick
 - **All HOLD.** 5 pos. Regime **CHOPPY** (0.644). PV $10,412, cash $10,049 (96.5%). BOX 6sh +5.40%, BFST +2.84%, BFH +1.70%, STVN +1.35%, HLN -0.54%. All MACDh 🟢 (69-bar). No breaches.
