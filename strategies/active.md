@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:05 ET
+# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 11:10 ET
+
+## WED 11:10 ET — Market Tick
+- ✅ **ZBRA BUY**: 1sh @ ~$282.35, conviction 0.75. v1.12 probe entry: RSI 66.5 in-band (40-70), MACDh +5.1167 🟢 very strong, vol 1.94x ✅. CHOPPY → probe size. Reconciled 0.75 > 0.40 floor. First new ticker (not scale-in) since ITRI Tue. Decision #5, training #5.
+- **6 pos.** Regime **CHOPPY** (0.644) live. PV $10,414, cash $9,702 (93.2%). BOX 7sh +4.81%, BFH +2.84%, BFST 2sh +1.70%, STVN +0.90%, HLN -0.29%, ZBRA -0.06%. All MACDh 🟢 (69-bar). No breaches.
+- 🔍 **Batch** (NTRS/POLA/TTEC/MPAA/ZBRA/MPWR): ZBRA bought, 5 disqualified. NTRS vol 0.96x + PT below price, POLA MACD bearish +206x vol pump, TTEC MACD bearish + vol 0.88x, MPAA vol 0.79x, MPWR MACD bearish + RSI 41.8. Rotation advanced.
+- 📊 BOX scale-in +4.81% crosses 3% v1.7 floor, reconciled 0.70 > 0.40 floor 🟢 — held off to avoid stacking on top of ZBRA probe same tick. Evaluate next tick.
+- 📡 Quotes LIVE (69-bar). Regime CHOPPY live. Sentiment broken (generic feed). Merge/promote no-ops (max_size 30). Bootstrap $700. workspace_review ✅.
 
 ## WED 11:05 ET — Market Tick
 - ✅ **BFST SCALE-IN**: +1sh @ ~$32.08, conviction 0.65. v1.7 winner add: +3.55% from entry $30.98, MACDh +0.4661 🟢, RSI 66.5 in-band (v1.12 40-70), vol 1.03x. CHOPPY floor 0.30 — first v1.12 lower-floor entry. Now 2sh. Decision #4, training #4.
