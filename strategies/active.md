@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:10 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:26 ET
+
+## THU 10:26 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,381, cash $9,053 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 🔴 **OLP stopped out between ticks**: trailing stop triggered -5.38% from $24.85 entry. Auto-close -$1.37. Decision #27.
+- 📉 Most red: KEX -3.06% (RSI 33.9 oversold, MACDh +1.21 🟢 bullish div), ANDG -2.94%, STVN -2.16%. 📈 VSXY +1.78%, BFST +0.87%, BFH +0.45%.
+- 🔍 **Batch** (TVE/TRIP/PRGO/HRI/OLP/BFLY): TRIP/OLP already pos. TVE/PRGO bearish MACD 🔴, BFLY vol 0.84x ❌, HRI qualifies (MACDh +3.10 🟢 RSI 45.6 vol 1.59x) but Industrials FULL (ANDG+KEX=2/2). All 6 correctly gated ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor. Bootstrap $707: VSXY +1.78% > 1% quick-exit floor — SUSTAINABLE + MACDh +3.23 🟢 → HOLD. Step 8 mandate fulfilled via batch eval.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## THU 10:10 ET — Market Tick
 - 🔴 **BOX SELL**: 13sh @ ~$32.42, +6.86% (+$27.04). Trailing stop breach: -5.3% off peak $32.55, vol_scaled trail 5.0%. Mandatory exit. Decision #26, closed #21.
