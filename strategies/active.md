@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:50 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:55 ET
+
+## THU 9:55 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,381, cash $8,629 (83.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📈 **BFST** 4sh +1.49%, **TRIP** 2sh +0.71%. 🔻 **OLP** -4.12% (just entered 9:45, MACDh +0.2554 🟢), **ANDG** -2.32%, **KEX** 2sh -2.27% (RSI 33.9 oversold, MACDh +1.2056 🟢), **BOX** 13sh -1.83%. Rest flat-to-down mildly.
+- 🔍 **Batch** (TJGC/TELA/KJPG/SLE/HENG/AMIX): all 6 disqualified. TJGC vol 16.36x pump, TELA $0.68 penny bearish MACD 🔴, KJPG no quote data, SLE bearish MACD 🔴 vol 0.41x, HENG no quote data, AMIX +66% pump 59.66x vol. **AUBN** promoted (RSI 50.4, MACDh +0.2429 🟢, vol 1.52x) but Financial FULL (BFH+BFST=2/2). Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor. Bootstrap $700: BFST +1.49% > 1% quick-exit floor — SUSTAINABLE + MACDh 🟢 → HOLD. Step 8 mandate fulfilled via 7 candidates (batch + AUBN) — all correctly gated ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge +1 (AUBN, gated), promote +1 (AUBN). workspace_review ✅.
 
 ## THU 9:50 ET — Market Tick
 - **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,382, cash $8,629 (83.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
