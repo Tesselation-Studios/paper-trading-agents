@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:45 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:50 ET
+
+## THU 9:50 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,382, cash $8,629 (83.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📈 **TRIP** +3.04% from entry ($14.15→$14.58, just entered 9:40), **BOX** 13sh +2.79%, **LINE** flat. 🔻 **OLP** -2.40% (just entered 9:45), **KEX** 2sh -2.33% (RSI 33.9 oversold, MACDh +1.2056 🟢), **ANDG** -1.07%.
+- 🔍 **Batch** (PRGO/HRI/BFLY/HIPO/TURB/OLP): all 6 disqualified/gated. PRGO bearish MACD 🔴 -0.0786, HRI qualifies (MACDh +3.0955 🟢 vol 1.59x) but Industrials FULL (ANDG+KEX=2/2), BFLY vol 0.84x ❌, HIPO qualifies (MACDh +0.5496 🟢 vol 1.24x) but Financial FULL (BFH+BFST=2/2), TURB bearish MACD 🔴 + pump 36.71x vol, OLP already pos. Rotation advanced.
+- 📊 Scale-ins: TRIP +3.04% crosses 3% v1.7 floor but Consumer Cyclical FULL (2/2 with VSXY) — gated. BOX +2.79% below 3%. All sectors FULL except Consumer Defensive (HLN 1/2). Bootstrap $700: TRIP +3.04% > 1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8 mandate fulfilled via batch eval — all correctly gated ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## THU 9:45 ET — Market Tick
 - ✅ **OLP BUY**: 1sh @ ~$24.85, conviction 0.65. v1.8 probe: RSI 50.9 in-band, MACDh +0.2554 🟢 weak, vol 1.12x. SUSTAINABLE → normal 1sh. Real Estate REIT (1/2 with LINE). Reconciled 0.65 > 0.35 floor. Decision #25, training #25.
