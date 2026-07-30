@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:40 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:45 ET
+
+## THU 9:45 ET — Market Tick
+- ✅ **OLP BUY**: 1sh @ ~$24.85, conviction 0.65. v1.8 probe: RSI 50.9 in-band, MACDh +0.2554 🟢 weak, vol 1.12x. SUSTAINABLE → normal 1sh. Real Estate REIT (1/2 with LINE). Reconciled 0.65 > 0.35 floor. Decision #25, training #25.
+- **12 pos (+OLP pending).** Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,384, cash $8,655 (83.3%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📈 **TRIP** +3.04% from entry ($14.15→$14.58, 5min old), **BFST** 4sh +1.83%, **BFH** 2sh +0.66%. 🔻 **KEX** 2sh -2.40% (RSI 33.9 oversold, MACDh +1.2056 🟢), **ANDG** -2.27%, **BOX** 13sh -1.44%.
+- 🔍 **Batch** (COLA/XSLL/AMIX/ONMD/TVE/TRIP): all 6 disqualified. COLA near-zero MACDh +0.0016, XSLL vol 0.03x 244sh, AMIX +66% pump 59x vol, ONMD $0.64 penny bearish MACD, TVE bearish MACD 🔴, TRIP already pos. Extended: HRI qualified (0.775) gated Industrials full (ANDG+KEX=2/2). OLP bought ✅. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor. Bootstrap $700: BFST +1.83%/TRIP +3.04% above 1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8 fulfilled via OLP probe + HRI eval.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops (AIRJW merged). workspace_review ✅.
 
 ## THU 9:40 ET — Market Tick
 - ✅ **TRIP BUY**: 2sh @ ~$14.15, conviction 0.775. v1.8 probe: RSI 58.8 in-band, MACDh +0.4626 🟢 strong, vol 1.98x ✅. SUSTAINABLE → normal 2sh sizing. TripAdvisor Consumer Cyclical (2/2 with VSXY). Insiders clean, sentiment neutral, fundamentals N/A. Reconciled 0.775 > 0.35 floor. Decision #24, training #24.
