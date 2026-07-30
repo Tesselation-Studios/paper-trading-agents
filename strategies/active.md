@@ -1,3 +1,13 @@
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:20 ET (PRE-MARKET)
+
+## THU 9:20 ET — Pre-Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,405, cash $8,683 (83.5%). Pre-market — hours gate active. All MACDh 🟢 (69-bar LIVE). No breaches.
+- ⚠️ **KEX** $131.07, -9.85% from avg entry $145.39, just $0.22 above -10% hard stop ($130.85). MACDh +1.2056 🟢 bullish divergence, RSI 33.9 oversold, vol 1.75x. First name to check at 9:30 open — if it gaps below $130.85, instant exit.
+- 📈 **LINE** $44.34 +4.06% from entry $42.61, MACDh +0.2014 🟢 (weak), RSI 56.6 in-band, vol 2.18x strong. Real Estate sector 1/2. Scale-in candidate for open. Insiders clean, fundamentals N/A.
+- 🔍 **Batch** (NCNO/DEI/BYRN/SLN/SILC/SDG): all 6 gated/disqualified. NCNO qualified but tech gate (2/2). SLN qualified but healthcare gate (2/2). DEI MACDh near-zero +0.0922. BYRN/SILC/SDG bearish MACD 🔴. Rotation advanced. Stale drop -10 → watchlist 17 healthy.
+- 📊 Scale-ins: BFST +3.32% but Financial sector full (2/2). BOX +2.79% below 3% floor. Bootstrap $700 — LINE/BFST/BOX/STVN >1% quick-exit floor, MACDh all 🟢 on SUSTAINABLE → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops (8+5 dupes). workspace_review ✅. Risk errored KEX. Ready for 9:30 open.
+
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:15 ET (PRE-MARKET)
 
 ## THU 9:15 ET — Pre-Market Tick
