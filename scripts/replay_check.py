@@ -49,6 +49,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -65,6 +66,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trader_db  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+PARAMS_PATH = REPO_ROOT / "params.json"
 # Only used if load_live_universe() finds nothing (e.g. fresh checkout with
 # no open positions and an empty watchlist) — not the primary source.
 FALLBACK_TICKERS = ["CHWY", "F", "FUBO", "GME", "KHC", "LYFT", "MVST", "NVDA", "SOFI"]
@@ -74,11 +76,40 @@ RSI_LENGTH = 14
 MACD_FAST, MACD_SLOW, MACD_SIGNAL = 12, 26, 9
 CHOPPY_VOL_THRESHOLD = 0.035  # 20d rolling stdev of daily returns
 
-# Mirrors params.json's current values.
-STOP_LOSS_PCT = -10.0
-PROFIT_TARGET_PCT = 12.0
-TRAILING_STOP_PCT = 5.0             # risk.trailing_stop_pct — opt-in via make_trader(trailing_stop_pct=...),
-                                     # not simulated by any variant unless explicitly requested (2026-07-28)
+def _load_live_risk_params() -> Dict[str, float]:
+    """Reads risk.* straight from params.json instead of hardcoding a
+    mirror -- found 2026-07-30 (Casper's bug sweep) that the old hardcoded
+    mirror had drifted twice over: TRAIL_K was still 25.0 here after
+    params.json moved to 40.0 following the 2026-07-28 trailing-stop
+    research, while stop_loss_pct/profit_target_pct had drifted the OTHER
+    way at the same time (see the now-removed CURRENT_LIVE_STOP_LOSS_PCT/
+    CURRENT_LIVE_PROFIT_TARGET_PCT constants in git history) -- two
+    different stale mirrors in the same file, neither matching the real
+    live value at any given moment. Reading live removes the drift class
+    entirely instead of re-syncing numbers that will just drift again.
+    Falls back to today's known-good values if params.json is missing/
+    malformed so a bad checkout still runs."""
+    try:
+        with open(PARAMS_PATH) as f:
+            risk = json.load(f).get("risk", {})
+    except (OSError, json.JSONDecodeError):
+        risk = {}
+    return {
+        "stop_loss_pct": float(risk.get("stop_loss_pct", -10.0)),
+        "profit_target_pct": float(risk.get("profit_target_pct", 12.0)),
+        "trailing_stop_pct": float(risk.get("trailing_stop_pct", 5.0)),
+        "trail_k": float(risk.get("trail_k", 40.0)),
+        "trail_min_pct": float(risk.get("trail_min_pct", 4.0)),
+        "trail_max_pct": float(risk.get("trail_max_pct", 12.0)),
+    }
+
+
+_LIVE_RISK = _load_live_risk_params()
+
+STOP_LOSS_PCT = _LIVE_RISK["stop_loss_pct"]
+PROFIT_TARGET_PCT = _LIVE_RISK["profit_target_pct"]
+TRAILING_STOP_PCT = _LIVE_RISK["trailing_stop_pct"]   # opt-in via make_trader(trailing_stop_pct=...),
+                                                       # not simulated by any variant unless explicitly requested (2026-07-28)
 
 # Volatility-scaled trailing stop (2026-07-28, win-rate investigation) —
 # deliberately NOT calendar-time-based like the already-rejected
@@ -87,9 +118,9 @@ TRAILING_STOP_PCT = 5.0             # risk.trailing_stop_pct — opt-in via make
 # * (1 + TRAIL_K * vol_20d), clamped to [TRAIL_MIN_PCT, TRAIL_MAX_PCT] so a
 # noisy ticker can't get an unboundedly wide trail — the exact failure mode
 # that made time-based widening let real losers run further.
-TRAIL_K = 25.0
-TRAIL_MIN_PCT = 4.0
-TRAIL_MAX_PCT = 12.0
+TRAIL_K = _LIVE_RISK["trail_k"]
+TRAIL_MIN_PCT = _LIVE_RISK["trail_min_pct"]
+TRAIL_MAX_PCT = _LIVE_RISK["trail_max_pct"]
 RSI_EXHAUSTION_EXIT = 75.0          # exit_rules.rsi_exhaustion_hard_exit
 MAX_HOLDING_DAYS = 5                # risk_guards.max_holding_days
 PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not full close)
@@ -542,7 +573,8 @@ VARIANT_LABELS = {
     "v1.0-trail": "v1.0 rules + a flat trailing_stop_pct simulated for the first time (win-rate "
                   "investigation, 2026-07-28 — trailing stops are the dominant loss category in "
                   "real trade history; see make_trader's trailing_stop_pct docstring)",
-    "v1.0-trail-vol": "v1.0 rules + volatility-scaled trailing stop (TRAIL_K=25 default) instead of "
+    "v1.0-trail-vol": "v1.0 rules + volatility-scaled trailing stop (TRAIL_K read live from "
+                       "params.json) instead of "
                        "flat — deliberately NOT calendar-time-based like the already-rejected "
                        "stop_patience.py, see make_trader's vol_scaled_trail docstring",
 }
@@ -620,18 +652,15 @@ def sweep_thresholds(frames, ticks, stop_loss_grid, profit_target_grid, variant=
 
 # Default sweep grid — small enough to stay fast (a few seconds on the
 # live universe), wide enough to span meaningfully tighter/looser than the
-# current live thresholds (params.json risk.stop_loss_pct=-10.0,
-# profit_target_pct=12.0).
+# current live thresholds (STOP_LOSS_PCT/PROFIT_TARGET_PCT above, read live
+# from params.json -- not hardcoded here so this comment can't itself drift).
 DEFAULT_STOP_LOSS_GRID = [-15.0, -12.0, -10.0, -8.0, -6.0]
 DEFAULT_PROFIT_TARGET_GRID = [8.0, 10.0, 12.0, 15.0, 18.0]
 
 # 2026-07-28 win-rate investigation: --sweep-trail holds stop_loss/profit_target
-# at the REAL current params.json values (not the drifted STOP_LOSS_PCT/
-# PROFIT_TARGET_PCT module constants above, which mirror an older params.json)
-# and sweeps only TRAIL_K, to isolate the trailing-stop question instead of
-# conflating it with a full 3-axis grid.
-CURRENT_LIVE_STOP_LOSS_PCT = -8.0
-CURRENT_LIVE_PROFIT_TARGET_PCT = 10.0
+# at STOP_LOSS_PCT/PROFIT_TARGET_PCT (now read live from params.json, see
+# _load_live_risk_params above) and sweeps only TRAIL_K, to isolate the
+# trailing-stop question instead of conflating it with a full 3-axis grid.
 # None is a genuine no-trailing-stop-at-all control point at the same
 # stop/target params as the trail_k candidates -- 2026-07-28 follow-up: the
 # first investigation run's only "no trail" data point used different
@@ -669,13 +698,13 @@ def main():
 
     if sweep_trail:
         candidates = sweep_thresholds(
-            frames, ticks, [CURRENT_LIVE_STOP_LOSS_PCT], [CURRENT_LIVE_PROFIT_TARGET_PCT],
+            frames, ticks, [STOP_LOSS_PCT], [PROFIT_TARGET_PCT],
             trail_k_grid=DEFAULT_TRAIL_K_GRID)
         print(json.dumps({
             "tickers_used": sorted(frames.keys()),
             "lookback_days": LOOKBACK_DAYS,
-            "stop_loss_pct": CURRENT_LIVE_STOP_LOSS_PCT,
-            "profit_target_pct": CURRENT_LIVE_PROFIT_TARGET_PCT,
+            "stop_loss_pct": STOP_LOSS_PCT,
+            "profit_target_pct": PROFIT_TARGET_PCT,
             "trail_k_grid": DEFAULT_TRAIL_K_GRID,
             "candidates": candidates,
         }, indent=2))
