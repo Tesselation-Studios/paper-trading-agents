@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 12:29 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 13:39 ET
+
+## THU 13:39 ET — Market Tick
+- **All HOLD.** 10 pos. Regime SUSTAINABLE (0.92) 🚀 live. PV $10,383, cash $9,112 (87.8%). All MACDh 🟢. No breaches.
+- 📉 Most red: LINE -4.15%, KEX -3.00%, ANDG -2.96%. 📈 ZBRA +2.45%, BFH +1.80%, BFST +0.95%.
+- 🔍 **Batch** (TURB/TJGC/VOC/PCSA/COLA/XSLL): all 6 disqualified. TURB bearish MACD 🔴 + pump 36.71x, TJGC pump 16.36x, VOC near-zero MACDh +0.09 + pump 6.29x, PCSA -33% dump 133.5x + near-zero MACDh, COLA near-zero MACDh +0.002, XSLL ultra-thin vol 0.03x 244sh. Extended (+6): TLNCU RSI 31.0 sub-band + pump, SYZ near-zero MACDh + pump, RDAC bearish MACD 🔴, FRMEP pump 25.98x, PRGO bearish MACD 🔴, AXIA bearish MACD 🔴. 12 evaluated, all correctly gated ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.45% best). Bootstrap $700: ZBRA +2.45%/BFH +1.80% >1% quick-exit floor → SUSTAINABLE + strong MACDh → HOLD.
+- 🆕 **Freeform discovery** escalated (47 ticks under-deployed): +2 BVS (Healthcare, MACDh +0.63 🟢 RSI 68.2 vol 1.13x) + OOMA (Tech, MACDh +0.64 🟢 RSI 64.8 vol 2.12x) → discoveries + watchlist. Evaluate next tick.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (12 tickers). Merge +2 (TLNCU/SYZ), promote +2. workspace_review ✅. HLN sentiment 0.945 earnings beat $7.53B.
 
 ## THU 12:29 ET — Market Tick
 - 🔴 **STVN SELL**: 3sh @ ~$20.41, -3.96% (-$2.44). Trailing stop breach: -6.2% off peak $21.04, stop $19.99 (vol_scaled 5.0%). Mandatory exit. Decision #28, closed #17.
