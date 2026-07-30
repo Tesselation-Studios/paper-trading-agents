@@ -217,7 +217,7 @@ def score_sentiment(text: str, ticker: str = "", timeout: int = 8) -> float:
     return _compute_sentiment(text)
 
 
-def fetch_alpaca_news(tickers: List[str], limit: int = 20, timeout: int = 15) -> List[Dict[str, Any]]:
+def fetch_alpaca_news(tickers: List[str], limit: int = 20, timeout: int = 15) -> Optional[List[Dict[str, Any]]]:
     """Alpaca's own News API, scoped to specific tickers via `symbols=` —
     far more reliable for small/mid-caps than generic RSS firehoses, which
     mostly cover megacaps/macro. Returns the same article shape as
@@ -225,11 +225,22 @@ def fetch_alpaca_news(tickers: List[str], limit: int = 20, timeout: int = 15) ->
     set directly from Alpaca's own per-article symbol tags (no regex
     extraction needed — Alpaca already tells us which tickers an article
     is about).
+
+    Returns `None` (not `[]`) when the fetch itself failed — missing
+    credentials, a non-200 response, or a network error — so callers can
+    tell "we asked and got nothing" apart from "the request never
+    succeeded." Collapsing both to `[]` is what let sentiment_cache.json
+    go silently empty for 22+ days (2026-07-30): every failed run still
+    overwrote the last good cache with nothing. An empty `tickers` list is
+    not a failure (nothing to ask about), so it still returns `[]`.
     """
     key = os.environ.get("ALPACA_STONKS_KEY")
     secret = os.environ.get("ALPACA_STONKS_SECRET")
-    if not key or not secret or not tickers:
+    if not tickers:
         return []
+    if not key or not secret:
+        log.warning("Alpaca News fetch skipped: ALPACA_STONKS_KEY/SECRET not set in environment")
+        return None
 
     try:
         resp = requests.get(
@@ -240,11 +251,11 @@ def fetch_alpaca_news(tickers: List[str], limit: int = 20, timeout: int = 15) ->
         )
         if resp.status_code != 200:
             log.warning("Alpaca News returned %s: %s", resp.status_code, resp.text[:200])
-            return []
+            return None
         items = resp.json().get("news", [])
     except requests.RequestException as e:
         log.warning("Alpaca News fetch failed: %s", e)
-        return []
+        return None
 
     articles = []
     for item in items:
@@ -545,6 +556,9 @@ def main():
     new_count = upsert_articles(articles)
 
     alpaca_articles = fetch_alpaca_news(watchlist_tickers)
+    fetch_failed = alpaca_articles is None
+    if fetch_failed:
+        alpaca_articles = []
     for a in alpaca_articles:
         combined = f"{a.get('title', '')} {a.get('summary', '')}"
         a["sentiment_score"] = score_sentiment(combined)
@@ -573,15 +587,23 @@ def main():
     # RSS still feeds the broader public.news_cache archive above, just not
     # this cache, which the tick loop treats as ground truth per ticker.
     ticker_sentiment = build_ticker_sentiment(alpaca_articles, watchlist_tickers)
-    write_sentiment_cache(ticker_sentiment)
+    if fetch_failed:
+        log.warning(
+            "Alpaca News fetch failed this run — leaving state/sentiment_cache.json "
+            "as-is instead of overwriting it with empty data"
+        )
+    else:
+        write_sentiment_cache(ticker_sentiment)
 
     summary = {
         "fetched_this_run": len(articles),
         "new_to_cache": new_count,
+        "alpaca_news_fetch_failed": fetch_failed,
         "alpaca_news_fetched": len(alpaca_articles),
         "watchlist_articles_last_24h": len(relevant),
         "avg_sentiment_by_ticker_last_24h": avg_sentiment_by_ticker,
-        "sentiment_cache_written_for": sorted(ticker_sentiment.keys()),
+        "sentiment_cache_written_for": [] if fetch_failed else sorted(ticker_sentiment.keys()),
+        "sentiment_cache_write_skipped": fetch_failed,
         "articles": relevant[:20],
     }
     print(json.dumps(summary, indent=2))

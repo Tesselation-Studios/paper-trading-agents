@@ -107,6 +107,46 @@ class TestMainFailOpenOnDbOutage:
         assert written.get("called") is True
 
 
+class TestMainPreservesCacheOnFetchFailure:
+    """2026-07-30: fetch_alpaca_news() failing (returns None) must NOT
+    overwrite state/sentiment_cache.json with empty data -- that's the bug
+    that left the cache silently blank for 22+ days. A failed fetch should
+    skip write_sentiment_cache() entirely, leaving the last good cache in
+    place."""
+
+    def _stub_main_deps(self, monkeypatch, fetch_return):
+        monkeypatch.setattr(sys, "argv", ["news_collector.py", "AAA"])
+        monkeypatch.setattr(news_collector, "ensure_news_cache_table", lambda: None)
+        monkeypatch.setattr(news_collector, "recent_watchlist_articles", lambda tickers, hours=24: [])
+        monkeypatch.setattr(news_collector, "fetch_all_feeds", lambda: [])
+        monkeypatch.setattr(news_collector, "upsert_articles", lambda articles: 0)
+        monkeypatch.setattr(news_collector, "fetch_alpaca_news", lambda tickers: fetch_return)
+
+    def test_failed_fetch_skips_cache_write(self, monkeypatch):
+        written = {"called": False}
+
+        def fake_write(ticker_sentiment, path=news_collector.SENTIMENT_CACHE_PATH):
+            written["called"] = True
+        monkeypatch.setattr(news_collector, "write_sentiment_cache", fake_write)
+
+        self._stub_main_deps(monkeypatch, fetch_return=None)
+        news_collector.main()  # must not raise
+
+        assert written["called"] is False
+
+    def test_successful_fetch_still_writes_cache(self, monkeypatch):
+        written = {"called": False}
+
+        def fake_write(ticker_sentiment, path=news_collector.SENTIMENT_CACHE_PATH):
+            written["called"] = True
+        monkeypatch.setattr(news_collector, "write_sentiment_cache", fake_write)
+
+        self._stub_main_deps(monkeypatch, fetch_return=[])
+        news_collector.main()  # must not raise
+
+        assert written["called"] is True
+
+
 class TestNewsCacheMigratedToLocalDb:
     """Migrated 2026-07-28 from remote Postgres (docker.klo) to local
     trader_db.py -- real sqlite3 under tmp_path via db_path=."""
@@ -233,10 +273,12 @@ class TestFetchAlpacaNews:
     """fetch_alpaca_news() added 2026-07-23: ticker-scoped Alpaca News,
     tagged via Alpaca's own `symbols` field (not regex)."""
 
-    def test_missing_credentials_returns_empty(self, monkeypatch):
+    def test_missing_credentials_returns_none(self, monkeypatch):
+        """None (not []) signals a failed fetch, distinct from a legitimate
+        zero-results success — see 2026-07-30 sentiment_cache.json fix."""
         monkeypatch.delenv("ALPACA_STONKS_KEY", raising=False)
         monkeypatch.delenv("ALPACA_STONKS_SECRET", raising=False)
-        assert news_collector.fetch_alpaca_news(["NVDA"]) == []
+        assert news_collector.fetch_alpaca_news(["NVDA"]) is None
 
     def test_empty_ticker_list_returns_empty_without_request(self, monkeypatch):
         monkeypatch.setenv("ALPACA_STONKS_KEY", "k")
@@ -265,7 +307,7 @@ class TestFetchAlpacaNews:
         assert result[0]["tickers"] == ["SNAP"]  # uppercased
         assert result[0]["source"] == "alpaca_news"
 
-    def test_non_200_returns_empty(self, monkeypatch):
+    def test_non_200_returns_none(self, monkeypatch):
         monkeypatch.setenv("ALPACA_STONKS_KEY", "k")
         monkeypatch.setenv("ALPACA_STONKS_SECRET", "s")
 
@@ -273,7 +315,16 @@ class TestFetchAlpacaNews:
             status_code = 429
             text = "rate limited"
         monkeypatch.setattr(news_collector.requests, "get", lambda *a, **k: FakeResp())
-        assert news_collector.fetch_alpaca_news(["NVDA"]) == []
+        assert news_collector.fetch_alpaca_news(["NVDA"]) is None
+
+    def test_request_exception_returns_none(self, monkeypatch):
+        monkeypatch.setenv("ALPACA_STONKS_KEY", "k")
+        monkeypatch.setenv("ALPACA_STONKS_SECRET", "s")
+
+        def raise_error(*a, **k):
+            raise news_collector.requests.RequestException("connection reset")
+        monkeypatch.setattr(news_collector.requests, "get", raise_error)
+        assert news_collector.fetch_alpaca_news(["NVDA"]) is None
 
 
 class TestBuildTickerSentiment:
