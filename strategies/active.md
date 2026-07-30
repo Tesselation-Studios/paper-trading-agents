@@ -1,3 +1,13 @@
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:10 ET
+
+## THU 10:10 ET — Market Tick
+- 🔴 **BOX SELL**: 13sh @ ~$32.42, +6.86% (+$27.04). Trailing stop breach: -5.3% off peak $32.55, vol_scaled trail 5.0%. Mandatory exit. Decision #26, closed #21.
+- **12 pos.** Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,379, cash $9,029 (87.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: OLP -4.58% (9:45 entry, MACDh +0.2554 🟢), ANDG -2.55%, KEX -2.70% (RSI 33.9 oversold, MACDh +1.2056 🟢). 📈 BFST 4sh +1.11%, VSXY +0.83%. TRIP $14.58 (-2.34% today, -0.88% from entry).
+- 🔍 **Batch** (CWCO/TVE/TRIP/PRGO/HRI/OLP): TRIP/OLP already pos. 4 disqualified: CWCO/TVE/PRGO bearish MACD 🔴, HRI qualifies (MACDh +3.0955 🟢 RSI 45.6 vol 1.59x) but Industrials FULL (ANDG+KEX=2/2). Extended (+5): BPYPO/BIPH near-zero MACDh, AIRJW/YSPY bearish MACD 🔴, VOC pump 6.29x weak MACDh. 9 evaluated, all correctly gated ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor (all negative-to-flat except BFST +1.11%). Bootstrap $714: BFST +1.11% above 1% quick-exit floor — SUSTAINABLE + MACDh 🟢 → HOLD. Step 8 fulfilled via 9 candidates.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge no-op, promote +1 (BPYPO). workspace_review ✅.
+
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:06 ET
 
 ## THU 10:06 ET — Market Tick
