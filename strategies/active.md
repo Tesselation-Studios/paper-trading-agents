@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:05 ET (PRE-MARKET)
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:10 ET (PRE-MARKET)
+
+## THU 9:10 ET — Pre-Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,404, cash $8,683 (83.5%). Pre-market — hours gate active. All 11 MACDh 🟢 (69-bar LIVE).
+- ⚠️ **KEX** $131.07, -9.85% today, just $0.22 above -10% hard stop ($130.85). MACDh +1.2056 🟢, RSI 33.9 oversold, vol 1.75x. No breach yet — first name to check at open.
+- 📈 **BOX** $32.42 (+2.92% today, +6.86% from entry), MACDh +0.9811 🟢, RSI 69.3 in-band. **LINE** $44.34 (+4.06%, MACDh +0.2014 🟢). **BFST** $32.01 (-0.22%, +3.32% from entry, MACDh +0.4895 🟢). BOX/BFST cross 3% v1.7 scale-in floor — evaluate at open.
+- 🔍 **Batch** (SLN/SILC/SDG/OCGN/ALMU/LINE): LINE already pos. 5 disqualified. SLN qualifies (MACDh +0.8075 🟢, RSI 62.4, vol 1.13x) but healthcare sector gate (STVN+UTMD=2/2). SILC -8.15% bearish MACD 🔴 -0.2994 RSI 36.6, SDG bearish MACD 🔴, OCGN $1.19 penny bearish 🔴, ALMU +6.13% but bearish MACD 🔴 -1.8251 RSI 41.3. Rotation advanced.
+- 📊 Scale-ins: BOX +6.86%/BFST +3.32% cross 3% floor (SUSTAINABLE → normal size). Pre-market → evaluate at open. Bootstrap $700 — BOX/BFST/STVN/VSXY/LINE >1% quick-exit floor but MACDh all strong on SUSTAINABLE → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅. Ready for 9:30 open.
 
 ## THU 9:05 ET — Pre-Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 flipped from CHOPPY overnight. PV $10,403, cash $8,683 (83.5%). Pre-market — hours gate active.
