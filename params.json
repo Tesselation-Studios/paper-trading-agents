@@ -133,6 +133,7 @@
     "order_idempotency": true,
     "order_count_audit": false,
     "drawdown_circuit_breaker": true,
-    "_note": "flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. Per-gate rationale lives in git history (git log -p params.json), not here."
+    "_note": "flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. Per-gate rationale lives in git history (git log -p params.json), not here.",
+    "_max_positions_note": "2026-07-30: intentionally disabled, not a bug -- no fixed position-count cap wanted. Portfolio-level risk is already bounded by max_portfolio_risk/max_position_pct/sector_concentration/bankroll, so an additional raw position-count ceiling isn't needed. Do not re-enable without an explicit decision to add one back."
   }
 }
