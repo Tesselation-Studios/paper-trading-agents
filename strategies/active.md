@@ -1,3 +1,13 @@
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:25 ET (PRE-MARKET)
+
+## THU 9:25 ET — Pre-Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,406, cash $8,683 (83.5%). Pre-market — hours gate active. All MACDh 🟢 (69-bar LIVE). No breaches.
+- ⚠️ **KEX CORRECTION**: avg entry $134.19 (executor), not $145.39. Hard stop $120.77, current $131.07 well above — NOT near stop. Prior ticks used wrong quote-snapshot avg. KEX -2.32% from real entry, MACDh +1.2056 🟢, RSI 33.9 oversold, vol 1.75x. Bullish divergence intact.
+- 📈 **LINE** $44.34 +4.06% day, +0.34% from entry $44.34 — below 3% floor. **BOX** $32.42 +2.79% from avg $31.54 — below 3%. All scale-ins below floor.
+- 🔍 **Batch** (PCSA/SLN/LDRX/DEI/AXIA/NCNO): all 6 gated/disqualified. PCSA -33% dump 133x vol, SLN healthcare (2/2), LDRX RSI 38.7 sub-band + near-zero MACDh +0.0133, DEI MACDh +0.0922 near-zero (weak), AXIA bearish MACD 🔴, NCNO tech (2/2). Rotation advanced.
+- 📊 Step 8: 83.5% cash → 6 candidates evaluated, all correctly gated ✅. Bootstrap $700 — SUSTAINABLE regime + all MACDh 🟢 → HOLD. No scale-in qualifiers this tick.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge +2 (YSPY/XRPN), promote +2. workspace_review ✅. Ready for 9:30 open.
+
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:20 ET (PRE-MARKET)
 
 ## THU 9:20 ET — Pre-Market Tick
