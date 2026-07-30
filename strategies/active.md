@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 15:35 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 15:40 ET
+
+## THU 15:40 ET — Market Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,390, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red from entry: LINE -3.30%, ANDG -2.47%, BVS -1.65%. 📈 Most green: BFH +2.74%, ZBRA +2.22%, BFST +0.59%. OOMA/TRIP/VSXY/UTMD/HLN/KEX mildly negative to flat.
+- 🔍 **Batch #13** (AUBN/BIPH/BPYPO/CYCU/FRMEP/MEDX): all 6 disqualified — same result as #12. AUBN qualifies (MACDh +0.24 🟢 RSI 50.4 vol 1.52x) but Financial FULL. All others: near-zero MACDh/pump/penny/bearish. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (BFH +2.74% best, Financial FULL). ZBRA +2.22% below 3% (Tech FULL). Bootstrap $700: BFH/ZBRA >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. 23 ticks under-deployed. Step 8: 6 batch evaluated, all correctly gated ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (10 tickers). Merge/promote no-ops. workspace_review ✅.
 
 ## THU 15:35 ET — Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,388, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
