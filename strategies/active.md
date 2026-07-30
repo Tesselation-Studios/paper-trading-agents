@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 14:35 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 14:40 ET
+
+## THU 14:40 ET — Market Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,387, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: LINE -4.04%, ANDG -2.62%, KEX -2.26%. 📈 ZBRA +2.38%, BFH +2.14%, BFST +1.01%. BVS/OOMA around flat (entered 13:45).
+- 🔍 **Batch #3** (TJGC/KJPG/SLE/HENG/TELA/ONMD): all 6 disqualified. TJGC pump 16.36x vol ❌, KJPG/HENG no quote data, SLE bearish MACD 🔴, TELA $0.68 penny bearish 🔴, ONMD $0.64 penny -9% dump 16.22x ❌. Rotation advanced.
+- 📋 Merged +4 (HRI/BFLY/HIPO/QADR) from discoveries, promote +1 (GCTK) from pool. QADR near-zero MACDh +0.0003 zero vol ❌, GCTK $0.28 penny bearish 🔴 ❌. Remaining: HRI/HIPO/PRG/AUBN all qualify but sector-gated (Industrials/Financial full). 10 others disqualified (bearish/penny/near-zero/thin/pump). Stale drop -16 → 15 healthy.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.38% best, Technology full). Bootstrap $700: ZBRA/BFH >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8: 6 batch + 15 remaining all correctly gated ✅. Pipeline gap in Consumer Defensive/Real Estate persists.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (10 tickers). Merge/promote/workspace_review ✅.
 
 ## THU 14:35 ET — Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,386, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
