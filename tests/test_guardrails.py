@@ -11,6 +11,7 @@ convention (see that repo for the pattern this mirrors).
 import datetime
 import json
 import sys
+import threading
 import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -589,6 +590,49 @@ class TestGateOrderIdempotency:
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is False
         assert "2 open BUY order" in reason
+
+
+class TestOrderLock:
+    """2026-07-30: gate_order_idempotency alone left a TOCTOU gap -- BFST
+    double-bought 2026-07-29, two days after that gate shipped, the same
+    pattern as IP (7/24) and KRC (7/27): two processes both query Alpaca's
+    open-order book before either's order actually lands there. _order_lock
+    makes check_order() -> place_order() atomic across processes. flock is
+    per-open-file-description on Linux, so two separate open() calls in the
+    same process still contend for the same lock -- that lets this test
+    exercise real cross-process blocking semantics with a thread instead of
+    spawning a subprocess."""
+
+    def test_same_ticker_serializes(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "ORDER_LOCK_DIR", tmp_path / "order_locks")
+        timestamps = {}
+        hold_seconds = 0.3
+
+        def hold_first():
+            with executor._order_lock("KRC"):
+                timestamps["first_acquired"] = time.monotonic()
+                time.sleep(hold_seconds)
+            timestamps["first_released"] = time.monotonic()
+
+        t = threading.Thread(target=hold_first)
+        t.start()
+        time.sleep(0.05)  # let the thread acquire the lock first
+
+        with executor._order_lock("KRC"):
+            timestamps["second_acquired"] = time.monotonic()
+        t.join(timeout=5)
+
+        # The second acquisition must have actually waited for the first
+        # to release -- not just interleaved by luck.
+        assert timestamps["second_acquired"] >= timestamps["first_released"]
+        assert timestamps["second_acquired"] - timestamps["first_acquired"] >= hold_seconds * 0.9
+
+    def test_different_tickers_do_not_contend(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "ORDER_LOCK_DIR", tmp_path / "order_locks")
+        # Must not deadlock: different tickers use different lock files.
+        with executor._order_lock("KRC"):
+            with executor._order_lock("BFST"):
+                pass
 
 
 class TestGateDailyOrderCount:

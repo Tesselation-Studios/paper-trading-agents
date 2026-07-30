@@ -16,6 +16,8 @@ trailing-stop breaches (params.json risk.stop_loss_pct / risk.trailing_stop_pct)
 """
 
 import argparse
+import contextlib
+import fcntl
 import json
 import math
 import os
@@ -755,6 +757,35 @@ GATES = {
 }
 
 
+ORDER_LOCK_DIR = STATE_DIR / "order_locks"
+
+
+@contextlib.contextmanager
+def _order_lock(ticker: str):
+    """Cross-process advisory lock, keyed by ticker, held across the
+    check_order() -> place_order() critical section.
+
+    gate_order_idempotency (2026-07-27) queries Alpaca's live open-order
+    book right before submission, but that alone doesn't close the race:
+    two processes (two overlapping ticks, or a tick racing a triggered
+    set_watch.py watch) can both run that query within the same short
+    window, both see "nothing open yet" — because neither order has landed
+    at Alpaca yet — and both submit. Confirmed in production: BFST
+    double-bought 2026-07-29, two days after that gate shipped, following
+    the same pattern as IP (7/24) and KRC (7/27). This lock makes the
+    check-then-submit pair atomic across processes, which an Alpaca query
+    alone cannot do. Same fcntl pattern as set_watch.py's _locked().
+    """
+    ORDER_LOCK_DIR.mkdir(parents=True, exist_ok=True)
+    lock_path = ORDER_LOCK_DIR / f"{ticker.upper()}.lock"
+    with open(lock_path, "w") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+
 def check_order(account: str, action: str, ticker: str, qty: int, price: Optional[float] = None,
                  conviction: Optional[float] = None, sector: Optional[str] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
     """Run a proposed trade through all enabled gates. First rejection stops the chain."""
@@ -1126,31 +1157,37 @@ def main():
         print(json.dumps({"error": "ticker and qty required for BUY/SELL"}))
         sys.exit(1)
 
-    if not args.skip_guardrails:
-        granted, reason, gate_results = check_order(
-            args.account, args.action, args.ticker, args.qty,
-            price=args.price, conviction=args.conviction, sector=args.sector,
-        )
-        if not granted:
-            print(json.dumps({"error": f"guardrail: {reason}", "gates": gate_results}, indent=2))
-            sys.exit(1)
+    # Locked from the guardrail check through order submission — closes the
+    # cross-process TOCTOU race gate_order_idempotency alone couldn't (see
+    # _order_lock's docstring). Everything after place_order() returns
+    # (bookkeeping, DB writes) doesn't touch Alpaca's shared order-book
+    # state, so it doesn't need to stay inside the lock.
+    with _order_lock(args.ticker):
+        if not args.skip_guardrails:
+            granted, reason, gate_results = check_order(
+                args.account, args.action, args.ticker, args.qty,
+                price=args.price, conviction=args.conviction, sector=args.sector,
+            )
+            if not granted:
+                print(json.dumps({"error": f"guardrail: {reason}", "gates": gate_results}, indent=2))
+                sys.exit(1)
 
-    # Capture entry price + pre-sell share count BEFORE selling — position
-    # may be gone from get_positions() afterward (full close), and this is
-    # what lets a SELL feed a real win/loss back into bankroll.py's
-    # adaptive ceiling, and tells positions-table bookkeeping below whether
-    # this was a full exit or a trim.
-    entry_price = None
-    pre_sell_qty = None
-    if args.action == "SELL":
-        for p in get_positions(args.account):
-            if p["symbol"].upper() == args.ticker.upper():
-                entry_price = float(p["avg_entry_price"])
-                pre_sell_qty = float(p["qty"])
-                break
+        # Capture entry price + pre-sell share count BEFORE selling — position
+        # may be gone from get_positions() afterward (full close), and this is
+        # what lets a SELL feed a real win/loss back into bankroll.py's
+        # adaptive ceiling, and tells positions-table bookkeeping below whether
+        # this was a full exit or a trim.
+        entry_price = None
+        pre_sell_qty = None
+        if args.action == "SELL":
+            for p in get_positions(args.account):
+                if p["symbol"].upper() == args.ticker.upper():
+                    entry_price = float(p["avg_entry_price"])
+                    pre_sell_qty = float(p["qty"])
+                    break
 
-    side = args.action.lower()
-    order = place_order(args.account, args.ticker, args.qty, side)
+        side = args.action.lower()
+        order = place_order(args.account, args.ticker, args.qty, side)
     print(json.dumps(order, indent=2))
     record_order_submitted(args.ticker, args.action)
 
