@@ -1072,7 +1072,7 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
 
 def main():
     parser = argparse.ArgumentParser(description="Alpaca order executor with built-in guardrails")
-    parser.add_argument("--account", default="kairos", choices=["kairos", "aldridge", "stonks"])
+    parser.add_argument("--account", default="stonks", choices=["stonks"])
     parser.add_argument("--action", choices=["BUY", "SELL", "status", "check-stops"])
     parser.add_argument("--ticker")
     parser.add_argument("--qty", type=int)
