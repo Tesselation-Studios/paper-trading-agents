@@ -13,10 +13,14 @@ is what makes last_screened_at a real, mechanized staleness signal instead
 of the LLM-prose "anything gone stale? drop it" judgment call this repo
 relied on before.
 
-This is a genuinely new persistence pattern for this repo (everything live
-here today is git-tracked flat files or Postgres on docker.klo, no live
-SQLite) -- appropriate per the standing rule that real/growing/queryable
-local datasets belong in SQLite, not JSON files.
+This was a genuinely new persistence pattern for this repo at the time
+(everything live here on 2026-07-27 was git-tracked flat files or Postgres
+on docker.klo, no live SQLite) -- appropriate per the standing rule that
+real/growing/queryable local datasets belong in SQLite, not JSON files.
+2026-07-28 update: trader_db.py migrated decisions/journal/training_examples/
+news_cache off docker.klo Postgres onto local SQLite too (see that module's
+docstring), so docker.klo Postgres is no longer live for this repo at all --
+noted here so this file doesn't read as the odd one out.
 """
 import sqlite3
 from pathlib import Path
