@@ -806,6 +806,57 @@ def _save_stop_state(state: Dict[str, Any]) -> None:
     STOPS_STATE_PATH.write_text(json.dumps(state, indent=2))
 
 
+def _fetch_vol_20d(account: str, tickers: List[str]) -> Dict[str, float]:
+    """Fetch 20-day daily-bar volatility (std of daily returns) for each
+    ticker from Alpaca. Returns {ticker: vol_20d} dict — tickers with
+    insufficient history (< 20 bars or all-zero returns) get vol_20d=0.0
+    (falls back to the flat trailing_stop_pct base).
+
+    Uses the same urllib.request pattern as other Alpaca calls in this file.
+    Called exclusively by check_stops() when trailing_stop_mode='volatility_scaled'.
+    Best-effort: never raises, returns empty dict on API error.
+    """
+    import urllib.request
+    import urllib.parse
+    from datetime import datetime, timezone, timedelta
+
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(days=60)  # 60 calendar days to guarantee ~40 trading days
+    params = urllib.parse.urlencode({
+        "symbols": ",".join(tickers),
+        "timeframe": "1Day",
+        "start": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "end": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "feed": "iex",
+        "limit": 30,
+    })
+    url = f"{ALPACA_BASE_URL}/v2/stocks/bars?{params}"
+    req = urllib.request.Request(url, headers=get_headers(account))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except Exception:
+        return {}
+
+    result: Dict[str, float] = {}
+    for ticker in tickers:
+        bars = data.get("bars", {}).get(ticker, [])
+        if len(bars) < 20:
+            result[ticker] = 0.0
+            continue
+        closes = [b.get("c", 0.0) for b in bars]
+        returns = [(closes[i] - closes[i-1]) / closes[i-1]
+                    for i in range(1, len(closes)) if closes[i-1] > 0]
+        if len(returns) < 20:
+            result[ticker] = 0.0
+            continue
+        # Sample std (ddof=1), same as replay_check.py's vol_20d using rolling(20).std()
+        import statistics
+        vol = statistics.stdev(returns[-20:])
+        result[ticker] = vol if vol > 0 else 0.0
+    return result
+
+
 def check_stops(account: str) -> List[Dict[str, Any]]:
     """Scan open positions for hard-stop, trailing-stop, or oversized-position
     breaches.
@@ -841,6 +892,10 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
     hard_stop_pct = abs(float(risk.get("stop_loss_pct", -10.0)))
     trailing_pct = float(risk.get("trailing_stop_pct", 5.0))
     max_position_pct = float(risk.get("max_position_pct", 6.0))
+    trailing_stop_mode = risk.get("trailing_stop_mode", "flat")
+    trail_k = float(risk.get("trail_k", 40.0))
+    trail_min_pct = float(risk.get("trail_min_pct", 4.0))
+    trail_max_pct = float(risk.get("trail_max_pct", 12.0))
 
     positions = get_positions(account)
     portfolio_value = None
@@ -851,6 +906,13 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
     state = _load_stop_state()
     breaches = []
     held_tickers = set()
+
+    # Pre-fetch vol_20d for ALL held tickers once (not per-position loop)
+    vol_20d_map: Dict[str, float] = {}
+    if toggles.get("trailing_stop", True) and trailing_stop_mode == "volatility_scaled":
+        held = [p["symbol"].upper() for p in positions]
+        if held:
+            vol_20d_map = _fetch_vol_20d(account, held)
 
     for p in positions:
         ticker = p["symbol"].upper()
@@ -895,13 +957,25 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
         state[ticker] = {"peak_price": peak_price, "entry_price": entry_price}
 
         if toggles.get("trailing_stop", True):
-            trail_stop_price = peak_price * (1 - trailing_pct / 100)
+            # 2026-07-30: vol-scaled trailing stop (trailing_stop_mode='volatility_scaled')
+            # uses the same formula as replay_check.py's make_trader(vol_scaled_trail=True):
+            #   trail_pct = trailing_stop_pct * (1 + trail_k * vol_20d), clamped to [trail_min_pct, trail_max_pct]
+            # Research: 2026-07-28 trailing-stop.md — TRAIL_K=40 is best variant.
+            # vol_20d_map is pre-fetched once above, not fetched per-position.
+            effective_trail_pct = trailing_pct
+            if trailing_stop_mode == "volatility_scaled":
+                vol = vol_20d_map.get(ticker, 0.0)
+                if vol > 0:
+                    effective_trail_pct = max(trail_min_pct, min(trail_max_pct,
+                                               trailing_pct * (1 + trail_k * vol)))
+            trail_stop_price = peak_price * (1 - effective_trail_pct / 100)
             if current_price <= trail_stop_price:
                 drop_from_peak = (current_price - peak_price) / peak_price * 100
                 breaches.append({
                     "ticker": ticker, "stop_type": "trailing",
                     "reason": f"{ticker}: trailing stop breached, {drop_from_peak:.1f}% off peak "
-                              f"${peak_price:.2f} (stop ${trail_stop_price:.2f}, current ${current_price:.2f})",
+                              f"${peak_price:.2f} (stop ${trail_stop_price:.2f}, current ${current_price:.2f}, "
+                              f"mode={trailing_stop_mode}, effective_trail={effective_trail_pct:.1f}%)",
                     "loss_pct": (current_price - entry_price) / entry_price * 100,
                 })
 
