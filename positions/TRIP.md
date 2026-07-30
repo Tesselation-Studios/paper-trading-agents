@@ -1,9 +1,9 @@
-# UTMD Position Thesis
+# TRIP Position Thesis
 
-- **Entry**: $71.50 avg | 1 shares
-- **Current**: $69.57 (-2.70% unrealized)
-- **Market Value**: $69.57
-- **Unrealized P&L**: $-1.93 (-2.70%)
+- **Entry**: $14.15 avg | 2 shares
+- **Current**: $14.24 (+0.64% unrealized)
+- **Market Value**: $28.48
+- **Unrealized P&L**: $+0.18 (+0.64%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-30 20:15:06 UTC
 

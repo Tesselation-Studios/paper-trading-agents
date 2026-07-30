@@ -1,11 +1,11 @@
 # KEX Position Thesis
 
 - **Entry**: $134.19 avg | 2 shares
-- **Current**: $131.07 (-2.32% unrealized)
-- **Market Value**: $262.14
-- **Unrealized P&L**: $-6.23 (-2.32%)
+- **Current**: $132.34 (-1.37% unrealized)
+- **Market Value**: $264.68
+- **Unrealized P&L**: $-3.69 (-1.38%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-29 23:30:50 UTC
+- **Last sync**: 2026-07-30 20:15:06 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

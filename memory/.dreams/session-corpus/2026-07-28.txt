@@ -474,3 +474,6 @@
 [trader-stonks/sessions/trader-stonks/f44a1221-e19c-4e22-a22b-1e0df698d60f.jsonl#L44] Assistant: Good, edit applied. Now commit and push.
 [trader-stonks/sessions/trader-stonks/f44a1221-e19c-4e22-a22b-1e0df698d60f.jsonl#L46] Assistant: **HEARTBEAT_OK** — Tick 11:45 ET complete. **Summary:** All HOLD. 6 pos (BOX 5sh +3.3%, BFST +3.4%, HLN +0.5%, BFH -0.2%, STVN -0.4%, ITRI -1.0%). Regime SUSTAINABLE (0.92). No stop breaches. BFST scale-in evaluated (reconciled 0.25 < 0.50 floor) 
 [trader-stonks/sessions/trader-stonks/f4d3ada8-5d2d-4c45-a2b3-2328f52dac7a.jsonl#L16] Assistant: Data collected. Let me append the heartbeat log.
+[trader-stonks/sessions/trader-stonks/b1a7d620-52cd-4320-b953-f32a7e1bcc3f.jsonl#L63] Assistant: Now update watchlist to mark KRC closed.
+[trader-stonks/sessions/trader-stonks/b1a7d620-52cd-4320-b953-f32a7e1bcc3f.jsonl#L69] Assistant: Now update KRC position file and git commit.
+[trader-stonks/sessions/trader-stonks/b1a7d620-52cd-4320-b953-f32a7e1bcc3f.jsonl#L77] Assistant: **HEARTBEAT_OK** --- **TUE 9:40 AM — Tick Summary** | Action | Details | |--------|---------| | 🚨 KRC SELL | Trailing stop breach, 2sh @ ~$37.27 (-5.7%). P&L -$4.47. Decision #5990 | | 🔍 ITRI BUY | Gated: conviction 0.29 < 0.50 floor. RSI 51.8/M

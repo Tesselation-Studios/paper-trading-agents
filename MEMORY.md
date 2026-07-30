@@ -1,5 +1,5 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-07-29 — nightly learning*
+*Updated: 2026-07-30 — nightly learning*
 
 ### Operational
 - **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
@@ -37,7 +37,7 @@
 
 ### Trailing Stop Performance (Jul 21-24, reviewed Jul 26)
 - **Trailing stops working mechanically**: Over 3 sessions: 8 exits via trailing stop (MARA +2.11%, MVST +0.29% wins; LYFT -5.49%, AMC -5.21%, DJT -5.2%, OPEN -5.11%, GME -5.00% losses; plus 1 stale-position cleanup). No panic sells, system carrying the load.
-- **Win/loss ratio**: 4 wins / 8 losses (33%) from trailing stops — unchanged since Jul 23, no new trail-stop exits Jul 24. Pinned at 33% for 4 days. 12 exits toward the 20-exit formal review trigger. Entry quality is the variable, not stop calibration.
+- **Win/loss ratio**: 5 wins / 10 losses (33%) from trailing stops — unchanged rate, +3 exits today (BOX +6.86% win, OLP -5.38% loss, STVN -3.96% loss). 15 exits toward the 20-exit formal review trigger. Entry quality is the variable, not stop calibration.
 
 ### MACDh Data API Fragility (Jul 23+, continuing Jul 24)
 - **Alpaca free-tier bars unreliable**: Multiple ticks throughout Jul 23 had MACDh bars unavailable (Alpaca data API returning 401, yfinance connection-refused). Dozens of ticks went without fresh MACDh computation, forcing reliance on last-known values and price stability as a proxy. This is a structural constraint of the free-tier account — not a transient outage.
@@ -49,6 +49,7 @@
 - **Rule of thumb**: If MACDh magnitude is < 0.005 on a stock trading above $5 and price is flat (<0.3% change), it's near-zero oscillation — HOLD. If MACDh magnitude > 0.005 AND declining across multiple bars AND price confirming, it's a real flip.
 
 ### Strategy Version History
+- **v1.13 (Jul 30)**: MACDh-flip removed as mandatory exit — backtest evidence shows v1.0 without it beats all versions with it (split-window confirmation). Conviction floor lowered 0.40→0.35, min 0.30→0.25 — middle ground between v1.0 win rate (60.6%) and v1.7 volume (46 trades). Both changes proven in live session same day: 12 positions, SUSTAINABLE 0.92 all day, all MACDh 🟢 at close, 3 clean trailing-stop exits, zero false MACDh calls.
 - **v1.12 (Jul 28)**: Bootstrap-phase profit-taking bias. While bankroll ceiling < $1,000 (`params.json: bootstrap_phase.ceiling_threshold`), tilt exit judgment toward quick positive wins (past 1% return) over holding for full profit target — ceiling growth is win-COUNT-driven, so frequent small wins compound capital faster in the early account stage. Fades once ceiling crosses threshold, reverting to normal let-winners-run judgment. Never sell at a loss to force a "win."
 - **v1.11 (Jul 27)**: Degraded-data entries — when MACDh is stale/unavailable for held positions, use price stability + last-known MACDh as proxy. Near-zero oscillation heuristic validated across multiple sessions.
 - **v1.10 (Jul 27)**: Discovery daemon live, stop_patience reverted, deployment_pressure conviction floor graduated to params.json.
@@ -60,15 +61,18 @@
 - **v1.4 (Jul 23)**: Near-zero MACDh oscillation heuristic graduated from observation to validated knowledge. No other rules changed.
 - **v1.3 (Jul 22)**: Reverted v1.2's triple-confirmation entry gate — backtest showed v1.2 as worst performer. Returned to simple RSI 45-65 + volume + catalyst entry.
 
+### Sector Concentration as Binding Constraint (NEW Jul 30)
+- **The 2-per-sector limit is now the primary entry blocker**: In SUSTAINABLE (0.92) regime all day, multiple strong qualifiers repeatedly gated on sector-full: AUBN/PRG/HIPO (Financial full), HRI (Industrials full), SLN/BFLY (Healthcare full), NCNO (Technology full). Only Consumer Defensive (1/2) and Real Estate (1/2) had room — and those pipelines are thin. This isn't a bug (the limit is intentional diversification), but it means that in strong regimes with mostly healthy positions (few exits creating sector slots), the strategy hits a deployment ceiling that's structural, not signal-driven. To scale deployment further in SUSTAINABLE, either: (a) more discovery focus on Consumer Defensive/Real Estate names, or (b) the limit itself needs revisiting at the next backtest cycle.
+
 ### Resolved Items
 - **v1.2 backtest weakness → RESOLVED**: v1.3 (Jul 22) reverted to v1.0's simple RSI 45-65 momentum entry after corrected `replay_check.py` showed v1.2 as the worst performer across all 3 backtest nights. v1.2's entry rules are all removed from strategy.md. Mechanical guardrails survive in executor.py.
 
 ## Key Repos
 Agent configs `~/.openclaw/agents/` · Paper trading `~/projects/paper-trading-teams/` · Blog `~/projects/blog/drafts/` · Homelab `wodinga/Homelab-Setup`
 
-## Promoted From Short-Term Memory (2026-07-29)
+## Promoted From Short-Term Memory (2026-07-30)
 
-<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-21.md:27:45 -->
-- **Watchlist starvation**: All 8-10 candidates hit idle_ticks=24 and were pruned at 15:40. Ended day with empty pipeline. - **Sentiment blind Day 14**: Still no FinBERT/Praesentire. Flying without primary edge for 2 weeks. Every entry decision is binary technical-only. - **OPEN persistent weakness**: -3% to -4.5% every tick, always hovering just above $4.275 trail. Survived but precarious. - **v1.2 backtest weakness** (off-hours): Two nights running, replay_check.py shows v1.2 underperforming v1.0 on 200d/22-ticker backtest. Caveats: no sector/VIX/fundamentals modeled. Monitoring, not acting yet.... [score=0.968 recalls=17 avg=1.000 source=memory/journal/2026-07-21.md:27-45]
-<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-22.md:109:119 -->
-- 2. **Hardened rule — Strategy deployment checklist**: "A strategy version bump must sync across all layers: (a) strategy.md updated, (b) params.json strategy_version + any param changes, (c) executor.py guardrails checked for conflicts, (d) tick agent system prompt verified against current strategy." Jul 22's 2-hour CHOPPY gate propagation delay proved single-layer changes are incomplete. One incident, but the blast radius (entries silently gated under wrong rules) warrants immediate hardening. 3. **Monitoring flag — Trailing stop win rate**: 2W/4L (33%) from trailing stops across Jul 21-22.... [score=0.848 recalls=6 avg=0.779 source=memory/journal/2026-07-22.md:109-119]
+<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-14.md:1:42 -->
+- --- ## Tick 11:27 ET — CHOPPY Tuesday **Regime**: CHOPPY (SPY RSI 52.7, confidence 0.3) **Macro**: Flat yield curve ⚠️ (2Y: 4.21%, 10Y: 4.56%, spread 0.35) ### Portfolio Scan | Ticker | Qty | Entry | Current | P&L% | RSI | MACD Hist | Signal | |--------|-----|-------|---------|------|-----|-----------|--------| | NVDA | 2 | 206.31| 208.73 | +1.16| 52.4| +2.08 ✅ | HOLD | | HOOD | 12 | 112.08| 110.30 | -1.59| 56.5| -0.62 ⚠️ | HOLD | ### Watchlist Heat - 🔥 **PLTR**: +2.11%, momentum +14.8%, MACD bull cross — hottest ticker today - 🔥 **META**: momentum +17.6% but extended above BB upper - 😐 **AAPL**: RSI 62.7 but pulling back -0.7%... [score=0.986 recalls=37 avg=0.956 source=memory/journal/2026-07-14.md:1-19]
+<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-27.md:34:43 -->
+- **Sentiment blind — 17 days**: Every journal since Jul 14. Escalated multiple times. At this point it's a permanent operating condition — technical-only workflow is the baseline. - **MACDh = truth serum**: Holds across every exit and hold decision. FHB exit today (0 flips missed, 0 false alarms). The near-zero oscillation heuristic from Jul 23 still validated — no false exits. - **Process debt: documented ≠ implemented**: IP order-idempotency guard documented Jul 24, never built. KRC collision Jul 27 is the direct consequence. Flagging a bug in a journal doesn't fix the code.... [score=0.936 recalls=7 avg=1.000 source=memory/journal/2026-07-27.md:34-43]

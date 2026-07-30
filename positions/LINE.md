@@ -1,11 +1,11 @@
 # LINE Position Thesis
 
 - **Entry**: $44.34 avg | 1 shares
-- **Current**: $44.35 (+0.02% unrealized)
-- **Market Value**: $44.35
-- **Unrealized P&L**: $+0.01 (+0.02%)
+- **Current**: $43.09 (-2.82% unrealized)
+- **Market Value**: $43.09
+- **Unrealized P&L**: $-1.25 (-2.82%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-07-29 23:30:50 UTC
+- **Last sync**: 2026-07-30 20:15:06 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

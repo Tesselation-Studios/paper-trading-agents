@@ -1,0 +1,4 @@
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L22] Assistant: Now let me append the Round 2 analysis to the existing insights. The 100% win rates and 1500%+ returns scream look-ahead bias.
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L28] Assistant: Done. Filed and pushed. **The Round 2 diagnosis in one sentence**: The backtest has a look-ahead bug — it's computing RSI/MACD on bar `t` AND making entry decisions on bar `t`, which lets bounce strategies "buy at the exact bottom and sell at the 
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L28] Assistant: Raf at the bottom, starting with the look-ahead bug. 🚀
+[trader-stonks/sessions/trader-stonks/90fb5012-82f6-4910-9fa1-1c60446e7cc3.jsonl#L30] Assistant: ANNOUNCE_SKIP
