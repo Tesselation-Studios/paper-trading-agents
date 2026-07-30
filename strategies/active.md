@@ -1,3 +1,12 @@
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:06 ET
+
+## THU 10:06 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $8,629 (83.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most in red: OLP -4.58% (just entered 9:45, MACDh +0.2554 🟢), ANDG -2.49%, KEX 2sh -2.48% (RSI 33.9 oversold, MACDh +1.2056 🟢), BOX 13sh -2.15%. 📈 VSXY +0.94%, BFST 4sh +1.08%. TRIP quote $14.58 (+3.04% from entry) — executor shows -1.24% (disconnect, likely cost basis).
+- 🔍 **Batch** (VOC/PCSA/COLA/XSLL/ONMD/AXIA): all 6 disqualified. VOC vol 6.29x pump MACDh near-zero +0.0924, PCSA -33% dump 133.5x vol, COLA MACDh near-zero +0.0016 thin 19k, XSLL vol 0.03x 244sh, ONMD $0.64 penny bearish MACD 🔴, AXIA bearish MACD 🔴 -0.145. Extended scan (+12): HIPO qualified (MACDh +0.5496 🟢 RSI 59.7 vol 1.24x) gated Financial FULL (BFH+BFST=2/2), HRI qualified (MACDh +3.0955 🟢 RSI 45.6 vol 1.59x) gated Industrials FULL (ANDG+KEX=2/2). AIRJW/YSPY/XRPN/TVE/CWCO/PRGO/TURB bearish MACD 🔴, BFLY vol 0.84x ❌, AMIX +66% pump, TJGC vol 16.36x pump. Rotation advanced.
+- 📊 Scale-ins: TRIP +3.04% crosses 3% v1.7 floor but Consumer Cyclical FULL (2/2 with VSXY) — gated. BFST +1.08%/VSXY +0.94% below floor. Bootstrap $700: BFST +1.08%/TRIP +3.04% >1% quick-exit floor — SUSTAINABLE + MACDh 🟢 → HOLD. Step 8 mandate: 18 candidates evaluated, 2 qualified but sector-gated ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge no-op, promote +1 (BIPH, MACDh near-zero). workspace_review ✅.
+
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:55 ET
 
 ## THU 9:55 ET — Market Tick
