@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:26 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:36 ET
+
+## THU 10:36 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,386, cash $9,053 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: STVN -2.57%, KEX -2.31% (RSI 33.9 oversold, MACDh +1.21 🟢), LINE -2.25%. 📈 VSXY +2.63%, BFST +0.80%, ZBRA +0.76%.
+- 🔍 **Batch** (HIPO/TURB/TJGC/VOC/PCSA/COLA): all 6 disqualified. HIPO qualifies (MACDh +0.55 🟢 RSI 59.7 vol 1.24x) but Financial FULL (BFH+BFST=2/2). TURB bearish MACD 🔴 + pump 36.71x, TJGC pump 16.36x, VOC near-zero MACDh +0.09 + pump 6.29x, PCSA -33% dump 133.5x vol, COLA near-zero MACDh +0.002 thin 19k. Extended (+9): AUBN qualifies (MACDh +0.24 🟢 RSI 50.4 vol 1.52x) but Financial FULL. CYCU $0.27 penny bearish 🔴, BPYPO/BIPH near-zero MACDh, AIRJW/YSPY/CWCO/TVE bearish MACD 🔴, XRPN near-zero MACDh +0.009 + thin 0.65x. 15 evaluated, 2 qualified but sector-gated ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor. Bootstrap $707: VSXY +2.63% >1% quick-exit floor — SUSTAINABLE + MACDh +3.23 🟢 → HOLD. Step 8 mandate fulfilled via 15 candidates eval.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge no-op, promote +1 CYCU (disqualified). workspace_review ✅.
 
 ## THU 10:26 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,381, cash $9,053 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
