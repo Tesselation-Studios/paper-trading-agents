@@ -32,6 +32,35 @@ class TestInitSchema:
             assert conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"] == 0
 
 
+class TestMigrateAddColumn:
+    """2026-07-30: _migrate_add_column() interpolates table/column/
+    coltype_and_default directly into SQL (unavoidable -- SQL can't bind
+    identifiers as parameters), so it validates each against a strict
+    allowlist first and raises rather than execute anything else. The only
+    real caller passes hardcoded literals; these are the defense-in-depth
+    boundary checks."""
+
+    def test_valid_call_adds_column(self, conn):
+        conn.execute("CREATE TABLE widgets (id INTEGER PRIMARY KEY)")
+        trader_db._migrate_add_column(conn, "widgets", "note", "TEXT")
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(widgets)")}
+        assert "note" in columns
+
+    def test_rejects_unsafe_table_name(self, conn):
+        with pytest.raises(ValueError):
+            trader_db._migrate_add_column(conn, "widgets; DROP TABLE widgets;--", "note", "TEXT")
+
+    def test_rejects_unsafe_column_name(self, conn):
+        conn.execute("CREATE TABLE widgets (id INTEGER PRIMARY KEY)")
+        with pytest.raises(ValueError):
+            trader_db._migrate_add_column(conn, "widgets", "note; DROP TABLE widgets;--", "TEXT")
+
+    def test_rejects_unsafe_coltype(self, conn):
+        conn.execute("CREATE TABLE widgets (id INTEGER PRIMARY KEY)")
+        with pytest.raises(ValueError):
+            trader_db._migrate_add_column(conn, "widgets", "note", "TEXT; DROP TABLE widgets;--")
+
+
 class TestDecisions:
     def test_insert_returns_id(self, conn):
         decision_id = trader_db.insert_decision(

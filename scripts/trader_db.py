@@ -14,6 +14,7 @@ step rather than a rewrite.
 Nothing calls this yet -- lands unwired, mirroring discovery_db.py's own
 landing before discovery_daemon.py existed.
 """
+import re
 import sqlite3
 from pathlib import Path
 
@@ -175,6 +176,10 @@ def init_schema(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_SQL_COLTYPE_RE = re.compile(r"^[A-Za-z0-9_ ().+-]+$")
+
+
 def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, coltype_and_default: str) -> None:
     """First ALTER-TABLE-style migration in this file (2026-07-28) -- no
     precedent to follow yet. CREATE TABLE IF NOT EXISTS above only creates
@@ -182,7 +187,23 @@ def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, colty
     state, not a test fixture) needs this to actually gain the column.
     Idempotent: checks PRAGMA table_info first since SQLite has no ADD
     COLUMN IF NOT EXISTS, and ALTER TABLE ADD COLUMN on an already-migrated
-    DB would raise 'duplicate column name'."""
+    DB would raise 'duplicate column name'.
+
+    table/column/coltype_and_default are interpolated directly into SQL --
+    unavoidable for identifiers (SQLite, like every SQL engine, has no way
+    to bind a table/column name as a query parameter), so this validates
+    each against a strict allowlist first and raises rather than execute
+    anything that doesn't match a plain identifier / type-and-constraint
+    fragment. The only caller today (line ~174) passes hardcoded literals,
+    so this is defense-in-depth against a future caller passing anything
+    externally influenced, not a fix for an active exploit.
+    """
+    for label, value in (("table", table), ("column", column)):
+        if not _SQL_IDENTIFIER_RE.match(value):
+            raise ValueError(f"_migrate_add_column: unsafe {label} name {value!r}")
+    if not _SQL_COLTYPE_RE.match(coltype_and_default):
+        raise ValueError(f"_migrate_add_column: unsafe coltype_and_default {coltype_and_default!r}")
+
     existing_columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
     if column not in existing_columns:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype_and_default}")
