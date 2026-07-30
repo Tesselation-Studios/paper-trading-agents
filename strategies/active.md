@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 13:39 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 13:45 ET
+
+## THU 13:45 ET — Market Tick
+- ✅ **BVS BUY**: 1sh @ ~$13.12, conviction 0.65. MACDh +0.63 🟢 RSI 68.2 vol 1.13x. Healthcare (2/2 with UTMD). Insiders clean, sentiment neutral. Decision #30.
+- ✅ **OOMA BUY**: 1sh @ ~$21.88, conviction 0.69. MACDh +0.64 🟢 RSI 64.8 vol 2.12x. Technology (2/2 with ZBRA). Insiders clean, sentiment neutral. Decision #29.
+- **10 pos (+2 pending).** Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,384, cash ~$9,077 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: LINE -4.42%, KEX -2.97%, ANDG -2.87%. 📈 ZBRA +2.69%, BFH +1.72%, TRIP +0.35%.
+- 🔍 **Batch** (AMIX/ONMD/AXIA/CWCO/TVE/TRIP): all 6 disqualified. TRIP already pos, AMIX +66% pump 59.66x vol, ONMD $0.64 penny bearish MACD 🔴, AXIA/CWCO/TVE bearish MACD 🔴. Extended: BVS + OOMA from last tick's freeform — both bought ✅. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.69% best). Bootstrap $700: ZBRA +2.69%/BFH +1.72% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (10 tickers). Merge/promote no-ops. Freeform escalation marked. workspace_review ✅.
 
 ## THU 13:39 ET — Market Tick
 - **All HOLD.** 10 pos. Regime SUSTAINABLE (0.92) 🚀 live. PV $10,383, cash $9,112 (87.8%). All MACDh 🟢. No breaches.
