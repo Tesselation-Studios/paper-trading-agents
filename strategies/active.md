@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:40 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 12:29 ET
+
+## THU 12:29 ET — Market Tick
+- 🔴 **STVN SELL**: 3sh @ ~$20.41, -3.96% (-$2.44). Trailing stop breach: -6.2% off peak $21.04, stop $19.99 (vol_scaled 5.0%). Mandatory exit. Decision #28, closed #17.
+- **10 pos.** Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,383, cash $9,112 (87.8%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: LINE -3.88%, KEX -2.96%, VSXY -1.55%. 📈 ZBRA +2.26%, BFH +1.60%, BFST +0.92%.
+- 🔍 **Batch** (AMIX/ONMD/AXIA/TRIP/HRI/OLP): TRIP/OLP already pos. AMIX +66% pump vol 59.66x ❌, ONMD $0.64 penny bearish MACD 🔴 ❌, AXIA bearish MACD 🔴 ❌, HRI qualifies (MACDh +3.10 🟢 RSI 45.6 vol 1.59x) but Industrials FULL (ANDG+KEX=2/2). Extended (+8): HIPO qualifies (MACDh +0.55 🟢 RSI 59.7 vol 1.24x) but Financial FULL. TURB/TJGC/VOC pump ❌, BFLY vol 0.84x ❌, CWCO/CYCU bearish MACD 🔴, XSLL ultra-thin. 14 evaluated, 2 qualified but sector-gated ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.26% best). Bootstrap $707: ZBRA +2.26%/BFH +1.60% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8 mandate fulfilled via 14 candidates eval.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (12 tickers). Merge no-op, promote +1 RDAC (bearish MACD ❌). workspace_review ✅. Healthcare now 1/2 (UTMD only, STVN exited).
 
 ## THU 10:40 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,388, cash $9,053 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
