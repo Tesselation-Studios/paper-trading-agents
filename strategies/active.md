@@ -1,10 +1,10 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 14:15 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 14:19 ET
 
-## THU 14:15 ET — Market Tick
+## THU 14:19 ET — Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,385, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
-- 📉 Most red: LINE -3.83%, KEX -2.74%, ANDG -2.47%. 📈 ZBRA +2.31%, BFH +1.99%, BFST +1.11%.
-- 🔍 **Batch** (VOC/YSPY/XRPN/PCSA/COLA/XSLL): all 6 disqualified. VOC near-zero MACDh +0.0924 + pump 6.29x, YSPY bearish MACD 🔴 RSI 39.2, XRPN near-zero MACDh +0.0094 vol 0.65x thin, PCSA -33% dump 133.5x + near-zero MACDh, COLA near-zero MACDh +0.0016, XSLL vol 0.03x ultra-thin 244sh + near-zero MACDh. Rotation advanced.
-- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.31% best). Bootstrap $700: ZBRA +2.31%/BFH +1.99% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8 mandate: 6 batch evaluated, all correctly gated ✅.
+- 📉 Most red: LINE -3.79%, KEX -2.68%, ANDG -2.47%. 📈 ZBRA +2.31%, BFH +1.94%, BFST +1.11%.
+- 🔍 **Batch** (VOC/YSPY/XRPN/PCSA/COLA/XSLL): all 6 disqualified — same as 14:15, no change. ⚠️ Extended (+PRG/MEDX/FRMEP/RDAC/CYCU/BPYPO): PRG qualifies (MACDh +1.40 🟢 RSI 47.9 vol 2.61x) but Financial FULL (BFH+BFST=2/2). MEDX near-zero MACDh +0.17 thin 12k, FRMEP pump 25.98x near-zero MACDh, RDAC bearish MACD 🔴 -0.14, CYCU $0.27 penny bearish MACD 🔴 RSI 29.1, BPYPO near-zero MACDh +0.002. ⚠️ Pipeline gap: 0 candidates in open sectors (Real Estate 1/2, Consumer Defensive 1/2) — all qualifiers (HRI/HIPO/AUBN/PRG) sector-gated.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.31% best). Bootstrap $700: ZBRA +2.31%/BFH +1.94% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8 mandate: 12 evaluated (6 batch + 6 extended), all correctly gated ✅.
 - 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (10 tickers). Merge/promote no-ops. workspace_review ✅.
 
 ## THU 14:10 ET — Market Tick
