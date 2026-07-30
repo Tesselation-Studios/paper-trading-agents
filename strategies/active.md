@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:35 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:40 ET
+
+## THU 9:40 ET — Market Tick
+- ✅ **TRIP BUY**: 2sh @ ~$14.15, conviction 0.775. v1.8 probe: RSI 58.8 in-band, MACDh +0.4626 🟢 strong, vol 1.98x ✅. SUSTAINABLE → normal 2sh sizing. TripAdvisor Consumer Cyclical (2/2 with VSXY). Insiders clean, sentiment neutral, fundamentals N/A. Reconciled 0.775 > 0.35 floor. Decision #24, training #24.
+- **12 pos.** Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,384, cash $8,655 (83.3%). All MACDh 🟢 (69-bar LIVE). No breaches. TRIP just entered.
+- 📈 **BFST** 4sh +1.61%, **BFH** 2sh +0.66%, **VSXY** 2sh +0.34%. 🔻 **BOX** 13sh -1.55% (dipped from AM high $32.42), **KEX** 2sh -2.36% (RSI 33.9 oversold, MACDh +1.2056 🟢 bullish divergence), **ANDG** -2.17%.
+- 🔍 **Batch** (COLA/XSLL/AMIX/ONMD/PCSA/CWCO): all 6 disqualified. COLA near-zero MACDh +0.0016, XSLL vol 0.03x 244sh, AMIX +66% pump 59.66x vol, ONMD $0.64 penny bearish MACD 🔴, PCSA -33% dump 133.5x vol, CWCO bearish MACD 🔴 -0.1587. Extra scan (TVE/TURB/VOC/XRPN/PRGO): TVE bearish MACD, TURB $1.50 pump bearish MACD, VOC MACDh +0.0924 weak, XRPN near-zero MACDh +0.0094 vol 0.65x, PRGO bearish MACD. TRIP bought ✅. Rotation advanced.
+- 📊 Scale-ins: none above 3% floor (BFST +1.61% best). Bootstrap $700: BFST +1.61% above 1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Step 8 mandate: 12 candidates evaluated (batch + extra), 1 BUY ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops (all dupes). workspace_review ✅.
 
 ## THU 9:35 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,393, cash $8,683 (83.5%). All MACDh 🟢 (69-bar LIVE). No breaches.
