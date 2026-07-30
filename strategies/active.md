@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:36 ET
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 10:40 ET
+
+## THU 10:40 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,388, cash $9,053 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: ANDG -2.75%, STVN -2.45%, LINE -2.24%. 📈 VSXY +2.62%, ZBRA +0.89%, BFST +0.65%.
+- 🔍 **Batch** (XSLL/CWCO/PRGO/BFLY/HIPO/TVE): all 6 disqualified. XSLL vol 0.03x 244sh ultra-thin, CWCO bearish MACD 🔴 -0.1587, PRGO bearish MACD 🔴 -0.0786, BFLY MACDh +0.1383 🟢 but vol 0.84x ❌, HIPO qualifies (MACDh +0.5496 🟢 RSI 59.7 vol 1.24x) but Financial FULL (BFH+BFST=2/2), TVE bearish MACD 🔴 -0.0062. Rotation advanced ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor (VSXY +2.62% closest). Bootstrap $707: VSXY +2.62% > 1% quick-exit floor — SUSTAINABLE + MACDh +3.23 🟢 → HOLD. Step 8 mandate fulfilled via 6 batch candidates — all correctly gated ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## THU 10:36 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,386, cash $9,053 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
