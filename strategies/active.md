@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 WED JUL 29, 2026 — 15:59 ET (LAST TICK)
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:05 ET (PRE-MARKET)
+
+## THU 9:05 ET — Pre-Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 flipped from CHOPPY overnight. PV $10,403, cash $8,683 (83.5%). Pre-market — hours gate active.
+- ⚠️ **KEX** -9.85% gap down today: $131.07 vs entry $145.39, just $0.22 above -10% hard stop ($130.85). RSI 33.9 oversold, MACDh +1.2056 🟢 still positive, vol 1.75x heavy. No breach yet.
+- 📉 ANDG -0.69%, BFH -0.67%, BFST +1.30%, BOX +2.73%, HLN -1.76%, KEX -2.32%, LINE +0.34%, STVN -0.70%, UTMD -0.78%, VSXY -0.19%, ZBRA +0.16%. All MACDh 🟢.
+- 🔍 **Batch** (SLN/SILC/SDG/OCGN/ALMU/LINE): LINE already pos. SLN qualifies (MACDh +0.8075 🟢, RSI 62.4, vol 1.13x) but healthcare sector full (STVN+UTMD=2/2). SILC -8.15% bearish MACD 🔴, SDG bearish MACD 🔴 + thin 7.3k, OCGN $1.19 penny bearish 🔴, ALMU bearish MACD 🔴 -1.825. Rotation advanced.
+- 📊 No scale-ins qualify (all <3% v1.7 floor). Bootstrap $700: BOX +2.73%/BFST +1.30% >1% quick-exit floor — held on SUSTAINABLE momentum. Step 8 mandate fulfilled via SLN eval (correctly gated by sector). Pipeline 27 healthy.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. Macro: 2Y 4.26%/10Y 4.61%, spread 0.35% flat. workspace_review ✅.
 
 ## WED 15:59 ET — Last Tick Before Close
 - **All HOLD.** 11 pos. Regime **CHOPPY** (0.644) live. PV $10,402, cash $8,683 (83.5%). ZBRA +7.49% 🚀, VSXY +4.68%, BOX 13sh +4.48%, HLN +3.32%, UTMD +2.69%, BFST 4sh +1.94%, STVN 3sh +1.77%, BFH 2sh +1.57%, KEX 2sh +0.21%, LINE +0.14%, ANDG -0.83%. All MACDh 🟢 (69-bar LIVE). No breaches.
