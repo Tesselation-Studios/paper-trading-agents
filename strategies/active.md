@@ -1,5 +1,12 @@
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 13:51 ET
 
+## THU 13:55 ET — Market Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,385, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: LINE -4.15%, KEX -2.95%, ANDG -2.70%. 📈 ZBRA +2.64%, BFH +2.04%, BFST +0.86%.
+- 🔍 **Batch** (TJGC/SLE/HENG/KJPG/TELA/COLA): all 6 disqualified. TJGC pump 16.36x, SLE bearish MACD 🔴, HENG/KJPG no quote data, TELA $0.68 penny bearish 🔴, COLA near-zero MACDh +0.0016 thin 19k. Extended (+29): HIPO/AUBN qualify but Financial FULL, SLN qualifies Healthcare FULL, NCNO qualifies Technology FULL. OLP qualifies (MACDh +0.26 🟢 RSI 50.9 vol 1.12x) but re-entry on just-stopped-out ticker — thesis broken, skip. All others bearish MACD/pump/penny/thin/near-zero. ~35 evaluated, 4 qualified but sector-gated ✅.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.64% best). Bootstrap $700: ZBRA +2.64%/BFH +2.04% >1% quick-exit floor — SUSTAINABLE + strong MACDh 🟢 → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (10 tickers). Merge/promote no-ops. workspace_review ✅.
+
 ## THU 13:51 ET — Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,385, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
 - 📉 Most red: LINE -4.15%, KEX -2.97%, ANDG -2.57%. 📈 ZBRA +2.66%, BFH +2.03%, BFST +0.86%.
