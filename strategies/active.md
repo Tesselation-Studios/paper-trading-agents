@@ -1,4 +1,13 @@
-# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:10 ET (PRE-MARKET)
+# Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:15 ET (PRE-MARKET)
+
+## THU 9:15 ET — Pre-Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,405, cash $8,683 (83.5%). Pre-market — hours gate active. All MACDh 🟢 (69-bar LIVE). No breaches.
+- ⚠️ **KEX** $131.07, -2.32% from entry, RSI 33.9 oversold but MACDh +1.2056 🟢 strong — bullish divergence. Low $130.40 today but avg cost basis keeps hard stop safe. **BOX** $32.42 +2.73% near 3% scale-in floor, RSI 69.3 near upper band, 13sh concentrated → HOLD. **HLN** vol 3.12x spike, price flat — watch.
+- 🔍 **Batch** (NCNO/DEI/BYRN/SLN/SILC/SDG): NCNO qualifies (RSI 64.2, MACDh +0.3694, vol 1.16x) but tech sector gate (BOX+ZBRA=2/2). SLN qualifies (RSI 62.4, MACDh +0.8075, vol 1.13x) but healthcare sector gate (STVN+UTMD=2/2). DEI MACDh +0.0922 near-zero, vol 1.06x marginal — passed. BYRN/SILC/SDG bearish MACD 🔴. Rotation advanced.
+- 📊 Scale-ins: BOX +2.73% below 3% v1.7 floor. BFST +1.30%, STVN +2.37% also below. Bootstrap $700: BOX/BFST/STVN >1% quick-exit floor but MACDh all strong → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅. Ready for 9:30 open.
+
+## THU 9:10 ET — Pre-Market Tick
 
 ## THU 9:10 ET — Pre-Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,404, cash $8,683 (83.5%). Pre-market — hours gate active. All 11 MACDh 🟢 (69-bar LIVE).
