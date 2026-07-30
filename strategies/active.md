@@ -1,5 +1,12 @@
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 9:25 ET (PRE-MARKET)
 
+## THU 9:30 ET — Market Open Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,401, cash $8,683 (83.5%). All MACDh 🟢 (69-bar LIVE). No breaches. Hours gate open ✅.
+- 📈 **LINE** $44.34 +4.06% day, **BOX** $32.42 +2.92%, **STVN** $20.41 +1.29% — all MACDh strong. **KEX** -9.85% intraday but -1.62% from true entry $134.19 — MACDh +1.2056 🟢 bullish divergence, RSI 33.9 oversold, HOLD.
+- 🔍 **Batch** (COLA/XSLL/AMIX/ONMD/PCSA/AXIA): all 6 disqualified. COLA near-zero MACDh +0.0016 thin, XSLL vol 0.03x 244sh ultra-thin, AMIX +66% pump vol 59.66x pump-chase, ONMD $0.64 penny bearish MACD 🔴, PCSA -33% dump vol 133.5x, AXIA bearish MACD 🔴 -0.145 RSI 45.8 sub-band. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (BOX +0.40%, BFH +1.86%, BFST +1.36%). Bootstrap $700: BFH +1.86%/BFST +1.36% above 1% quick-exit floor — SUSTAINABLE regime + strong MACDh → HOLD. Step 8 mandate fulfilled via batch eval — all correctly gated ✅.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. Macro: FOMC 3.50-3.75%, 2Y 4.26%/10Y 4.61%, spread 0.35% flat ⚠️. workspace_review ✅.
+
 ## THU 9:25 ET — Pre-Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,406, cash $8,683 (83.5%). Pre-market — hours gate active. All MACDh 🟢 (69-bar LIVE). No breaches.
 - ⚠️ **KEX CORRECTION**: avg entry $134.19 (executor), not $145.39. Hard stop $120.77, current $131.07 well above — NOT near stop. Prior ticks used wrong quote-snapshot avg. KEX -2.32% from real entry, MACDh +1.2056 🟢, RSI 33.9 oversold, vol 1.75x. Bullish divergence intact.
