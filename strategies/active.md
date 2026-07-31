@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 11:10 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 11:15 ET
+
+## FRI 11:15 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,378, cash $9,041 (87.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: HLN -3.19% (MACDh +0.19 🟢), ANDG -2.34% (MACDh +1.73 🟢), UTMD -2.14% (MACDh +0.27 🟢). 📈 Most green: ZBRA +2.56% (MACDh +5.81 🟢 Tech FULL), OOMA +1.23% (MACDh +0.65 🟢), BFH +0.86% (RSI 70.9 upper). KEX RSI 35.9 oversold MACDh +0.89 🟢 bull div → HOLD.
+- 🔍 **Batch #38** (AUBN/BIPH/HIPO/LRND/KNGZ/RDDT): all 6 correctly gated/disqualified. AUBN MACDh +0.22 🟢 RSI 47.9 vol 0.82x ❌ + Financial FULL. BIPH near-zero MACDh +0.005 ❌. HIPO MACDh +0.59 🟢 RSI 67.7 vol 2.45x ✅ but Financial FULL. LRND near-zero MACDh +0.024 ultra-thin vol 0.03x ❌. KNGZ weak MACDh +0.10 vol 0.38x ❌. RDDT MACDh +1.21 🟢 vol 2.81x ✅ at $178.04 (sold 10:12 at $137.69, thesis broken — skip). Rotation advanced.
+- 🔍 **Extended open-sector** (KTCC/HPF/IFS/MLAA/FMC/RDAC/PSTR/KVACU): all 8 disqualified/gated. IFS MACDh +1.42 🟢 RSI 53.3 vol 6.10x ✅ but Financial FULL. FMC +18% pump bearish MACD 🔴. HPF/MLAA/RDAC bearish MACD 🔴. KTCC/PSTR/KVACU near-zero MACDh/thin vol.
+- 📊 Scale-ins: ZBRA +2.56% best but Tech FULL. Bootstrap $679: ZBRA +2.56%/OOMA +1.23% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Open sectors unchanged: Consumer Defensive 1/2, Real Estate 1/2, Energy/CommSvcs/BasicMat/Utilities 0/2 — 0 qualifying pipeline candidates.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (4 tickers). Merge/promote no-ops. Stale drop none. workspace_review ✅. Step 8: 14 evaluated (6 batch + 8 extended), all correctly gated ✅.
 
 ## FRI 11:10 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,375, cash $9,041 (87.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
