@@ -24,12 +24,13 @@ Keys: `ALPACA_STONKS_KEY` / `ALPACA_STONKS_SECRET`.
 | `hours` | market open 09:30–16:00 ET Mon–Fri | — |
 | `conviction` | ≥ `risk.conviction_floor` | `--conviction` |
 | `bankroll` | cost ≤ current ceiling (`python3 bankroll.py`, backed by `state/trader.db`) | `--price` |
+| `long_play` | (BUY, `--play-type long` only) size ≤ `risk.long_play.position_size_pct`; concurrent long plays < `risk.long_play.max_concurrent_long_plays` | `--play-type long --predicted-by-date YYYY-MM-DD --prediction-reason "..."` (all three required together) |
 
 Missing field → gate skips (fail-open), never blocks on missing data. Always pass `--price` on SELL — it's what lets the bankroll ceiling adapt.
 
 **Bankroll ceiling**: starts $50, +2%/win, -1%/loss (`scripts/bankroll.py`). Every SELL auto-records win/loss and recalculates — no separate call needed. Check anytime: `python3 bankroll.py`.
 
-**Stop-loss scan** (tick_prompt.md step 5): `--action check-stops` returns positions past hard stop (`risk.stop_loss_pct`) or trailing stop (`risk.trailing_stop_pct`, ratchets up from peak since entry) — anything returned must be sold this tick. Toggle: `guardrail_gates.hard_stop` / `.trailing_stop`.
+**Stop-loss scan** (tick_prompt.md step 6): `--action check-stops` returns positions past hard stop (`risk.stop_loss_pct`) or trailing stop (`risk.trailing_stop_pct`, ratchets up from peak since entry) — anything returned must be sold this tick, **except** `stop_type: "long_play_resolved"` (a long play's `predicted_by_date` arrived — informational, resolved automatically, not a sell signal; see `risk.long_play`). Toggle: `guardrail_gates.hard_stop` / `.trailing_stop` / `.long_play`.
 
 ## Decision Logging
 

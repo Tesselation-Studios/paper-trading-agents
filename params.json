@@ -37,7 +37,14 @@
     "_duplicate_order_source": "cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries",
     "_drawdown_source": "competition mode's circuit breaker, measured from peak equity (state/peak_equity.json), not starting capital. Blocks new BUYs only — SELLs (including stop-losses) always pass. drawdown_halt_pct is a harder stop than pause but same BUY-only scope; see gate_drawdown_circuit_breaker.",
     "_conviction_floor_source": "2026-07-27: conviction_floor is the grace-period value; it drops toward conviction_floor_min (never below) the longer the account sits under-deployed. See deployment_pressure.py / scripts/executor.py gate_conviction().",
-    "_stop_patience_reverted": "2026-07-27: stop_loss_pct_max/trailing_stop_pct_max (stop_patience.py's widening-with-holding-time mechanism) were tried and reverted same day -- overnight split-window backtest (research/2026-07-27.md) found flat stops beat every patience variant tested on Sharpe and return, in both halves. stop_patience.py stays on disk (tests intact) for a future redesign, unwired from check_stops() for now."
+    "_stop_patience_reverted": "2026-07-27: stop_loss_pct_max/trailing_stop_pct_max (stop_patience.py's widening-with-holding-time mechanism) were tried and reverted same day -- overnight split-window backtest (research/2026-07-27.md) found flat stops beat every patience variant tested on Sharpe and return, in both halves. stop_patience.py stays on disk (tests intact) for a future redesign, unwired from check_stops() for now.",
+    "long_play": {
+      "enabled": true,
+      "horizon_days": 3,
+      "position_size_pct": 3.0,
+      "max_concurrent_long_plays": 2,
+      "_source": "2026-07-30: small, short-horizon, evidence-gated exception to the normal trailing-stop schedule -- a long play is an explicit prediction ('ticker X up by predicted_by_date'), sized at position_size_pct (half of max_position_pct) rather than the normal size while unproven, capped at max_concurrent_long_plays so this can't quietly become the default response to every position. horizon_days starts at 3 (Raf, 2026-07-30: start with 2-3 day experiments, grow only as calibration is proven) -- bump this only after a manual review of long-play hit rate (see scripts/signal_scorecard.py), never auto-tuned. The absolute hard stop_loss_pct still applies unconditionally to long plays -- this exempts the TRAILING stop only, not the circuit breaker. Directly informed by stop_patience.py's revert (see _stop_patience_reverted above): that mechanism widened stops blindly by calendar time with zero conviction signal and lost money net; this one requires a stated, evidence-backed reason at entry and a hard resolution date instead of open-ended patience."
+    }
   },
 
   "risk_guards": {
@@ -120,6 +127,7 @@
   "guardrail_gates": {
     "cash": true,
     "position_size": true,
+    "long_play": true,
     "max_portfolio_risk": true,
     "max_positions": false,
     "sector_concentration": true,

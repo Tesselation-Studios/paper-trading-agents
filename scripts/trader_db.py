@@ -173,11 +173,24 @@ def get_conn(db_path: Path = None) -> sqlite3.Connection:
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
     _migrate_add_column(conn, "bankroll_state", "ceiling_pct", "REAL NOT NULL DEFAULT 0.067")
+    # 2026-07-30: long-play support -- play_type distinguishes a small,
+    # short-horizon "predicted up by predicted_by_date" bet from a normal
+    # position; predicted_by_date/prediction_reason are NULL for standard
+    # positions. See skills/long-play.md (or params.json risk.long_play)
+    # for the mechanism this backs.
+    _migrate_add_column(conn, "positions", "play_type", "TEXT NOT NULL DEFAULT 'standard'")
+    _migrate_add_column(conn, "positions", "predicted_by_date", "TEXT")
+    _migrate_add_column(conn, "positions", "prediction_reason", "TEXT")
     conn.commit()
 
 
 _SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_SQL_COLTYPE_RE = re.compile(r"^[A-Za-z0-9_ ().+-]+$")
+# 2026-07-30: widened to allow a quoted string DEFAULT (e.g. DEFAULT
+# 'standard') -- a normal, legitimate coltype fragment (play_type TEXT
+# column) that the original charset rejected outright. Still anchored
+# full-match against a fixed charset with no ';', '--', or '/*', so this
+# doesn't reopen the injection risk the original allowlist closed.
+_SQL_COLTYPE_RE = re.compile(r"^[A-Za-z0-9_ ().+'-]+$")
 
 
 def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, coltype_and_default: str) -> None:
@@ -249,13 +262,20 @@ def insert_training_example(conn: sqlite3.Connection, ticker: str, features: str
 
 
 def label_training_example(conn: sqlite3.Connection, training_example_id: int, trade_id: str,
-                            label_win: int, label_return_pct: float) -> None:
+                            label_win: int, label_return_pct: float,
+                            label_horizon: str = "trade_close") -> None:
+    """label_horizon defaults to 'trade_close' (the original/only caller,
+    decisions.py's record_trade_close). 2026-07-30: also used with
+    label_horizon='long_play_prediction' when a long play resolves at its
+    predicted_by_date -- a distinct label from an actual realized trade
+    close, queryable separately (see scripts/signal_scorecard.py-style
+    per-label-horizon hit-rate reporting)."""
     with conn:
         conn.execute(
             """UPDATE training_examples
-               SET trade_id = ?, label_win = ?, label_return_pct = ?, label_horizon = 'trade_close'
+               SET trade_id = ?, label_win = ?, label_return_pct = ?, label_horizon = ?
                WHERE id = ?""",
-            (trade_id, label_win, label_return_pct, training_example_id),
+            (trade_id, label_win, label_return_pct, label_horizon, training_example_id),
         )
 
 
@@ -269,10 +289,22 @@ def latest_unlabeled_training_example(conn: sqlite3.Connection, ticker: str):
     return row["id"] if row else None
 
 
-def fetch_labeled_training_examples(conn: sqlite3.Connection) -> list:
-    rows = conn.execute(
-        "SELECT features, label_win FROM training_examples WHERE label_win IS NOT NULL"
-    ).fetchall()
+def fetch_labeled_training_examples(conn: sqlite3.Connection, label_horizon: str = None) -> list:
+    """label_horizon filter added 2026-07-30: 'trade_close' (a real closed
+    trade's win/loss) and 'long_play_prediction' (whether a long play's
+    predicted_by_date guess was right, independent of whether the position
+    was later sold) are different kinds of labels and must not be silently
+    aggregated together -- unfiltered (default) mixes both, matching the
+    original pre-long-play behavior for any existing caller."""
+    if label_horizon:
+        rows = conn.execute(
+            "SELECT features, label_win FROM training_examples WHERE label_win IS NOT NULL AND label_horizon = ?",
+            (label_horizon,),
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT features, label_win FROM training_examples WHERE label_win IS NOT NULL"
+        ).fetchall()
     return [{"features": r["features"], "label_win": r["label_win"]} for r in rows]
 
 
@@ -360,21 +392,33 @@ def prune_alpaca_audit_log(conn: sqlite3.Connection, retention_days: int, now: s
 # "thesis storage, not a price mirror" principle carries over unchanged).
 
 def upsert_position(conn: sqlite3.Connection, ticker: str, shares: float, entry_price: float,
-                     entry_time: str, sector: str = None, thesis: str = None, now: str = None) -> None:
+                     entry_time: str, sector: str = None, thesis: str = None, now: str = None,
+                     play_type: str = "standard", predicted_by_date: str = None,
+                     prediction_reason: str = None) -> None:
     """Open a new position or update an existing one's thesis/shares (e.g.
-    a scale-in). Does not touch status/close fields."""
+    a scale-in). Does not touch status/close fields.
+
+    play_type/predicted_by_date/prediction_reason back the long-play
+    mechanism (2026-07-30, params.json risk.long_play): a small, short-
+    horizon "predicted up by predicted_by_date" bet, distinct from a
+    normal ('standard') position. Set once at initial entry -- deliberately
+    NOT in the ON CONFLICT SET clause below, so a later scale-in can never
+    change a position's play_type after the fact, same principle as
+    sector/thesis being COALESCEd rather than blindly overwritten."""
     import datetime
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
         conn.execute(
-            """INSERT INTO positions (ticker, shares, entry_price, entry_time, sector, thesis, status, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, 'open', ?)
+            """INSERT INTO positions (ticker, shares, entry_price, entry_time, sector, thesis, status, updated_at,
+                                       play_type, predicted_by_date, prediction_reason)
+               VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)
                ON CONFLICT(ticker) DO UPDATE SET
                    shares = excluded.shares,
                    sector = COALESCE(excluded.sector, positions.sector),
                    thesis = COALESCE(excluded.thesis, positions.thesis),
                    updated_at = excluded.updated_at""",
-            (ticker, shares, entry_price, entry_time, sector, thesis, now),
+            (ticker, shares, entry_price, entry_time, sector, thesis, now,
+             play_type, predicted_by_date, prediction_reason),
         )
 
 
@@ -386,6 +430,21 @@ def close_position(conn: sqlite3.Connection, ticker: str, closed_at: str, close_
                    realized_pnl = ?, realized_return_pct = ?, updated_at = ?
                WHERE ticker = ?""",
             (closed_at, close_reason, realized_pnl, realized_return_pct, closed_at, ticker),
+        )
+
+
+def resolve_long_play(conn: sqlite3.Connection, ticker: str, updated_at: str) -> None:
+    """Called once, mechanically, by executor.py's check_stops() when a
+    long play's predicted_by_date arrives (2026-07-30, params.json
+    risk.long_play). Flips play_type back to 'standard' so the position
+    reverts to the normal trailing-stop schedule and this doesn't re-fire
+    every subsequent tick -- predicted_by_date/prediction_reason are
+    deliberately left in place as a permanent audit trail of what was
+    predicted, not cleared."""
+    with conn:
+        conn.execute(
+            "UPDATE positions SET play_type = 'standard', updated_at = ? WHERE ticker = ?",
+            (updated_at, ticker),
         )
 
 

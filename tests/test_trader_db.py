@@ -133,6 +133,55 @@ class TestTrainingExamples:
         assert len(result) == 1
         assert result[0]["label_win"] == 0
 
+    def test_label_horizon_defaults_to_trade_close(self, conn):
+        te_id = trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="2026-07-28T12:00:00Z",
+        )
+        trader_db.label_training_example(conn, te_id, trade_id="t1", label_win=1, label_return_pct=4.2)
+        row = conn.execute("SELECT label_horizon FROM training_examples WHERE id = ?", (te_id,)).fetchone()
+        assert row["label_horizon"] == "trade_close"
+
+    def test_label_horizon_accepts_long_play_prediction(self, conn):
+        """2026-07-30: a long play's predicted_by_date resolution labels
+        with label_horizon='long_play_prediction' instead of the default
+        'trade_close' -- a different kind of label (was the prediction
+        right, not necessarily tied to an actual realized trade)."""
+        te_id = trader_db.insert_training_example(
+            conn, ticker="BVS", features="{}", created_at="2026-07-28T12:00:00Z",
+        )
+        trader_db.label_training_example(
+            conn, te_id, trade_id=None, label_win=1, label_return_pct=8.0,
+            label_horizon="long_play_prediction",
+        )
+        row = conn.execute("SELECT label_horizon FROM training_examples WHERE id = ?", (te_id,)).fetchone()
+        assert row["label_horizon"] == "long_play_prediction"
+
+    def test_fetch_labeled_examples_filters_by_label_horizon(self, conn):
+        trade_close = trader_db.insert_training_example(
+            conn, ticker="AAA", features='{"technical": {"direction": "bullish"}}',
+            created_at="2026-07-28T12:00:00Z",
+        )
+        long_play = trader_db.insert_training_example(
+            conn, ticker="BVS", features='{"technical": {"direction": "bullish"}}',
+            created_at="2026-07-28T12:00:00Z",
+        )
+        trader_db.label_training_example(conn, trade_close, trade_id="t1", label_win=1, label_return_pct=2.0)
+        trader_db.label_training_example(
+            conn, long_play, trade_id=None, label_win=0, label_return_pct=-1.0,
+            label_horizon="long_play_prediction",
+        )
+        # Unfiltered -- both, matching pre-long-play behavior for any caller
+        # that doesn't pass label_horizon.
+        assert len(trader_db.fetch_labeled_training_examples(conn)) == 2
+
+        trade_close_only = trader_db.fetch_labeled_training_examples(conn, label_horizon="trade_close")
+        assert len(trade_close_only) == 1
+        assert trade_close_only[0]["label_win"] == 1
+
+        long_play_only = trader_db.fetch_labeled_training_examples(conn, label_horizon="long_play_prediction")
+        assert len(long_play_only) == 1
+        assert long_play_only[0]["label_win"] == 0
+
 
 class TestNewsCache:
     def test_upsert_new_articles_returns_inserted_count(self, conn):
@@ -211,6 +260,54 @@ class TestPositions:
         trader_db.close_position(conn, ticker="BBB", closed_at="t3", close_reason="exit", realized_pnl=1.0, realized_return_pct=1.0)
         all_tickers = {p["ticker"] for p in trader_db.get_all_positions(conn)}
         assert all_tickers == {"AAA", "BBB"}
+
+    # ── Long plays (2026-07-30, params.json risk.long_play) ───────────────
+
+    def test_upsert_defaults_to_standard_play_type(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        row = trader_db.get_position(conn, "AAA")
+        assert row["play_type"] == "standard"
+        assert row["predicted_by_date"] is None
+        assert row["prediction_reason"] is None
+
+    def test_upsert_accepts_long_play_fields(self, conn):
+        trader_db.upsert_position(
+            conn, ticker="BVS", shares=5.0, entry_price=10.0, entry_time="t1",
+            play_type="long", predicted_by_date="2026-08-02", prediction_reason="earnings beat expected",
+        )
+        row = trader_db.get_position(conn, "BVS")
+        assert row["play_type"] == "long"
+        assert row["predicted_by_date"] == "2026-08-02"
+        assert row["prediction_reason"] == "earnings beat expected"
+
+    def test_scale_in_does_not_change_play_type(self, conn):
+        """A scale-in (repeat upsert_position on an existing ticker) must
+        never flip a long play back to standard, or vice versa -- play_type
+        is set once at initial entry."""
+        trader_db.upsert_position(
+            conn, ticker="BVS", shares=5.0, entry_price=10.0, entry_time="t1",
+            play_type="long", predicted_by_date="2026-08-02", prediction_reason="earnings beat expected",
+        )
+        # Scale-in call omits play_type -- defaults to "standard" in the
+        # function signature, but must NOT overwrite the existing row.
+        trader_db.upsert_position(conn, ticker="BVS", shares=8.0, entry_price=10.0, entry_time="t1")
+        row = trader_db.get_position(conn, "BVS")
+        assert row["play_type"] == "long"
+        assert row["predicted_by_date"] == "2026-08-02"
+        assert row["shares"] == 8.0
+
+    def test_resolve_long_play_reverts_to_standard(self, conn):
+        trader_db.upsert_position(
+            conn, ticker="BVS", shares=5.0, entry_price=10.0, entry_time="t1",
+            play_type="long", predicted_by_date="2026-08-02", prediction_reason="earnings beat expected",
+        )
+        trader_db.resolve_long_play(conn, ticker="BVS", updated_at="2026-08-02T16:00:00Z")
+        row = trader_db.get_position(conn, "BVS")
+        assert row["play_type"] == "standard"
+        # predicted_by_date/prediction_reason kept as a permanent audit
+        # trail of what was predicted, not cleared.
+        assert row["predicted_by_date"] == "2026-08-02"
+        assert row["prediction_reason"] == "earnings beat expected"
 
 
 class TestWatchlistCandidates:

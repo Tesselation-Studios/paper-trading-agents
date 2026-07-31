@@ -245,6 +245,69 @@ def gate_position_size(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple
     return True, f"{ticker} at {total_pct:.1f}% of portfolio, within {max_pct:.0f}% cap"
 
 
+def gate_long_play(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Enforces long-play-specific rules on BUYs tagged play_type='long'
+    (params.json risk.long_play, 2026-07-30): a smaller position_size_pct
+    cap than the normal max_position_pct (this is a live, unproven
+    experiment -- see the long_play._source note in params.json for why),
+    plus a max_concurrent_long_plays cap so it can't quietly become the
+    default response to every entry. Non-long BUYs and all SELLs skip this
+    gate entirely -- it has nothing to say about a standard position.
+    """
+    if action.get("action") != "BUY" or action.get("play_type") != "long":
+        return True, "not a long play, skipped"
+
+    lp_params = load_params().get("risk", {}).get("long_play", {})
+    if not lp_params.get("enabled", True):
+        return False, "long plays disabled via params.json risk.long_play.enabled"
+
+    ticker = str(action.get("ticker", "")).upper()
+    price = float(action.get("price", 0) or 0)
+    qty = float(action.get("quantity", 0))
+    proposed_value = qty * price
+    portfolio_value = float(context.get("portfolio_value", 0))
+    if proposed_value <= 0 or portfolio_value <= 0:
+        return True, "no price/portfolio data, skipped (fail-open)"
+
+    size_pct = float(lp_params.get("position_size_pct", 3.0))
+    existing_value = sum(
+        float(p.get("market_value", 0))
+        for p in context.get("positions", [])
+        if str(p.get("symbol", "")).upper() == ticker
+    )
+    total_pct = (existing_value + proposed_value) / portfolio_value * 100
+    if total_pct > size_pct:
+        return False, (
+            f"{ticker} long play would be {total_pct:.1f}% of portfolio "
+            f"(existing ${existing_value:,.2f} + proposed ${proposed_value:,.2f}), "
+            f"exceeds long-play cap of {size_pct:.1f}% (smaller than normal max_position_pct while unproven)"
+        )
+
+    max_concurrent = int(lp_params.get("max_concurrent_long_plays", 2))
+    try:
+        conn = trader_db.get_conn()
+        try:
+            open_long_plays = [
+                p for p in trader_db.get_open_positions(conn)
+                if p.get("play_type") == "long" and str(p.get("ticker", "")).upper() != ticker
+            ]
+        finally:
+            conn.close()
+    except Exception as e:
+        return True, f"could not check concurrent long plays (fail-open): {e}"
+
+    if len(open_long_plays) >= max_concurrent:
+        tickers = ", ".join(p["ticker"] for p in open_long_plays)
+        return False, (
+            f"already {len(open_long_plays)} open long play(s) ({tickers}), "
+            f"at max_concurrent_long_plays cap of {max_concurrent}"
+        )
+    return True, (
+        f"{ticker} long play at {total_pct:.1f}% of portfolio (cap {size_pct:.1f}%), "
+        f"{len(open_long_plays)}/{max_concurrent} concurrent long plays"
+    )
+
+
 def gate_max_portfolio_risk(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     """Portfolio-level stop-loss exposure: if every open position (plus this
     proposed buy) hit its hard stop simultaneously, what % of equity would be
@@ -744,6 +807,7 @@ def gate_drawdown_circuit_breaker(context: Dict[str, Any], action: Dict[str, Any
 GATES = {
     "cash": gate_cash,
     "position_size": gate_position_size,
+    "long_play": gate_long_play,
     "max_portfolio_risk": gate_max_portfolio_risk,
     "max_positions": gate_max_positions,
     "sector_concentration": gate_sector_concentration,
@@ -787,7 +851,8 @@ def _order_lock(ticker: str):
 
 
 def check_order(account: str, action: str, ticker: str, qty: int, price: Optional[float] = None,
-                 conviction: Optional[float] = None, sector: Optional[str] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
+                 conviction: Optional[float] = None, sector: Optional[str] = None,
+                 play_type: Optional[str] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
     """Run a proposed trade through all enabled gates. First rejection stops the chain."""
     account_data = get_account(account)
     positions = get_positions(account)
@@ -799,7 +864,7 @@ def check_order(account: str, action: str, ticker: str, qty: int, price: Optiona
     }
     trade_action = {
         "action": action.upper(), "ticker": ticker.upper(), "quantity": qty,
-        "price": price, "conviction": conviction, "sector": sector,
+        "price": price, "conviction": conviction, "sector": sector, "play_type": play_type,
     }
 
     toggles = load_params().get("guardrail_gates", {})
@@ -945,6 +1010,25 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
         if held:
             vol_20d_map = _fetch_vol_20d(account, held)
 
+    # Pre-fetch long-play metadata (play_type/predicted_by_date) for ALL
+    # held tickers once -- Alpaca's get_positions() above has no notion of
+    # this, it's local trader_db.py state (2026-07-30, params.json
+    # risk.long_play). Fail-open: a DB error here just means no ticker
+    # gets long-play treatment this tick, falls through to normal stops.
+    long_play_map: Dict[str, Dict[str, Any]] = {}
+    if toggles.get("long_play", True):
+        try:
+            conn = trader_db.get_conn()
+            try:
+                for row in trader_db.get_open_positions(conn):
+                    if row.get("play_type") == "long" and row.get("predicted_by_date"):
+                        long_play_map[str(row["ticker"]).upper()] = row
+            finally:
+                conn.close()
+        except Exception:
+            long_play_map = {}
+    today = datetime.now(timezone.utc).date()
+
     for p in positions:
         ticker = p["symbol"].upper()
         held_tickers.add(ticker)
@@ -952,6 +1036,56 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
         current_price = float(p["current_price"])
         market_value = float(p["market_value"])
         qty_held = int(float(p["qty"]))
+
+        # Long-play resolution / trailing-stop exemption (2026-07-30,
+        # params.json risk.long_play). A long play is exempt from the
+        # normal trailing-stop schedule ONLY while its predicted_by_date
+        # hasn't arrived yet -- the hard stop below still applies
+        # unconditionally regardless, that circuit breaker is never
+        # optional (see stop_patience.py's revert for why: letting
+        # optimism override the true floor is exactly how blind patience
+        # loses money). Once the date arrives, resolve mechanically right
+        # here -- flips play_type back to 'standard' (so this fires once,
+        # not every tick after) and labels the training_examples row so
+        # hit rate is queryable later -- it does NOT force a sell; the
+        # position just reverts to being judged on its own merits by the
+        # normal stop schedule from this point on.
+        is_active_long_play = False
+        lp = long_play_map.get(ticker)
+        if lp:
+            try:
+                deadline = datetime.strptime(lp["predicted_by_date"], "%Y-%m-%d").date()
+            except (ValueError, TypeError):
+                deadline = None
+            if deadline and today < deadline:
+                is_active_long_play = True
+            elif deadline and today >= deadline:
+                return_pct = (current_price - entry_price) / entry_price * 100 if entry_price else 0.0
+                hit = return_pct > 0
+                breaches.append({
+                    "ticker": ticker, "stop_type": "long_play_resolved",
+                    "reason": f"{ticker}: long play horizon reached (predicted_by_date {lp['predicted_by_date']}) -- "
+                              f"prediction {'correct' if hit else 'incorrect'}, {return_pct:+.1f}% vs entry "
+                              f"(\"{lp.get('prediction_reason', '')}\"). Reverting to standard trailing-stop schedule.",
+                    "loss_pct": return_pct,
+                    "long_play_hit": hit,
+                })
+                now_iso = datetime.now(timezone.utc).isoformat()
+                try:
+                    conn = trader_db.get_conn()
+                    try:
+                        trader_db.resolve_long_play(conn, ticker=ticker, updated_at=now_iso)
+                        te_id = trader_db.latest_unlabeled_training_example(conn, ticker)
+                        if te_id is not None:
+                            trader_db.label_training_example(
+                                conn, training_example_id=te_id, trade_id=None,
+                                label_win=1 if hit else 0, label_return_pct=return_pct,
+                                label_horizon="long_play_prediction",
+                            )
+                    finally:
+                        conn.close()
+                except Exception:
+                    pass  # best-effort, matches the fail-open philosophy elsewhere in this function
 
         if portfolio_value and portfolio_value > 0 and current_price > 0:
             current_pct = market_value / portfolio_value * 100
@@ -987,7 +1121,7 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
         peak_price = max(float(entry.get("peak_price", entry_price)), current_price)
         state[ticker] = {"peak_price": peak_price, "entry_price": entry_price}
 
-        if toggles.get("trailing_stop", True):
+        if toggles.get("trailing_stop", True) and not is_active_long_play:
             # 2026-07-30: vol-scaled trailing stop (trailing_stop_mode='volatility_scaled')
             # uses the same formula as replay_check.py's make_trader(vol_scaled_trail=True):
             #   trail_pct = trailing_stop_pct * (1 + trail_k * vol_20d), clamped to [trail_min_pct, trail_max_pct]
@@ -1084,6 +1218,16 @@ def main():
                          "never blocks the order.")
     parser.add_argument("--close-reason", help="SELL only -- why (breach type, thesis break, manual). "
                          "Defaults to a generic 'manual SELL' if omitted.")
+    parser.add_argument("--play-type", default="standard", choices=["standard", "long"],
+                         help="BUY only -- 'long' tags this as a long play (params.json risk.long_play): "
+                         "smaller size, exempt from the trailing-stop schedule until --predicted-by-date, "
+                         "the hard stop still applies. Requires --predicted-by-date and --prediction-reason.")
+    parser.add_argument("--predicted-by-date", help="BUY only, required with --play-type long -- ISO date "
+                         "(YYYY-MM-DD) by which the position is predicted to be up. Mechanically enforced: "
+                         "check_stops() resolves (does not necessarily force-sell) at this date.")
+    parser.add_argument("--prediction-reason", help="BUY only, required with --play-type long -- the specific "
+                         "evidence behind the prediction (cite sentiment_cache.json/get_fundamentals/get_insiders/"
+                         "get_market_regime, not just optimism). Persisted to positions.prediction_reason.")
     parser.add_argument("--skip-guardrails", action="store_true", help="bypass guardrail checks (debug only)")
 
     args = parser.parse_args()
@@ -1157,6 +1301,23 @@ def main():
         print(json.dumps({"error": "ticker and qty required for BUY/SELL"}))
         sys.exit(1)
 
+    if args.play_type == "long":
+        if args.action != "BUY":
+            print(json.dumps({"error": "--play-type long only valid for BUY"}))
+            sys.exit(1)
+        if not args.predicted_by_date or not args.prediction_reason:
+            print(json.dumps({
+                "error": "--play-type long requires both --predicted-by-date and --prediction-reason "
+                         "(a long play needs an explicit deadline and a stated, evidence-backed reason -- "
+                         "not open-ended patience, see params.json risk.long_play)",
+            }))
+            sys.exit(1)
+        try:
+            datetime.strptime(args.predicted_by_date, "%Y-%m-%d")
+        except ValueError:
+            print(json.dumps({"error": f"--predicted-by-date must be YYYY-MM-DD, got {args.predicted_by_date!r}"}))
+            sys.exit(1)
+
     # Locked from the guardrail check through order submission — closes the
     # cross-process TOCTOU race gate_order_idempotency alone couldn't (see
     # _order_lock's docstring). Everything after place_order() returns
@@ -1167,6 +1328,7 @@ def main():
             granted, reason, gate_results = check_order(
                 args.account, args.action, args.ticker, args.qty,
                 price=args.price, conviction=args.conviction, sector=args.sector,
+                play_type=args.play_type,
             )
             if not granted:
                 print(json.dumps({"error": f"guardrail: {reason}", "gates": gate_results}, indent=2))
@@ -1250,6 +1412,8 @@ def main():
                 trader_db.upsert_position(
                     conn, ticker=args.ticker, shares=total_shares, entry_price=args.price,
                     entry_time=now_iso, sector=args.sector, thesis=args.thesis,
+                    play_type=args.play_type, predicted_by_date=args.predicted_by_date,
+                    prediction_reason=args.prediction_reason,
                 )
             finally:
                 conn.close()

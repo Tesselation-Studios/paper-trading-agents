@@ -40,10 +40,12 @@ DEFAULT_PARAMS = {
               "duplicate_order_cooldown_seconds": 60, "stop_loss_pct": -10.0,
               "trailing_stop_pct": 5.0,
               "max_portfolio_risk_pct": 8.0,
-              "drawdown_pause_pct": 15.0, "drawdown_halt_pct": 20.0},
+              "drawdown_pause_pct": 15.0, "drawdown_halt_pct": 20.0,
+              "long_play": {"enabled": True, "horizon_days": 3, "position_size_pct": 3.0,
+                            "max_concurrent_long_plays": 2}},
     "risk_guards": {"max_positions_per_sector": 2, "order_count_audit_threshold_daily": 10},
     "guardrail_gates": {
-        "cash": True, "position_size": True, "max_portfolio_risk": True, "max_positions": True,
+        "cash": True, "position_size": True, "long_play": True, "max_portfolio_risk": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
         "position_size_trim": True, "duplicate_order": True, "order_idempotency": True,
@@ -147,6 +149,102 @@ class TestGatePositionSize:
         action = {"action": "SELL", "ticker": "NVDA", "quantity": 100, "price": 100.0}
         granted, _ = executor.gate_position_size(context, action)
         assert granted is True
+
+
+class TestGateLongPlay:
+    """2026-07-30: risk.long_play -- small, short-horizon, evidence-gated
+    exception to the normal trailing-stop schedule. This gate enforces the
+    reduced size cap and the concurrent-count cap on BUYs tagged
+    play_type='long'; everything else (standard BUYs, all SELLs) skips it."""
+
+    class _FakeConn:
+        def close(self):
+            pass
+
+    def _mock_open_positions(self, monkeypatch, rows):
+        monkeypatch.setattr(executor.trader_db, "get_conn", lambda: self._FakeConn())
+        monkeypatch.setattr(executor.trader_db, "get_open_positions", lambda conn: rows)
+
+    def test_standard_buy_skips(self, params, monkeypatch):
+        # Must not even touch trader_db for a non-long BUY.
+        def fail_if_called():
+            raise AssertionError("must not query trader_db for a standard BUY")
+        monkeypatch.setattr(executor.trader_db, "get_conn", fail_if_called)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "SOFI", "quantity": 10, "price": 4.0, "play_type": "standard"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is True
+        assert "not a long play" in reason
+
+    def test_sell_skips(self, params, monkeypatch):
+        def fail_if_called():
+            raise AssertionError("must not query trader_db for a SELL")
+        monkeypatch.setattr(executor.trader_db, "get_conn", fail_if_called)
+        action = {"action": "SELL", "ticker": "SOFI", "quantity": 10, "price": 4.0, "play_type": "long"}
+        granted, _ = executor.gate_long_play({"portfolio_value": 10000, "positions": []}, action)
+        assert granted is True
+
+    def test_within_size_cap_and_no_concurrent_passes(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [])
+        # cap is 3.0% of 10000 = $300; this buy is $200 (2%)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "BVS", "quantity": 20, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is True
+        assert "0/2 concurrent" in reason
+
+    def test_exceeds_long_play_size_cap(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [])
+        # cap is $300; this buy is $500 -- would fail the normal 6%/$600
+        # max_position_pct too, but must be rejected on the TIGHTER
+        # long-play cap specifically.
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "BVS", "quantity": 50, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is False
+        assert "exceeds long-play cap of 3.0%" in reason
+
+    def test_at_max_concurrent_blocks(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [
+            {"ticker": "AAA", "play_type": "long"},
+            {"ticker": "BBB", "play_type": "long"},
+        ])
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "CCC", "quantity": 20, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is False
+        assert "max_concurrent_long_plays cap of 2" in reason
+
+    def test_scaling_into_own_existing_long_play_not_counted_as_concurrent(self, params, monkeypatch):
+        # Adding to a long play you already hold shouldn't count against
+        # itself in the concurrency cap.
+        self._mock_open_positions(monkeypatch, [
+            {"ticker": "BVS", "play_type": "long"},
+            {"ticker": "AAA", "play_type": "long"},
+        ])
+        context = {"portfolio_value": 10000, "positions": [{"symbol": "BVS", "market_value": 100.0}]}
+        action = {"action": "BUY", "ticker": "BVS", "quantity": 10, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is True
+        assert "1/2 concurrent" in reason
+
+    def test_disabled_via_params_blocks(self, params, monkeypatch):
+        params["risk"]["long_play"]["enabled"] = False
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "BVS", "quantity": 10, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is False
+        assert "disabled" in reason
+
+    def test_trader_db_error_fails_open(self, params, monkeypatch):
+        def raise_error():
+            raise RuntimeError("db locked")
+        monkeypatch.setattr(executor.trader_db, "get_conn", raise_error)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "BVS", "quantity": 10, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is True
+        assert "fail-open" in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1025,6 +1123,117 @@ class TestCheckStops:
         stop_types = {b["ticker"]: b["stop_type"] for b in breaches}
         assert stop_types.get("NVDA") == "oversized"
         assert stop_types.get("GME") == "hard"
+
+    # ── Long plays (2026-07-30, risk.long_play) ───────────────────────────
+    # A long play is exempt from the trailing-stop schedule only while its
+    # predicted_by_date hasn't arrived; the hard stop always applies
+    # regardless. At the deadline, check_stops() resolves it mechanically
+    # (flips play_type back to 'standard', labels training_examples) --
+    # this must fire once, not force a sell.
+
+    def _mock_long_play(self, monkeypatch, ticker, predicted_by_date, resolve_calls=None, label_calls=None):
+        class _FakeConn:
+            def close(self):
+                pass
+        monkeypatch.setattr(executor.trader_db, "get_conn", lambda: _FakeConn())
+        monkeypatch.setattr(
+            executor.trader_db, "get_open_positions",
+            lambda conn: [{"ticker": ticker, "play_type": "long", "predicted_by_date": predicted_by_date,
+                            "prediction_reason": "earnings beat expected"}],
+        )
+        if resolve_calls is not None:
+            def fake_resolve(conn, ticker, updated_at):
+                resolve_calls.append(ticker)
+            monkeypatch.setattr(executor.trader_db, "resolve_long_play", fake_resolve)
+        if label_calls is not None:
+            monkeypatch.setattr(executor.trader_db, "latest_unlabeled_training_example", lambda conn, ticker: 42)
+
+            def fake_label(conn, training_example_id, trade_id, label_win, label_return_pct, label_horizon):
+                label_calls.append((training_example_id, label_win, label_return_pct, label_horizon))
+            monkeypatch.setattr(executor.trader_db, "label_training_example", fake_label)
+
+    def _relative_date(self, days):
+        return (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=days)).strftime("%Y-%m-%d")
+
+    def test_active_long_play_skips_trailing_stop(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"]["stop_loss_pct"] = -50.0  # wide, won't trigger
+        params["risk"]["trailing_stop_pct"] = 5.0
+        params["guardrail_gates"]["position_size_trim"] = False
+        future = self._relative_date(7)
+        self._mock_long_play(monkeypatch, "BVS", future)
+        # peak 15 -> drop to 14.2 would normally breach the 5% trailing stop
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 15.0)])
+        executor.check_stops("stonks")
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 14.2)])
+        breaches = executor.check_stops("stonks")
+        assert breaches == []
+
+    def test_active_long_play_hard_stop_still_applies(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"]["stop_loss_pct"] = -10.0
+        params["risk"]["trailing_stop_pct"] = 5.0
+        params["guardrail_gates"]["position_size_trim"] = False
+        future = self._relative_date(7)
+        self._mock_long_play(monkeypatch, "BVS", future)
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 8.5)])  # -15%
+        breaches = executor.check_stops("stonks")
+        assert len(breaches) == 1
+        assert breaches[0]["stop_type"] == "hard"
+
+    def test_long_play_resolves_at_deadline(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"]["stop_loss_pct"] = -50.0
+        params["risk"]["trailing_stop_pct"] = 50.0
+        params["guardrail_gates"]["position_size_trim"] = False
+        past = self._relative_date(-1)
+        resolve_calls, label_calls = [], []
+        self._mock_long_play(monkeypatch, "BVS", past, resolve_calls=resolve_calls, label_calls=label_calls)
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 11.0)])  # +10%, "hit"
+        breaches = executor.check_stops("stonks")
+        assert len(breaches) == 1
+        assert breaches[0]["stop_type"] == "long_play_resolved"
+        assert breaches[0]["long_play_hit"] is True
+        assert breaches[0]["loss_pct"] == pytest.approx(10.0)
+        assert resolve_calls == ["BVS"]
+        assert len(label_calls) == 1
+        te_id, label_win, label_return_pct, label_horizon = label_calls[0]
+        assert te_id == 42
+        assert label_win == 1
+        assert label_return_pct == pytest.approx(10.0)
+        assert label_horizon == "long_play_prediction"
+
+    def test_long_play_resolution_records_miss_when_down(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"]["stop_loss_pct"] = -50.0
+        params["risk"]["trailing_stop_pct"] = 50.0
+        params["guardrail_gates"]["position_size_trim"] = False
+        past = self._relative_date(-1)
+        resolve_calls, label_calls = [], []
+        self._mock_long_play(monkeypatch, "BVS", past, resolve_calls=resolve_calls, label_calls=label_calls)
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 9.0)])  # -10%, "miss"
+        breaches = executor.check_stops("stonks")
+        assert breaches[0]["long_play_hit"] is False
+        assert label_calls[0][1] == 0  # label_win
+
+    def test_long_play_toggle_disabled_skips_trader_db(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"]["stop_loss_pct"] = -50.0
+        params["risk"]["trailing_stop_pct"] = 50.0
+        params["guardrail_gates"]["position_size_trim"] = False
+        params["guardrail_gates"]["long_play"] = False
+
+        def fail_if_called():
+            raise AssertionError("must not query trader_db when guardrail_gates.long_play is False")
+        monkeypatch.setattr(executor.trader_db, "get_conn", fail_if_called)
+        monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 10.5)])
+        breaches = executor.check_stops("stonks")
+        assert breaches == []
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -43,12 +43,20 @@ OUTPUT_PATH = WORKSPACE_DIR / "state" / "signal_scorecard.json"
 MIN_SAMPLES = 10
 
 
-def fetch_labeled_examples(trader_id: str, db_path: Path = None) -> list[dict]:
+def fetch_labeled_examples(trader_id: str, db_path: Path = None, label_horizon: str = "trade_close") -> list[dict]:
     """trader_id kept for CLI compatibility -- trader_db.py is single-tenant
     now, no longer filters by it. features comes back as a JSON string from
     SQLite (unlike the old Postgres JSONB, which psycopg2 auto-deserialized)
     -- parsed here so score_signals() keeps getting dicts, same contract as
-    before the migration. A row with malformed JSON is skipped, not raised."""
+    before the migration. A row with malformed JSON is skipped, not raised.
+
+    label_horizon defaults to 'trade_close' (2026-07-30) -- a long play's
+    predicted_by_date resolution (label_horizon='long_play_prediction')
+    is a different kind of label (was the prediction right, independent of
+    whether the position was later sold) and would silently distort this
+    per-signal hit-rate scorecard if mixed in. Pass label_horizon=
+    'long_play_prediction' explicitly (--label-horizon on the CLI) to see
+    that view instead."""
     try:
         conn = trader_db.get_conn(db_path)
     except Exception as e:
@@ -56,7 +64,7 @@ def fetch_labeled_examples(trader_id: str, db_path: Path = None) -> list[dict]:
         return []
 
     try:
-        rows = trader_db.fetch_labeled_training_examples(conn)
+        rows = trader_db.fetch_labeled_training_examples(conn, label_horizon=label_horizon)
     except Exception as e:
         log.error("fetch_labeled_examples(%s): query failed: %s", trader_id, e)
         return []
@@ -120,14 +128,20 @@ def main() -> int:
     parser.add_argument("--min-samples", type=int, default=MIN_SAMPLES)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--db-path", default=None, help="Override state/trader.db (dry-run/tests)")
+    parser.add_argument("--label-horizon", default="trade_close",
+                         choices=["trade_close", "long_play_prediction"],
+                         help="'trade_close' (default) scores real closed-trade outcomes. "
+                              "'long_play_prediction' scores long-play predicted_by_date hit rate instead "
+                              "(params.json risk.long_play) -- review this before ever raising horizon_days.")
     args = parser.parse_args()
 
     db_path = Path(args.db_path) if args.db_path else None
-    examples = fetch_labeled_examples(args.trader_id, db_path=db_path)
+    examples = fetch_labeled_examples(args.trader_id, db_path=db_path, label_horizon=args.label_horizon)
     scorecard = score_signals(examples, args.min_samples)
 
     output = {
         "trader_id": args.trader_id,
+        "label_horizon": args.label_horizon,
         "labeled_examples_total": len(examples),
         "min_samples_threshold": args.min_samples,
         "signals": scorecard,
@@ -136,8 +150,14 @@ def main() -> int:
     print(json.dumps(output, indent=2))
 
     if not args.dry_run:
-        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        OUTPUT_PATH.write_text(json.dumps(output, indent=2) + "\n")
+        # 2026-07-30: label-horizon-scoped filename -- long_play_prediction
+        # runs must not clobber the trade_close scorecard file (or vice
+        # versa), they're different metrics reviewed for different reasons.
+        out_path = OUTPUT_PATH if args.label_horizon == "trade_close" else (
+            OUTPUT_PATH.parent / f"signal_scorecard.{args.label_horizon}.json"
+        )
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(output, indent=2) + "\n")
 
     return 0
 

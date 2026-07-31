@@ -365,6 +365,94 @@ class TestBuySellPersistsPositions:
         assert "positions table write failed" in err
 
 
+class TestLongPlayCli:
+    """End-to-end CLI coverage for --play-type long (2026-07-30,
+    params.json risk.long_play) -- the validation in main() (both
+    --predicted-by-date and --prediction-reason required together, valid
+    date format) and that the fields actually land in the positions row."""
+
+    def test_long_play_buy_persists_all_fields(self, monkeypatch, capsys):
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-lp1"},
+            positions_response=[{"symbol": "BVS", "qty": "5", "avg_entry_price": "10.00", "market_value": "50.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
+            "--price", "10.00", "--thesis", "earnings beat expected",
+            "--play-type", "long", "--predicted-by-date", "2026-08-02",
+            "--prediction-reason", "earnings beat expected", "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "BVS")
+        finally:
+            conn.close()
+        assert row["play_type"] == "long"
+        assert row["predicted_by_date"] == "2026-08-02"
+        assert row["prediction_reason"] == "earnings beat expected"
+
+    def test_long_play_missing_predicted_by_date_rejected(self, monkeypatch, capsys):
+        with pytest.raises(SystemExit):
+            _run_executor(monkeypatch, [
+                "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
+                "--price", "10.00", "--play-type", "long",
+                "--prediction-reason", "earnings beat expected", "--skip-guardrails",
+            ])
+        err = capsys.readouterr().out
+        assert "requires both --predicted-by-date and --prediction-reason" in err
+
+    def test_long_play_missing_prediction_reason_rejected(self, monkeypatch, capsys):
+        with pytest.raises(SystemExit):
+            _run_executor(monkeypatch, [
+                "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
+                "--price", "10.00", "--play-type", "long",
+                "--predicted-by-date", "2026-08-02", "--skip-guardrails",
+            ])
+        err = capsys.readouterr().out
+        assert "requires both --predicted-by-date and --prediction-reason" in err
+
+    def test_long_play_bad_date_format_rejected(self, monkeypatch, capsys):
+        with pytest.raises(SystemExit):
+            _run_executor(monkeypatch, [
+                "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
+                "--price", "10.00", "--play-type", "long",
+                "--predicted-by-date", "08/02/2026", "--prediction-reason", "x", "--skip-guardrails",
+            ])
+        err = capsys.readouterr().out
+        assert "must be YYYY-MM-DD" in err
+
+    def test_long_play_on_sell_rejected(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="BVS", shares=5.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+        with pytest.raises(SystemExit):
+            _run_executor(monkeypatch, [
+                "--account", "stonks", "--action", "SELL", "--ticker", "BVS", "--qty", "5",
+                "--price", "10.00", "--play-type", "long",
+                "--predicted-by-date", "2026-08-02", "--prediction-reason", "x", "--skip-guardrails",
+            ])
+        err = capsys.readouterr().out
+        assert "--play-type long only valid for BUY" in err
+
+    def test_standard_buy_unaffected_by_long_play_validation(self, monkeypatch, capsys):
+        """A plain BUY (play_type defaults to 'standard') must not require
+        --predicted-by-date/--prediction-reason at all."""
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-lp2"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])  # must not raise
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["play_type"] == "standard"
+
+
 class TestSectorGateReadsDb:
     def test_sector_of_reads_positions_table(self, monkeypatch):
         conn = trader_db.get_conn()
