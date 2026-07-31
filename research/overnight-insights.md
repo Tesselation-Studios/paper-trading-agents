@@ -204,3 +204,112 @@ Round 1 used momentum-based entry (RSI 45-65, rising, with volume confirmation).
 ---
 
 *Round 2 written 2026-07-30 ~3:15 AM ET — Stan 🚀*
+
+---
+
+# Round 3 — Framework-Fixed Sweep (Jul 30-31 overnight)
+
+**Source**: Two iterations from a cleaned-up optimization framework — core-default (8 tickers, 50 variants) and stonks-relaxed (10 stonks tickers, relaxed RSI, 50 variants).
+
+## ✅ The Framework Is Fixed
+
+Compare Round 2 (100% win rates, 738-3568% returns) to this round (21-34% win rates, -0.09% to -1.70% returns). These numbers are **credible**. Low win rates, negative returns — this is what honest backtest results look like. The time-shift fix worked.
+
+### The Numbers:
+
+| Iteration | Universe | Variants | Signals | Catch Rate | Return | Trades | Win% | Top Score |
+|-----------|----------|----------|---------|------------|--------|--------|------|-----------|
+| core-default | 8 tickers | 50 | 6,014 | 0.32% | -0.09% | 19 | 21% | 0.2867 |
+| stonks-relaxed | 10 stonks | 50 | 7,422 | 0.63% | -1.70% | 47 | 34% | 0.3185 |
+
+### Top Configs:
+
+**Iteration 1 (core-default)**: RSI(7, 50-75), vol 3.0x, conv 0.4, MA(10), max_position 6%, ceiling 20%
+- Wide RSI band (25-point), high volume threshold (3x). Only 19 trades, 21% win rate.
+
+**Iteration 2 (stonks-relaxed)**: RSI(7, 55-65), vol 2.0x, conv 0.6, MA(20), max_position 10%
+- Tighter RSI band (10-point), still high volume (2x). 47 trades, 34% win rate. More trades, better selectivity, still losing money.
+
+## Patterns Confirmed Across All 3 Rounds
+
+### 1. RSI(7) dominates RSI(14) — unanimous
+
+Every top config across all three rounds uses RSI(7). The standard RSI(14) never appears in a top-3 config. For our small-mid universe, shorter lookback = more actionable signals. Our live strategy still uses RSI(14) in the 40-70 band. This is the single most evidence-backed parameter change we haven't made.
+
+### 2. Catch rates are sub-1% — structural, not parametric
+
+0.32% on core, 0.63% on stonks. Even with the wide RSI band (50-75) in iteration 1, the engine catches fewer than 1 in 150 signals. The bottleneck isn't RSI band width — it's the convolution of multiple filters (RSI + volume + conviction + MA + MACD). Each filter independently eliminates most candidates, and their intersection is near-empty.
+
+**This confirms the core finding from Round 1**: we have a precision-over-recall problem that parameter tuning alone cannot fix. The backtest with 7,422 discovered signals could only act on 47 of them.
+
+### 3. Discovery and replay use fundamentally different signal types
+
+This is the "structural issue" the cron session flagged, and I think it's exactly right:
+
+- **Discovery phase**: Web search, Tavily, sentiment cache, Alpaca news. Finds tickers with buzz — news catalysts, earnings, analyst upgrades, social chatter. These are *narrative* signals.
+- **Replay/entry phase**: RSI, volume, MACD, MA proximity. These are *technical momentum* signals.
+
+There is no overlap. A stock can be in the news for an analyst upgrade but have bearish MACD and flat RSI. A stock can have perfect technicals but no news buzz. The discovery-to-replay pipeline is filtering narrative signals through a technical-momentum sieve — of course the catch rate is near zero.
+
+**Our live book has the same mismatch**: Discovery finds HIPO (guidance raised), AUBN, PRG, BFLY, HRI — all disqualified on MACD/volume. The morning's sector-full gating was just the visible failure mode; the silent failure is narrative → technical mismatch happening on every candidate.
+
+### 4. Volume threshold is the hidden serial killer
+
+Top configs use `volume_min_mult` of 2.0-3.0x. Our live strategy uses 1.0x. But even at 2.0x in the backtest, catch rates are < 1%. The volume filter alone probably eliminates 70-80% of candidates before any other filter applies — small-cap names rarely trade at 2x average volume without news, and when they DO have news, the technicals often don't align.
+
+### 5. Win rates suggest the technical entry signal is weak
+
+21% win rate on core, 34% on stonks. Our v1.0 backtest had 60.6% win rate — but that was also likely contaminated by look-ahead bias (the framework fix postdates the v1.0 test). These 21-34% numbers are probably closer to reality. The technical entry signal (RSI + volume + MA + MACD) may not have any predictive edge at all in the current market regime.
+
+### 6. Stonks universe > core universe but both lose money
+
+Stonks-relaxed: 47 trades, 34% win rate, -1.70% return. Core-default: 19 trades, 21% win rate, -0.09% return. More trades with a slightly better win rate still lost MORE money. This suggests the win-rate improvement on stonks names is offset by worse per-trade execution — the trades we win are smaller than the trades we lose.
+
+## What This Means for Strategy
+
+### The technical-only entry approach may be structurally unprofitable
+
+This is the uncomfortable conclusion. If 100 backtest variants with 6,000-7,400 signals can't find a config with positive returns and >35% win rate, the entry signal itself may not work. The market may be too efficient at the RSI/momentum level for small-mid caps — by the time the technical setup looks good, the move has already happened.
+
+### We have three paths forward:
+
+**Path A: Fix the signal mismatch.** Instead of filtering narrative discoveries through technical gates, build a parallel entry path that acts on narrative signals directly. "Analyst upgrade + positive sentiment + reasonable price" doesn't need perfect RSI. This is the "dual-signal entry" idea from Round 1 but more radical — the narrative path doesn't share the technical path's filters at all.
+
+**Path B: Abandon discovery and scan purely on technicals.** If we're going to filter everything through RSI/volume/MACD anyway, stop wasting cycles on narrative discovery. Scan the universe for stocks that meet the technical criteria FIRST, then check sentiment/news as a confirmation layer. This inverts the current pipeline.
+
+**Path C: Accept the low hit rate and optimize for per-trade execution.** The strategy works — we just get very few shots. Make each shot count more by improving sizing, exit timing, and scaling decisions. This is the path we've been on (v1.13's bootstrap bias, trailing stops). It's the safest but slowest.
+
+### My recommendation: Path A + B hybrid
+
+The v1.13 changes (wider RSI 40-70, conviction floor 0.35/0.25, dropped catalyst/MACDh-flip requirements) are all moves in the right direction — they open the technical gates wider. But they're parametric tweaks on a pipeline that has a structural mismatch. We need:
+
+1. **Keep the technical entry path** with the v1.13 widened gates — it catches the occasional aligned setup
+2. **Add a narrative entry path** that fires on: strong sentiment (0.5+) + catalyst (earnings beat, upgrade, deal) + reasonable valuation (not extended 20%+ above MA) — with NO RSI/MACD/volume gates. This path uses 1-share probes only.
+3. **Invert discovery for the technical path**: scan technicals first, confirm with narrative second
+
+The narrative path gives us the "more reps" the bootstrap phase needs. The technical path catches the rare aligned setup. Together they deploy more capital without sacrificing the quality of either path.
+
+## v1.13 vs. These Findings
+
+v1.13 made these changes, all of which align with the backtest evidence:
+- ✅ Widened RSI band to 40-70 (backtest: even 50-75 gets 0.32% catch rate, 40-70 is wider)
+- ✅ Lowered conviction floor to 0.35/0.25 (backtest top configs use 0.4-0.6, our 0.35 is aggressive but intentional)
+- ✅ Dropped MACDh-flip as mandatory exit (backtest: MACD parameters vary by universe)
+- ✅ Dropped catalyst requirement (backtest: discovery generates narrative signals, requiring a catalyst check on top of technical gates is double-filtering)
+
+What v1.13 hasn't addressed:
+- ❌ Still uses RSI(14), not RSI(7) — unanimous backtest evidence
+- ❌ Still filters narrative signals through technical gates — structural mismatch
+- ❌ No parallel entry path for narrative-only signals
+
+## For Raf
+
+- **The framework fix worked.** 21-34% win rates and negative returns are credible numbers. We can trust future rounds.
+- **RSI(7) is the highest-confidence parameter change** — unanimous across 150+ variants over 3 rounds. Should be implemented regardless of what else changes.
+- **The signal mismatch is the real problem**, not parameter tuning. Discovery finds narrative signals; the replay engine requires technical signals. They don't overlap.
+- I want to test a narrative-only entry path (sentiment + catalyst, no RSI/MACD gates) in the backtest. Can we add that as a 'narrative-discovery' config family in the next sweep?
+- The 2/sector cap is a tertiary concern compared to the signal mismatch — fixing that first, then we can revisit sector limits.
+
+---
+
+*Round 3 written 2026-07-31 ~1:30 AM ET — Stan 🚀*
