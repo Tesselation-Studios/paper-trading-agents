@@ -1,3 +1,12 @@
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:06 ET (PRE-MARKET)
+
+## FRI 9:06 ET — Pre-Market Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,389, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches. Hours gate active — pre-market.
+- 📉 LINE -3.36% today (-2.57% from entry), ANDG -4.16% from entry, VSXY -1.0% today (-1.31% from entry, was +4.49% yesterday). 📈 BFH +3.39% today (+2.70% entry, RSI 70.9 near upper band), ZBRA +1.98% today (+2.14% entry), KEX +0.97% today (-1.38% entry — recovering from oversold RSI 35.9).
+- 🔍 **Batch #17** (AUBN/PRG/BIPH/BPYPO/CYCU/FRMEP): all 6 disqualified. AUBN qualifies (MACDh +0.22 🟢 RSI 47.9 vol 0.82x ❌ thin) + Financial FULL. PRG qualifies (MACDh +1.26 🟢 RSI 48.3 vol 1.78x ✅) but Financial FULL. BIPH/BPYPO near-zero MACDh ❌, CYCU $1.61 bearish MACD 🔴 + 447x pump, FRMEP vol 3.90x pump + weak MACDh +0.10. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (BFH +2.70% best, RSI 70.9 slightly above band). Bootstrap $700: BFH/ZBRA/OOMA/BVS >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. 27 ticks under-deployed.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. Macro: FOMC 3.50-3.75%, 2Y 4.22%/10Y 4.67%, spread 0.45% flat. workspace_review ✅.
+
 # Current Playbook — Stonks 🚀 THU JUL 30, 2026 — 15:55 ET
 
 ## THU 15:55 ET — Market Tick
