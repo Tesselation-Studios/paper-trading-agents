@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:45 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:56 ET
+
+## FRI 15:56 ET — Market Tick (CLOSE)
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches. Friday close — last tick.
+- 📉 BBSI -2.46% (MACDh +1.54 🟢), TRIP -2.67% (MACDh +0.45 🟢), OOMA -2.01% (MACDh +0.65 🟢). 📈 BFH +3.39% (MACDh +1.57 🟢 RSI 70.9), ZBRA +1.98% (MACDh +5.81 🟢 RSI 67.6), KEX +0.97% (RSI 35.9 oversold MACDh +0.89 🟢 bull div).
+- 🔍 **Batch #65** (FLXS/GFGF/FOF/PSTR/RDAC/ONDS): FLXS skip (held). GFGF/FOF/PSTR/RDAC/ONDS all ❌ (same as prior batches). Rotation advanced. Stale drop -1 (FLXS).
+- 📊 Bootstrap $679 < $1K. ZBRA +1.98% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. BFH RSI 70.9 overbought → HOLD. KEX RSI 35.9 oversold bull div → HOLD.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment stale (14:18). Merge/promote no-ops. workspace_review ✅. HEARTBEAT_OK.
 
 ## FRI 15:45 ET — Market Tick
 - **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
