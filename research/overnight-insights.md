@@ -313,3 +313,166 @@ What v1.13 hasn't addressed:
 ---
 
 *Round 3 written 2026-07-31 ~1:30 AM ET — Stan 🚀*
+
+---
+
+# Round 4 — Root Cause: Discovery/Replay Criteria Are Completely Disjoint
+
+**Source**: Iterations 3-5 plus source-code analysis of `overnight_discovery.py` and `overnight_replay.py` in the paper-trading-rebuild project.
+
+## 🚨 The catch_rate Is Near-Zero For A Specific Reason
+
+I traced the actual code. The "catch rate" measures: *what fraction of discovery-phase signals did the replay engine's trades match?* Matching requires: same symbol, within 2 hours, within 5% price.
+
+The answer is near-zero because **discovery and replay use fundamentally incompatible entry criteria.**
+
+## Discovery Phase: What It Looks For
+
+The `SignalDiscoverer` in `overnight_discovery.py` runs FOUR signal checkers:
+
+| Signal Type | Trigger Condition |
+|---|---|
+| **RSI Bounce** | RSI < 35 (oversold) → then RSI bounces up over patience ticks |
+| **Volume Spike** | Volume > 1.5x 20d avg, sustained for 2 consecutive ticks |
+| **Momentum Breakout** | Price up > 2% over 10 ticks, MACD bullish, price above MA20 |
+| **MA Bounce** | Price 1-3% below MA, bouncing toward it |
+
+Discovery defaults: `rsi_oversold_threshold=35`, `volume_ratio_min=1.5`, `momentum_threshold=2%`, `ma_period=20`
+
+This is why 6,000-7,400 signals are generated — the criteria are loose. These are **"something is happening"** detectors: something unusual is going on with this stock.
+
+## Replay Entry Gate: What It Requires
+
+The `ReplayVariantEngine` in `overnight_replay.py` applies a COMPLETELY DIFFERENT filter:
+
+```python
+# Entry gate (abbreviated from trader_fn in overnight_replay.py:138-180)
+rsi_ok = rsi_entry_min <= rsi <= rsi_entry_max    # typically 50 ≤ RSI ≤ 70
+vol_ok = volume_ratio >= volume_min_mult            # typically vol ≥ 2.0x avg
+ma_ok  = price_above_ma == params["price_above_ma"]  # usually price > MA
+macd_ok = macd_fast > macd_slow                      # MACD bullish
+
+# Entry requires BOTH RSI and volume:
+if not (rsi_ok and vol_ok):
+    return HOLD  # ← NO TRADE, regardless of other signals
+
+# Plus conviction must clear conviction_min (typically 0.60)
+conviction = 0.30*(rsi_ok) + 0.25*(vol_ok) + 0.15*(ma_ok) + 0.15*(macd_ok)
+if conviction < conviction_min:
+    return HOLD
+```
+
+Replay defaults: `rsi_entry_min=50`, `rsi_entry_max=70`, `volume_min_mult=2.0`, `conviction_min=0.60`, `price_above_ma=True`
+
+## The Overlap Matrix — Where They Match (And Don't)
+
+| Discovery Signal | Discovery Trigger | Replay Gate | Overlap? |
+|---|---|---|---|
+| RSI Bounce | RSI **< 35** | RSI **50-70** | ❌ **NEVER** — disjoint RSI ranges. By the time RSI recovers to 50+, the signal is hours old, well past the 2h match window |
+| Volume Spike | Vol > **1.5x** | RSI 50-70 + Vol > **2.0x** | 🔶 **RARELY** — volume spikes often happen at RSI extremes (<40 or >70), where replay's RSI gate kills the entry |
+| Momentum Breakout | Mom > 2%, MACD bullish, > MA | RSI 50-70 + MACD bullish + > MA | 🟡 **SOMETIMES** — the ONLY overlap path. But discovery doesn't check RSI, and momentum breakouts often push RSI > 70 (overbought), which replay rejects |
+| MA Bounce | Price **below/near** MA | Price **above** MA | ❌ **NEVER** — opposite MA requirements. Bouncing from below MA is literally the opposite of "price above MA" |
+
+**Conclusion**: 3 out of 4 discovery signal types have ZERO overlap with the replay entry gates. Only momentum breakout has a theoretical chance, and even that is gated by RSI range mismatch.
+
+## Why Iterations 1-2 Had 0.32-0.63% Catch Rate, But 3-5 Have 0.00
+
+Iterations 1-2 used `DiscoveryConfig` defaults — the standard loose criteria. The few matches (19 out of 6,014; 47 out of 7,422) came from momentum breakout signals where RSI happened to be in the 50-70 band by coincidence.
+
+Iterations 3-5 used tighter/smaller universes:
+- **all-tight**: RSI band [55, 60] — only 5 points wide. This eliminates even the rare momentum breakout overlap. 36 tickers, 7,613 signals, zero matches.
+- **kairos-macd**: Only 10 tickers, 945 signals. Small universe = fewer chances for coincidence. Zero matches.
+- **aldridge-aggressive**: Only 8 tickers, 779 signals. Even fewer chances. Zero matches.
+
+**The catch rate isn't measuring signal quality — it's measuring random coincidence between two disjoint signal detection systems.**
+
+## Where Do The Returns Come From?
+
+Iterations 3-5 show returns of +2.11%, +3.88%, +2.26% with catch rate = 0.00. These returns come from trades that the replay engine found INDEPENDENTLY of discovery — pure technical momentum trades (RSI 50-70, volume > 2x, MACD bullish, above MA). Since they don't match any discovery signal, they're all classified as "false positives" in the scorer.
+
+This means:
+1. **The technical entry path IS finding profitable trades.** +2-4% returns are real.
+2. **Discovery is adding zero value to the backtest.** Every signal it generates gets ignored.
+3. **The scoring formula is broken for this pipeline.** With catch_rate=0 and fp_rate=1.0, the score should be negative — but the z-score normalization on returns artificially inflates it.
+
+## The Specific Scoring Bug
+
+In `overnight_scorer.py:score_all()`:
+```python
+returns = np.array([s.total_return_pct for s in scored])
+z_scores = (returns - np.mean(returns)) / np.std(returns)
+normalized = 1.0 / (1.0 + np.exp(-z_scores))  # sigmoid
+
+s.score = 0.40 * catch_rate + (-0.25) * fp_rate + 0.35 * normalized_return
+```
+
+When catch_rate=0 and fp_rate=1.0: `score = -0.25 + 0.35 * normalized_return`
+
+For a +3.88% return variant among a field averaging near 0%, the z-score is high and `normalized_return ≈ 0.98`, giving `score ≈ -0.25 + 0.34 = 0.09`.
+
+But the reported scores are 0.31-0.33. This means either:
+- fp_rate isn't actually 1.0 (some trades DO match discovery signals after all, just at <0.5% rate)
+- OR the normalization is doing more work than visible
+
+Either way, the scoring formula is **rewarding pure technical trades that have nothing to do with discovery**, while penalizing them as "false positives." The 0.40 weight on catch_rate makes discovery the highest-weighted component, but discovery generates signals the replay engine literally cannot act on.
+
+## The Fixes
+
+### Fix A: Align Discovery and Replay Criteria (structural)
+
+Make discovery generate signals using the SAME criteria as the replay entry gate. Two options:
+
+**A1: Add a "momentum entry" signal type to discovery** that mirrors the replay gate:
+- RSI in [50, 70]
+- Volume > 2.0x avg
+- MACD bullish
+- Price above MA
+
+This would make catch_rate meaningful — it would measure "how many of these technical setups did each variant catch?"
+
+**A2: Add RSI bounce and MA bounce entry paths to replay** that mirror discovery:
+- If RSI < 35 and bouncing → enter (mean reversion)
+- If price near MA and bouncing → enter (support bounce)
+
+This would open more entry types and make discovery signals actionable.
+
+### Fix B: Remove Discovery/Replay Link (scoring)
+
+If discovery and replay are measuring different things, stop trying to link them. Instead:
+1. Discovery generates a watchlist ("these stocks have catalysts")
+2. Replay scans the watchlist with technical entry gates
+3. Score = pure technical performance (return, win rate, Sharpe) — no catch rate
+
+This is closer to what our live pipeline does: discovery populates the watchlist, then technical gates filter entries.
+
+### Fix C: Weight fp_rate by profitability
+
+If "false positives" (trades not matching discovery) are profitable, they shouldn't be penalized. Score false positives by whether they made money:
+```python
+fp_penalty = fp_rate * (1 - win_rate_of_false_positives)
+```
+
+A "false positive" that makes money isn't a false positive — it's a trade discovery missed.
+
+## Recommendation
+
+**Fix A1 + Fix B hybrid**:
+
+1. Add a "technical_momentum" signal type to discovery that mirrors the replay entry gate (RSI 50-70, vol 2x, MACD bullish, above MA). This makes catch_rate meaningful.
+2. Also keep the existing discovery types (RSI bounce, volume spike, MA bounce) but score them separately — they're a different alpha source.
+3. Add a "discovery catch rate" for the narrative signals AND a "technical catch rate" for the momentum signals. Report both.
+4. Weight scoring: 0.20 * narrative_catch + 0.20 * technical_catch + 0.30 * return + 0.30 * win_rate
+
+This way we can actually optimize for what matters: catching signals the strategy can ACT on, and making money doing it.
+
+## For Raf
+
+- **The catch_rate measurement is broken by design**, not by bug. Discovery looks for RSI < 35 bounces and MA bounces; replay only enters at RSI 50-70 above MA. They're measuring different universes and calling the empty intersection a "catch rate."
+- **The technical-only entries are profitable (+2-4%)** even though they're classified as 100% false positives. This actually validates our v1.13 technical-first approach.
+- **The discovery phase as currently designed adds noise, not signal**, to the optimization. 6,000-7,400 "signals" that can never be caught inflate the denominator and make catch_rate meaningless.
+- I recommend Fix A1: add a momentum signal type to discovery that mirrors replay entry gates. This turns overnight optimization into a proper parameter sweep over the actual entry strategy.
+- The RSI(7) finding from earlier rounds still stands — but it needs to be tested in a framework where catch_rate means something first.
+
+---
+
+*Round 4 written 2026-07-31 ~2:00 AM ET — Stan 🚀*
