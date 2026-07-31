@@ -462,7 +462,7 @@ class TestGateHours:
         ts = MARKET_OPEN_TS.replace(hour=9, minute=0)
         granted, reason = executor.gate_hours({"_test_now": ts}, {})
         assert granted is False
-        assert "market open 09:30-16:00 ET" in reason
+        assert "market open 09:30-16:00" in reason
 
     def test_after_close(self):
         ts = MARKET_OPEN_TS.replace(hour=16, minute=1)
@@ -479,6 +479,40 @@ class TestGateHours:
         granted, reason = executor.gate_hours({"_test_now": saturday}, {})
         assert granted is False
         assert "Saturday" in reason
+
+    def test_holiday_blocked_even_on_a_weekday(self):
+        # Christmas 2026 falls on a Friday -- a plain weekday/hours check
+        # would pass this, the whole point of wiring in market_hours.py.
+        christmas = datetime.datetime(2026, 12, 25, 12, 0, tzinfo=ZoneInfo("America/New_York"))
+        granted, reason = executor.gate_hours({"_test_now": christmas}, {})
+        assert granted is False
+        assert "holiday" in reason
+
+    def test_floating_holiday_blocked(self):
+        # Thanksgiving 2026 -- computed (4th Thursday of November), not a
+        # fixed date, confirms the floating-holiday calculation is wired in.
+        thanksgiving = datetime.datetime(2026, 11, 26, 12, 0, tzinfo=ZoneInfo("America/New_York"))
+        granted, reason = executor.gate_hours({"_test_now": thanksgiving}, {})
+        assert granted is False
+        assert "holiday" in reason
+
+    def test_early_close_day_after_new_close_time_blocked(self):
+        # Day after Thanksgiving 2026 (Nov 27, "Black Friday") is a 2pm early close.
+        ts = datetime.datetime(2026, 11, 27, 14, 30, tzinfo=ZoneInfo("America/New_York"))
+        granted, reason = executor.gate_hours({"_test_now": ts}, {})
+        assert granted is False
+        assert "early close" in reason
+
+    def test_early_close_day_before_new_close_time_passes(self):
+        ts = datetime.datetime(2026, 11, 27, 13, 0, tzinfo=ZoneInfo("America/New_York"))
+        granted, _ = executor.gate_hours({"_test_now": ts}, {})
+        assert granted is True
+
+    def test_ordinary_weekday_not_blocked_as_holiday(self):
+        # Sanity check the holiday wiring doesn't over-trigger on a normal day.
+        granted, reason = executor.gate_hours({"_test_now": MARKET_OPEN_TS}, {})
+        assert granted is True
+        assert "holiday" not in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────

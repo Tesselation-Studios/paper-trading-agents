@@ -452,7 +452,11 @@ def gate_sector_concentration(context: Dict[str, Any], action: Dict[str, Any]) -
 
 
 def gate_hours(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
-    """Reject any BUY/SELL outside 09:30-16:00 ET, Mon-Fri.
+    """Reject any BUY/SELL outside 09:30-16:00 ET, Mon-Fri, or on an NYSE
+    holiday (fixed + floating, e.g. Thanksgiving/Easter-derived) or early
+    close day (see market_hours.py -- a real calendar, not just a weekday
+    check, so this doesn't try to trade on a market holiday that happens
+    to fall Mon-Fri).
 
     context["_test_now"] lets tests inject a fixed timestamp instead of the
     real wall clock — not used in production, only by the test suite.
@@ -469,10 +473,19 @@ def gate_hours(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, s
 
     if now.weekday() >= 5:
         return False, f"{now.strftime('%A')} — market closed on weekends"
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    import market_hours
+    if market_hours.is_holiday(now.date()) or market_hours.is_custom_holiday(now.date()):
+        return False, f"{now.strftime('%Y-%m-%d')} — market closed (holiday)"
+
     market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
-    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+    market_close = now.replace(hour=14, minute=0, second=0, microsecond=0) \
+        if market_hours.is_early_close_day(now.date()) \
+        else now.replace(hour=16, minute=0, second=0, microsecond=0)
     if now < market_open or now > market_close:
-        return False, f"{now.strftime('%H:%M %Z')} — market open 09:30-16:00 ET"
+        close_note = " (early close today)" if market_hours.is_early_close_day(now.date()) else ""
+        return False, f"{now.strftime('%H:%M %Z')} — market open 09:30-{market_close.strftime('%H:%M')}{close_note}"
     return True, f"{now.strftime('%H:%M %Z')} — market open"
 
 
