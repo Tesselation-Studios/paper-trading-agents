@@ -22,12 +22,6 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import executor  # noqa: E402
-# Captured once, before any test's sys.modules["deployment_pressure"]
-# monkeypatching -- a fresh `import deployment_pressure` inside a test that
-# runs after TestGateConviction's autouse fixture would just re-bind to the
-# cached fake module, not the real one.
-import deployment_pressure as real_deployment_pressure  # noqa: E402
-
 
 # A fixed Wednesday 12:00 ET during market hours, for gates that don't care
 # about hours but would otherwise flake depending on when tests run.
@@ -42,10 +36,13 @@ DEFAULT_PARAMS = {
               "max_portfolio_risk_pct": 8.0,
               "drawdown_pause_pct": 15.0, "drawdown_halt_pct": 20.0,
               "long_play": {"enabled": True, "horizon_days": 3, "position_size_pct": 3.0,
-                            "max_concurrent_long_plays": 2}},
+                            "max_concurrent_long_plays": 2},
+              "conviction_play": {"enabled": True, "position_size_pct": 10.0,
+                                   "max_concurrent_conviction_plays": 5, "trail_multiplier": 1.5}},
     "risk_guards": {"max_positions_per_sector": 2, "order_count_audit_threshold_daily": 10},
     "guardrail_gates": {
-        "cash": True, "position_size": True, "long_play": True, "max_portfolio_risk": True, "max_positions": True,
+        "cash": True, "position_size": True, "long_play": True, "conviction_play": True,
+        "max_portfolio_risk": True, "max_positions": True,
         "sector_concentration": True, "hours": True, "conviction": True,
         "bankroll": True, "hard_stop": True, "trailing_stop": True,
         "position_size_trim": True, "duplicate_order": True, "order_idempotency": True,
@@ -247,6 +244,88 @@ class TestGateLongPlay:
         assert "fail-open" in reason
 
 
+class TestGateConvictionPlay:
+    """params.json risk.conviction_play -- the researched, held-on-thesis
+    bucket: larger size cap than long_play, its own concurrency cap. Same
+    shape as TestGateLongPlay, sized up instead of down."""
+
+    class _FakeConn:
+        def close(self):
+            pass
+
+    def _mock_open_positions(self, monkeypatch, rows):
+        monkeypatch.setattr(executor.trader_db, "get_conn", lambda: self._FakeConn())
+        monkeypatch.setattr(executor.trader_db, "get_open_positions", lambda conn: rows)
+
+    def test_standard_buy_skips(self, params, monkeypatch):
+        def fail_if_called():
+            raise AssertionError("must not query trader_db for a standard BUY")
+        monkeypatch.setattr(executor.trader_db, "get_conn", fail_if_called)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "SOFI", "quantity": 10, "price": 4.0, "play_type": "standard"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is True
+        assert "not a conviction play" in reason
+
+    def test_sell_skips(self, params, monkeypatch):
+        def fail_if_called():
+            raise AssertionError("must not query trader_db for a SELL")
+        monkeypatch.setattr(executor.trader_db, "get_conn", fail_if_called)
+        action = {"action": "SELL", "ticker": "SOFI", "quantity": 10, "price": 4.0, "play_type": "conviction"}
+        granted, _ = executor.gate_conviction_play({"portfolio_value": 10000, "positions": []}, action)
+        assert granted is True
+
+    def test_within_size_cap_and_no_concurrent_passes(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [])
+        # cap is 10.0% of 10000 = $1000; this buy is $500 (5%)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "AAPL", "quantity": 5, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is True
+        assert "0/5 concurrent" in reason
+
+    def test_exceeds_conviction_play_size_cap(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [])
+        # cap is $1000; this buy is $1500
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "AAPL", "quantity": 15, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is False
+        assert "exceeds conviction-play cap of 10.0%" in reason
+
+    def test_at_max_concurrent_blocks(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [
+            {"ticker": "AAA", "play_type": "conviction"},
+            {"ticker": "BBB", "play_type": "conviction"},
+            {"ticker": "CCC", "play_type": "conviction"},
+            {"ticker": "DDD", "play_type": "conviction"},
+            {"ticker": "EEE", "play_type": "conviction"},
+        ])
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "FFF", "quantity": 5, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is False
+        assert "max_concurrent_conviction_plays cap of 5" in reason
+
+    def test_disabled_via_params_blocks(self, params, monkeypatch):
+        params["risk"]["conviction_play"]["enabled"] = False
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "AAPL", "quantity": 5, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is False
+        assert "disabled" in reason
+
+    def test_trader_db_error_fails_open(self, params, monkeypatch):
+        def raise_error():
+            raise RuntimeError("db locked")
+        monkeypatch.setattr(executor.trader_db, "get_conn", raise_error)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "AAPL", "quantity": 5, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is True
+        assert "fail-open" in reason
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # gate_max_portfolio_risk
 # ─────────────────────────────────────────────────────────────────────────────
@@ -408,20 +487,9 @@ class TestGateHours:
 
 
 class TestGateConviction:
-    @pytest.fixture(autouse=True)
-    def isolated_deployment_pressure(self, monkeypatch):
-        """2026-07-27: gate_conviction now imports deployment_pressure and
-        reads its persisted state -- without isolation these tests would
-        read/create the real state/deployment_pressure.json on disk, exactly
-        the flakiness TestGateBankroll's module-mocking pattern exists to
-        prevent. Fake conviction_floor mimics ticks=0 (no pressure) behavior:
-        flat at base_floor, matching this class's existing 0.50-floor
-        assertions unchanged."""
-        fake_dp = type("M", (), {
-            "read_state": staticmethod(lambda: {"consecutive_under_deployed_ticks": 0}),
-            "conviction_floor": staticmethod(lambda base, floor_min, ticks: base),
-        })
-        monkeypatch.setitem(sys.modules, "deployment_pressure", fake_dp)
+    """gate_conviction is a flat sanity floor now, not a deployment-pressure
+    ratchet -- entry quality is decided by the gestalt Stan reasons over
+    (tick_prompt.md step 8), not a numeric threshold formula."""
 
     def test_above_floor(self, params):
         granted, _ = executor.gate_conviction({}, {"action": "BUY", "conviction": 0.7})
@@ -430,7 +498,7 @@ class TestGateConviction:
     def test_below_floor(self, params):
         granted, reason = executor.gate_conviction({}, {"action": "BUY", "conviction": 0.3})
         assert granted is False
-        assert "below 0.50 floor" in reason
+        assert "below sanity floor 0.50" in reason
 
     def test_no_conviction_fails_open(self, params):
         granted, reason = executor.gate_conviction({}, {"action": "BUY"})
@@ -440,21 +508,6 @@ class TestGateConviction:
     def test_exactly_at_floor_passes(self, params):
         granted, _ = executor.gate_conviction({}, {"action": "BUY", "conviction": 0.5})
         assert granted is True
-
-    def test_dynamic_floor_used_when_under_pressure(self, params, monkeypatch):
-        """Confirms gate_conviction actually wires into deployment_pressure's
-        real ramp math end-to-end, not just that isolation doesn't leak."""
-        ticks = real_deployment_pressure.GRACE_TICKS + real_deployment_pressure.RAMP_TICKS
-        fake_dp = type("M", (), {
-            "read_state": staticmethod(lambda: {"consecutive_under_deployed_ticks": ticks}),
-            "conviction_floor": staticmethod(real_deployment_pressure.conviction_floor),
-        })
-        monkeypatch.setitem(sys.modules, "deployment_pressure", fake_dp)
-        # 0.4 conviction would fail the base 0.50 floor, but passes once
-        # sustained pressure has fully dropped the floor to conviction_floor_min (0.35)
-        granted, reason = executor.gate_conviction({}, {"action": "BUY", "conviction": 0.4})
-        assert granted is True
-        assert "0.35" in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -931,6 +984,31 @@ class TestCheckOrderChain:
         hours_result = next(r for r in results if r["gate"] == "hours")
         assert hours_result["passed"] is True
         assert "disabled via params.json" in hours_result["reason"]
+
+    def test_warn_mode_gate_that_would_reject_does_not_block(self, params, mock_account, monkeypatch):
+        # conviction floor 0.5, conviction 0.1 would normally reject -- but
+        # in "warn" mode the chain must still grant the order.
+        params["guardrail_gates"]["conviction"] = "warn"
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "SOFI", 5, price=4.0, conviction=0.1,
+        )
+        assert granted is True
+        conviction_result = next(r for r in results if r["gate"] == "conviction")
+        assert conviction_result["passed"] is True
+        assert conviction_result["warn_only"] is True
+        assert conviction_result["would_have_blocked"] is True
+
+    def test_warn_mode_gate_that_would_pass_shows_no_warn_flag(self, params, mock_account, monkeypatch):
+        params["guardrail_gates"]["conviction"] = "warn"
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "SOFI", 5, price=4.0, conviction=0.9,
+        )
+        assert granted is True
+        conviction_result = next(r for r in results if r["gate"] == "conviction")
+        assert conviction_result["passed"] is True
+        assert "warn_only" not in conviction_result
 
     def test_first_rejection_stops_chain(self, params, mock_account, monkeypatch):
         # conviction floor 0.5, pass a BUY with conviction 0.1 -> should be

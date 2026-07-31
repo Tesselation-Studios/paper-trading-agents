@@ -308,6 +308,67 @@ def gate_long_play(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[boo
     )
 
 
+def gate_conviction_play(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """Enforces conviction-play rules on BUYs tagged play_type='conviction'
+    (params.json risk.conviction_play): a larger position_size_pct cap than
+    the normal max_position_pct (this is the higher-conviction bucket, sized
+    up not down), plus a max_concurrent_conviction_plays cap. Non-conviction
+    BUYs and all SELLs skip this gate entirely.
+    """
+    if action.get("action") != "BUY" or action.get("play_type") != "conviction":
+        return True, "not a conviction play, skipped"
+
+    cp_params = load_params().get("risk", {}).get("conviction_play", {})
+    if not cp_params.get("enabled", True):
+        return False, "conviction plays disabled via params.json risk.conviction_play.enabled"
+
+    ticker = str(action.get("ticker", "")).upper()
+    price = float(action.get("price", 0) or 0)
+    qty = float(action.get("quantity", 0))
+    proposed_value = qty * price
+    portfolio_value = float(context.get("portfolio_value", 0))
+    if proposed_value <= 0 or portfolio_value <= 0:
+        return True, "no price/portfolio data, skipped (fail-open)"
+
+    size_pct = float(cp_params.get("position_size_pct", 10.0))
+    existing_value = sum(
+        float(p.get("market_value", 0))
+        for p in context.get("positions", [])
+        if str(p.get("symbol", "")).upper() == ticker
+    )
+    total_pct = (existing_value + proposed_value) / portfolio_value * 100
+    if total_pct > size_pct:
+        return False, (
+            f"{ticker} conviction play would be {total_pct:.1f}% of portfolio "
+            f"(existing ${existing_value:,.2f} + proposed ${proposed_value:,.2f}), "
+            f"exceeds conviction-play cap of {size_pct:.1f}%"
+        )
+
+    max_concurrent = int(cp_params.get("max_concurrent_conviction_plays", 5))
+    try:
+        conn = trader_db.get_conn()
+        try:
+            open_conviction_plays = [
+                p for p in trader_db.get_open_positions(conn)
+                if p.get("play_type") == "conviction" and str(p.get("ticker", "")).upper() != ticker
+            ]
+        finally:
+            conn.close()
+    except Exception as e:
+        return True, f"could not check concurrent conviction plays (fail-open): {e}"
+
+    if len(open_conviction_plays) >= max_concurrent:
+        tickers = ", ".join(p["ticker"] for p in open_conviction_plays)
+        return False, (
+            f"already {len(open_conviction_plays)} open conviction play(s) ({tickers}), "
+            f"at max_concurrent_conviction_plays cap of {max_concurrent}"
+        )
+    return True, (
+        f"{ticker} conviction play at {total_pct:.1f}% of portfolio (cap {size_pct:.1f}%), "
+        f"{len(open_conviction_plays)}/{max_concurrent} concurrent conviction plays"
+    )
+
+
 def gate_max_portfolio_risk(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     """Portfolio-level stop-loss exposure: if every open position (plus this
     proposed buy) hit its hard stop simultaneously, what % of equity would be
@@ -473,24 +534,19 @@ def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool
 
 
 def gate_conviction(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """A sanity floor, not a real gate -- catches a broken/zero conviction
+    score. Entry quality is decided by the gestalt Stan reasons over (world
+    narrative, congress trades, fundamentals, wiki, cross-sectional
+    momentum), not a numeric threshold formula."""
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
     if action.get("conviction") is None:
         return True, "no conviction passed, skipped (fail-open)"
     risk = load_params().get("risk", {})
-    base_floor = float(risk.get("conviction_floor", 0.5))
-    floor_min = float(risk.get("conviction_floor_min", 0.35))
-    # 2026-07-27: floor drops (never below floor_min) the longer the account
-    # has sat under-deployed -- see deployment_pressure.py. Reads the state
-    # `status` already wrote this tick rather than re-fetching account data.
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    import deployment_pressure
-    pressure_state = deployment_pressure.read_state()
-    ticks = pressure_state.get("consecutive_under_deployed_ticks", 0)
-    floor = deployment_pressure.conviction_floor(base_floor, floor_min, ticks)
+    floor = float(risk.get("conviction_floor", 0.10))
     conviction = float(action["conviction"])
     if conviction < floor:
-        return False, f"conviction {conviction:.2f} below {floor:.2f} floor ({ticks} ticks under-deployed)"
+        return False, f"conviction {conviction:.2f} below sanity floor {floor:.2f}"
     return True, f"conviction {conviction:.2f} >= {floor:.2f} floor"
 
 
@@ -808,6 +864,7 @@ GATES = {
     "cash": gate_cash,
     "position_size": gate_position_size,
     "long_play": gate_long_play,
+    "conviction_play": gate_conviction_play,
     "max_portfolio_risk": gate_max_portfolio_risk,
     "max_positions": gate_max_positions,
     "sector_concentration": gate_sector_concentration,
@@ -870,15 +927,21 @@ def check_order(account: str, action: str, ticker: str, qty: int, price: Optiona
     toggles = load_params().get("guardrail_gates", {})
     results = []
     for name, gate_fn in GATES.items():
-        if not toggles.get(name, True):
+        mode = toggles.get(name, True)
+        if mode is False:
             results.append({"gate": name, "passed": True, "reason": "disabled via params.json guardrail_gates"})
             continue
         try:
             passed, reason = gate_fn(context, trade_action)
         except Exception as e:
             passed, reason = True, f"ERROR (fail-open): {e}"
-        results.append({"gate": name, "passed": passed, "reason": reason})
-        if not passed:
+        warn_only = (mode == "warn")
+        entry = {"gate": name, "passed": passed or warn_only, "reason": reason}
+        if warn_only and not passed:
+            entry["warn_only"] = True
+            entry["would_have_blocked"] = True
+        results.append(entry)
+        if not passed and not warn_only:
             return False, f"Blocked by {name}: {reason}", results
     return True, "All gates passed", results
 
@@ -1016,17 +1079,21 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
     # risk.long_play). Fail-open: a DB error here just means no ticker
     # gets long-play treatment this tick, falls through to normal stops.
     long_play_map: Dict[str, Dict[str, Any]] = {}
-    if toggles.get("long_play", True):
+    conviction_play_tickers: set = set()
+    if toggles.get("long_play", True) or toggles.get("conviction_play", True):
         try:
             conn = trader_db.get_conn()
             try:
                 for row in trader_db.get_open_positions(conn):
                     if row.get("play_type") == "long" and row.get("predicted_by_date"):
                         long_play_map[str(row["ticker"]).upper()] = row
+                    elif row.get("play_type") == "conviction":
+                        conviction_play_tickers.add(str(row["ticker"]).upper())
             finally:
                 conn.close()
         except Exception:
             long_play_map = {}
+            conviction_play_tickers = set()
     today = datetime.now(timezone.utc).date()
 
     for p in positions:
@@ -1133,6 +1200,13 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
                 if vol > 0:
                     effective_trail_pct = max(trail_min_pct, min(trail_max_pct,
                                                trailing_pct * (1 + trail_k * vol)))
+            if ticker in conviction_play_tickers:
+                # Wider room for a short-term dip that doesn't break the
+                # thesis -- not exempt from the trailing stop like a long
+                # play, just less trigger-happy (params.json risk.
+                # conviction_play.trail_multiplier).
+                trail_multiplier = float(risk.get("conviction_play", {}).get("trail_multiplier", 1.5))
+                effective_trail_pct = effective_trail_pct * trail_multiplier
             trail_stop_price = peak_price * (1 - effective_trail_pct / 100)
             if current_price <= trail_stop_price:
                 drop_from_peak = (current_price - peak_price) / peak_price * 100
@@ -1218,16 +1292,18 @@ def main():
                          "never blocks the order.")
     parser.add_argument("--close-reason", help="SELL only -- why (breach type, thesis break, manual). "
                          "Defaults to a generic 'manual SELL' if omitted.")
-    parser.add_argument("--play-type", default="standard", choices=["standard", "long"],
+    parser.add_argument("--play-type", default="standard", choices=["standard", "long", "conviction"],
                          help="BUY only -- 'long' tags this as a long play (params.json risk.long_play): "
                          "smaller size, exempt from the trailing-stop schedule until --predicted-by-date, "
-                         "the hard stop still applies. Requires --predicted-by-date and --prediction-reason.")
+                         "the hard stop still applies. Requires --predicted-by-date and --prediction-reason. "
+                         "'conviction' tags this as a conviction play (params.json risk.conviction_play): "
+                         "larger size, wider trailing stop, held on thesis. Requires --prediction-reason.")
     parser.add_argument("--predicted-by-date", help="BUY only, required with --play-type long -- ISO date "
                          "(YYYY-MM-DD) by which the position is predicted to be up. Mechanically enforced: "
                          "check_stops() resolves (does not necessarily force-sell) at this date.")
-    parser.add_argument("--prediction-reason", help="BUY only, required with --play-type long -- the specific "
-                         "evidence behind the prediction (cite sentiment_cache.json/get_fundamentals/get_insiders/"
-                         "get_market_regime, not just optimism). Persisted to positions.prediction_reason.")
+    parser.add_argument("--prediction-reason", help="BUY only, required with --play-type long or conviction -- "
+                         "the specific evidence behind the thesis (cite fundamentals/congress/wiki narrative/"
+                         "sentiment, not just optimism). Persisted to positions.prediction_reason.")
     parser.add_argument("--skip-guardrails", action="store_true", help="bypass guardrail checks (debug only)")
 
     args = parser.parse_args()
@@ -1259,15 +1335,14 @@ def main():
             "daytrade_count": account_data.get("daytrade_count", 0),
         }
 
-        # 2026-07-27: deployment_pressure -- tracks sustained under-deployment
-        # so gate_conviction's floor can drop (with a hard minimum) and
-        # research effort can escalate. Zero extra API cost: cash/equity are
-        # already fetched above for every status call.
-        # 2026-07-27 (later same day): status is also called by the heartbeat
-        # outside the 09:30-16:00 ET trading window (heartbeat runs until
-        # 23:00 ET) -- only record_tick during real trading hours, or the
-        # streak inflates with no corresponding trades. Off-hours calls just
-        # read the existing state instead.
+        # deployment_pressure tracks sustained under-deployment so research
+        # effort can escalate (see deployment_pressure.research_escalation).
+        # Zero extra API cost: cash/equity are already fetched above for
+        # every status call. status is also called by the heartbeat outside
+        # the 09:30-16:00 ET trading window (heartbeat runs until 23:00 ET)
+        # -- only record_tick during real trading hours, or the streak
+        # inflates with no corresponding trades. Off-hours calls just read
+        # the existing state instead.
         sys.path.insert(0, str(WORKSPACE_DIR))
         import deployment_pressure
         cash_pct = (cash / equity * 100) if equity > 0 else 0.0
@@ -1278,14 +1353,9 @@ def main():
             pressure_state = deployment_pressure.record_tick(cash_pct, threshold_pct, interval_seconds=tick_interval_seconds)
         else:
             pressure_state = deployment_pressure.read_state()
-        risk = params.get("risk", {})
-        eff_floor = deployment_pressure.conviction_floor(
-            float(risk.get("conviction_floor", 0.5)), float(risk.get("conviction_floor_min", 0.35)),
-            pressure_state["consecutive_under_deployed_ticks"])
         result["deployment_pressure"] = {
             "cash_pct": round(cash_pct, 2),
             "consecutive_under_deployed_ticks": pressure_state["consecutive_under_deployed_ticks"],
-            "effective_conviction_floor": round(eff_floor, 3),
             **deployment_pressure.research_escalation(pressure_state),
         }
 
@@ -1316,6 +1386,17 @@ def main():
             datetime.strptime(args.predicted_by_date, "%Y-%m-%d")
         except ValueError:
             print(json.dumps({"error": f"--predicted-by-date must be YYYY-MM-DD, got {args.predicted_by_date!r}"}))
+            sys.exit(1)
+
+    if args.play_type == "conviction":
+        if args.action != "BUY":
+            print(json.dumps({"error": "--play-type conviction only valid for BUY"}))
+            sys.exit(1)
+        if not args.prediction_reason:
+            print(json.dumps({
+                "error": "--play-type conviction requires --prediction-reason "
+                         "(a stated, evidence-backed thesis -- see params.json risk.conviction_play)",
+            }))
             sys.exit(1)
 
     # Locked from the guardrail check through order submission — closes the

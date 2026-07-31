@@ -26,9 +26,9 @@
     "profit_target_pct": 12.0,
     "profit_target_is_guide": true,
     "max_position_pct": 6.0,
-    "conviction_floor": 0.35,
-    "conviction_floor_min": 0.25,
-    "_conviction_note": "2026-07-30: floor lowered 0.40→0.35, min 0.30→0.25 — middle ground between v1.0 (60.6% win, +7.2%, 33 trades) and v1.7 (39.1% win, +14.0%, 46 trades). Should produce more entries than v1.7 while maintaining better win rate than v1.7. Scale-in reconciliation scores at 0.33-0.35 now clear the main floor (was gated at old 0.40).",
+    "conviction_floor": 0.10,
+    "conviction_floor_min": 0.10,
+    "_conviction_note": "A sanity floor, not a real gate -- catches a broken/zero conviction score, doesn't second-guess Stan's judgment. The gestalt (world narrative + congress trades + fundamentals + wiki + cross-sectional momentum, see tick_prompt.md step 8) is where entry quality actually gets decided; a numeric conviction threshold on top of that was compounding with regime/RSI/sector gates into near-total cash idle.",
     "max_portfolio_risk_pct": 8.0,
     "duplicate_order_cooldown_seconds": 60,
     "drawdown_pause_pct": 15.0,
@@ -36,7 +36,6 @@
     "_trailing_stop_source": "ratchets up from peak price since entry, mechanically enforced in executor.py check_stops(), not LLM-judgment. trailing_stop_mode='volatility_scaled' uses formula: trail_pct = trailing_stop_pct * (1 + trail_k * vol_20d) clamped to [trail_min_pct, trail_max_pct]. Research: 2026-07-28 trailing-stop.md — TRAIL_K=40 is best variant across all metrics (Sharpe 1.08, +126% vs no-trail), robust in both split halves.",
     "_duplicate_order_source": "cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries",
     "_drawdown_source": "competition mode's circuit breaker, measured from peak equity (state/peak_equity.json), not starting capital. Blocks new BUYs only — SELLs (including stop-losses) always pass. drawdown_halt_pct is a harder stop than pause but same BUY-only scope; see gate_drawdown_circuit_breaker.",
-    "_conviction_floor_source": "2026-07-27: conviction_floor is the grace-period value; it drops toward conviction_floor_min (never below) the longer the account sits under-deployed. See deployment_pressure.py / scripts/executor.py gate_conviction().",
     "_stop_patience_reverted": "2026-07-27: stop_loss_pct_max/trailing_stop_pct_max (stop_patience.py's widening-with-holding-time mechanism) were tried and reverted same day -- overnight split-window backtest (research/2026-07-27.md) found flat stops beat every patience variant tested on Sharpe and return, in both halves. stop_patience.py stays on disk (tests intact) for a future redesign, unwired from check_stops() for now.",
     "long_play": {
       "enabled": true,
@@ -44,13 +43,21 @@
       "position_size_pct": 3.0,
       "max_concurrent_long_plays": 2,
       "_source": "2026-07-30: small, short-horizon, evidence-gated exception to the normal trailing-stop schedule -- a long play is an explicit prediction ('ticker X up by predicted_by_date'), sized at position_size_pct (half of max_position_pct) rather than the normal size while unproven, capped at max_concurrent_long_plays so this can't quietly become the default response to every position. horizon_days starts at 3 (Raf, 2026-07-30: start with 2-3 day experiments, grow only as calibration is proven) -- bump this only after a manual review of long-play hit rate (see scripts/signal_scorecard.py), never auto-tuned. The absolute hard stop_loss_pct still applies unconditionally to long plays -- this exempts the TRAILING stop only, not the circuit breaker. Directly informed by stop_patience.py's revert (see _stop_patience_reverted above): that mechanism widened stops blindly by calendar time with zero conviction signal and lost money net; this one requires a stated, evidence-backed reason at entry and a hard resolution date instead of open-ended patience."
+    },
+    "conviction_play": {
+      "enabled": true,
+      "position_size_pct": 10.0,
+      "max_concurrent_conviction_plays": 5,
+      "trail_multiplier": 1.5,
+      "_source": "The conviction bucket -- well-known/liquid names Stan has actually researched (fundamentals + congress trades + wiki narrative + cross-sectional momentum, see tick_prompt.md step 8) and written a real thesis for, held until the thesis plays out or breaks rather than a mechanical exit. Sized larger than standard (position_size_pct vs max_position_pct) since these are the higher-conviction bets, not the wide/opportunistic sweep. trail_multiplier widens the normal volatility-scaled trailing stop (more room for a short-term dip that doesn't break the thesis) -- not exempted from it entirely, and the hard stop_loss_pct always applies. Deliberately not given the reverted stop_patience.py's unbounded calendar-time patience -- a wider stop, not an absent one."
     }
   },
 
   "risk_guards": {
-    "max_positions_per_sector": 2,
+    "max_positions_per_sector": 5,
     "order_count_audit_threshold_daily": 30,
     "_source": "concentration/rogue-trading guards",
+    "_max_positions_per_sector_source": "Raised from 2 -- logs repeatedly showed 5+ sectors sitting at 0/2 with real candidates gated off, not genuine diversification protection. Still a real cap, just not one that deadlocks a wide/diverse book.",
     "_order_count_audit_threshold_daily_source": "Self-imposed rogue-loop backstop (see gate_daily_order_count), not an Alpaca limit -- Alpaca's actual constraint is a 200 req/min API rate cap. 30 is a real tripwire against a stuck loop without gating a normal active 'small and wide, scale into winners' day."
   },
 
@@ -128,11 +135,12 @@
     "cash": true,
     "position_size": true,
     "long_play": true,
+    "conviction_play": true,
     "max_portfolio_risk": true,
     "max_positions": false,
-    "sector_concentration": true,
+    "sector_concentration": "warn",
     "hours": true,
-    "conviction": true,
+    "conviction": "warn",
     "hard_stop": true,
     "trailing_stop": true,
     "bankroll": true,
@@ -141,7 +149,7 @@
     "order_idempotency": true,
     "order_count_audit": false,
     "drawdown_circuit_breaker": true,
-    "_note": "flip any gate to false to disable it without touching code. scripts/executor.py reads this every run. Per-gate rationale lives in git history (git log -p params.json), not here.",
+    "_note": "each gate is true (hard block), false (disabled, doesn't run), or \"warn\" (runs and its result is visible in check_order's gate_results, but never blocks the trade -- see check_order() in executor.py). Use warn for gates whose right threshold isn't known yet -- it surfaces how often the gate would have fired, real data instead of a guessed number, without losing the trade in the meantime. scripts/executor.py reads this every run. Per-gate rationale lives in git history (git log -p params.json), not here.",
     "_max_positions_note": "2026-07-30: intentionally disabled, not a bug -- no fixed position-count cap wanted. Portfolio-level risk is already bounded by max_portfolio_risk/max_position_pct/sector_concentration/bankroll, so an additional raw position-count ceiling isn't needed. Do not re-enable without an explicit decision to add one back."
   }
 }
