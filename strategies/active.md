@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:06 ET (PRE-MARKET)
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:10 ET (PRE-MARKET)
+
+## FRI 9:10 ET — Pre-Market Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,389, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches. Hours gate active — pre-market.
+- 📉 LINE -3.36% today (-2.57% entry), ANDG -4.16% entry, UTMD -1.40% entry. 📈 BFH +2.70% entry (RSI 70.9), ZBRA +2.14% entry, OOMA +2.17% entry. KEX -1.38% entry (RSI 35.9 oversold, MACDh +0.89 🟢 recovering).
+- 🔍 **Batch #18** (AUBN/PRG/BIPH/BPYPO/CYCU/FRMEP): all 6 disqualified — same result as #17. AUBN qualifies (MACDh +0.22 🟢 RSI 47.9 vol 0.82x ❌ thin) + Financial FULL. PRG qualifies (MACDh +1.26 🟢 RSI 48.3 vol 1.78x ✅) but Financial FULL. BIPH/BPYPO near-zero MACDh +0.004 ❌, CYCU $1.61 +496% pump 447x bearish MACD 🔴, FRMEP weak MACDh +0.10 + vol 3.90x pump ❌. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (BFH +2.70% best, RSI 70.9 slightly above band). Bootstrap $700: BFH/ZBRA/OOMA/BVS >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. 27 ticks under-deployed. Open sectors unchanged: Real Estate 1/2, Consumer Defensive 1/2.
+- 📡 Quotes LIVE. Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## FRI 9:06 ET — Pre-Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,389, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches. Hours gate active — pre-market.
