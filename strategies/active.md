@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 11:30 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 11:35 ET
+
+## FRI 11:35 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,377, cash $9,041 (87.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: HLN -3.28% (MACDh +0.19 🟢), ANDG -2.19% (MACDh +1.73 🟢), UTMD -2.12% (MACDh +0.27 🟢). 📈 Most green: ZBRA +2.68% (MACDh +5.81 🟢 Tech FULL), OOMA +1.84% (MACDh +0.65 🟢), BFH +0.58% (RSI 70.9 upper MACDh +1.57 🟢). KEX RSI 35.9 oversold MACDh +0.89 🟢 bull div → HOLD.
+- 🔍 **Batch #43** (EBI/AUBN/BIPH/HIPO/RDDT/AMD): all 6 gated/disqualified. EBI ETF not individual small-cap ❌. AUBN MACDh +0.22 🟢 RSI 47.9 vol 0.82x ❌ + Financial FULL. BIPH near-zero MACDh +0.005 vol 0.66x ❌. HIPO MACDh +0.59 🟢 RSI 67.7 vol 2.45x ✅ but Financial FULL. RDDT skip (sold 10:12 thesis broken). AMD MACDh +1.12 🟢 vol 1.34x ✅ +13% pump but Technology FULL. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +2.68% best, Tech FULL). Bootstrap $679: ZBRA +2.68%/OOMA +1.84% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Open sectors unchanged: Consumer Defensive 1/2, Real Estate/CommSvcs/Energy/BasicMat/Utilities 0/2.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (4 tickers). Merge/promote no-ops. workspace_review ✅. Step 8: 6 batch evaluated, all correctly gated ✅.
 
 ## FRI 11:30 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,374, cash $9,041 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
