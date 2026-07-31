@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 10:20 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 10:25 ET
+
+## FRI 10:25 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,372, cash $9,041 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: HLN -2.94% (MACDh +0.19 🟢), ANDG -2.93% (MACDh +1.73 🟢), UTMD -1.47% (MACDh +0.27 🟢). 📈 Most green: ZBRA +1.86% (MACDh +5.81 🟢), BFH +0.97% (RSI 70.9 upper band), OOMA +0.66% (MACDh +0.65 🟢). KEX RSI 35.9 oversold MACDh +0.89 🟢 bull div — HOLD.
+- 🔍 **Batch #29** (AUBN/BIPH/HIPO/LRND/SVV/COLB): all 6 gated/disqualified. HIPO qualifies (MACDh +0.59 🟢 RSI 67.7 vol 2.45x ✅) but Financial FULL. COLB qualifies (MACDh +0.27 🟢 RSI 46.8 vol 1.40x ✅ sentiment 0.78) but Financial FULL. SVV MACDh +0.07 borderline RSI 59.1 vol 1.44x ✅ but Consumer Cyclical FULL. AUBN vol 0.82x ❌, BIPH near-zero MACDh ❌, LRND near-zero + ultra-thin ❌. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (ZBRA +1.86% best). Bootstrap $679: ZBRA >1% quick-exit floor — SUSTAINABLE + MACDh +5.81 → HOLD. Open sectors: Real Estate 0/2, CommSvcs 0/2, Energy 0/2, BasicMat 0/2, Utilities 0/2 — 0 qualifying pipeline candidates.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (4 tickers). Merge/promote no-ops. workspace_review ✅.
 
 ## FRI 10:20 ET — Market Tick
 - ✅ **DXCM BUY**: 1sh @ ~$74.54, conviction 0.70. MACDh +0.85 🟢 RSI 53.6 in-band vol 1.29x ✅. SUSTAINABLE → normal 1sh. Healthcare (2/2 with UTMD). Insiders clean, sentiment cache 0.784 positive. Reconciled 0.70 > 0.35 floor. Decision #33.
