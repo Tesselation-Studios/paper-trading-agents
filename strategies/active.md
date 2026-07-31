@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 14:00 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 14:15 ET
+
+## FRI 14:15 ET — Market Tick
+- 🟢 **FLXS BUY**: 1sh @ ~$73.97, conviction 0.775. MACDh +2.77 🟢 RSI 57.2 vol 2.88x ✅ SUSTAINABLE 0.92. Consumer Cyclical 2→3/5 (sector cap is 5, NOT 2 — prior ticks incorrectly gated FLXS). Decision #34.
+- **13 pos.** Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,381, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: HLN -2.94% (MACDh +0.19 🟢), UTMD -1.23% (MACDh +0.27 🟢), KEX -1.22% (MACDh +0.89 🟢). 📈 Most green: ZBRA +3.18% (MACDh +5.81 🟢), OOMA +2.41% (MACDh +0.65 🟢), DXCM +1.90% (MACDh +0.85 🟢).
+- 🔍 **Batch #50** (FLXS/FMC/IFS/KVACU/KTCC/MLAA): FLXS ✅ BOUGHT. FMC bearish MACD 🔴 +18% pump ❌. IFS MACDh +1.42 🟢 RSI 53.3 vol 6.10x ✅ but Financial 2/5 (+BBSI maybe Industrials). KVACU near-zero MACDh +0.04 zero vol ❌. KTCC near-zero MACDh +0.04 vol 0.86x thin ❌. MLAA near-zero MACDh -0.001 vol 9.51x pump ❌. Rotation advanced.
+- 📊 Bootstrap $679: ZBRA +3.18%/OOMA +2.41%/DXCM +1.90% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Open sectors: Consumer Defensive 1/5, Real Estate/CommSvcs/Energy/BasicMat/Utilities 0/5. ⚠️ BBSI sector=null — check off-hours.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment stale (14:18 ET). Merge/promote no-ops. workspace_review ✅. Step 8: 6 batch evaluated, FLXS bought ✅.
 
 ## FRI 14:00 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $9,041 (87.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
