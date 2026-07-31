@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:15 ET (PRE-MARKET)
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:30 ET
+
+## FRI 9:30 ET — Market Open Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,389, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches. Hours gate open ✅.
+- 📉 Most red: LINE -3.36% today (-2.11% entry, MACDh +0.18 🟢), HLN -2.89% entry (MACDh +0.19 🟢), UTMD -2.07% entry. 📈 Most green: BFH +3.39% (+1.30% entry, RSI 70.9), ZBRA +1.98% (+1.94% entry), TRIP +0.71% entry. KEX +0.97% today (+0.35% entry, RSI 35.9 oversold, MACDh +0.89 🟢 — HOLD).
+- 🔍 **Batch #22** (CYCU/RDAC/TLNCU/SYZ/AUBN/BIPH): all 6 disqualified. CYCU $1.61 +496% pump 447x bearish MACD 🔴 ❌. RDAC $6.00 -7.54% bearish MACD 🔴 ❌. TLNCU RSI 29.4 sub-band + 936x pump ❌. SYZ ultra-thin 164sh vol 0.07x near-zero MACDh +0.04 ❌. AUBN qualifies (MACDh +0.22 🟢 RSI 47.9) but vol 0.82x ❌ + Financial FULL. BIPH near-zero MACDh +0.005 vol 0.66x ❌. Rotation advanced.
+- 📊 Scale-ins: none above 3% v1.7 floor (BFH +1.30% best). Bootstrap $700: BFH +1.30%/ZBRA +1.94% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. 28 ticks under-deployed. Open sectors: Real Estate 1/2, Consumer Defensive 1/2, CommSvcs/Energy/BasicMat/Utilities 0/2.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge/promote no-ops. workspace_review ✅.
 
 ## FRI 9:25 ET — Pre-Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,389, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches. Hours gate active — pre-market. 5min to open.
