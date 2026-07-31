@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:40 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:45 ET
+
+## FRI 15:45 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 HLN -3.19% (MACDh +0.19 🟢), KEX -1.53% (RSI 35.9 oversold MACDh +0.89 🟢 bull div), UTMD -1.40% (MACDh +0.27 🟢). 📈 ZBRA +4.14% (MACDh +5.81 🟢 RSI 67.6), OOMA +2.64% (MACDh +0.65 🟢), DXCM +2.02% (MACDh +0.85 🟢).
+- 🔍 **Batch #64** (FLXS/GFGF/FOF/PSTR/RDAC/PLUG): FLXS skip (held). GFGF near-zero MACDh +0.013 +196x pump ❌. FOF bearish MACD 🔴 ❌. PSTR near-zero MACDh +0.025 vol 0.30x thin ❌. RDAC bearish MACD 🔴 -0.116 ❌. PLUG bearish MACD 🔴 ❌. Rotation advanced.
+- 📊 ZBRA +4.14% crosses 3% v1.7 floor — Technology 2/5, MACDh +5.81 🟢, RSI 67.6 extended + $294/sh + Fri 15min + bootstrap $679 → HOLD. Bootstrap: ZBRA/OOMA/DXCM >1% — SUSTAINABLE + strong MACDh → HOLD. 15 min to close.
+- 📡 Regime SUSTAINABLE live. Quotes LIVE (69-bar). Sentiment stale (14:18). Merge/promote no-ops. workspace_review ✅ (warnings only).
 
 ## FRI 15:40 ET — Market Tick
 - **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
