@@ -78,6 +78,14 @@ def main():
         except json.JSONDecodeError as e:
             print(json.dumps({"error": f"--features not valid JSON: {e}"}))
             sys.exit(1)
+        if not features:
+            # Silent otherwise -- an empty features blob on a real decision
+            # means no signal actually got scored for it, which starves both
+            # signal_scorecard.py's hit-rate analysis and any future ML
+            # training on training_examples. Visible here so it shows up in
+            # the tick's own output, not just quietly stored as {}.
+            print(json.dumps({"warning": "decision recorded with no scored --features "
+                                          "(training_examples.features will be empty)"}), file=sys.stderr)
         reconciled = signals.reconcile_signals(features, scorecard=_load_scorecard())
         conviction = args.conviction
         if conviction is None:
