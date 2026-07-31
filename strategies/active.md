@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:40 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 9:45 ET
+
+## FRI 9:45 ET — Market Tick
+- **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,387, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: LINE -3.80% (MACDh +0.18 🟢), HLN -2.84% (MACDh +0.19 🟢), BVS -2.78% (MACDh +0.65 🟢). 📈 Most green: BFH +3.12% (RSI 70.9 upper band), ZBRA +1.53% (MACDh +5.81 🟢), OOMA +1.49% (MACDh +0.65 🟢). TRIP +1.20% (MACDh +0.45 🟢). KEX -0.46% (RSI 35.9 oversold, MACDh +0.89 🟢 bull div — HOLD).
+- 🔍 **Batch #25** (AUBN/BIPH/QADR/HRI/GCTK/BFLY + HPF): all 7 disqualified/gated. AUBN MACDh +0.22 🟢 RSI 47.9 but vol 0.82x ❌ + Financial FULL. BIPH near-zero MACDh +0.005 vol 0.66x ❌. QADR near-zero MACDh +0.001 vol 0.01x ultra-thin ❌. HRI MACDh +2.87 🟢 RSI 49.3 but vol 0.95x ❌ + Industrials FULL. GCTK $0.78 below $1 min +174% pump bearish MACD 🔴 ❌. BFLY +15% surge MACDh +0.14 🟢 vol 1.27x ✅ but Healthcare FULL. HPF bearish MACD 🔴 ❌. Rotation advanced.
+- 📊 Scale-ins: BFH +3.12% crosses 3% v1.7 floor but Financial FULL. No others above 3%. Bootstrap $700: BFH/ZBRA/OOMA/TRIP >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. 31 ticks under-deployed. Open sectors: Real Estate 1/2, Consumer Defensive 1/2, CommSvcs/Energy/BasicMat/Utilities 0/2.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment empty. Merge 0, promote +1 HPF (bearish, disqualified). workspace_review ✅. Step 8: 7 evaluated, all correctly gated ✅.
 
 ## FRI 9:40 ET — Market Tick
 - **All HOLD.** 12 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,389, cash $9,078 (87.4%). All MACDh 🟢 (69-bar LIVE). No breaches.
