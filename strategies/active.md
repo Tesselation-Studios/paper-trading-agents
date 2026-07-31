@@ -1,4 +1,12 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:20 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:25 ET
+
+## FRI 15:25 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,382, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 HLN -2.99% (MACDh +0.19 🟢), BBSI -2.46% (MACDh +1.54 🟢 entry 14:09), UTMD -1.40% (MACDh +0.27 🟢). 📈 ZBRA +4.52% (MACDh +5.81 🟢 RSI 67.6), BFH +3.39% (MACDh +1.57 🟢 RSI 70.9), DXCM +2.39% (MACDh +0.85 🟢).
+- 🔍 **Batch #60** (GFGF/FOF/FLXS/PSTR/RDAC/SVV): FLXS skip (held). GFGF near-zero MACDh +0.013 +196x pump ❌. FOF bearish MACD 🔴 -0.044 ❌. PSTR near-zero MACDh +0.025 vol 0.30x thin ❌. RDAC bearish MACD 🔴 -0.116 ❌. SVV MACDh +0.067 borderline +3.92% surge ❌. Rotation advanced. 22 candidates, stale drop 0.
+- 🗂️ Book correction: BBSI (bought ~14:09 at $39.97, Industrials) replaces BVS — executor is truth, prior ticks' BVS refs were stale.
+- 📊 ZBRA +4.52% crosses 3% v1.7 floor — Technology 2/5, MACDh +5.81 🟢 — but RSI 67.6 extended + $289/sh + bootstrap $679 + Fri 35min → HOLD. BFH +3.39% RSI 70.9 overbought → HOLD. Bootstrap: ZBRA/OOMA/DXCM >1% — SUSTAINABLE + strong MACDh → HOLD. Open sectors: Real Estate/CommSvcs/Energy/BasicMat/Utilities 0/5, Consumer Defensive 1/5.
+- 📡 Regime SUSTAINABLE live. Quotes LIVE (69-bar). Sentiment stale (14:18). Merge/promote no-ops. workspace_review ✅.
 
 ## FRI 15:20 ET — Market Tick
 - **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,383, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
