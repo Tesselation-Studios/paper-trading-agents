@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:25 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 15:30 ET
+
+## FRI 15:30 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,382, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 HLN -2.99% (MACDh +0.19 🟢), KEX -1.47% (RSI 35.9 oversold MACDh +0.89 🟢 bull div), UTMD -1.40% (MACDh +0.27 🟢). 📈 ZBRA +4.61% (MACDh +5.81 🟢 RSI 67.6), OOMA +2.22% (MACDh +0.65 🟢), DXCM +2.18% (MACDh +0.85 🟢).
+- 🔍 **Batch #61** (GFGF/FOF/LFMDP/CIGL/LFS/ZOOZ): all 6 gated. GFGF near-zero MACDh +0.013 +196x pump ❌. FOF bearish MACD 🔴 -0.044 ❌. LFMDP bearish MACD 🔴 -0.044 vol 0.38x ❌. CIGL sub-$1 bearish MACD 🔴 ❌. LFS bearish MACD 🔴 vol 0.40x ❌. ZOOZ MACDh +0.203 🟢 RSI 53.0 vol 1.87x ✅ but sentiment text generic (doesn't mention ZOOZ) + Fri 25min to close → skip. Rotation advanced. 16 candidates remain, stale drop 0.
+- 📊 ZBRA +4.61% crosses 3% v1.7 floor — Technology 2/5, MACDh +5.81 🟢 — but RSI 67.6 extended + $289/sh + Fri 25min → HOLD. BFH RSI 70.9 overbought → HOLD. Bootstrap $679: ZBRA/DXCM/OOMA >1% — SUSTAINABLE + strong MACDh → HOLD. ZOOZ flagged for Mon re-eval.
+- 📡 Regime SUSTAINABLE live. Quotes LIVE (69-bar). Sentiment live (ZOOZ). Merge/promote no-ops. workspace_review ✅ (warnings only, no criticals).
 
 ## FRI 15:25 ET — Market Tick
 - **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,382, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
