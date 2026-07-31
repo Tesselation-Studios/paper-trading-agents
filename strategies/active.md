@@ -1,4 +1,11 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 14:15 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 14:25 ET
+
+## FRI 14:25 ET — Market Tick
+- **All HOLD.** 13 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,380, cash $8,928 (86.0%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: HLN -2.99% (MACDh +0.19 🟢), KEX -1.30% (MACDh +0.89 🟢 RSI 35.9 oversold bull div → HOLD), UTMD -1.23% (MACDh +0.27 🟢). 📈 Most green: ZBRA +3.48% (MACDh +5.81 🟢), OOMA +2.48% (MACDh +0.65 🟢), DXCM +2.24% (MACDh +0.85 🟢).
+- 🔍 **Batch #51** (GFGF/FOF/FLXS/FMC/HPF/IFS): FLXS skip (held). GFGF near-zero MACDh +0.013 + 196x pump ❌. FOF bearish MACD 🔴 -0.044 ❌. FMC bearish MACD 🔴 -0.208 +18% pump ❌. HPF bearish MACD 🔴 -0.015 ❌. IFS MACDh +1.42 🟢 RSI 53.3 but vol 6.10x pump + sentiment -0.898 negative → gated. Rotation advanced.
+- 📊 Scale-ins: ZBRA +3.48% crosses 3% v1.7 floor, MACDh +5.81 🟢, Technology 2/5 — but RSI 67.6 extended + $288/sh high allocation + bootstrap $679 ceiling → HOLD. OOMA/DXCM >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. ⚠️ ANDG confirmed Industrials (not Consumer Cyclical). BBSI sector=null — off-hours fix needed.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment stale (14:18 ET). Merge/promote no-ops. workspace_review ✅ (warnings only). Step 8: 6 batch evaluated, 5 ❌ + 1 gated ✅.
 
 ## FRI 14:15 ET — Market Tick
 - 🟢 **FLXS BUY**: 1sh @ ~$73.97, conviction 0.775. MACDh +2.77 🟢 RSI 57.2 vol 2.88x ✅ SUSTAINABLE 0.92. Consumer Cyclical 2→3/5 (sector cap is 5, NOT 2 — prior ticks incorrectly gated FLXS). Decision #34.
