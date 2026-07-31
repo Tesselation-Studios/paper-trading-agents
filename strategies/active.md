@@ -1,4 +1,18 @@
-# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 11:35 ET
+# Current Playbook — Stonks 🚀 FRI JUL 31, 2026 — 11:45 ET
+
+## FRI 11:45 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,376, cash $9,041 (87.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: OOMA -2.01% (MACDh +0.65 🟢), UTMD -1.93% (MACDh +0.27 🟢), HLN -1.65% (MACDh +0.19 🟢). 📈 Most green: BFH +3.39% (RSI 70.9 upper), ZBRA +1.98% (MACDh +5.81 🟢 Tech FULL), KEX +0.97% (RSI 35.9 oversold MACDh +0.89 🟢). KEX bull div → HOLD.
+- 🔍 **Batch #45** (GFGF/BIPH/HIPO/FOF/KNGZ/IFS): all 6 gated. GFGF near-zero MACDh +0.013 + 196x pump ❌. BIPH near-zero MACDh +0.005 vol 0.66x ❌. HIPO MACDh +0.59 🟢 RSI 67.7 vol 2.45x ✅ but Financial FULL. FOF bearish MACD 🔴 -0.044 ❌. KNGZ near-zero MACDh +0.10 vol 0.38x ❌. IFS MACDh +1.42 🟢 RSI 53.3 vol 6.10x ✅ but Financial FULL. Rotation advanced.
+- 📊 Scale-ins: ZBRA +2.6% below 3% v1.7 floor + Tech FULL. OOMA +1.9% below 3%. Bootstrap $679: ZBRA +2.6%/OOMA +1.9% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Open sectors unchanged: Real Estate/CommSvcs/Energy/BasicMat/Utilities 0/2, Consumer Defensive 1/2.
+- 📡 Quotes LIVE (69-bar). Regime SUSTAINABLE live. Sentiment live (4 tickers). Merge +7 (KNGZ/AMD/SVV/COLB/KEEL/PLUG/ONDS), promote +1 LRND. workspace_review ✅. Step 8: 6 batch evaluated, all correctly gated ✅.
+
+## FRI 11:40 ET — Market Tick
+- **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92, last known, fetch timed out). PV $10,375, cash $9,041 (87.2%). All MACDh 🟢 (69-bar LIVE). No breaches.
+- 📉 Most red: HLN -3.09% (MACDh +0.19 🟢), UTMD -2.52% (MACDh +0.27 🟢), ANDG -1.74% (MACDh +1.73 🟢). 📈 Most green: ZBRA +2.51% (MACDh +5.81 🟢 Tech FULL), OOMA +1.70% (MACDh +0.65 🟢), DXCM +0.34% (MACDh +0.85 🟢). KEX RSI 35.9 oversold MACDh +0.89 🟢 bull div → HOLD.
+- 🔍 **Batch #44** (KEEL/PLUG/ONDS/FBIOP/EBI/AUBN): all 6 gated. KEEL/PLUG/ONDS/FBIOP bearish MACD 🔴 ❌. EBI ETF not individual small-cap ❌. AUBN MACDh +0.22 🟢 RSI 47.9 vol 0.82x ❌ + Financial FULL. Rotation advanced.
+- 📊 Scale-ins: ZBRA +2.51% best (Tech FULL). OOMA +1.70% below 3% v1.7 floor. Bootstrap $679: ZBRA +2.51%/OOMA +1.70% >1% quick-exit floor — SUSTAINABLE + strong MACDh → HOLD. Open sectors unchanged: Real Estate/CommSvcs/Energy/BasicMat/Utilities 0/2, Consumer Defensive 1/2.
+- 📡 Quotes LIVE (69-bar). Regime fetch timed out (SUSTAINABLE last known). Sentiment live (4 tickers). Merge/promote no-ops. Stale drop -15 → 12 remain. workspace_review ✅. Step 8: 6 batch evaluated, all correctly gated ✅.
 
 ## FRI 11:35 ET — Market Tick
 - **All HOLD.** 11 pos. Regime **SUSTAINABLE** (0.92) 🚀 live. PV $10,377, cash $9,041 (87.1%). All MACDh 🟢 (69-bar LIVE). No breaches.
