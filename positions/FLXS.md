@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# FLXS Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $9.87 (-3.24% unrealized)
-- **Market Value**: $9.87
-- **Unrealized P&L**: $-0.33 (-3.23%)
+- **Entry**: $74.00 avg | 1 shares
+- **Current**: $74.03 (+0.04% unrealized)
+- **Market Value**: $74.03
+- **Unrealized P&L**: $+0.03 (+0.04%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-07-31 20:30:07 UTC
 

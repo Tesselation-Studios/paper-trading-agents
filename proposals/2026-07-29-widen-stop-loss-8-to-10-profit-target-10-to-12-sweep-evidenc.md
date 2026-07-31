@@ -1,6 +1,6 @@
 # Proposal: Widen stop-loss -8% to -10%, profit target 10% to 12% (sweep evidence)
 
-**Status**: open
+**Status**: applied
 **Tier**: auto
 **Created**: 2026-07-29T23:04:03.714378+00:00
 **Files changed**: params.json
@@ -12,3 +12,7 @@ Sweep of 25 stop×target combos (26 tickers, 200d lookback) on v1.0-style strate
 ## Evidence
 
 scripts/replay_check.py --sweep: current -8/10: Sharpe=2.28, first=2.836, second=1.065, 140 trades. Proposed -10/12: Sharpe=2.504, first=2.985, second=1.886, 113 trades. Both halves independently positive. All -10% and -12% stop candidates have second-half Sharpe >1.8 vs -8% cluster 0.85-1.07.
+
+## Resolution
+
+applied at 2026-07-30T23:30:55.443458+00:00

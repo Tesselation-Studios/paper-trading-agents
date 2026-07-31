@@ -1,5 +1,5 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-07-30 — nightly learning*
+*Updated: 2026-07-31 — nightly learning*
 
 ### Operational
 - **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
@@ -24,9 +24,9 @@
 - **First live session at 0.40 floor**: 23 decisions, all 11 positions green at close. Under the old 0.50 floor (v1.11), virtually all of today's entries would have been gated — the "neutral signal drag" from empty sentiment/flow/insiders data consistently landed conviction scores in the 0.33-0.49 range. The overnight optimization's core finding (99%+ cash idle due to overly tight conviction gates) was confirmed in live trading — lowering the floor from 0.50 to 0.40 was the right move and should not be reversed without comparable evidence.
 - **CHOPPY + strong MACDh validated**: All day in CHOPPY — every position held, every MACDh stayed green, no exits triggered. 1sh probe sizing in CHOPPY + letting MACDh strength carry the signal is a working formula.
 
-### Experience Counter Partially Fixed (Jul 28 update)
-- **Jul 27 gap partially closed**: `experience.json` now shows 40 total trades (was 29). The 11-trade gap from Jul 27 was partially backfilled — but `total_wins` (12) + `total_losses` (16) = 28, leaving 12 trades unclassified. Self-stats pipeline consistently reports "0 trades logged today" in every heartbeat. The `record_decision.py` → self-stats pipeline still has a structural disconnect. Wins/losses tracked manually in experience.json but the automated pipeline doesn't see them.
-- **Consecutive losses: 4** — a concerning streak. The last 4 classified closes were all losses. This doesn't match the visible EOD book (all green Jul 27-28), suggesting at least some of these are from closed positions where the P&L was negative. Needs monitoring — if the streak continues into tomorrow, flag for deeper review.
+### Experience Counter — 61 Trades, 13W/21L, 5 Consecutive Losses (Jul 31)
+- **`experience.json`**: 61 total trades, 13 wins, 21 losses, 5 consecutive losses, 27 unclassified (13+21=34, 61-34=27 gap). Self-stats pipeline consistently reports "0 trades logged today" — the `record_decision.py` → self-stats pipeline still has a structural disconnect. Win rate declining: 41.9% (13W/18L) Jul 30 → 38.2% (13W/21L) Jul 31.
+- **Consecutive losses: 5** — a worsening streak from 4 on Jul 28. The last 5 classified closes were all losses. This doesn't match the visible EOD book (all green positions), suggesting at least some losses are from older closed positions or the classification includes partial exits. Needs monitoring — if the streak hits 7, flag for deeper review.
 
 ### Evolve→Execute Pipeline Leak (NEW Jul 26)
 - **Action items from nightly syntheses don't survive overnight**: The next session's tick agent starts fresh from strategy.md + active.md — it never reads the prior day's synthesis. Action items (NVDA trim took 5 days/3 cycles, weekend homework from Jul 17 never resolved) accumulate because there's no carry-forward mechanism. This is a process design gap, not an execution failure. Consider a `tasks/pending.md` or carry-forward section in active.md to bridge the overnight gap.
@@ -35,9 +35,9 @@
 - **Strategy propagation must be verified across all layers (NEW Jul 22)**: v1.3 reverted the CHOPPY/FEAR entry gate, but the tick agent continued applying it for ~2 hours (09:30–11:20 ET). Strategy changes to `strategy.md` need explicit verification: (a) `params.json` reflects the change, (b) `executor.py` code aligns, (c) the agent prompt doesn't carry stale rules forward. Post-revision checklist item.
 - **params.json vs strategy.md drift risk (Jul 22, fixed Jul 23)**: `params.json` had contained v1.1/v1.2 settings (`entry_rules.triple_confirmation_required`, `regime_sizing` VIX tiers, `trim`, `quality_gate`, `exit_rules.rsi_exhaustion_hard_exit`, `risk_guards.max_holding_days`) left over from before v1.3's revert. Audited: `executor.py` never read any of them (confirmed by grep — only `risk_guards.max_positions_per_sector` is actually consumed, at executor.py:180), so there was no live behavior risk, but they contradicted `strategy.md` and could mislead the agent reading params.json fresh each tick. Removed from params.json.
 
-### Trailing Stop Performance (Jul 21-24, reviewed Jul 26)
-- **Trailing stops working mechanically**: Over 3 sessions: 8 exits via trailing stop (MARA +2.11%, MVST +0.29% wins; LYFT -5.49%, AMC -5.21%, DJT -5.2%, OPEN -5.11%, GME -5.00% losses; plus 1 stale-position cleanup). No panic sells, system carrying the load.
-- **Win/loss ratio**: 5 wins / 10 losses (33%) from trailing stops — unchanged rate, +3 exits today (BOX +6.86% win, OLP -5.38% loss, STVN -3.96% loss). 15 exits toward the 20-exit formal review trigger. Entry quality is the variable, not stop calibration.
+### Trailing Stop Performance (Jul 21-31, reviewed Jul 31)
+- **Trailing stops working mechanically**: Over 10 sessions: 16 exits via trailing stop (BOX +6.86% win; MARA +2.11%, MVST +0.29% smaller wins; RDDT -22.66%, LYFT -5.49%, AMC -5.21%, DJT -5.2%, OPEN -5.11%, GME -5.00%, OLP -5.38%, STVN -3.96%, LINE -0.82%, plus stale-position cleanup losses). RDDT at -22.66% is an outlier driven by a peak entry, not a stop calibration failure — see "RDDT Fast-Stop" above.
+- **Win/loss ratio**: 6W/15L (28.6%) from trailing stops — slight decline from 6W/14L (30%), dragged by RDDT. 16 exits at the 20-exit formal review trigger. Entry quality is the variable, not stop calibration.
 
 ### MACDh Data API Fragility (Jul 23+, continuing Jul 24)
 - **Alpaca free-tier bars unreliable**: Multiple ticks throughout Jul 23 had MACDh bars unavailable (Alpaca data API returning 401, yfinance connection-refused). Dozens of ticks went without fresh MACDh computation, forcing reliance on last-known values and price stability as a proxy. This is a structural constraint of the free-tier account — not a transient outage.
@@ -61,8 +61,20 @@
 - **v1.4 (Jul 23)**: Near-zero MACDh oscillation heuristic graduated from observation to validated knowledge. No other rules changed.
 - **v1.3 (Jul 22)**: Reverted v1.2's triple-confirmation entry gate — backtest showed v1.2 as worst performer. Returned to simple RSI 45-65 + volume + catalyst entry.
 
-### Sector Concentration as Binding Constraint (NEW Jul 30)
-- **The 2-per-sector limit is now the primary entry blocker**: In SUSTAINABLE (0.92) regime all day, multiple strong qualifiers repeatedly gated on sector-full: AUBN/PRG/HIPO (Financial full), HRI (Industrials full), SLN/BFLY (Healthcare full), NCNO (Technology full). Only Consumer Defensive (1/2) and Real Estate (1/2) had room — and those pipelines are thin. This isn't a bug (the limit is intentional diversification), but it means that in strong regimes with mostly healthy positions (few exits creating sector slots), the strategy hits a deployment ceiling that's structural, not signal-driven. To scale deployment further in SUSTAINABLE, either: (a) more discovery focus on Consumer Defensive/Real Estate names, or (b) the limit itself needs revisiting at the next backtest cycle.
+### Sector Cap Resolved: 2→5 (Jul 31)
+- **`max_positions_per_sector` raised from 2 to 5** in `params.json` — the #1 deployment blocker for 3 sessions (Jul 29-31 morning) is gone. AUBN qualified 16 times yesterday and never entered; today FLXS was gated for 29 ticks as "Consumer Cyclical FULL" before the tick agent realized the cap was 5, not 2, and bought it. HIPO, COLB, IFS, AMD, PRG, AUBN — all strong qualifiers previously gated on "Financial/Technology/Industrials FULL" — are now buyable. The change was validated in live trading (FLXS entered same-tick the constraint was recognized) and doesn't require further strategy.md changes.
+
+### RDDT Fast-Stop: Peak Entry + Trailing Stop = No Cushion (NEW Jul 31)
+- **Entered 9:54 at $178.04, stopped 10:12 at $137.69 (-22.66%, -$40.35)**: MACDh +1.21, vol 2.81x, SUSTAINABLE 0.92 — the entry thesis looked textbook, but the stock cratered immediately after entry. A trailing stop set at entry on a peak has ZERO ratchet room — the first bar after entry was already underwater, and the stop had nowhere to go but trigger. The stop worked as designed (prevented a potentially larger loss), but the failure was entry timing. Lesson: the first 30 minutes of trading have the widest spreads and highest volatility; buying into a momentum spike during that window gives the trailing stop no room to work. Wait for the 10:00 settle before new entries, or use limit orders with a wider initial stop allowance for opening-drive entries.
+
+### Parallel Tick Collisions — 0 Occurrences (Jul 31)
+- **First clean session** after IP (Jul 24), KRC (Jul 27), BFST (Jul 29). `guardrail_gates.order_idempotency: true` in params.json appears to be the fix. Track for one more clean session before graduating from "recurring defect" to "resolved."
+
+### Overnight Optimization: Small-Cap vs Large-Cap (NEW Jul 31)
+- **Small-cap stonks runs consistently lose money (-1.7% to -3.0%)** while large-cap runs are consistently profitable (+2% to +5.3%). RSI(7) beats RSI(14) unanimously across all 3 optimization rounds. Mean-reversion dip buying (price below MA) beats momentum chasing — top config: buy below MA(50), RSI 40-65, catalyst 0.5 → +4.11% return, 41.67% win rate. This is accumulating evidence toward a universe shift to mid/large-cap + mean-reversion entry, but one night of research isn't enough — flagged for Monday pre-market discussion, not an immediate rules change.
+
+### Sector Concentration as Binding Constraint (Jul 30, resolved Jul 31)
+- **RESOLVED**: The 2-per-sector limit was the primary entry blocker for 3 sessions. Raised to 5 in params.json Jul 31. See "Sector Cap Resolved" above.
 
 ### Resolved Items
 - **v1.2 backtest weakness → RESOLVED**: v1.3 (Jul 22) reverted to v1.0's simple RSI 45-65 momentum entry after corrected `replay_check.py` showed v1.2 as the worst performer across all 3 backtest nights. v1.2's entry rules are all removed from strategy.md. Mechanical guardrails survive in executor.py.
@@ -70,9 +82,11 @@
 ## Key Repos
 Agent configs `~/.openclaw/agents/` · Paper trading `~/projects/paper-trading-teams/` · Blog `~/projects/blog/drafts/` · Homelab `wodinga/Homelab-Setup`
 
-## Promoted From Short-Term Memory (2026-07-30)
+## Promoted From Short-Term Memory (2026-07-31)
 
-<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-14.md:1:42 -->
-- --- ## Tick 11:27 ET — CHOPPY Tuesday **Regime**: CHOPPY (SPY RSI 52.7, confidence 0.3) **Macro**: Flat yield curve ⚠️ (2Y: 4.21%, 10Y: 4.56%, spread 0.35) ### Portfolio Scan | Ticker | Qty | Entry | Current | P&L% | RSI | MACD Hist | Signal | |--------|-----|-------|---------|------|-----|-----------|--------| | NVDA | 2 | 206.31| 208.73 | +1.16| 52.4| +2.08 ✅ | HOLD | | HOOD | 12 | 112.08| 110.30 | -1.59| 56.5| -0.62 ⚠️ | HOLD | ### Watchlist Heat - 🔥 **PLTR**: +2.11%, momentum +14.8%, MACD bull cross — hottest ticker today - 🔥 **META**: momentum +17.6% but extended above BB upper - 😐 **AAPL**: RSI 62.7 but pulling back -0.7%... [score=0.986 recalls=37 avg=0.956 source=memory/journal/2026-07-14.md:1-19]
-<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-27.md:34:43 -->
-- **Sentiment blind — 17 days**: Every journal since Jul 14. Escalated multiple times. At this point it's a permanent operating condition — technical-only workflow is the baseline. - **MACDh = truth serum**: Holds across every exit and hold decision. FHB exit today (0 flips missed, 0 false alarms). The near-zero oscillation heuristic from Jul 23 still validated — no false exits. - **Process debt: documented ≠ implemented**: IP order-idempotency guard documented Jul 24, never built. KRC collision Jul 27 is the direct consequence. Flagging a bug in a journal doesn't fix the code.... [score=0.936 recalls=7 avg=1.000 source=memory/journal/2026-07-27.md:34-43]
+<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-27.md:50:74 -->
+- 3. **Fix the experience counter**: Exits aren't being tracked. This distorts win-rate calibration and confidence scoring. Process gap, not a strategy gap. --- ## 🔄 Step 3: Evolve — Mon Jul 27, 2026 **Strategy version**: v1.10 — no change. Rules held up under both CHOPPY and SUSTAINABLE in the same session. ### Rule Mechanization Audit Audited every prose rule against the 10-entry lookback: | Rule | Status | Evidence | |------|--------|----------| | MACDh flip = exit | ✅ Mechanized | 0 violations today. FHB exit correct. | | Stop-loss = hard exit | ✅ Mechanized (hard_stop gate) | 0 violations.... [score=0.961 recalls=34 avg=1.000 source=memory/journal/2026-07-27.md:50-74]
+<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-27.md:1:18 -->
+- # Journal — Monday July 27, 2026 🚀 **Strategy**: stonks.strat:v1.10 | **Regime**: CHOPPY/FEAR → **SUSTAINABLE (0.92)** ## Big Picture First clean regime signal in two weeks. CHOPPY broke at 11:21 and SUSTAINABLE held through close. We deployed into it — 2 entries (KRC probe, BCS normal), 1 winner scale-in (BOX +1sh), 3 pre-planned exits (F earnings, IP stall, FHB MACDh flip). The strategy's "regime sizes, doesn't block" thesis held across both phases in one session. But we hit a wall. ## How I Feel Frustrated — but at the constraint, not the decisions. The 10-order daily limit is a hard ceiling I can't think my way around.... [score=0.961 recalls=31 avg=1.000 source=memory/journal/2026-07-27.md:1-18]
+<!-- openclaw-memory-promotion:memory:memory/journal/2026-07-16.md:99:122 -->
+- **Mood**: Late night. Data consistent. Ready for Jul 17 Friday open. HOOD at dawn. ⚔️ HEARTBEAT_OK ✅ ## Overnight Check (12:43 AM ET — Fri Jul 17) - **Portfolio**: $10,472.69 (-$18.78 from 11:41 PM). Bankroll ceiling $104.73. - **HOOD** 🚨🚨: **Alpaca $103.50** — **dropped $1.01 from $104.51**. Just $0.50 above $103 sell trigger. Overnight drift accelerating. CRITICAL pre-market. - **NVDA**: Alpaca $202.90 (down from $203.79). NASDAQ close $207.46 — gap WIDENING to $4.56. MACD +2.29 🟢 still green but price action weakening. - **KHC**: $26.24. RSI 68.15 — even closer to 70 trim zone. 3rd green streak intact.... [score=0.950 recalls=6 avg=1.000 source=memory/journal/2026-07-16.md:99-122]

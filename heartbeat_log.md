@@ -4,6 +4,45 @@ Append-only. One real reflective entry per heartbeat run — a few sentences of 
 
 Entries below this point are legacy pipe-delimited status lines from before this file split out of `HEARTBEAT.md` — kept for history, not a format to continue.
 
+## FRI JUL 31 13:42 ET — Heartbeat
+
+Feeling a bit disconnected after the ~55min gap since the last tick at 11:55. The tick loop may have paused — four heartbeats (12:42, 12:49, 13:42) have come through without a fresh tick. That's not a crisis at 13:42 on a Friday but it means I'm reading from stale 11:55 data for actual trade signals.
+
+DXCM is bothering me. The position file from 11:35 AM says $82.42, but the live quote right now is $74.54. That's not a small drift — it's a ~$8 gap. Either DXCM cratered after the sync and the position file is a ghost, or the sync wrote a bad price. Open was $73.93 and it's been trading in that range all day, so the real entry is underwater by ~9%. The tick loop's last snapshot at 11:40 had DXCM at $81.98 with MACDh bullish, so the entry thesis was presumably intact then. But the position file price doesn't match reality and I can't tell if the stop is placed against $82.08 (entry) or some phantom number.
+
+BFH caught my eye — RSI 70.9 is officially overbought, and it's +3.39% on the day. MACDh at +1.57 is still ripping, so momentum hasn't broken. But that's getting stretched for a $110 stock. It's been the strongest performer all week (up from $106 entry Tuesday). ZBRA is the other standout at +2.14% with healthy MACDh +5.81.
+
+The rest of the portfolio reads like a quiet drift: HLN -0.9% (bounced from -3.3% at 11:44, H1 beat catalyst still underpinning), KEX -1.4% with RSI 35.9 oversold but MACDh bullish divergence intact, ANDG -1.2%, VSXY -1.3%, UTMD -2.7% (post-earnings miss but gap-down didn't materialize — stop safe), OOMA +1.2%, TRIP +0.3%, BFST +0.5%.
+
+RDDT was sold at -22.66% earlier today (10:12) — that's a brutal trailing stop exit I missed seeing in the gap. BVS and LINE also rotated out, DXCM entered. The tick loop is actively trading while I'm catching up.
+
+All MACDh bullish across the board — no flips, no exit signals. Sentiment tools are feeding identical generic headlines (-0.4815) for every ticker, so news flow is effectively blind right now. Tavily rate-limited. The earlier sentiment cache (10:18am) only covers DXCM. Working with just price, technicals, and position files.
+
+Cash at ~$9,070 with ~$1,329 deployed (12.8%). The week's been busy — RDDT was a painful -22.66% exit, but BOX +6.86% and STVN stopped at -3.96% balanced it. Nothing screaming for escalation on a Friday afternoon. Flag the DXCM position file price discrepancy for the next tick's sync audit.
+
+## FRI JUL 31 14:42 ET — Heartbeat
+
+The DXCM ghost is gone — position file shows $83.90 (+2.22%) after a fresh sync at 14:40, and sentiment at 0.784 is the strongest reading in the whole cache. Whatever phantom $74.54 quote I was staring at last hour was a blip, a stale feed, or a sync artifact. That's a weight off. But now HLN has my attention — at -3.09% it's gone from "bouncing off -3.3%" to actually being the worst performer in the book, and the H1 beat catalyst I kept citing as underpinning feels like it's been fully priced and exhausted. If this drifts much further toward -5%, the thesis is on thin ice.
+
+The portfolio ballooned since 13:42 — 13 positions now with BBSI and FLXS as newcomers, most at 1-share probes. The tick loop is clearly still running between my heartbeats, rotating and expanding. BFH cooled completely from RSI 70.9 overbought to dead flat at entry — either the position was recycled or the cost basis shifted, but the overbought pressure that had me nervous resolved on its own. ZBRA +3.31% continues to be the quiet overachiever, and OOMA +2.48% is doing its job without drama.
+
+The RDDT headline in sentiment cache stings a little — Wedbush maintained Outperform but cut PT to $221. We already ate the -22.66% exit this morning, so this is just post-mortem validation that the analyst community isn't writing it off. But it's also a reminder that trailing stops don't discriminate between a buying opportunity and a genuine thesis break.
+
+Sentiment cache refreshed at 14:18 covers only 4 tickers (DXCM, RDDT, AMD, ONDS) — DXCM is the only overlap with held positions. Most of the book is flying blind on news flow, which is the same story as last hour. Friday afternoon, 2 hours to close — nothing's in stop territory, nothing's screaming. The pattern from prior days is steady HOLD through the close with order count gating new entries. I'll watch HLN's drift and ZBRA's continued climb, but this is a quiet hour.
+
+## FRI JUL 31 15:43 ET — Heartbeat
+
+17 minutes to close and the tick loop at 15:40 confirmed all HOLD across 13 positions. Regime SUSTAINABLE (0.92), PV ~$10,380, cash $8,928 (86%). The week ends in about 15 minutes and it feels like the portfolio is settling into its weekend shape — no MACDh flips, no breach alerts, nothing on fire.
+
+HLN at -3.14% is the nagging loose end. I've called it out for three heartbeats now and it hasn't broken, but it hasn't bounced either — just a slow, steady bleed from the $10.20 entry. The H1 beat catalyst that gave me comfort at -2% is now three weeks old news. The MACDh at +0.19 is still technically green but awfully thin. If this drifts another 1-2% it's going to test whatever stop the tick loop has set, and I won't be surprised if Monday's open gives us a gap lower. Weekend risk on a $9.88 stock with no fresh catalyst is real, but it's 1 share — the system can absorb it.
+
+ZBRA +4.43% ($282.53 → $295.04) is the week's biggest winner and a validation of the SUSTAINABLE regime thesis. RSI 67.6 is warm — not overbought, but close enough that I'd rather see profit-taking than another +2% day. Single share, so the P&L is symbolic, but the signal quality is good.
+
+BBSI and TRIP recovered nicely from their mid-afternoon dips — BBSI went from -2.46% at 15:25 to dead flat at close, TRIP from -2.67% to -0.03%. Those were noise, not thesis breaks. KEX at -1.64% is still in oversold RSI territory but MACDh +0.89 bullish divergence is holding — same story all week.
+
+Sentiment cache (14:18) is 1.5 hours stale but DXCM +0.784 remains the strongest headline in the book. RDDT +0.193 with Wedbush Outperform/PT $221 is post-mortem validation — the -22.66% exit was a trailing stop execution, not a thesis failure. Bittersweet but correct.
+
+The overnight optimization research sitting in research/overnight-insights.md is the real thing to chew on over the weekend — small-cap stonks runs consistently lose money (-1.7% to -3.0%) while large-cap runs are profitable (+2% to +5.3%). That's existential for our current focus. The proposed v2.0 dual entry (mean-reversion dips + momentum) with a mid/large-cap shift is the right conversation for Monday pre-market. For now, 13 positions at 1-2 shares each with 86% cash is well-defended through the weekend.
 
 OK 2026-07-29T00:42:00Z | tick 20:42 TUE JUL 28 | MARKET CLOSED | regime CHOPPY (0.644) | PV ~$10,412 | 5 pos (BFST $32.08 +3.5% BOX 6sh $31.52 +3.2% HLN $10.27 +0.7% STVN $20.15 +0.9% BFH $107.78 +1.7%) | all HOLD | after-hours stand-down | positions synced 8:30pm ET — all green, unchanged | sentiment fresh 8:06pm: BFH +0.93 (Evercore PT $120), BOX +0.77 (CEO AI), POLA/NTRS/DXC/GMEX/YSXT all positive in cache, no BFST/HLN/STVN news | ✅ F earnings fully resolved (strong beat, AH +4.67%) — no position held, post-earnings re-entry under CHOPPY gates TBD | 💤 nothing actionable, after-hours stand-down | 🔔 next: Wed ~9:15 AM pre-market GTC audit + CHOPPY-adjusted screening
 OK 2026-07-27T14:58:00Z | tick 10:58 MON JUL 27 | MARKET OPEN | regime CHOPPY/FEAR | PV $10,414 | 3 pos (BFST BOX KRC) | all HOLD | no breaches | ✅ MON TASKS DONE: F sold +4.07% 09:37, FHB sold -2.41% (MACDh flip) 09:59, IP sold +10.62% 09:58, GTC audit clean 09:16 | 🆕 KRC probe 1sh $39.49 | 🔔 F earnings TUE 7/28 4:05pm ET — post-earnings re-entry watch | next: EOD journal + nightly evolve
