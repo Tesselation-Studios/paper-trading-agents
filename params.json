@@ -81,7 +81,8 @@
   },
 
   "synthesis": {
-    "lookback_n_entries": 10
+    "lookback_n_entries": 10,
+    "_source": "Tuned for live-only journal cadence (~1 entry/trading day). Once the historical-replay harness lands and adds many more journal entries per week, revisit this number with real replay-volume data rather than guessing -- don't raise it preemptively with no data to calibrate against."
   },
 
   "discovery_daemon": {
