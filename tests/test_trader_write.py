@@ -86,35 +86,50 @@ class TestWatchlistAdd:
 
 
 class TestWatchlistDropStale:
-    def test_default_threshold_from_params(self, monkeypatch, capsys, db_path):
+    def test_default_thresholds_from_trader_db(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
-        for _ in range(24):
-            trader_db.increment_idle_ticks(conn)
+        for i in range(12):
+            trader_db.mark_candidates_evaluated(conn, ["AAA"], now=f"2026-08-01T10:{i:02d}:00+00:00")
         conn.close()
 
         result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale"])
 
-        assert result["threshold"] == 24
+        assert result["max_evaluations"] == trader_db.DEFAULT_MAX_EVALUATIONS_BEFORE_DROP
+        assert result["max_age_hours"] == trader_db.DEFAULT_MAX_AGE_HOURS_BEFORE_DROP
         assert result["dropped"] == ["AAA"]
 
-    def test_explicit_threshold_overrides_default(self, monkeypatch, capsys, db_path):
+    def test_explicit_max_evaluations_overrides_default(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
-        trader_db.increment_idle_ticks(conn)
-        trader_db.increment_idle_ticks(conn)
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:00:00+00:00")
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:05:00+00:00")
         conn.close()
 
-        result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale", "--threshold", "2"])
+        result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale", "--max-evaluations", "2"])
 
         assert result["dropped"] == ["AAA"]
 
-    def test_nothing_stale_returns_empty(self, monkeypatch, capsys, db_path):
+    def test_explicit_max_age_hours_overrides_default(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)
-        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", now="2026-01-01T00:00:00+00:00")
         conn.close()
 
-        result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale", "--threshold", "24"])
+        result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale", "--max-age-hours", "1"])
+
+        assert result["dropped"] == ["AAA"]
+
+    def test_unevaluated_recent_candidate_is_never_stale(self, monkeypatch, capsys, db_path):
+        """The live deadlock's victim: a candidate sitting idle without
+        having been evaluated must survive drop-stale, however long it has
+        been waiting."""
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        for _ in range(50):
+            trader_db.increment_idle_ticks(conn)
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale"])
 
         assert result["dropped"] == []
 
@@ -136,11 +151,10 @@ class TestWatchlistRemove:
 
 
 class TestWatchlistMarkEvaluated:
-    def test_bumps_everyone_not_in_tickers(self, monkeypatch, capsys, db_path):
+    def test_stamps_evaluated_and_bumps_everyone_else(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)
-        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
-        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
-        trader_db.upsert_watchlist_candidate(conn, ticker="CCC")
+        for t in ["AAA", "BBB", "CCC"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
         conn.close()
 
         result = _run(monkeypatch, capsys, db_path, ["watchlist-mark-evaluated", "--tickers", "aaa,bbb"])
@@ -148,10 +162,15 @@ class TestWatchlistMarkEvaluated:
         assert result["evaluated_this_tick"] == ["AAA", "BBB"]
         conn = trader_db.get_conn(db_path)
         try:
-            rows = {r["ticker"]: r["idle_ticks"] for r in trader_db.get_watchlist_candidates(conn)}
-            assert rows == {"AAA": 0, "BBB": 0, "CCC": 1}
+            rows = {r["ticker"]: r for r in trader_db.get_watchlist_candidates(conn)}
         finally:
             conn.close()
+        assert rows["AAA"]["eval_count"] == 1
+        assert rows["AAA"]["last_evaluated_at"] is not None
+        assert rows["BBB"]["eval_count"] == 1
+        assert rows["CCC"]["eval_count"] == 0
+        assert rows["CCC"]["last_evaluated_at"] is None
+        assert {t: r["idle_ticks"] for t, r in rows.items()} == {"AAA": 0, "BBB": 0, "CCC": 1}
 
     def test_repeated_calls_produce_rotation(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)

@@ -252,6 +252,58 @@ class TestInsertIntoWatchlist:
         )
         assert "source" not in result
 
+    def test_candidate_dicts_write_their_signals(self, merge_env):
+        """2026-08-01: the pool already knows price/rsi/volume_ratio/
+        macd_hist/sentiment/news_headline; this used to write ticker+source
+        only and throw all of it away."""
+        merge_discoveries.insert_into_watchlist(
+            [{"ticker": "ZZZ", "price": 4.20, "rsi": 55.0, "volume_ratio": 6.1,
+              "macd_hist": 0.03, "sentiment": -0.87, "news_headline": "ZZZ halted"}],
+            source_label="discovery_pool gen 9", db_path=merge_env["db_path"],
+        )
+        row = _candidates(merge_env["db_path"])["ZZZ"]
+        assert row["price"] == 4.20
+        assert row["rsi"] == 55.0
+        assert row["volume_ratio"] == 6.1
+        assert row["macd_hist"] == 0.03
+        assert row["sentiment"] == -0.87
+        assert row["news_headline"] == "ZZZ halted"
+        assert row["source"] == "discovery_pool gen 9"
+
+    def test_candidate_dict_ignores_unknown_and_null_fields(self, merge_env):
+        """Pool rows carry bookkeeping columns (in_band, screen_count, the
+        new rank_score, ...) that aren't watchlist columns, and a partially
+        screened row can have NULL signals -- neither should reach the
+        upsert."""
+        merge_discoveries.insert_into_watchlist(
+            [{"ticker": "ZZZ", "price": 4.20, "rsi": None, "in_band": 1,
+              "screen_count": 7, "rank_score": 1.4, "universe_generation": 3}],
+            source_label="x", db_path=merge_env["db_path"],
+        )
+        row = _candidates(merge_env["db_path"])["ZZZ"]
+        assert row["price"] == 4.20
+        assert row["rsi"] is None
+        assert row["volume_ratio"] is None
+
+    def test_bare_ticker_strings_still_work(self, merge_env):
+        """The discoveries/*.md path has no structured signals to pass."""
+        result = merge_discoveries.insert_into_watchlist(
+            ["ZZZ"], source_label="2026-08-01.md", db_path=merge_env["db_path"],
+        )
+        assert result["merged"] == ["ZZZ"]
+        assert _candidates(merge_env["db_path"])["ZZZ"]["price"] is None
+
+    def test_dict_candidates_respect_dedup_and_max_size(self, merge_env):
+        merge_env["params_path"].write_text(json.dumps({"watchlist": {"max_size": 2}}))
+        result = merge_discoveries.insert_into_watchlist(
+            [{"ticker": "NVDA", "price": 1.0}, {"ticker": "AAA", "price": 2.0},
+             {"ticker": "BBB", "price": 3.0}, {"ticker": "CCC", "price": 4.0}],
+            source_label="discovery_pool gen 1", db_path=merge_env["db_path"],
+        )
+        assert result["merged"] == ["AAA", "BBB"]
+        assert "NVDA" in result["skipped"]
+        assert any("max_size 2 reached" in s for s in result["skipped"])
+
     def test_default_db_path_uses_trader_db_default(self, merge_env):
         """No db_path passed -- should fall back to trader_db.DB_PATH
         (already monkeypatched by the fixture), same as every other
