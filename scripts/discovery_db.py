@@ -149,20 +149,64 @@ def record_news_confirmation(conn: sqlite3.Connection, ticker: str, sentiment, h
         )
 
 
+# Composite ranking weights. Ranking used to be volume_ratio DESC alone,
+# which handed the top of the promotion queue to whatever illiquid name
+# had a single-day volume freak -- live top-of-queue was LFMDP/PSTR/CIGL/
+# GFGF, several of them preferred shares or thin ETFs, some with a
+# "confirming" headline that didn't mention the ticker at all. Volume is
+# still the base signal but SATURATES, so a 20x freak on nothing can't
+# outrank a 6x move that also has real sentiment and fresh news behind
+# it. Max composite score is the sum of the three weights (2.0).
+VOLUME_SATURATION_RATIO = 10.0   # volume_ratio at/above this scores a full 1.0
+NEWS_RECENCY_WINDOW_HOURS = 24.0  # news decays linearly to 0 over this window
+RANK_WEIGHT_VOLUME = 1.0
+RANK_WEIGHT_SENTIMENT = 0.6      # ABS(sentiment) -- a strong bearish read is signal too
+RANK_WEIGHT_NEWS_RECENCY = 0.4
+
+# Each term is clamped to 0..1 before weighting, so no single component
+# can dominate by being out of its expected range (volume_ratio is
+# unbounded, sentiment is nominally -1..1 but comes from an LLM).
+_RANK_SCORE_SQL = """
+      :w_volume * MIN(COALESCE(volume_ratio, 0.0), :volume_saturation) / :volume_saturation
+    + :w_sentiment * MIN(ABS(COALESCE(sentiment, 0.0)), 1.0)
+    + :w_news * CASE
+        WHEN news_confirmed_at IS NULL THEN 0.0
+        ELSE MAX(0.0, MIN(1.0,
+            1.0 - ((julianday(:now) - julianday(news_confirmed_at)) * 24.0) / :news_window))
+      END
+"""
+
+
 def get_top_candidates(conn: sqlite3.Connection, limit: int, max_age_seconds: int, now: str) -> list:
     """The staleness-filtered ranking query -- single source of truth for
-    'fresh enough to trust'. now is an ISO timestamp string; SQLite's
-    julianday() diff handles the age comparison without needing Python
-    datetime math inside the query."""
+    'fresh enough to trust' and for what "top" means. now is an ISO
+    timestamp string; SQLite's julianday() diff handles both the age
+    comparison and the news-recency decay without needing Python datetime
+    math inside the query.
+
+    Rows come back with an extra 'rank_score' key (the composite defined
+    above) so consumers can log/inspect why a candidate ranked where it
+    did. volume_ratio DESC stays as the tiebreak, which keeps the pure-
+    volume ordering intact for a pool that has no sentiment/news yet."""
     rows = conn.execute(
-        """
-        SELECT * FROM candidates
+        f"""
+        SELECT *, ({_RANK_SCORE_SQL}) AS rank_score
+        FROM candidates
         WHERE in_band = 1
-          AND (julianday(?) - julianday(last_screened_at)) * 86400 <= ?
-        ORDER BY volume_ratio IS NULL, volume_ratio DESC
-        LIMIT ?
+          AND (julianday(:now) - julianday(last_screened_at)) * 86400 <= :max_age_seconds
+        ORDER BY rank_score DESC, volume_ratio IS NULL, volume_ratio DESC, ticker
+        LIMIT :limit
         """,
-        (now, max_age_seconds, limit),
+        {
+            "now": now,
+            "max_age_seconds": max_age_seconds,
+            "limit": limit,
+            "w_volume": RANK_WEIGHT_VOLUME,
+            "w_sentiment": RANK_WEIGHT_SENTIMENT,
+            "w_news": RANK_WEIGHT_NEWS_RECENCY,
+            "volume_saturation": VOLUME_SATURATION_RATIO,
+            "news_window": NEWS_RECENCY_WINDOW_HOURS,
+        },
     ).fetchall()
     return [dict(r) for r in rows]
 

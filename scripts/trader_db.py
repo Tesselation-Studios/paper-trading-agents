@@ -109,12 +109,16 @@ CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
 -- watchlist_candidates: replaces strategies/watchlist.md's ## Candidates
 -- section. note holds Stan's own reasoning text (why it's on the list,
 -- signal read), same role watchlist.md's inline note played.
+-- sentiment/news_headline (2026-08-01) carry the discovery pool's news
+-- read through to the watchlist so a tick doesn't have to re-derive it.
 CREATE TABLE IF NOT EXISTS watchlist_candidates (
     ticker          TEXT PRIMARY KEY,
     price           REAL,
     rsi             REAL,
     volume_ratio    REAL,
     macd_hist       REAL,
+    sentiment       REAL,
+    news_headline   TEXT,
     idle_ticks      INTEGER NOT NULL DEFAULT 0,
     source          TEXT,
     note            TEXT,
@@ -181,6 +185,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _migrate_add_column(conn, "positions", "play_type", "TEXT NOT NULL DEFAULT 'standard'")
     _migrate_add_column(conn, "positions", "predicted_by_date", "TEXT")
     _migrate_add_column(conn, "positions", "prediction_reason", "TEXT")
+    # 2026-08-01: discovery-pool signal plumbing -- promote_candidates.py
+    # now carries the pool's news read (sentiment score + the confirming
+    # headline) onto the candidate instead of dropping it, so a tick reads
+    # it instead of re-deriving it. NULL on every pre-existing row.
+    _migrate_add_column(conn, "watchlist_candidates", "sentiment", "REAL")
+    _migrate_add_column(conn, "watchlist_candidates", "news_headline", "TEXT")
     conn.commit()
 
 
@@ -470,26 +480,35 @@ def get_position(conn: sqlite3.Connection, ticker: str):
 
 def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: float = None,
                                 rsi: float = None, volume_ratio: float = None, macd_hist: float = None,
+                                sentiment: float = None, news_headline: str = None,
                                 source: str = None, note: str = None, now: str = None) -> None:
     """Adds a new candidate or touches an existing one -- idle_ticks resets
-    to 0 on touch, matching watchlist.md's existing convention."""
+    to 0 on touch, matching watchlist.md's existing convention.
+
+    sentiment/news_headline COALESCE on update (like source/note) rather
+    than overwriting like the technicals do: they're descriptive context
+    with their own cadence, so a plain technical refresh shouldn't blank
+    the news read that got the candidate promoted in the first place."""
     import datetime
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
         conn.execute(
             """INSERT INTO watchlist_candidates
-                   (ticker, price, rsi, volume_ratio, macd_hist, idle_ticks, source, note, added_at, last_touched_at)
-               VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+                   (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline,
+                    idle_ticks, source, note, added_at, last_touched_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
                ON CONFLICT(ticker) DO UPDATE SET
                    price = excluded.price,
                    rsi = excluded.rsi,
                    volume_ratio = excluded.volume_ratio,
                    macd_hist = excluded.macd_hist,
+                   sentiment = COALESCE(excluded.sentiment, watchlist_candidates.sentiment),
+                   news_headline = COALESCE(excluded.news_headline, watchlist_candidates.news_headline),
                    idle_ticks = 0,
                    source = COALESCE(excluded.source, watchlist_candidates.source),
                    note = COALESCE(excluded.note, watchlist_candidates.note),
                    last_touched_at = excluded.last_touched_at""",
-            (ticker, price, rsi, volume_ratio, macd_hist, source, note, now, now),
+            (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline, source, note, now, now),
         )
 
 

@@ -36,9 +36,64 @@ def make_bar_df(closes, rsi_values=None, start=None):
     })
 
 
+class TestIsCommonStock:
+    """2026-08-01: the filter was PLAIN_TICKER_RE (^[A-Z]{1,5}$) alone,
+    whose docstring claimed to exclude preferred shares/warrants/class
+    shares. It didn't -- LFMDP/VLYPN/BHFAL are all 1-5 uppercase letters
+    too, and they filled the discovery pool's promotion queue. Alpaca has
+    no security-type field (asset_class is US_EQUITY for all of these), so
+    the name is what decides."""
+
+    @pytest.mark.parametrize("symbol,name", [
+        ("LFMDP", "LifeMD, Inc. 8.875% Series A Cumulative Perpetual Preferred Stock"),
+        ("VLYPN", "Valley National Bancorp Preferred Series B"),
+        ("IONQW", "IonQ, Inc. Warrants"),
+        ("RDACU", "Rising Dragon Acquisition Corp. Units"),
+        ("ABCR", "Some Acquisition Corp Rights"),
+        ("BHFAL", "Brighthouse Financial, Inc. 6.25% Junior Subordinated Debentures"),
+        ("XYZD", "Some Bank Depositary Shares"),
+    ])
+    def test_excludes_non_common_securities(self, symbol, name):
+        assert not universe_scan.is_common_stock(symbol, name)
+
+    @pytest.mark.parametrize("symbol,name", [
+        ("CXSE", "WisdomTree China ex-State-Owned Enterprises Fund"),
+        ("GFGF", "Guinness Atkinson Global Innovators ETF"),
+        ("SPY", "SPDR S&P 500 ETF Trust"),
+        ("VOO", "Vanguard S&P 500 Index Fund ETF Shares"),
+        ("AMJ", "JPMorgan Alerian MLP Index ETN"),
+    ])
+    def test_excludes_funds(self, symbol, name):
+        assert not universe_scan.is_common_stock(symbol, name)
+
+    @pytest.mark.parametrize("symbol,name", [
+        ("ZEO", "Zeo Energy Corp."),
+        ("AAPL", "Apple Inc."),
+        ("SOFI", "SoFi Technologies, Inc."),
+        # "Trust" deliberately isn't a fund keyword -- these are operating
+        # companies and REITs, not ETFs.
+        ("NTRS", "Northern Trust Corporation"),
+        ("PEI", "Pennsylvania Real Estate Investment Trust"),
+    ])
+    def test_keeps_operating_companies(self, symbol, name):
+        assert universe_scan.is_common_stock(symbol, name)
+
+    def test_rejects_malformed_symbols_regardless_of_name(self):
+        assert not universe_scan.is_common_stock("WRB.PRF", "W. R. Berkley Corporation")
+        assert not universe_scan.is_common_stock("TOOLONG", "Some Company Inc.")
+
+    def test_falls_back_to_symbol_shape_without_a_name(self):
+        """Only reachable when Alpaca returns no name -- coarse (it also
+        catches genuine class shares like GOOGL) but better than nothing."""
+        assert not universe_scan.is_common_stock("LFMDP")
+        assert not universe_scan.is_common_stock("IONQW")
+        assert universe_scan.is_common_stock("SOFI")
+        assert universe_scan.is_common_stock("ZEO")
+
+
 class TestFetchBroadUniverse:
-    def _mock_asset(self, symbol, tradable=True, exchange="NASDAQ"):
-        return SimpleNamespace(symbol=symbol, tradable=tradable, exchange=exchange)
+    def _mock_asset(self, symbol, tradable=True, exchange="NASDAQ", name=None):
+        return SimpleNamespace(symbol=symbol, tradable=tradable, exchange=exchange, name=name)
 
     def _patch_client(self, monkeypatch, assets):
         mock_client = MagicMock()
@@ -90,6 +145,22 @@ class TestFetchBroadUniverse:
         self._patch_client(monkeypatch, assets)
         result = universe_scan.fetch_broad_universe(sample_size=10, seed="s")
         assert result == ["GOOD"]
+
+    def test_excludes_preferred_and_funds_by_asset_name(self, monkeypatch):
+        """The live bug: these are all 1-5 uppercase letters, so the old
+        plain-ticker regex passed every one of them straight into the
+        discovery pool."""
+        from alpaca.trading.enums import AssetExchange
+        assets = [
+            self._mock_asset("ZEO", exchange=AssetExchange.NASDAQ, name="Zeo Energy Corp."),
+            self._mock_asset("LFMDP", exchange=AssetExchange.NASDAQ,
+                              name="LifeMD, Inc. Series A Cumulative Perpetual Preferred Stock"),
+            self._mock_asset("CXSE", exchange=AssetExchange.NASDAQ,
+                              name="WisdomTree China ex-State-Owned Enterprises Fund"),
+            self._mock_asset("IONQW", exchange=AssetExchange.NYSE, name="IonQ, Inc. Warrants"),
+        ]
+        self._patch_client(monkeypatch, assets)
+        assert universe_scan.fetch_broad_universe(sample_size=10, seed="s") == ["ZEO"]
 
     def test_sample_size_larger_than_universe_returns_all(self, monkeypatch):
         from alpaca.trading.enums import AssetExchange

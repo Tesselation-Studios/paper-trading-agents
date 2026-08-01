@@ -123,6 +123,30 @@ class TestPromote:
         assert result["merged"] == []
         assert result["pool_candidates_considered"] == 0
 
+    def test_pool_signals_survive_the_promotion(self, env):
+        """2026-08-01 fix: promote() passed [c["ticker"] for c in
+        candidates], so every signal the daemon had already computed died
+        at this boundary and the tick had to re-derive it per candidate."""
+        conn = discovery_db.get_conn(env["db_path"])
+        discovery_db.upsert_universe_snapshot(conn, ["ZZZ"], generation=1, fetched_at="2026-07-27T12:00:00+00:00")
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "ZZZ", "price": 4.20, "rsi": 55.0, "volume_ratio": 6.1,
+                    "macd_hist": 0.03, "in_band": True}],
+            universe_generation=1, screened_at="2026-07-27T12:00:00+00:00",
+        )
+        discovery_db.record_news_confirmation(conn, "ZZZ", -0.87, "ZZZ halted", "2026-07-27T12:01:00+00:00")
+        conn.close()
+
+        promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
+
+        row = _candidates()["ZZZ"]
+        assert row["price"] == 4.20
+        assert row["rsi"] == 55.0
+        assert row["volume_ratio"] == 6.1
+        assert row["macd_hist"] == 0.03
+        assert row["sentiment"] == -0.87
+        assert row["news_headline"] == "ZZZ halted"
+
     def test_top_n_caps_pool_candidates_considered(self, env):
         _seed(env["db_path"], [("A", 1.0), ("B", 2.0), ("C", 3.0)])
         result = promote_candidates.promote(db_path=env["db_path"], top_n=2, max_age_seconds=86400, now=FIXED_NOW)

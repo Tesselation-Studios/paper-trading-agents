@@ -104,6 +104,69 @@ class TestGetTopCandidates:
         assert [r["ticker"] for r in result] == ["HIGH", "MID"]
 
 
+class TestCompositeRanking:
+    """2026-08-01: ranking was volume_ratio DESC alone, which put whatever
+    illiquid name had a one-day volume freak at the top of the promotion
+    queue. Composite of volume (saturating) + sentiment magnitude + news
+    recency."""
+
+    NOW = "2026-08-01T12:00:00+00:00"
+
+    def _seed(self, conn, ticker, volume_ratio, sentiment=None, news_at=None,
+              screened_at="2026-08-01T11:55:00+00:00"):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": ticker, "price": 10.0, "volume_ratio": volume_ratio, "in_band": True}],
+            universe_generation=1, screened_at=screened_at,
+        )
+        if news_at is not None:
+            discovery_db.record_news_confirmation(conn, ticker, sentiment, "headline", news_at)
+
+    def _order(self, conn):
+        return [r["ticker"] for r in discovery_db.get_top_candidates(
+            conn, limit=10, max_age_seconds=86400, now=self.NOW)]
+
+    def test_volume_still_orders_a_pool_with_no_news(self, conn):
+        """The pure-volume ordering must survive unchanged when nothing has
+        sentiment or news yet -- that's the daemon's steady state early in
+        a scan cycle."""
+        self._seed(conn, "LOW", 1.0)
+        self._seed(conn, "HIGH", 3.0)
+        self._seed(conn, "MID", 2.0)
+        assert self._order(conn) == ["HIGH", "MID", "LOW"]
+
+    def test_volume_saturates_so_news_backed_move_outranks_volume_freak(self, conn):
+        """The GFGF-vs-ZEO case: a 17.9x volume freak with a headline that
+        scored 0.0 sentiment loses to a smaller move with a real story."""
+        self._seed(conn, "FREAK", 17.9, sentiment=0.0, news_at="2026-08-01T11:00:00+00:00")
+        self._seed(conn, "REAL", 6.0, sentiment=0.9, news_at="2026-08-01T11:00:00+00:00")
+        assert self._order(conn) == ["REAL", "FREAK"]
+
+    def test_bearish_sentiment_counts_by_magnitude(self, conn):
+        self._seed(conn, "BEAR", 5.0, sentiment=-0.9, news_at="2026-08-01T11:00:00+00:00")
+        self._seed(conn, "FLAT", 5.0, sentiment=0.0, news_at="2026-08-01T11:00:00+00:00")
+        assert self._order(conn) == ["BEAR", "FLAT"]
+
+    def test_fresh_news_outranks_week_old_news(self, conn):
+        self._seed(conn, "FRESHNEWS", 5.0, sentiment=0.5, news_at="2026-08-01T11:00:00+00:00")
+        self._seed(conn, "OLDNEWS", 5.0, sentiment=0.5, news_at="2026-07-25T11:00:00+00:00")
+        assert self._order(conn) == ["FRESHNEWS", "OLDNEWS"]
+
+    def test_no_news_scores_below_identical_ticker_with_news(self, conn):
+        self._seed(conn, "SILENT", 5.0)
+        self._seed(conn, "COVERED", 5.0, sentiment=0.3, news_at="2026-08-01T11:00:00+00:00")
+        assert self._order(conn) == ["COVERED", "SILENT"]
+
+    def test_rank_score_exposed_and_bounded(self, conn):
+        self._seed(conn, "MAXED", 999.0, sentiment=5.0, news_at=self.NOW)
+        row = discovery_db.get_top_candidates(conn, limit=1, max_age_seconds=86400, now=self.NOW)[0]
+        # Out-of-range inputs (unbounded volume_ratio, sentiment past 1.0)
+        # are clamped, so no one component can run away with the ranking.
+        assert row["rank_score"] == pytest.approx(
+            discovery_db.RANK_WEIGHT_VOLUME + discovery_db.RANK_WEIGHT_SENTIMENT
+            + discovery_db.RANK_WEIGHT_NEWS_RECENCY
+        )
+
+
 class TestUniverseSnapshot:
     def test_replace_is_atomic(self, conn):
         discovery_db.upsert_universe_snapshot(conn, ["A", "B", "C"], generation=1, fetched_at="t1")

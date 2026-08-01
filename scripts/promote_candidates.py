@@ -72,8 +72,12 @@ def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_
         return {"merged": [], "skipped": [], "pool_candidates_considered": 0}
 
     source_label = f"discovery_pool gen {generation}" if generation is not None else "discovery_pool"
+    # Full dicts, not [c["ticker"] for c in candidates] -- the pool row
+    # already carries price/rsi/volume_ratio/macd_hist/sentiment/
+    # news_headline, and dropping them here was forcing every tick to
+    # re-derive them per candidate inside its budget (2026-08-01 fix).
     result = merge_discoveries.insert_into_watchlist(
-        [c["ticker"] for c in candidates], source_label=source_label, dry_run=dry_run,
+        candidates, source_label=source_label, dry_run=dry_run,
     )
     result["pool_candidates_considered"] = len(candidates)
     result["source"] = source_label

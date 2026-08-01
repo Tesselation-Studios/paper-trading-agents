@@ -48,6 +48,58 @@ from alpaca.trading.enums import AssetClass, AssetExchange, AssetStatus  # noqa:
 PLAIN_TICKER_RE = re.compile(r"^[A-Z]{1,5}$")
 ENTRY_RSI_LOW, ENTRY_RSI_HIGH = 45, 65  # mirrors make_trader's v1.0/v1.1 entry band
 
+# ── Common-stock filtering ───────────────────────────────────────────────
+# PLAIN_TICKER_RE alone used to be the whole filter, with a docstring
+# claiming it excluded preferred shares/warrants/class-shares. It doesn't:
+# it only drops symbols with a dot or digit (WRB.PRF, IONQ.WS). Preferred
+# tickers are just as plainly 1-5 uppercase letters -- LFMDP, VLYPN,
+# BHFAL -- so they sailed straight through, and the discovery pool's
+# promotion queue filled up with them and with thin ETFs.
+#
+# Alpaca has no security-type field to filter on (asset_class is
+# US_EQUITY for common stock, ETFs, preferred shares and warrants alike),
+# so the asset NAME is the only metadata that actually distinguishes
+# them. That's what these match against.
+
+# Not common stock at all: preferred/depositary shares, warrants, rights,
+# units, and exchange-traded debt. Unambiguous from the name.
+NON_COMMON_NAME_RE = re.compile(
+    r"\b(preferred|depositary|depository|warrants?|rights?|units?|debenture|"
+    r"notes? due|subordinated)\b",
+    re.IGNORECASE,
+)
+
+# Funds rather than operating companies -- ETFs, ETNs, closed-end funds,
+# index products. Deliberately does NOT include a bare "trust": that would
+# take out REITs ("... Real Estate Investment Trust") and operating
+# companies like Northern Trust. The cost is that a handful of legacy
+# unit-trust ETFs whose names say only "Trust" (QQQ) still pass -- those
+# are the liquid ones, not the illiquid junk this filter exists to stop.
+FUND_NAME_RE = re.compile(
+    r"\b(etf|etn|etv|exchange[- ]traded|funds?|index|portfolio|ucits)\b",
+    re.IGNORECASE,
+)
+
+# Fallback only, for assets Alpaca returns without a name. NASDAQ's fifth
+# letter encodes the security class; these are the codes for preferred
+# (P), warrants (W), rights (R), units (U), bankruptcy (Q) and misc
+# preferred/debenture (L/Z). Coarse -- it also catches genuine class
+# shares like GOOGL -- but it only ever runs when the name metadata that
+# would decide properly is missing.
+CLASS_SUFFIX_TICKER_RE = re.compile(r"^[A-Z]{4}[PWRUQLZ]$")
+
+
+def is_common_stock(symbol: str, name: str = None) -> bool:
+    """Whether an Alpaca asset looks like tradable common stock, as opposed
+    to a preferred share, warrant, unit, ETF or closed-end fund. Name-based
+    when Alpaca gives a name (the accurate path), symbol-shape-based when
+    it doesn't."""
+    if not PLAIN_TICKER_RE.match(symbol):
+        return False
+    if not name:
+        return not CLASS_SUFFIX_TICKER_RE.match(symbol)
+    return not (NON_COMMON_NAME_RE.search(name) or FUND_NAME_RE.search(name))
+
 # A ticker with 0-1 trades can show a wildly inflated Sharpe from a single
 # lucky mark-to-market blip on an open position (e.g. one BUY held flat all
 # window, no closed trades, technically "high Sharpe" on almost no signal).
@@ -58,8 +110,9 @@ MIN_TRADES_FOR_RANKING = 3
 
 def fetch_broad_universe(sample_size=200, seed=None):
     """Fetch every active/tradable NYSE+NASDAQ common-stock symbol (one
-    cheap Alpaca call), drop preferred shares/warrants/class-shares via a
-    plain-ticker regex, then take a seeded random sample. Seeding by date
+    cheap Alpaca call), drop preferred shares/warrants/units/ETFs via
+    is_common_stock() on the asset's name metadata, then take a seeded
+    random sample. Seeding by date
     (default) means a same-day rerun is reproducible but the sample
     rotates day to day — same spirit as the live discovery cron's
     "rotate session to session" rule.
@@ -83,7 +136,7 @@ def fetch_broad_universe(sample_size=200, seed=None):
         a.symbol for a in assets
         if a.tradable
         and a.exchange in (AssetExchange.NASDAQ, AssetExchange.NYSE)
-        and PLAIN_TICKER_RE.match(a.symbol)
+        and is_common_stock(a.symbol, getattr(a, "name", None))
     })
 
     if sample_size is None:

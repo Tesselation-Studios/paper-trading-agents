@@ -31,6 +31,12 @@ PARAMS_PATH = WORKSPACE_DIR / "params.json"
 
 TICKER_HEADER_RE = re.compile(r"^## ([A-Z]{1,5}) — \$", re.MULTILINE)
 
+# Signal columns carried straight through from a discovery-pool candidate
+# dict onto the watchlist row. Keys are identical on both sides (the pool's
+# candidates table and watchlist_candidates use the same column names), so
+# this is a plain passthrough, not a mapping.
+SIGNAL_FIELDS = ("price", "rsi", "volume_ratio", "macd_hist", "sentiment", "news_headline")
+
 
 def latest_discoveries_file(date: str = None) -> Path | None:
     if date:
@@ -44,7 +50,20 @@ def extract_candidates(text: str) -> list[str]:
     return TICKER_HEADER_RE.findall(text)
 
 
-def insert_into_watchlist(tickers: list[str], source_label: str, dry_run: bool = False,
+def _split_candidate(entry) -> tuple[str, dict]:
+    """Accept either a bare ticker string (discoveries/*.md path, which has
+    no structured signals to carry) or a full candidate dict from the
+    discovery pool, and return (TICKER, signals-to-write). Only non-None
+    signals are returned, so a partially-populated pool row doesn't write
+    NULLs over anything."""
+    if isinstance(entry, str):
+        return entry.upper(), {}
+    return entry["ticker"].upper(), {
+        field: entry[field] for field in SIGNAL_FIELDS if entry.get(field) is not None
+    }
+
+
+def insert_into_watchlist(candidates: list, source_label: str, dry_run: bool = False,
                            db_path: Path = None) -> dict:
     """Dedup against every real ticker in the positions table (open AND
     closed -- a closed ticker shouldn't be re-added as a fresh candidate
@@ -56,8 +75,16 @@ def insert_into_watchlist(tickers: list[str], source_label: str, dry_run: bool =
     1-5 uppercase token anywhere in the file, including note text -- a
     note like "MS UW PT $173" would permanently phantom-block tickers
     MS/UW/PT from ever being added. Dedup against real ticker columns
-    fixes this structurally. Signature unchanged (db_path is new and
-    optional) so promote_candidates.py needs zero changes."""
+    fixes this structurally.
+
+    2026-08-01: candidates may now be dicts, not just ticker strings, and
+    their signals (price/rsi/volume_ratio/macd_hist/sentiment/
+    news_headline) get written onto the row. Previously this wrote
+    ticker+source only, so every signal discovery_daemon.py had already
+    computed was thrown away at the pool->watchlist boundary and every
+    tick re-derived it from scratch inside its time budget -- which is
+    what degraded per-candidate analysis to a one-line MACD check. Bare
+    strings still work unchanged for the discoveries/*.md path."""
     conn = trader_db.get_conn(db_path)
     try:
         max_size = json.loads(PARAMS_PATH.read_text()).get("watchlist", {}).get("max_size", 30)
@@ -68,20 +95,20 @@ def insert_into_watchlist(tickers: list[str], source_label: str, dry_run: bool =
 
         merged, skipped = [], []
         to_add = []
-        for ticker in tickers:
-            ticker = ticker.upper()
+        for entry in candidates:
+            ticker, signals = _split_candidate(entry)
             if ticker in existing_tickers:
                 skipped.append(ticker)
                 continue
             if active_candidate_count + len(to_add) >= max_size:
                 skipped.append(f"{ticker} (max_size {max_size} reached)")
                 continue
-            to_add.append(ticker)
+            to_add.append((ticker, signals))
             merged.append(ticker)
 
         if not dry_run:
-            for ticker in to_add:
-                trader_db.upsert_watchlist_candidate(conn, ticker=ticker, source=source_label)
+            for ticker, signals in to_add:
+                trader_db.upsert_watchlist_candidate(conn, ticker=ticker, source=source_label, **signals)
     finally:
         conn.close()
 
