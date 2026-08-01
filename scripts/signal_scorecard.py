@@ -33,6 +33,7 @@ import logging
 import sys
 from pathlib import Path
 
+import decisions
 import trader_db
 
 log = logging.getLogger("signal_scorecard")
@@ -91,8 +92,19 @@ def score_signals(examples: list[dict], min_samples: int) -> dict:
         if not isinstance(features, dict):
             continue
 
+        # Key normalization (2026-08-01): this tallies by exact key name, so
+        # `technical`/`macdh`/`macd_hist`/`rsi` logged as four spellings of
+        # one signal were four tallies that each stayed under min_samples
+        # forever. Alias folding happens at write time too, but is applied
+        # again here so rows already in the DB fold in as well.
+        features, _ = decisions.canonicalize_features(features)
+
         for name, val in features.items():
             if not isinstance(val, dict) or "direction" not in val:
+                continue
+            if name in decisions.NON_PREDICTIVE_SIGNAL_KEYS:
+                # Describes why an exit fired, not a pre-trade read on the
+                # name — scoring it as a predictor is meaningless.
                 continue
             direction = val.get("direction")
 

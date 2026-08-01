@@ -126,3 +126,48 @@ class TestFetchLabeledExamples:
             raise RuntimeError("simulated query failure")
         monkeypatch.setattr(signal_scorecard.trader_db, "fetch_labeled_training_examples", raise_fetch)
         assert signal_scorecard.fetch_labeled_examples("stonks", db_path=tmp_path / "trader.db") == []
+
+
+class TestKeyNormalizationAtScoreTime:
+    """2026-08-01: this tallies by exact key name, so rows already in the DB
+    under `macdh`/`macd_hist`/`rsi` have to fold into `technical` here too —
+    otherwise every historical row keeps its fragmented key and no signal
+    ever reaches the min_samples threshold."""
+
+    def test_alias_rows_fold_into_canonical_tally(self):
+        examples = [
+            ex({"technical": {"direction": "bullish", "confidence": 0.6}}, True),
+            ex({"macd_hist": {"direction": "bullish", "confidence": 0.7}}, True),
+            ex({"rsi": {"direction": "bullish", "confidence": 0.6}}, False),
+        ]
+        result = signal_scorecard.score_signals(examples, min_samples=3)
+        assert set(result) == {"technical"}
+        assert result["technical"]["n"] == 3
+        assert result["technical"]["status"] == "scored"
+
+    def test_volume_aliases_fold_together(self):
+        examples = [
+            ex({"volume": {"direction": "bullish", "confidence": 0.55}}, True),
+            ex({"vol_ratio": {"direction": "bullish", "confidence": 0.5}}, True),
+        ]
+        result = signal_scorecard.score_signals(examples, min_samples=1)
+        assert set(result) == {"volume"}
+        assert result["volume"]["n"] == 2
+
+    def test_exit_trigger_is_not_scored_as_a_predictor(self):
+        """A stop_trigger describes why an exit fired, not a pre-trade read
+        on the name — scoring it as a predictor is meaningless."""
+        examples = [
+            ex({"stop_trigger": {"direction": "bearish", "confidence": 1.0}}, False),
+            ex({"technical": {"direction": "bullish", "confidence": 0.6}}, True),
+        ]
+        result = signal_scorecard.score_signals(examples, min_samples=1)
+        assert "stop_trigger" not in result
+        assert "technical" in result
+
+    def test_unrecognized_signal_still_tallied_under_its_own_name(self):
+        """Kept, not dropped — an unknown key is warned about at write time,
+        never silently discarded from the data."""
+        examples = [ex({"vibes": {"direction": "bullish", "confidence": 0.9}}, True)]
+        result = signal_scorecard.score_signals(examples, min_samples=1)
+        assert result["vibes"]["n"] == 1
