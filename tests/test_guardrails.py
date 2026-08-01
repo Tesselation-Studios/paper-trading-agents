@@ -1212,6 +1212,76 @@ class TestCheckOrderChain:
         assert "Blocked by order_idempotency" in reason
 
 
+class TestRunGates:
+    """2026-08-01: run_gates() was extracted out of check_order() so a
+    simulated/historical caller (scripts/replay_order.py) can drive the
+    same gate chain against a backtest-session context with zero Alpaca
+    dependency. These tests call it directly -- no account/positions
+    fixtures, no monkeypatching get_account/get_positions -- to lock in
+    that it's genuinely a pure function of its arguments, unlike
+    check_order() which is now a thin live-context wrapper around it."""
+
+    def _context(self, **overrides):
+        base = {"portfolio_value": 10000.0, "cash": 8000.0, "positions": []}
+        base.update(overrides)
+        return base
+
+    def _action(self, **overrides):
+        base = {"action": "BUY", "ticker": "SOFI", "quantity": 5, "price": 4.0,
+                 "conviction": 0.9, "sector": None, "play_type": None}
+        base.update(overrides)
+        return base
+
+    def test_no_alpaca_calls_needed(self, params, monkeypatch):
+        """The whole point of the extraction: this must work with
+        get_account/get_positions left completely unpatched -- if run_gates
+        secretly still touched them, this would raise/hang on a real
+        network call instead of passing cleanly."""
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
+        granted, reason, results = executor.run_gates(self._context(), self._action())
+        assert granted is True
+        assert len(results) == len(executor.GATES)
+
+    def test_explicit_toggles_override_params_json(self, params, monkeypatch):
+        """replay_order.py's whole mechanism for force-disabling
+        live-concurrency-only gates (order_idempotency, etc.) for backtest
+        sessions depends on this: an explicit toggles dict must win over
+        whatever's in params.json, not just supplement it."""
+        params["guardrail_gates"]["hours"] = "warn"  # live params.json says warn
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (False, "market closed"))
+
+        granted_default, _, results_default = executor.run_gates(self._context(), self._action())
+        hours_default = next(r for r in results_default if r["gate"] == "hours")
+        assert hours_default.get("warn_only") is True  # picked up params.json's "warn"
+
+        granted_override, reason_override, results_override = executor.run_gates(
+            self._context(), self._action(), toggles={"hours": False},
+        )
+        hours_override = next(r for r in results_override if r["gate"] == "hours")
+        assert "disabled via params.json" in hours_override["reason"]
+        assert granted_override is True
+
+    def test_toggles_none_falls_back_to_params_json(self, params, monkeypatch):
+        params["guardrail_gates"]["conviction"] = "warn"
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
+        granted, reason, results = executor.run_gates(
+            self._context(), self._action(conviction=0.1), toggles=None,
+        )
+        conviction_result = next(r for r in results if r["gate"] == "conviction")
+        assert conviction_result["warn_only"] is True
+
+    def test_rejection_shape_matches_check_order(self, params, monkeypatch):
+        """Same {"error"/rejection shape} whether called directly or via
+        check_order() -- replay_order.py needs real gate feedback, not a
+        friendlier simulated version."""
+        monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
+        granted, reason, results = executor.run_gates(self._context(), self._action(conviction=0.1))
+        assert granted is False
+        assert "Blocked by conviction" in reason
+        assert results[-1]["gate"] == "conviction"
+        assert results[-1]["passed"] is False
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # check_stops — hard stop / trailing stop breach detection
 # ─────────────────────────────────────────────────────────────────────────────

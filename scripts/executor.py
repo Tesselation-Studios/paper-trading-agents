@@ -1456,24 +1456,21 @@ def _order_lock(ticker: str):
             fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 
-def check_order(account: str, action: str, ticker: str, qty: int, price: Optional[float] = None,
-                 conviction: Optional[float] = None, sector: Optional[str] = None,
-                 play_type: Optional[str] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
-    """Run a proposed trade through all enabled gates. First rejection stops the chain."""
-    account_data = get_account(account)
-    positions = get_positions(account)
-    context = {
-        "portfolio_value": float(account_data.get("equity", 0)),
-        "cash": float(account_data.get("cash", 0)),
-        "positions": [{"symbol": p["symbol"], "market_value": float(p["market_value"])} for p in positions],
-        "account": account,  # gate_order_idempotency needs this to query Alpaca's live order book
-    }
-    trade_action = {
-        "action": action.upper(), "ticker": ticker.upper(), "quantity": qty,
-        "price": price, "conviction": conviction, "sector": sector, "play_type": play_type,
-    }
+def run_gates(context: Dict[str, Any], trade_action: Dict[str, Any],
+              toggles: Optional[Dict[str, Any]] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
+    """Run a proposed trade through all enabled gates against the given
+    context/trade_action. First rejection stops the chain. Pure function of
+    its arguments -- no Alpaca calls, no I/O beyond reading params.json for
+    default toggles when none are passed.
 
-    toggles = load_params().get("guardrail_gates", {})
+    2026-08-01: extracted out of check_order() so a simulated/historical
+    caller (scripts/replay_order.py, the backtest-session order path) can
+    drive the exact same gate chain against a backtest-session context
+    without ever building a live-Alpaca dependency. check_order() below is
+    now a thin live-context wrapper around this; zero behavior change for
+    live trading."""
+    if toggles is None:
+        toggles = load_params().get("guardrail_gates", {})
     results = []
     for name, gate_fn in GATES.items():
         mode = toggles.get(name, True)
@@ -1493,6 +1490,25 @@ def check_order(account: str, action: str, ticker: str, qty: int, price: Optiona
         if not passed and not warn_only:
             return False, f"Blocked by {name}: {reason}", results
     return True, "All gates passed", results
+
+
+def check_order(account: str, action: str, ticker: str, qty: int, price: Optional[float] = None,
+                 conviction: Optional[float] = None, sector: Optional[str] = None,
+                 play_type: Optional[str] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
+    """Run a proposed trade through all enabled gates. First rejection stops the chain."""
+    account_data = get_account(account)
+    positions = get_positions(account)
+    context = {
+        "portfolio_value": float(account_data.get("equity", 0)),
+        "cash": float(account_data.get("cash", 0)),
+        "positions": [{"symbol": p["symbol"], "market_value": float(p["market_value"])} for p in positions],
+        "account": account,  # gate_order_idempotency needs this to query Alpaca's live order book
+    }
+    trade_action = {
+        "action": action.upper(), "ticker": ticker.upper(), "quantity": qty,
+        "price": price, "conviction": conviction, "sector": sector, "play_type": play_type,
+    }
+    return run_gates(context, trade_action)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
