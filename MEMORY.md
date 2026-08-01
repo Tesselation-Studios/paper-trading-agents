@@ -1,6 +1,8 @@
 ## Trader-Stonks Durable Lessons
 *Updated: 2026-07-31 — nightly learning*
 
+Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix, an escalation, something worth doing but not done yet) live in `tasks/pending.md` — check it at the start of every reflection session.
+
 ### Operational
 - **Pre-session GTC order audit**: Stale GTC limit/stop orders from prior sessions can silently block ALL position exits. Jul 21: 11 stale orders from Jul 20 blocked AMC sell (403 Forbidden). Now: every session start, audit and cancel all open GTC orders before the first tick. This is a hard prerequisite, not optional.
 - **Pre-session account audit (NEW Jul 22)**: Shared Alpaca credentials create account contamination risk. Jul 22: 8 non-Stonks positions (AMD/COST/GOOGL/HOOD/JNJ/PLTR/QQQ/V) found in account, 5 Stonks positions missing (CHWY/DJT/GME/KHC/SNAP). Reconciled by 11:00 ET but 80+ minutes of position tracking were corrupted. Now: every session start, audit Alpaca positions against journal records BEFORE first tick — cross-reference symbol by symbol.
