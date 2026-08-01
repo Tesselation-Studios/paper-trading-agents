@@ -102,7 +102,7 @@ def main() -> int:
 
     p = sub.add_parser("watchlist", help="Current watchlist candidates")
     p.add_argument("--batch", type=int, default=None,
-                    help="Return only the N most-neglected (highest idle_ticks) candidates, "
+                    help="Return only the N least-recently-evaluated candidates (never-evaluated first), "
                          "for bounded per-tick evaluation -- see params.json watchlist.eval_batch_size")
 
     p = sub.add_parser("bankroll", help="Current bankroll state, or recent history")

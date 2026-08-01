@@ -12,7 +12,7 @@ executor.py's BUY/SELL, not through here — see trader_db.py directly).
 Usage:
     python3 scripts/trader_write.py watchlist-add --ticker AAA --note "RSI 58, volume 1.2x"
     python3 scripts/trader_write.py watchlist-drop-stale
-    python3 scripts/trader_write.py watchlist-drop-stale --threshold 24
+    python3 scripts/trader_write.py watchlist-drop-stale --max-evaluations 12 --max-age-hours 48
     python3 scripts/trader_write.py watchlist-remove --ticker AAA
     python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB,CCC
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --thesis "..."
@@ -28,19 +28,28 @@ import trader_db  # noqa: E402
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 
-DEFAULT_IDLE_TICKS_BEFORE_DROP = 24
-
-
 def _print(obj) -> None:
     print(json.dumps(obj, indent=2, default=str))
 
 
-def _load_idle_ticks_threshold() -> int:
+def _load_drop_thresholds() -> tuple[int, float]:
+    """params.json watchlist.max_evaluations_before_drop /
+    max_age_hours_before_drop, falling back to trader_db's defaults.
+
+    Replaces watchlist.idle_ticks_before_drop (2026-08-01): dropping on
+    the same counter the evaluation rotation ordered by meant a candidate
+    could only reach the front of the queue by first reaching the drop
+    threshold, so unevaluated names were deleted before they were ever
+    looked at. See trader_db.drop_stale_watchlist_candidates()."""
     try:
         params = json.loads(PARAMS_PATH.read_text())
     except (OSError, json.JSONDecodeError):
-        return DEFAULT_IDLE_TICKS_BEFORE_DROP
-    return params.get("watchlist", {}).get("idle_ticks_before_drop", DEFAULT_IDLE_TICKS_BEFORE_DROP)
+        params = {}
+    block = params.get("watchlist", {})
+    return (
+        block.get("max_evaluations_before_drop", trader_db.DEFAULT_MAX_EVALUATIONS_BEFORE_DROP),
+        block.get("max_age_hours_before_drop", trader_db.DEFAULT_MAX_AGE_HOURS_BEFORE_DROP),
+    )
 
 
 def cmd_watchlist_add(args, conn) -> None:
@@ -71,9 +80,13 @@ def cmd_watchlist_add(args, conn) -> None:
 
 
 def cmd_watchlist_drop_stale(args, conn) -> None:
-    threshold = args.threshold if args.threshold is not None else _load_idle_ticks_threshold()
-    dropped = trader_db.drop_stale_watchlist_candidates(conn, idle_ticks_threshold=threshold)
-    _print({"threshold": threshold, "dropped": dropped})
+    default_evals, default_hours = _load_drop_thresholds()
+    max_evaluations = args.max_evaluations if args.max_evaluations is not None else default_evals
+    max_age_hours = args.max_age_hours if args.max_age_hours is not None else default_hours
+    dropped = trader_db.drop_stale_watchlist_candidates(
+        conn, max_evaluations=max_evaluations, max_age_hours=max_age_hours,
+    )
+    _print({"max_evaluations": max_evaluations, "max_age_hours": max_age_hours, "dropped": dropped})
 
 
 def cmd_watchlist_remove(args, conn) -> None:
@@ -83,14 +96,15 @@ def cmd_watchlist_remove(args, conn) -> None:
 
 
 def cmd_watchlist_mark_evaluated(args, conn) -> None:
-    """Bumps idle_ticks for every candidate NOT in --tickers (2026-07-28,
-    pairs with trader_query.py watchlist --batch N). Evaluated names are left
-    flat rather than reset to 0 -- they're not being re-discovered, just
-    looked at -- so the ones climbing fastest are always whoever's gone
-    longest without evaluation, giving a round-robin over several ticks with
-    no separate cursor to track."""
+    """Stamps last_evaluated_at and bumps eval_count on --tickers, sending
+    them to the back of get_watchlist_batch()'s queue (2026-07-28, pairs
+    with trader_query.py watchlist --batch N).
+
+    Used to only bump idle_ticks for everyone else and leave the evaluated
+    names flat, which deadlocked the rotation -- see
+    trader_db.get_watchlist_batch()."""
     tickers = [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
-    trader_db.increment_idle_ticks(conn, except_tickers=tickers)
+    trader_db.mark_candidates_evaluated(conn, tickers)
     _print({"evaluated_this_tick": tickers})
 
 
@@ -121,14 +135,18 @@ def main() -> int:
     p.add_argument("--source", default=None)
     p.add_argument("--note", default=None)
 
-    p = sub.add_parser("watchlist-drop-stale", help="Drop candidates at/over the idle_ticks threshold")
-    p.add_argument("--threshold", type=int, default=None, help="Default: params.json watchlist.idle_ticks_before_drop")
+    p = sub.add_parser("watchlist-drop-stale", help="Drop exhausted (too many evaluations) or too-old candidates")
+    p.add_argument("--max-evaluations", type=int, default=None,
+                    help="Default: params.json watchlist.max_evaluations_before_drop")
+    p.add_argument("--max-age-hours", type=float, default=None,
+                    help="Default: params.json watchlist.max_age_hours_before_drop")
 
     p = sub.add_parser("watchlist-remove", help="Remove a candidate (e.g. promoted to a position)")
     p.add_argument("--ticker", required=True)
 
     p = sub.add_parser("watchlist-mark-evaluated",
-                        help="Bump idle_ticks for every candidate except --tickers (call after a batch eval)")
+                        help="Stamp --tickers as evaluated, sending them to the back of the rotation "
+                             "(call after a batch eval)")
     p.add_argument("--tickers", required=True, help="Comma-separated tickers evaluated this tick")
 
     p = sub.add_parser("position-update-thesis", help="Update an open position's thesis (not tied to a trade)")

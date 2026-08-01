@@ -331,14 +331,19 @@ class TestWatchlistCandidates:
         rows = {r["ticker"]: r["idle_ticks"] for r in trader_db.get_watchlist_candidates(conn)}
         assert rows == {"AAA": 0, "BBB": 1}
 
-    def test_get_watchlist_batch_most_neglected_first(self, conn):
-        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
-        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
-        trader_db.upsert_watchlist_candidate(conn, ticker="CCC")
-        trader_db.increment_idle_ticks(conn, except_tickers=["AAA"])  # BBB, CCC -> 1
-        trader_db.increment_idle_ticks(conn, except_tickers=["AAA", "BBB"])  # CCC -> 2
-        batch = trader_db.get_watchlist_batch(conn, 2)
-        assert [c["ticker"] for c in batch] == ["CCC", "BBB"]
+    def test_get_watchlist_batch_least_recently_evaluated_first(self, conn):
+        for t in ["AAA", "BBB", "CCC"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:00:00+00:00")
+        trader_db.mark_candidates_evaluated(conn, ["BBB"], now="2026-08-01T10:05:00+00:00")
+        # CCC has never been evaluated -> front of the queue, then AAA
+        # (evaluated longest ago), then BBB.
+        assert [c["ticker"] for c in trader_db.get_watchlist_batch(conn, 3)] == ["CCC", "AAA", "BBB"]
+
+    def test_get_watchlist_batch_never_evaluated_sorts_by_added_at(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="OLD", now="2026-08-01T09:00:00+00:00")
+        trader_db.upsert_watchlist_candidate(conn, ticker="NEW", now="2026-08-01T10:00:00+00:00")
+        assert [c["ticker"] for c in trader_db.get_watchlist_batch(conn, 2)] == ["OLD", "NEW"]
 
     def test_get_watchlist_batch_respects_limit(self, conn):
         for t in ["AAA", "BBB", "CCC"]:
@@ -346,18 +351,67 @@ class TestWatchlistCandidates:
         assert len(trader_db.get_watchlist_batch(conn, 1)) == 1
         assert len(trader_db.get_watchlist_batch(conn, 10)) == 3
 
-    def test_mark_evaluated_then_increment_rotates(self, conn):
-        """The intended real-usage pattern: batch -> evaluate -> exempt those
-        from the next increment -- confirms a full rotation surfaces every
-        candidate exactly once before repeating."""
+    def test_batch_then_mark_evaluated_rotates(self, conn):
+        """The intended real-usage pattern: batch -> evaluate -> mark --
+        confirms a full rotation surfaces every candidate exactly once
+        before repeating."""
         for t in ["AAA", "BBB", "CCC", "DDD"]:
             trader_db.upsert_watchlist_candidate(conn, ticker=t)
         seen = []
-        for _ in range(4):
+        for i in range(4):
             batch = trader_db.get_watchlist_batch(conn, 1)
             seen.extend(c["ticker"] for c in batch)
-            trader_db.increment_idle_ticks(conn, except_tickers=[c["ticker"] for c in batch])
+            trader_db.mark_candidates_evaluated(
+                conn, [c["ticker"] for c in batch], now=f"2026-08-01T10:0{i}:00+00:00")
         assert sorted(seen) == ["AAA", "BBB", "CCC", "DDD"]
+
+    def test_newly_added_candidate_jumps_the_queue(self, conn):
+        """The live bug: names added mid-session sat unevaluated for hours
+        behind incumbents and were deleted before ever being looked at.
+        A brand-new candidate must be seen on the very next batch."""
+        for t in ["AAA", "BBB"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        trader_db.mark_candidates_evaluated(conn, ["AAA", "BBB"], now="2026-08-01T10:00:00+00:00")
+        trader_db.upsert_watchlist_candidate(conn, ticker="FRESH")
+        assert trader_db.get_watchlist_batch(conn, 1)[0]["ticker"] == "FRESH"
+
+    def test_evaluation_does_not_pin_a_candidate_to_the_front(self, conn):
+        """The deadlock itself, as a regression test. Under the old scheme
+        the batch froze and re-evaluated the same names indefinitely; here
+        20 rounds of batch-of-2 over 4 candidates must spread evenly."""
+        for t in ["AAA", "BBB", "CCC", "DDD"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        counts = {t: 0 for t in ["AAA", "BBB", "CCC", "DDD"]}
+        for i in range(20):
+            batch = [c["ticker"] for c in trader_db.get_watchlist_batch(conn, 2)]
+            for t in batch:
+                counts[t] += 1
+            trader_db.mark_candidates_evaluated(conn, batch, now=f"2026-08-01T10:{i:02d}:00+00:00")
+        assert set(counts.values()) == {10}
+
+    def test_mark_evaluated_stamps_and_counts(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:00:00+00:00")
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:05:00+00:00")
+        rows = {r["ticker"]: r for r in trader_db.get_watchlist_candidates(conn)}
+        assert rows["AAA"]["last_evaluated_at"] == "2026-08-01T10:05:00+00:00"
+        assert rows["AAA"]["eval_count"] == 2
+        assert rows["AAA"]["idle_ticks"] == 0
+        assert rows["BBB"]["last_evaluated_at"] is None
+        assert rows["BBB"]["eval_count"] == 0
+        assert rows["BBB"]["idle_ticks"] == 2  # diagnostic only, nothing decides on it
+
+    def test_touch_does_not_count_as_an_evaluation(self, conn):
+        """Being re-discovered by the discovery pool isn't being evaluated
+        -- if a touch reset the ordering signal, a frequently-rediscovered
+        candidate would hold the front of the queue permanently."""
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:00:00+00:00")
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", note="rediscovered")
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["last_evaluated_at"] == "2026-08-01T10:00:00+00:00"
+        assert row["eval_count"] == 1
 
     def test_touch_resets_idle_ticks(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
@@ -368,15 +422,39 @@ class TestWatchlistCandidates:
         assert row["idle_ticks"] == 0
         assert row["note"] == "touched again"
 
-    def test_drop_stale_removes_and_returns_dropped(self, conn):
+    def test_drop_stale_retires_exhausted_candidates(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
         trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
-        for _ in range(24):
-            trader_db.increment_idle_ticks(conn, except_tickers=["BBB"])
-        dropped = trader_db.drop_stale_watchlist_candidates(conn, idle_ticks_threshold=24)
+        for i in range(12):
+            trader_db.mark_candidates_evaluated(conn, ["AAA"], now=f"2026-08-01T10:{i:02d}:00+00:00")
+        dropped = trader_db.drop_stale_watchlist_candidates(conn, max_evaluations=12)
         assert dropped == ["AAA"]
-        remaining = [r["ticker"] for r in trader_db.get_watchlist_candidates(conn)]
-        assert remaining == ["BBB"]
+        assert [r["ticker"] for r in trader_db.get_watchlist_candidates(conn)] == ["BBB"]
+
+    def test_drop_stale_retires_by_added_at_age(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="OLD", now="2026-07-30T10:00:00+00:00")
+        trader_db.upsert_watchlist_candidate(conn, ticker="NEW", now="2026-08-01T09:00:00+00:00")
+        dropped = trader_db.drop_stale_watchlist_candidates(
+            conn, max_age_hours=48, now="2026-08-01T10:00:00+00:00")
+        assert dropped == ["OLD"]
+
+    def test_drop_stale_never_retires_on_the_ordering_signal(self, conn):
+        """A candidate that has never been evaluated can be arbitrarily
+        idle and must still survive -- that's the whole point of the
+        split. Under the old scheme this was exactly the row that got
+        deleted before ever reaching a batch."""
+        trader_db.upsert_watchlist_candidate(conn, ticker="NEGLECTED")
+        for _ in range(100):
+            trader_db.increment_idle_ticks(conn)
+        dropped = trader_db.drop_stale_watchlist_candidates(
+            conn, max_evaluations=12, max_age_hours=48)
+        assert dropped == []
+        assert trader_db.get_watchlist_batch(conn, 1)[0]["ticker"] == "NEGLECTED"
+
+    def test_drop_stale_with_no_thresholds_drops_nothing(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        assert trader_db.drop_stale_watchlist_candidates(conn) == []
+        assert len(trader_db.get_watchlist_candidates(conn)) == 1
 
     def test_remove_watchlist_candidate(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")

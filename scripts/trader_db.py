@@ -111,19 +111,35 @@ CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
 -- signal read), same role watchlist.md's inline note played.
 -- sentiment/news_headline (2026-08-01) carry the discovery pool's news
 -- read through to the watchlist so a tick doesn't have to re-derive it.
+--
+-- Evaluation ordering and staleness-drop read DIFFERENT columns on
+-- purpose (2026-08-01). They used to share idle_ticks, which deadlocked:
+-- get_watchlist_batch() took the highest idle_ticks, mark-evaluated left
+-- those flat, so an evaluated candidate froze one tick below the drop
+-- threshold and held the top of the ordering forever, while every
+-- candidate that hadn't been evaluated yet had to climb PAST it to get a
+-- turn -- and reached the drop threshold first, so drop-stale deleted it
+-- before it was ever looked at. Confirmed live: 4 candidates pinned at
+-- idle_ticks 23 against a threshold of 24, re-evaluated for hours, while
+-- names added the same afternoon were deleted unevaluated.
+--   last_evaluated_at -> ordering (least-recently-evaluated first)
+--   eval_count/added_at -> staleness (exhausted, or never converted)
+--   idle_ticks -> diagnostic only, nothing decides on it anymore
 CREATE TABLE IF NOT EXISTS watchlist_candidates (
-    ticker          TEXT PRIMARY KEY,
-    price           REAL,
-    rsi             REAL,
-    volume_ratio    REAL,
-    macd_hist       REAL,
-    sentiment       REAL,
-    news_headline   TEXT,
-    idle_ticks      INTEGER NOT NULL DEFAULT 0,
-    source          TEXT,
-    note            TEXT,
-    added_at        TEXT NOT NULL,
-    last_touched_at TEXT NOT NULL
+    ticker            TEXT PRIMARY KEY,
+    price             REAL,
+    rsi               REAL,
+    volume_ratio      REAL,
+    macd_hist         REAL,
+    sentiment         REAL,
+    news_headline     TEXT,
+    idle_ticks        INTEGER NOT NULL DEFAULT 0,
+    last_evaluated_at TEXT,
+    eval_count        INTEGER NOT NULL DEFAULT 0,
+    source            TEXT,
+    note              TEXT,
+    added_at          TEXT NOT NULL,
+    last_touched_at   TEXT NOT NULL
 );
 
 -- bankroll_state: singleton row (id=1), replaces bankroll.md's
@@ -191,6 +207,13 @@ def init_schema(conn: sqlite3.Connection) -> None:
     # it instead of re-deriving it. NULL on every pre-existing row.
     _migrate_add_column(conn, "watchlist_candidates", "sentiment", "REAL")
     _migrate_add_column(conn, "watchlist_candidates", "news_headline", "TEXT")
+    # 2026-08-01: split the rotation/staleness deadlock (see the table
+    # comment above). Existing rows migrate to last_evaluated_at NULL and
+    # eval_count 0, i.e. "never evaluated" -- which is what puts them at
+    # the FRONT of the new ordering, so the candidates the old scheme was
+    # starving get looked at first.
+    _migrate_add_column(conn, "watchlist_candidates", "last_evaluated_at", "TEXT")
+    _migrate_add_column(conn, "watchlist_candidates", "eval_count", "INTEGER NOT NULL DEFAULT 0")
     conn.commit()
 
 
@@ -488,7 +511,14 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
     sentiment/news_headline COALESCE on update (like source/note) rather
     than overwriting like the technicals do: they're descriptive context
     with their own cadence, so a plain technical refresh shouldn't blank
-    the news read that got the candidate promoted in the first place."""
+    the news read that got the candidate promoted in the first place.
+
+    Deliberately does not touch last_evaluated_at/eval_count: being
+    re-discovered or re-priced is not the same as being evaluated, and
+    letting a touch reset either one would hand a frequently-rediscovered
+    candidate a permanent front-of-queue slot -- a fresh instance of the
+    deadlock those columns exist to fix. New rows get NULL/0 from the
+    schema defaults; existing rows keep whatever they had."""
     import datetime
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
@@ -514,8 +544,10 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
 
 def increment_idle_ticks(conn: sqlite3.Connection, except_tickers: list = None) -> None:
     """Bumps idle_ticks for every candidate not explicitly touched this
-    tick. Call once per tick after any upsert_watchlist_candidate() calls
-    for names actually reasoned about."""
+    tick. As of 2026-08-01 idle_ticks is a DIAGNOSTIC ONLY -- "ticks since
+    last evaluated", useful when eyeballing the table -- and nothing
+    orders or drops on it. Prefer mark_candidates_evaluated(), which
+    maintains it alongside the columns that actually decide things."""
     except_tickers = except_tickers or []
     with conn:
         if except_tickers:
@@ -528,14 +560,68 @@ def increment_idle_ticks(conn: sqlite3.Connection, except_tickers: list = None) 
             conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
 
 
-def drop_stale_watchlist_candidates(conn: sqlite3.Connection, idle_ticks_threshold: int) -> list:
-    """Deletes candidates at/over the idle threshold. Returns dropped tickers."""
+def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str = None) -> None:
+    """Records that `tickers` were evaluated this tick: stamps
+    last_evaluated_at (what get_watchlist_batch orders on), bumps
+    eval_count (what drop_stale_watchlist_candidates retires on), and
+    zeroes their idle_ticks while everyone else's climbs.
+
+    One transaction so a crash between the two halves can't leave a batch
+    stamped-but-not-counted."""
+    import datetime
+    tickers = [t.upper() for t in (tickers or [])]
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
-        rows = conn.execute(
-            "SELECT ticker FROM watchlist_candidates WHERE idle_ticks >= ?", (idle_ticks_threshold,)
-        ).fetchall()
+        if tickers:
+            placeholders = ",".join("?" * len(tickers))
+            conn.execute(
+                f"""UPDATE watchlist_candidates
+                       SET last_evaluated_at = ?, eval_count = eval_count + 1, idle_ticks = 0
+                     WHERE ticker IN ({placeholders})""",
+                [now, *tickers],
+            )
+            conn.execute(
+                f"UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1 WHERE ticker NOT IN ({placeholders})",
+                tickers,
+            )
+        else:
+            conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
+
+
+DEFAULT_MAX_EVALUATIONS_BEFORE_DROP = 12
+DEFAULT_MAX_AGE_HOURS_BEFORE_DROP = 48
+
+
+def drop_stale_watchlist_candidates(conn: sqlite3.Connection, max_evaluations: int = None,
+                                     max_age_hours: float = None, now: str = None) -> list:
+    """Retires candidates on two signals, neither of which is the one
+    get_watchlist_batch() orders by (2026-08-01 -- sharing that signal is
+    what deadlocked the rotation, see the schema comment):
+
+      eval_count >= max_evaluations -- looked at this many times and still
+        never worth a position. Exhausted, not neglected.
+      added_at older than max_age_hours -- backstop for anything that
+        somehow still isn't converting or being seen.
+
+    Returns dropped tickers. Both thresholds are independently optional;
+    passing neither drops nothing rather than everything."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    clauses, params = [], []
+    if max_evaluations is not None:
+        clauses.append("eval_count >= ?")
+        params.append(max_evaluations)
+    if max_age_hours is not None:
+        clauses.append("(julianday(?) - julianday(added_at)) * 24.0 >= ?")
+        params.extend([now, max_age_hours])
+    if not clauses:
+        return []
+
+    where = " OR ".join(clauses)
+    with conn:
+        rows = conn.execute(f"SELECT ticker FROM watchlist_candidates WHERE {where}", params).fetchall()
         dropped = [r["ticker"] for r in rows]
-        conn.execute("DELETE FROM watchlist_candidates WHERE idle_ticks >= ?", (idle_ticks_threshold,))
+        conn.execute(f"DELETE FROM watchlist_candidates WHERE {where}", params)
     return dropped
 
 
@@ -545,14 +631,26 @@ def get_watchlist_candidates(conn: sqlite3.Connection) -> list:
 
 
 def get_watchlist_batch(conn: sqlite3.Connection, limit: int) -> list:
-    """Most-neglected-first slice for bounded per-tick evaluation (2026-07-28,
-    fixes stonks-tick blowing its cron timeout evaluating the full list every
-    tick). Highest idle_ticks first -- pair with increment_idle_ticks(conn,
-    except_tickers=<this batch's tickers>) after evaluating, which leaves the
-    evaluated names flat while everyone else climbs, producing a round-robin
-    over several ticks without a separate cursor/offset to track."""
+    """Least-recently-evaluated-first slice for bounded per-tick evaluation
+    (2026-07-28, fixes stonks-tick blowing its cron timeout evaluating the
+    full list every tick). Pair with mark_candidates_evaluated(conn,
+    <this batch's tickers>) after evaluating.
+
+    Never-evaluated candidates (last_evaluated_at IS NULL) sort first,
+    oldest-added among them, so a name that just entered the watchlist
+    gets seen promptly instead of having to out-wait the incumbents. After
+    that it's a strict least-recently-evaluated round-robin, which is
+    self-correcting: evaluating a candidate is exactly what sends it to
+    the back of the queue.
+
+    Ordering deliberately does NOT read idle_ticks or eval_count -- the
+    columns drop_stale_watchlist_candidates() retires on. Sharing one
+    counter between "who's next" and "who's expired" is what produced the
+    2026-08-01 deadlock (see the schema comment)."""
     rows = conn.execute(
-        "SELECT * FROM watchlist_candidates ORDER BY idle_ticks DESC, added_at ASC LIMIT ?",
+        """SELECT * FROM watchlist_candidates
+            ORDER BY last_evaluated_at IS NOT NULL, last_evaluated_at ASC, added_at ASC
+            LIMIT ?""",
         (limit,),
     ).fetchall()
     return [dict(r) for r in rows]

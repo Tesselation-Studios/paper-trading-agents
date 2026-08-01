@@ -73,14 +73,14 @@ class TestWatchlist:
         result = _run(monkeypatch, capsys, db_path, ["watchlist", "--batch", "2"])
         assert len(result) == 2
 
-    def test_batch_flag_returns_most_neglected_first(self, monkeypatch, capsys, db_path):
+    def test_batch_flag_returns_least_recently_evaluated_first(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
         trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
-        trader_db.increment_idle_ticks(conn, except_tickers=["AAA"])
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-01T10:00:00+00:00")
         conn.close()
         result = _run(monkeypatch, capsys, db_path, ["watchlist", "--batch", "1"])
-        assert result[0]["ticker"] == "BBB"
+        assert result[0]["ticker"] == "BBB"  # never evaluated -> front of queue
 
 
 class TestBankroll:
