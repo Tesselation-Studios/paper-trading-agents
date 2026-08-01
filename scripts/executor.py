@@ -191,9 +191,488 @@ def place_order(account, ticker, qty, side):
         raise
 
 
+def get_order(account, order_id):
+    """GET /v2/orders/<id> — used to confirm a BUY actually filled before a
+    protective stop is sized against it."""
+    import urllib.parse
+    import urllib.request
+    url = f"{ALPACA_BASE_URL}/v2/orders/{urllib.parse.quote(str(order_id))}"
+    req = urllib.request.Request(url, headers=get_headers(account))
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("orders", "GET", {"order_id": str(order_id)}, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("orders", "GET", {"order_id": str(order_id)}, getattr(e, "code", None), start)
+        raise
+
+
+def cancel_order(account, order_id):
+    """DELETE /v2/orders/<id>. Alpaca answers 204 (accepted) or 422 if the
+    order is already in a non-cancelable state — the caller treats both as
+    "it's not going to sit on the book", see cancel_protective_stops."""
+    import urllib.parse
+    import urllib.request
+    url = f"{ALPACA_BASE_URL}/v2/orders/{urllib.parse.quote(str(order_id))}"
+    req = urllib.request.Request(url, headers=get_headers(account), method="DELETE")
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            status = getattr(resp, "status", 204)
+        _record_alpaca_call("orders", "DELETE", {"order_id": str(order_id)}, status, start)
+        return True
+    except Exception as e:
+        _record_alpaca_call("orders", "DELETE", {"order_id": str(order_id)}, getattr(e, "code", None), start)
+        raise
+
+
+def get_closed_orders(account, ticker, limit: int = 10):
+    """GET /v2/orders?status=closed&symbols=<ticker> — most recent first.
+    Used to find the fill behind a position that disappeared from Alpaca
+    without this file having sold it (a broker-side protective stop that
+    triggered while no tick was running)."""
+    import urllib.parse
+    import urllib.request
+    query = urllib.parse.urlencode({
+        "status": "closed",
+        "symbols": str(ticker).upper(),
+        "limit": limit,
+        "direction": "desc",
+    })
+    url = f"{ALPACA_BASE_URL}/v2/orders?{query}"
+    req = urllib.request.Request(url, headers=get_headers(account))
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("orders", "GET", {"ticker": str(ticker).upper(), "status": "closed"}, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("orders", "GET", {"ticker": str(ticker).upper(), "status": "closed"},
+                             getattr(e, "code", None), start)
+        raise
+
+
+def place_stop_order(account, ticker, qty, stop_price):
+    """Submit a broker-side protective stop (sell stop, GTC) at Alpaca.
+
+    2026-08-01: check_stops() only ever DETECTED breaches and handed a list
+    back for the agent to act on in the same tick — nothing existed at the
+    broker. ~23% of ticks error out (mostly cron timeouts), and during any
+    tick outage or gateway restart no stop check ran and no exit fired, for
+    however long the outage lasted. strategy.md claimed stops were
+    "mechanically enforced in executor.py's guardrail gates"; this is what
+    finally makes the hard floor true — a resting order that survives a
+    dead tick, a crashed gateway, and an overnight gap.
+
+    time_in_force is deliberately hardcoded 'gtc' rather than read from
+    params.json.alpaca.time_in_force ('day'): a day-scoped protective stop
+    would silently evaporate at the close, which is precisely the outage
+    window it exists to cover. type/order_type params.json values likewise
+    don't apply — this is a stop order by definition.
+    """
+    import urllib.request
+    data = {
+        "symbol": str(ticker).upper(),
+        "qty": str(int(qty)),
+        "side": "sell",
+        "type": "stop",
+        "time_in_force": "gtc",
+        "stop_price": f"{stop_price:.4f}".rstrip("0").rstrip("."),
+    }
+    url = f"{ALPACA_BASE_URL}/v2/orders"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(data).encode(),
+        headers=get_headers(account),
+        method="POST",
+    )
+    request_summary = {"ticker": str(ticker).upper(), "qty": int(qty), "side": "sell",
+                        "type": "stop", "stop_price": stop_price}
+    start = time.time()
+    try:
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+        _record_alpaca_call("orders", "POST", request_summary, 200, start)
+        return body
+    except Exception as e:
+        _record_alpaca_call("orders", "POST", request_summary, getattr(e, "code", None), start)
+        raise
+
+
 def load_params() -> Dict[str, Any]:
     with open(PARAMS_PATH) as f:
         return json.load(f)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Broker-side protective stops
+#
+# The static worst-case backstop that survives a tick timeout or a gateway
+# restart. check_stops()'s ratcheting trailing stop still runs on top of
+# this and is normally tighter/dynamic — this is the floor underneath it,
+# not a replacement for it.
+#
+# Everything here is best-effort: a protective-stop failure must never look
+# like a failed trade (the real order has already executed by the time any
+# of it runs), same fail-open philosophy as close_trade_outcome().
+# ─────────────────────────────────────────────────────────────────────────────
+
+PROTECTIVE_STOP_ORDER_TYPES = ("stop", "stop_limit", "trailing_stop")
+
+
+def _order_type_of(order: Dict[str, Any]) -> str:
+    return str(order.get("type") or order.get("order_type") or "").lower()
+
+
+def is_protective_stop_order(order: Dict[str, Any]) -> bool:
+    """A resting sell stop this file placed (or would replace). Deliberately
+    matches on side+type rather than an order tag: an Alpaca-side manual
+    order or one left over from a previous run has to be reconciled too,
+    and stop/stop_limit/trailing_stop sells are all the same thing for the
+    purpose of 'don't leave two conflicting exits on one position'."""
+    if not isinstance(order, dict):
+        return False
+    return (str(order.get("side", "")).lower() == "sell"
+            and _order_type_of(order) in PROTECTIVE_STOP_ORDER_TYPES)
+
+
+def _round_stop_price(price: float) -> float:
+    """Alpaca accepts sub-penny increments only below $1.00 (4 decimals);
+    at or above $1.00 a stop price must be in penny increments or the order
+    is rejected. Rounds DOWN so rounding can never tighten a stop into a
+    price it wasn't meant to trigger at."""
+    if price >= 1.0:
+        return math.floor(price * 100) / 100
+    return math.floor(price * 10000) / 10000
+
+
+def protective_stop_price(entry_price: float, params: Optional[Dict[str, Any]] = None) -> float:
+    """entry_price * (1 - risk.stop_loss_pct/100) — the same hard floor
+    check_stops() compares against, so the resting order and the in-tick
+    scan can't disagree about where the stop is."""
+    params = params if params is not None else load_params()
+    stop_loss_pct = abs(float(params.get("risk", {}).get("stop_loss_pct", -10.0)))
+    return _round_stop_price(entry_price * (1 - stop_loss_pct / 100.0))
+
+
+def _protective_stops_enabled(params: Optional[Dict[str, Any]] = None) -> bool:
+    """params.json guardrail_gates.broker_stop_order, default on — same
+    convention as every other gate toggle (missing == enabled)."""
+    try:
+        params = params if params is not None else load_params()
+        return params.get("guardrail_gates", {}).get("broker_stop_order", True) is not False
+    except (OSError, ValueError):
+        return True
+
+
+def open_protective_stops(account: str, ticker: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Resting sell-stop orders at Alpaca, optionally for one ticker.
+    Returns [] on any API error (never raises) — callers treat "can't tell"
+    as "nothing to clean up" and move on."""
+    try:
+        orders = get_open_orders(account, ticker)
+    except Exception:
+        return []
+    if not isinstance(orders, list):
+        return []
+    return [o for o in orders if is_protective_stop_order(o)]
+
+
+def cancel_protective_stops(account: str, ticker: str, wait: bool = True,
+                             orders: Optional[List[Dict[str, Any]]] = None) -> List[str]:
+    """Cancel every resting protective stop on `ticker`. Returns the ids
+    actually cancelled.
+
+    This is not optional cleanup — it's a correctness requirement on the
+    SELL path. A GTC sell stop reserves the shares it covers, so a market
+    SELL of the same position is rejected by Alpaca for insufficient
+    quantity while that stop is still on the book. Cancel first, then sell.
+    It's also what stops a stale stop (wrong size after a trim, wrong price
+    after a re-entry) from sitting behind a position it no longer fits.
+    """
+    cancelled = []
+    if orders is None:
+        orders = open_protective_stops(account, ticker)
+    for order in orders:
+        order_id = order.get("id")
+        if not order_id:
+            continue
+        try:
+            cancel_order(account, order_id)
+            cancelled.append(str(order_id))
+        except Exception:
+            # 422 = already filled/cancelled/expired; anything else is an API
+            # hiccup. Either way it's not ours to retry here — the SELL below
+            # will fail loudly on its own if the order really is still holding
+            # the shares, which is the visible failure we want.
+            continue
+    if cancelled and wait:
+        _wait_orders_cleared(account, ticker, cancelled)
+    return cancelled
+
+
+def _wait_orders_cleared(account: str, ticker: str, order_ids: List[str],
+                          timeout: float = 3.0, interval: float = 0.25) -> bool:
+    """Cancellation at Alpaca is accepted asynchronously — poll until the
+    cancelled ids are off the open book (or timeout) so the SELL that
+    follows isn't racing shares that are still reserved."""
+    pending = {str(i) for i in order_ids}
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            still_open = {str(o.get("id")) for o in get_open_orders(account, ticker)}
+        except Exception:
+            return False
+        if not (pending & still_open):
+            return True
+        time.sleep(interval)
+    return False
+
+
+def wait_for_fill(account: str, order_id: str, timeout: float = 1.0,
+                   interval: float = 0.5) -> Optional[Dict[str, Any]]:
+    """Poll an order briefly until it reports filled. Returns the last seen
+    order dict, or None if it can't be read at all.
+
+    Deliberately short: this is only used to read back the true fill price
+    for the training-example row. Protective-stop sizing does NOT depend on
+    it — ensure_protective_stop() sizes against the position Alpaca actually
+    reports, which is the only number that can't be wrong. A market BUY in
+    paper trading fills in well under a second; anything slower is picked up
+    by the next check-stops reconcile rather than blocking the tick here."""
+    deadline = time.time() + timeout
+    order = None
+    while True:
+        try:
+            order = get_order(account, order_id)
+        except Exception:
+            return order
+        if not isinstance(order, dict):
+            return None
+        if str(order.get("status", "")).lower() in ("filled", "partially_filled"):
+            return order
+        if time.time() >= deadline:
+            return order
+        time.sleep(interval)
+
+
+def _held_position(account: str, ticker: str) -> Optional[Dict[str, Any]]:
+    try:
+        for p in get_positions(account):
+            if str(p.get("symbol", "")).upper() == str(ticker).upper():
+                return p
+    except Exception:
+        return None
+    return None
+
+
+def ensure_protective_stop(account: str, ticker: str, position: Optional[Dict[str, Any]] = None,
+                            params: Optional[Dict[str, Any]] = None,
+                            existing_orders: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    """Make Alpaca's resting protective stop for `ticker` match the position
+    actually held: right size, right price, exactly one of them.
+
+    Idempotent by design — if the existing stop already covers the held
+    quantity at the correct price it is left alone rather than
+    cancelled/replaced, so calling this every tick costs no order churn.
+    `position`/`existing_orders` let a caller looping over the whole book
+    (reconcile_protective_stops) pass data it has already fetched instead
+    of re-querying Alpaca once per ticker.
+
+    Never raises. Returns a small status dict for the CLI output.
+    """
+    ticker = str(ticker).upper()
+    if not _protective_stops_enabled(params):
+        return {"ticker": ticker, "status": "disabled"}
+
+    try:
+        position = position if position is not None else _held_position(account, ticker)
+        if not position:
+            cancelled = cancel_protective_stops(account, ticker, wait=False, orders=existing_orders)
+            return {"ticker": ticker, "status": "no_position", "cancelled": cancelled}
+
+        qty = int(float(position.get("qty", 0)))
+        entry_price = float(position.get("avg_entry_price", 0) or 0)
+        current_price = float(position.get("current_price", 0) or 0)
+        if qty < 1 or entry_price <= 0:
+            return {"ticker": ticker, "status": "skipped", "reason": "no whole-share qty / entry price"}
+
+        stop_price = protective_stop_price(entry_price, params)
+        existing = (existing_orders if existing_orders is not None
+                    else open_protective_stops(account, ticker))
+
+        # Already correct -> leave it alone.
+        for order in existing:
+            try:
+                same_price = abs(float(order.get("stop_price", 0) or 0) - stop_price) < 0.005
+                same_qty = int(float(order.get("qty", 0) or 0)) == qty
+            except (TypeError, ValueError):
+                continue
+            if same_price and same_qty and len(existing) == 1:
+                return {"ticker": ticker, "status": "already_set", "order_id": order.get("id"),
+                         "stop_price": stop_price, "qty": qty}
+
+        # A stop at or above the current price is rejected by Alpaca (and
+        # means the position is already through its hard floor) — leave the
+        # book clean and let check_stops() report the breach for an
+        # immediate market exit instead.
+        if current_price > 0 and stop_price >= current_price:
+            cancelled = cancel_protective_stops(account, ticker, wait=False, orders=existing)
+            return {"ticker": ticker, "status": "below_stop_already",
+                     "reason": f"stop ${stop_price:.2f} >= current ${current_price:.2f}; "
+                               f"check-stops should exit this position now",
+                     "cancelled": cancelled}
+
+        cancelled = cancel_protective_stops(account, ticker, orders=existing) if existing else []
+        order = place_stop_order(account, ticker, qty, stop_price)
+        return {"ticker": ticker, "status": "placed", "order_id": order.get("id"),
+                 "stop_price": stop_price, "qty": qty, "replaced": cancelled}
+    except Exception as e:
+        return {"ticker": ticker, "status": "error", "error": str(e)}
+
+
+def reconcile_protective_stops(account: str) -> List[Dict[str, Any]]:
+    """Pre-session / per-tick GTC audit for protective stops: every open
+    position ends up with exactly one correctly-sized resting stop, and no
+    stop is left resting on a ticker that is no longer held.
+
+    strategy.md has carried a "pre-session GTC order audit — clear all
+    stale/unfilled GTC orders before first tick, stale orders can silently
+    block all exits" rule since v1.0 with no script behind it; this is that
+    rule, mechanized, and extended to the stop orders introduced 2026-08-01.
+    Run it from `--action check-stops` (every tick) and `--action sync-stops`
+    (explicit pre-session audit).
+
+    Never raises — returns one status dict per ticker acted on.
+    """
+    if not _protective_stops_enabled():
+        return [{"status": "disabled"}]
+
+    results = []
+    try:
+        positions = get_positions(account)
+    except Exception as e:
+        return [{"status": "error", "error": f"could not read positions: {e}"}]
+
+    # One read of the whole open-order book, sliced per ticker — this runs
+    # every tick, so it must not be one API call per position.
+    stops_by_ticker: Dict[str, List[Dict[str, Any]]] = {}
+    for order in open_protective_stops(account):
+        stops_by_ticker.setdefault(str(order.get("symbol", "")).upper(), []).append(order)
+
+    held = set()
+    for p in positions:
+        ticker = str(p.get("symbol", "")).upper()
+        held.add(ticker)
+        results.append(ensure_protective_stop(
+            account, ticker, position=p, existing_orders=stops_by_ticker.get(ticker, [])))
+
+    # Orphans: a resting sell stop whose position is gone (closed by hand,
+    # closed by another process, or filled elsewhere). Left alone these are
+    # exactly the "stale orders silently blocking exits" strategy.md warns
+    # about — and would sell short if they ever triggered.
+    for ticker, orders in stops_by_ticker.items():
+        if ticker and ticker not in held:
+            cancelled = cancel_protective_stops(account, ticker, wait=False, orders=orders)
+            if cancelled:
+                results.append({"ticker": ticker, "status": "orphan_cancelled", "cancelled": cancelled})
+    return results
+
+
+def reconcile_stopped_out_positions(account: str,
+                                     positions: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """Close the books on any position that left Alpaca without this file
+    selling it — i.e. a broker-side protective stop that triggered while no
+    tick was running, which is exactly the outage the resting stop exists
+    to cover.
+
+    Without this, the new stop order would create the very state drift the
+    labeling fix is about: the position gone at the broker, still 'open' in
+    the positions table, its training_examples row unlabeled forever, and
+    bankroll/experience never told about the loss. Runs the same
+    close_trade_outcome() + close_position() bookkeeping a normal SELL
+    does, using the broker's own fill price.
+
+    Only touches positions the local DB believes are open and Alpaca no
+    longer holds, and close_position() flips status on the way out, so it
+    can't process the same exit twice. Never raises.
+    """
+    results: List[Dict[str, Any]] = []
+    try:
+        if positions is None:
+            positions = get_positions(account)
+        held = {str(p.get("symbol", "")).upper() for p in positions}
+    except Exception as e:
+        return [{"status": "error", "error": f"could not read positions: {e}"}]
+
+    try:
+        conn = trader_db.get_conn()
+        try:
+            open_rows = trader_db.get_open_positions(conn)
+        finally:
+            conn.close()
+    except Exception as e:
+        return [{"status": "error", "error": f"could not read local positions: {e}"}]
+
+    for row in open_rows:
+        ticker = str(row.get("ticker", "")).upper()
+        if not ticker or ticker in held:
+            continue
+        try:
+            orders = get_closed_orders(account, ticker)
+        except Exception as e:
+            results.append({"ticker": ticker, "status": "unresolved",
+                             "reason": f"could not read closed orders: {e}"})
+            continue
+
+        fill = None
+        for o in (orders if isinstance(orders, list) else []):
+            if (str(o.get("side", "")).lower() == "sell"
+                    and str(o.get("status", "")).lower() == "filled"
+                    and o.get("filled_avg_price")):
+                fill = o
+                break
+        if fill is None:
+            # Position gone but no fill to price it from — do NOT guess a
+            # P&L into bankroll/experience off a stale entry price. Report
+            # it and leave the row open for a human/agent to resolve.
+            results.append({"ticker": ticker, "status": "unresolved",
+                             "reason": "no filled SELL order found for a position Alpaca no longer holds"})
+            continue
+
+        try:
+            exit_price = float(fill["filled_avg_price"])
+            qty = int(float(fill.get("filled_qty") or row.get("shares") or 0))
+            entry_price = float(row.get("entry_price") or 0)
+            if qty < 1 or entry_price <= 0:
+                results.append({"ticker": ticker, "status": "unresolved",
+                                 "reason": "missing qty/entry price for reconciliation"})
+                continue
+
+            outcome = close_trade_outcome(account, ticker, entry_price, exit_price, qty,
+                                           position_entry_time=row.get("entry_time"))
+            now_iso = datetime.now(timezone.utc).isoformat()
+            conn = trader_db.get_conn()
+            try:
+                trader_db.close_position(
+                    conn, ticker=ticker, closed_at=now_iso,
+                    close_reason=f"broker-side stop fill (order {fill.get('id')})",
+                    realized_pnl=outcome["pnl"], realized_return_pct=outcome["return_pct"],
+                )
+            finally:
+                conn.close()
+            record_order_submitted(ticker, "SELL")
+            results.append({"ticker": ticker, "status": "closed_from_broker_fill",
+                             "exit_price": exit_price, "qty": qty,
+                             "pnl": round(outcome["pnl"], 2),
+                             "return_pct": round(outcome["return_pct"], 2),
+                             "outcome_label_warning": outcome["outcome_label_warning"]})
+        except Exception as e:
+            results.append({"ticker": ticker, "status": "error", "error": str(e)})
+    return results
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -218,10 +697,42 @@ def gate_cash(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, st
     return True, f"BUY costs ${cost:,.2f}, cash ${cash:,.2f} sufficient"
 
 
+def _size_cap_pct_for(risk: Dict[str, Any], play_type: Optional[str]) -> Tuple[float, str]:
+    """The position-size cap (% of portfolio) that actually governs a given
+    play type, plus a label for the reason string.
+
+    2026-08-01: GATES is an ordered dict and check_order() returns on the
+    first rejection, so gate_position_size (index 1) runs BEFORE
+    gate_long_play (2) and gate_conviction_play (3). Applying the flat
+    risk.max_position_pct here regardless of play type meant a conviction
+    play sized to risk.conviction_play.position_size_pct was rejected by
+    this gate before the gate that authorizes that size ever executed --
+    confirmed live, `SELECT play_type, count(*) FROM positions` returned
+    only {'standard': 41}, the conviction bucket had never fired once since
+    shipping on 2026-07-30.
+
+    Each bucket's own cap is read from params.json rather than assumed to
+    be larger or smaller than the flat one, so this stays correct whatever
+    the numbers are: long_play.position_size_pct is currently *smaller*
+    than max_position_pct (a deliberately small unproven experiment) and
+    conviction_play.position_size_pct is larger. gate_long_play /
+    gate_conviction_play still enforce the same cap plus their concurrency
+    limits -- this only stops an earlier gate from vetoing a size a later
+    gate is there to allow."""
+    if play_type == "conviction":
+        cp = risk.get("conviction_play", {})
+        return float(cp.get("position_size_pct", 10.0)), "conviction-play cap"
+    if play_type == "long":
+        lp = risk.get("long_play", {})
+        return float(lp.get("position_size_pct", 3.0)), "long-play cap"
+    return float(risk.get("max_position_pct", 6.0)), "cap"
+
+
 def gate_position_size(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
-    max_pct = float(load_params().get("risk", {}).get("max_position_pct", 6.0))
+    risk = load_params().get("risk", {})
+    max_pct, cap_label = _size_cap_pct_for(risk, action.get("play_type"))
     ticker = str(action.get("ticker", "")).upper()
     price = float(action.get("price", 0) or 0)
     qty = float(action.get("quantity", 0))
@@ -240,9 +751,10 @@ def gate_position_size(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple
     if total_pct > max_pct:
         return False, (
             f"{ticker} would be {total_pct:.1f}% of portfolio "
-            f"(existing ${existing_value:,.2f} + proposed ${proposed_value:,.2f}), exceeds {max_pct:.0f}% cap"
+            f"(existing ${existing_value:,.2f} + proposed ${proposed_value:,.2f}), "
+            f"exceeds {max_pct:.0f}% {cap_label}"
         )
-    return True, f"{ticker} at {total_pct:.1f}% of portfolio, within {max_pct:.0f}% cap"
+    return True, f"{ticker} at {total_pct:.1f}% of portfolio, within {max_pct:.0f}% {cap_label}"
 
 
 def gate_long_play(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
@@ -525,6 +1037,20 @@ def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool
     behind its own starting capital. Raw ceiling growth/decay from wins
     and losses is unchanged; this only scales the number gate_bankroll
     actually compares against.
+
+    2026-08-01: play-type aware, for the same reason gate_position_size is
+    (see _size_cap_pct_for). The bankroll ceiling is a dollar amount, not a
+    percentage, so it doesn't share max_position_pct's flat cap — but it
+    independently vetoed the conviction bucket anyway: at $10.4k equity the
+    ceiling was $679 while risk.conviction_play.position_size_pct (10%)
+    authorizes ~$1,042, so every full-size conviction play would have been
+    rejected here even after the position-size gate was fixed. A play
+    type's own explicitly-configured size cap in params.json is a
+    deliberate risk decision; the ceiling floors up to it rather than
+    silently overriding it. Standard BUYs are unaffected — they compare
+    against the raw ceiling exactly as before, and every other gate (cash,
+    position size, max_portfolio_risk, drawdown) still applies to all play
+    types.
     """
     if action.get("action") != "BUY":
         return True, "non-BUY, skipped"
@@ -541,9 +1067,19 @@ def gate_bankroll(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool
     ceiling = (bankroll.effective_ceiling(state, portfolio_value)
                if portfolio_value > 0 else state["ceiling"])
 
+    play_type = action.get("play_type")
+    note = ""
+    if play_type in ("conviction", "long") and portfolio_value > 0:
+        risk = load_params().get("risk", {})
+        play_cap_pct, cap_label = _size_cap_pct_for(risk, play_type)
+        play_cap_value = portfolio_value * play_cap_pct / 100.0
+        if play_cap_value > ceiling:
+            ceiling = play_cap_value
+            note = f" ({cap_label} {play_cap_pct:.1f}% of portfolio floors the ceiling for this play type)"
+
     if cost > ceiling:
-        return False, f"BUY costs ${cost:,.2f}, exceeds bankroll ceiling ${ceiling:,.2f}"
-    return True, f"BUY costs ${cost:,.2f}, within bankroll ceiling ${ceiling:,.2f}"
+        return False, f"BUY costs ${cost:,.2f}, exceeds bankroll ceiling ${ceiling:,.2f}{note}"
+    return True, f"BUY costs ${cost:,.2f}, within bankroll ceiling ${ceiling:,.2f}{note}"
 
 
 def gate_conviction(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
@@ -1155,7 +1691,13 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
                     conn = trader_db.get_conn()
                     try:
                         trader_db.resolve_long_play(conn, ticker=ticker, updated_at=now_iso)
-                        te_id = trader_db.latest_unlabeled_training_example(conn, ticker)
+                        # Entry row only (2026-08-01) -- same fix as
+                        # record_trade_close: "newest unlabeled row" would
+                        # happily label a SELL/HOLD row that never carried
+                        # the prediction being scored here.
+                        te_row = trader_db.find_entry_training_example(
+                            conn, ticker, position_entry_time=lp.get("entry_time"))
+                        te_id = te_row["id"] if te_row else None
                         if te_id is not None:
                             trader_db.label_training_example(
                                 conn, training_example_id=te_id, trade_id=None,
@@ -1243,7 +1785,8 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_price: float, qty: int) -> Dict[str, Any]:
+def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_price: float, qty: int,
+                         position_entry_time: Optional[str] = None) -> Dict[str, Any]:
     """Called once a SELL actually executes. Updates bankroll.py's
     win/loss-adaptive ceiling, experience.json's total_wins/total_losses/
     consecutive-streak counters (2026-07-27, see _load_experience's
@@ -1260,6 +1803,14 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     a trade failure, the order already executed by the time this runs.
     experience.json bookkeeping is likewise fail-open internally (see
     record_experience_outcome).
+
+    2026-08-01: position_entry_time (positions.entry_time of the position
+    being closed) is passed straight through to record_trade_close as the
+    correlation key for WHICH training_examples row gets the label. Without
+    it, labeling fell back to "the newest unlabeled row for this ticker",
+    which on a SELL is the SELL's own row — so BUY rows carrying the actual
+    predictive signals sat unlabeled forever and the scorecard learned
+    nothing. See decisions.record_trade_close.
     """
     pnl = (exit_price - entry_price) * qty
     return_pct = (exit_price - entry_price) / entry_price * 100 if entry_price else 0.0
@@ -1277,6 +1828,7 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
         close_result = decisions.record_trade_close(
             trader_id=account, ticker=ticker, trade_id=None,
             pnl=pnl, return_pct=return_pct,
+            position_entry_time=position_entry_time,
         )
         if "error" in close_result:
             outcome_label_warning = close_result["error"]
@@ -1294,7 +1846,7 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
 def main():
     parser = argparse.ArgumentParser(description="Alpaca order executor with built-in guardrails")
     parser.add_argument("--account", default="stonks", choices=["stonks"])
-    parser.add_argument("--action", choices=["BUY", "SELL", "status", "check-stops"])
+    parser.add_argument("--action", choices=["BUY", "SELL", "status", "check-stops", "sync-stops"])
     parser.add_argument("--ticker")
     parser.add_argument("--qty", type=int)
     parser.add_argument("--price", type=float, help="current/estimated price, used by guardrail checks")
@@ -1317,6 +1869,11 @@ def main():
     parser.add_argument("--prediction-reason", help="BUY only, required with --play-type long or conviction -- "
                          "the specific evidence behind the thesis (cite fundamentals/congress/wiki narrative/"
                          "sentiment, not just optimism). Persisted to positions.prediction_reason.")
+    parser.add_argument("--features", help="BUY only -- the same per-signal JSON passed to "
+                         "record_decision.py decision ('{\"technical\": {\"direction\": \"bullish\", "
+                         "\"confidence\": 0.6}, ...}'). Stored on the training_examples row written "
+                         "automatically when the BUY fills, so signal-level attribution no longer "
+                         "depends on a separate manual logging call being remembered.")
     parser.add_argument("--skip-guardrails", action="store_true", help="bypass guardrail checks (debug only)")
 
     args = parser.parse_args()
@@ -1377,7 +1934,28 @@ def main():
 
     if args.action == "check-stops":
         breaches = check_stops(args.account)
-        print(json.dumps({"breaches": breaches}, indent=2))
+        # The in-tick scan and the resting broker-side floor are two halves
+        # of the same mechanism: the scan is tighter and dynamic but only
+        # runs when a tick runs, the resting stop is static but survives a
+        # tick that never ran. Reconciling here (rather than inside
+        # check_stops()) keeps the scan itself side-effect-free while still
+        # giving the floor a once-per-tick chance to be repaired.
+        print(json.dumps({
+            "breaches": breaches,
+            "stopped_out": reconcile_stopped_out_positions(args.account),
+            "protective_stops": reconcile_protective_stops(args.account),
+        }, indent=2))
+        return
+
+    if args.action == "sync-stops":
+        # Explicit pre-session GTC audit (strategy.md's "clear all
+        # stale/unfilled GTC orders before first tick"), plus closing the
+        # books on anything a broker-side stop exited overnight and placing
+        # the protective stop any position is missing.
+        print(json.dumps({
+            "stopped_out": reconcile_stopped_out_positions(args.account),
+            "protective_stops": reconcile_protective_stops(args.account),
+        }, indent=2))
         return
 
     if not args.ticker or not args.qty:
@@ -1412,6 +1990,20 @@ def main():
             }))
             sys.exit(1)
 
+    # Parsed before anything is submitted: a malformed --features blob is a
+    # typo to fix, not a reason to discover the problem after real shares
+    # have changed hands.
+    entry_features: Dict[str, Any] = {}
+    if args.features:
+        try:
+            entry_features = json.loads(args.features)
+        except json.JSONDecodeError as e:
+            print(json.dumps({"error": f"--features not valid JSON: {e}"}))
+            sys.exit(1)
+        if not isinstance(entry_features, dict):
+            print(json.dumps({"error": "--features must be a JSON object"}))
+            sys.exit(1)
+
     # Locked from the guardrail check through order submission — closes the
     # cross-process TOCTOU race gate_order_idempotency alone couldn't (see
     # _order_lock's docstring). Everything after place_order() returns
@@ -1435,6 +2027,7 @@ def main():
         # this was a full exit or a trim.
         entry_price = None
         pre_sell_qty = None
+        cancelled_stops: List[str] = []
         if args.action == "SELL":
             for p in get_positions(args.account):
                 if p["symbol"].upper() == args.ticker.upper():
@@ -1442,14 +2035,41 @@ def main():
                     pre_sell_qty = float(p["qty"])
                     break
 
+            # MUST happen before the SELL is submitted: a resting GTC sell
+            # stop reserves the shares it covers, so Alpaca rejects a market
+            # SELL of the same position for insufficient quantity while that
+            # order is still on the book. This is also the "no duplicate /
+            # conflicting exits on one position" cleanup — the trailing-stop
+            # exit and the broker-side floor must never both be live.
+            cancelled_stops = cancel_protective_stops(args.account, args.ticker)
+
         side = args.action.lower()
         order = place_order(args.account, args.ticker, args.qty, side)
     print(json.dumps(order, indent=2))
     record_order_submitted(args.ticker, args.action)
 
+    if cancelled_stops:
+        print(json.dumps({"cancelled_protective_stops": cancelled_stops}), file=sys.stderr)
+
     if args.action == "SELL" and entry_price is not None:
+        # Read before close_position() flips status: this is the correlation
+        # key that tells decisions.record_trade_close WHICH training_examples
+        # row belongs to the position being closed (see close_trade_outcome).
+        position_entry_time = None
+        try:
+            conn = trader_db.get_conn()
+            try:
+                pos_row = trader_db.get_position(conn, args.ticker.upper())
+            finally:
+                conn.close()
+            if pos_row and pos_row.get("status") == "open":
+                position_entry_time = pos_row.get("entry_time")
+        except Exception:
+            position_entry_time = None  # falls back to newest-open-entry-row matching
+
         exit_price = args.price if args.price is not None else entry_price
-        outcome = close_trade_outcome(args.account, args.ticker, entry_price, exit_price, args.qty)
+        outcome = close_trade_outcome(args.account, args.ticker, entry_price, exit_price, args.qty,
+                                       position_entry_time=position_entry_time)
         if outcome["outcome_label_warning"]:
             print(json.dumps({"outcome_label_warning": outcome["outcome_label_warning"]}), file=sys.stderr)
 
@@ -1476,6 +2096,14 @@ def main():
                 conn.close()
         except Exception as e:
             print(json.dumps({"warning": f"positions table write failed: {e}"}), file=sys.stderr)
+
+        # A partial exit leaves shares still exposed with no resting stop
+        # (the old one covered the pre-trim size and was cancelled above) --
+        # re-place it now rather than waiting for the next tick's
+        # reconcile, which may not run.
+        if (pre_sell_qty or 0) - args.qty > 0:
+            stop_result = ensure_protective_stop(args.account, args.ticker)
+            print(json.dumps({"protective_stop": stop_result}), file=sys.stderr)
 
     if args.action == "BUY" and args.price is not None:
         # bankroll.py's total_deployed was write-only until 2026-07-27 --
@@ -1519,6 +2147,79 @@ def main():
         # recomputes cash_pct fresh rather than staying artificially low.
         import deployment_pressure
         deployment_pressure.reset()
+
+    if args.action == "BUY":
+        # Deliberately outside the `args.price is not None` block above: the
+        # broker-side stop and the training row must be written for EVERY
+        # BUY, not only the ones that happened to pass a price.
+        filled_order = wait_for_fill(args.account, order.get("id")) if order.get("id") else None
+        filled_status = str((filled_order or order).get("status", "")).lower()
+
+        # ── Broker-side protective stop ──────────────────────────────────
+        # The hard floor that survives a tick timeout or a gateway restart
+        # (see place_stop_order). Sized against the position Alpaca reports
+        # after the fill, so a scale-in ends up with ONE stop covering the
+        # whole position rather than one per BUY, and an order that hasn't
+        # filled yet simply reports no_position and gets its stop from the
+        # next check-stops reconcile instead.
+        if _protective_stops_enabled():
+            print(json.dumps({"protective_stop": ensure_protective_stop(args.account, args.ticker)}),
+                   file=sys.stderr)
+
+        # ── Training-example row ─────────────────────────────────────────
+        # Written here in code, on every fill. Previously this depended on
+        # the agent remembering a separate `record_decision.py decision`
+        # call, which gets skipped when a tick runs short on time -- only
+        # ~45% of executed trades ever got a row, and the self-improvement
+        # loop can't learn from trades it has no record of. A later
+        # record_decision.py call for the same position merges into THIS
+        # row (decisions.record_decision) instead of creating a second one.
+        try:
+            import decisions
+            entry_time = None
+            try:
+                conn = trader_db.get_conn()
+                try:
+                    pos_row = trader_db.get_position(conn, args.ticker.upper())
+                finally:
+                    conn.close()
+                if pos_row and pos_row.get("status") == "open":
+                    entry_time = pos_row.get("entry_time")
+            except Exception:
+                entry_time = None
+
+            fill_price = None
+            if filled_order and filled_order.get("filled_avg_price"):
+                try:
+                    fill_price = float(filled_order["filled_avg_price"])
+                except (TypeError, ValueError):
+                    fill_price = None
+
+            features = dict(entry_features)
+            # Non-signal context block: ignored by signal_scorecard.py's
+            # per-signal tally (not {direction, confidence}-shaped), kept so
+            # a row is still self-describing when --features wasn't passed.
+            features.setdefault("entry", {
+                "price": fill_price if fill_price is not None else args.price,
+                "qty": args.qty,
+                "conviction": args.conviction,
+                "sector": args.sector,
+                "play_type": args.play_type,
+                "predicted_by_date": args.predicted_by_date,
+                "prediction_reason": args.prediction_reason,
+                "order_id": order.get("id"),
+                "fill_status": filled_status or None,
+            })
+            entry_result = decisions.record_entry_example(
+                ticker=args.ticker.upper(), features=features, position_entry_time=entry_time,
+            )
+            if entry_result.get("error") or not entry_features:
+                print(json.dumps({"training_example": entry_result,
+                                   "note": None if entry_features else
+                                   "no --features passed: row has entry metadata but no scored signals"}),
+                       file=sys.stderr)
+        except Exception as e:
+            print(json.dumps({"warning": f"training_example write failed: {e}"}), file=sys.stderr)
 
 
 if __name__ == "__main__":
