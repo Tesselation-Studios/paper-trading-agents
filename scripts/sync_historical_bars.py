@@ -19,6 +19,7 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -44,21 +45,62 @@ load_dotenv(ENGINE_REPO / ".env")
 # bars it reads from at inference time need to stay fresh daily like this.
 ALWAYS_SYNCED = ["SPY"]
 
+# 2026-08-01: current_universe() alone only ever syncs *currently* open
+# positions + *currently* watchlisted candidates — a ticker Stan sold and
+# fully dropped (or that rotated off the watchlist via drop-stale) just
+# stops appearing here, and its parquet bar history silently goes stale
+# (not deleted, just frozen) from that point on. watchlist_candidates rows
+# get deleted outright on rotation, so there's nothing else that remembers
+# a ticker was ever relevant. This file is the "ever relevant" superset --
+# every ticker that's ever appeared in current_universe() gets recorded
+# here permanently, and it's unioned into every sync so history keeps
+# accumulating for a ticker even after Stan is done with it. Needed for
+# historical replay/backtesting: a ticker Stan traded and dropped is
+# otherwise unreplayable since its bar history stopped growing.
+UNIVERSE_HISTORY_FILE = WORKSPACE_DIR / "state" / "bars_universe_history.json"
+
+
+def _load_universe_history() -> set[str]:
+    if not UNIVERSE_HISTORY_FILE.exists():
+        return set()
+    try:
+        return set(json.loads(UNIVERSE_HISTORY_FILE.read_text()))
+    except (json.JSONDecodeError, OSError):
+        return set()
+
+
+def _save_universe_history(tickers: set[str]) -> None:
+    UNIVERSE_HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    UNIVERSE_HISTORY_FILE.write_text(json.dumps(sorted(tickers), indent=2))
+
 
 def current_universe() -> list[str]:
-    """Tickers actually relevant to Stan right now: open positions + active
-    watchlist candidates. Migrated 2026-07-28 from globbing positions/*.md
-    + regex-parsing watchlist.md to querying trader_db.py directly."""
+    """Tickers actually relevant to Stan right now: open + closed positions
+    (positions is keyed by ticker, so this table stays small regardless --
+    no trailing-window filter needed) + active watchlist candidates.
+    Migrated 2026-07-28 from globbing positions/*.md + regex-parsing
+    watchlist.md to querying trader_db.py directly."""
     tickers = set(ALWAYS_SYNCED)
 
     conn = trader_db.get_conn()
     try:
-        tickers |= {p["ticker"] for p in trader_db.get_open_positions(conn)}
+        tickers |= {p["ticker"] for p in trader_db.get_all_positions(conn)}
         tickers |= {c["ticker"] for c in trader_db.get_watchlist_candidates(conn)}
     finally:
         conn.close()
 
     return sorted(tickers)
+
+
+def sync_universe() -> list[str]:
+    """current_universe() unioned with every ticker ever seen before, so a
+    ticker doesn't stop being synced just because it's no longer open or
+    watchlisted. Persists the updated superset back to disk."""
+    current = set(current_universe())
+    history = _load_universe_history()
+    superset = current | history
+    _save_universe_history(superset)
+    return sorted(superset)
 
 
 def main() -> int:
@@ -69,7 +111,7 @@ def main() -> int:
                          help="Print the resolved ticker list and command, don't run it")
     args = parser.parse_args()
 
-    tickers = current_universe()
+    tickers = sync_universe()
     if not tickers:
         print("No tickers found (empty positions and watchlist candidates) — nothing to sync.")
         return 0
@@ -82,7 +124,7 @@ def main() -> int:
         "--verbose",
     ]
 
-    print(f"Stan's current universe ({len(tickers)}): {ticker_arg}")
+    print(f"Syncing {len(tickers)} tickers (current universe + everything ever synced before): {ticker_arg}")
     if args.dry_run:
         print("DRY RUN — would run:", " ".join(cmd))
         return 0
