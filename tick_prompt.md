@@ -67,6 +67,7 @@
    - 3-5 lines if no trade and no trigger event
    - Include: regime, portfolio value, position count, top/bottom movers (3 max each), positions near triggers, decision
    - Full P&L tables only when something actually changed — don't repeat the whole book every tick
+   - **Rotate on a new trading day**: active.md is read in full every tick, so it must never hold more than one day's entries. Before writing the first `# Current Playbook` title of a new day, move everything currently in active.md into `strategies/active-archive/YYYY-MM-DD.md` (the date of the entries being archived, not today's), then start active.md fresh with just the new title. Never let active.md cross a day boundary un-rotated.
 
 11. **Git commit** → if you modified active.md, commit locally. See `skills/auto-commit.md`.
 
