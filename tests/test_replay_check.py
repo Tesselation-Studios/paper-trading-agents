@@ -290,7 +290,9 @@ class TestTrailingStop:
         trader = replay_check.STRATEGY_BUILDERS["v1.0-trail"](frames)
         tick1, portfolio = self._held_tick_portfolio(close_price=10.8)
         trader(tick1, portfolio)
-        tick2, _ = self._held_tick_portfolio(close_price=10.2)
+        # 2026-08-01: trail widened 5%->7% (params.json) -- 10.8*0.93=10.044,
+        # so the breach price moved from 10.2 to below 10.044.
+        tick2, _ = self._held_tick_portfolio(close_price=9.9)
         decision = trader(tick2, portfolio)
         assert decision.decision == "SELL"
         assert "trailing_stop_pct breached" in decision.rationale
@@ -317,7 +319,9 @@ class TestVolScaledTrailingStop:
         quiet_trader = replay_check.make_trader(quiet_frames, "v1.0", vol_scaled_trail=True)
         tick1, quiet_portfolio = self._held_tick_portfolio(close_price=10.8)
         quiet_trader(tick1, quiet_portfolio)
-        tick2, _ = self._held_tick_portfolio(close_price=10.2)
+        # 2026-08-01: base trail widened 5%->7% -- 10.8*0.93=10.044, so the
+        # breach price moved from 10.2 to below 10.044.
+        tick2, _ = self._held_tick_portfolio(close_price=9.9)
         quiet_decision = quiet_trader(tick2, quiet_portfolio)
         assert quiet_decision.decision == "SELL"
 
@@ -331,31 +335,35 @@ class TestVolScaledTrailingStop:
 
     def test_clamped_at_trail_max_pct(self):
         """An absurdly high vol_20d must not push the trail past TRAIL_MAX_PCT
-        (12%) -- the exact unbounded-widening failure mode stop_patience.py
-        already demonstrated is a bad idea. entry_price stays close to the
-        peak (5.3% pnl) so the unrelated profit_target_pct check (12%
-        default) doesn't fire first and mask what's under test."""
+        (18% as of 2026-08-01, was 12%) -- the exact unbounded-widening
+        failure mode stop_patience.py already demonstrated is a bad idea.
+        entry_price=90 keeps peak pnl at 11.1% (under the 12% profit_target
+        guide) AND keeps both boundary prices within the -10% hard stop
+        (stop_loss_pct), so only the trail clamp is under test -- at the
+        wider 18% max, the old entry_price=95 put the 82/81.5 boundary
+        below the -10%-from-entry hard-stop floor, firing that instead."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5, vol_20d=1.0)
         trader = replay_check.make_trader(frames, "v1.0", vol_scaled_trail=True)
-        tick1, portfolio = self._held_tick_portfolio(close_price=100.0, entry_price=95.0)
+        tick1, portfolio = self._held_tick_portfolio(close_price=100.0, entry_price=90.0)
         trader(tick1, portfolio)
-        # 12% trail from peak 100 -> stop at 88.0
-        tick_above, _ = self._held_tick_portfolio(close_price=88.5, entry_price=95.0)
+        # 18% trail from peak 100 -> stop at 82.0
+        tick_above, _ = self._held_tick_portfolio(close_price=82.5, entry_price=90.0)
         assert trader(tick_above, portfolio).decision == "HOLD"
-        tick_below, _ = self._held_tick_portfolio(close_price=87.5, entry_price=95.0)
+        tick_below, _ = self._held_tick_portfolio(close_price=81.5, entry_price=90.0)
         assert trader(tick_below, portfolio).decision == "SELL"
 
     def test_clamped_at_trail_min_pct(self):
         """A negative trail_k override must not push the trail below
-        TRAIL_MIN_PCT (4%), proving the floor side of the clamp works too."""
+        TRAIL_MIN_PCT (7% as of 2026-08-01, was 4%), proving the floor side
+        of the clamp works too."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5, vol_20d=0.5)
         trader = replay_check.make_trader(frames, "v1.0", vol_scaled_trail=True, trail_k=-10.0)
         tick1, portfolio = self._held_tick_portfolio(close_price=100.0, entry_price=95.0)
         trader(tick1, portfolio)
-        # floor is 4% trail from peak 100 -> stop at 96.0, not lower
-        tick_above, _ = self._held_tick_portfolio(close_price=96.5, entry_price=95.0)
+        # floor is 7% trail from peak 100 -> stop at 93.0, not lower
+        tick_above, _ = self._held_tick_portfolio(close_price=93.5, entry_price=95.0)
         assert trader(tick_above, portfolio).decision == "HOLD"
-        tick_below, _ = self._held_tick_portfolio(close_price=95.5, entry_price=95.0)
+        tick_below, _ = self._held_tick_portfolio(close_price=92.5, entry_price=95.0)
         assert trader(tick_below, portfolio).decision == "SELL"
 
     def test_missing_vol_20d_falls_back_to_base_trail(self):
@@ -366,10 +374,10 @@ class TestVolScaledTrailingStop:
         trader = replay_check.make_trader(frames, "v1.0", vol_scaled_trail=True)
         tick1, portfolio = self._held_tick_portfolio(close_price=10.8)
         trader(tick1, portfolio)
-        # v=0 -> effective_trail = TRAILING_STOP_PCT = 5% -> stop at 10.26
+        # v=0 -> effective_trail = TRAILING_STOP_PCT = 7% (was 5%) -> stop at 10.044
         tick_above, _ = self._held_tick_portfolio(close_price=10.3)
         assert trader(tick_above, portfolio).decision == "HOLD"
-        tick_below, _ = self._held_tick_portfolio(close_price=10.2)
+        tick_below, _ = self._held_tick_portfolio(close_price=9.9)
         assert trader(tick_below, portfolio).decision == "SELL"
 
     def test_vol_scaled_trail_overrides_flat_trailing_stop_pct(self):

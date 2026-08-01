@@ -486,3 +486,81 @@ class TestRecordAlpacaCallDirect:
         monkeypatch.setattr(executor.db_writer, "enqueue", raise_enqueue)
         import time
         executor._record_alpaca_call("account", "GET", None, 200, time.time())  # must not raise
+
+
+class TestProtectiveStopCliFlow:
+    """End-to-end ordering of the 2026-08-01 broker-side protective stop.
+
+    The SELL half is a correctness requirement, not tidiness: a resting GTC
+    sell stop reserves the shares it covers, so Alpaca rejects a market SELL
+    of the same position for insufficient quantity while that order is still
+    on the book. The cancel has to happen BEFORE the sell is submitted.
+    """
+
+    def _fake_urlopen(self, calls, positions, open_orders):
+        def fake_urlopen(req):
+            url = req.full_url
+            method = req.get_method()
+            if "/v2/orders" in url and method == "POST":
+                body = json.loads(req.data.decode())
+                calls.append(("POST", body.get("type"), body.get("side"), body.get("stop_price")))
+                return _FakeResponse({"id": "order-1", "status": "filled",
+                                       "filled_avg_price": "10.00", "filled_qty": "5"})
+            if "/v2/orders/" in url and method == "DELETE":
+                calls.append(("DELETE", url.rsplit("/", 1)[-1]))
+                open_orders.clear()
+                return _FakeResponse({})
+            if "/v2/orders/" in url and method == "GET":
+                # single-order lookup returns an object, not a list
+                calls.append(("GET", "order"))
+                return _FakeResponse({"id": "order-1", "status": "filled",
+                                       "filled_avg_price": "10.00", "filled_qty": "5"})
+            if "/v2/orders" in url and method == "GET":
+                calls.append(("GET", "orders"))
+                return _FakeListResponse(list(open_orders))
+            if url.endswith("/v2/positions"):
+                return _FakeListResponse(positions)
+            if url.endswith("/v2/account"):
+                return _FakeResponse({"equity": "10000", "cash": "5000"})
+            return _FakeResponse({})
+        return fake_urlopen
+
+    def test_buy_places_protective_stop_after_fill(self, monkeypatch, capsys):
+        calls = []
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            calls,
+            positions=[{"symbol": "AAA", "qty": "5", "avg_entry_price": "10.00",
+                         "current_price": "10.20", "market_value": "51.00"}],
+            open_orders=[],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "5",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+        stop_posts = [c for c in calls if c[0] == "POST" and c[1] == "stop"]
+        assert len(stop_posts) == 1
+        assert stop_posts[0][2] == "sell"
+        # params.json risk.stop_loss_pct (-10%) below the $10.00 entry.
+        assert float(stop_posts[0][3]) == pytest.approx(9.0)
+
+    def test_sell_cancels_resting_stop_before_submitting(self, monkeypatch, capsys):
+        calls = []
+        open_orders = [{"id": "stop-1", "symbol": "AAA", "side": "sell", "type": "stop",
+                         "stop_price": "9.00", "qty": "5"}]
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            calls,
+            positions=[{"symbol": "AAA", "qty": "5", "avg_entry_price": "10.00",
+                         "current_price": "11.00", "market_value": "55.00"}],
+            open_orders=open_orders,
+        ))
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=5.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "5",
+            "--price", "11.00", "--close-reason", "profit target", "--skip-guardrails",
+        ])
+        kinds = [c[0] for c in calls]
+        assert "DELETE" in kinds, calls
+        assert kinds.index("DELETE") < kinds.index("POST"), calls

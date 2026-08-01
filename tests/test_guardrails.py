@@ -147,6 +147,53 @@ class TestGatePositionSize:
         granted, _ = executor.gate_position_size(context, action)
         assert granted is True
 
+    # ── play-type awareness (2026-08-01) ─────────────────────────────────
+    # GATES is ordered and check_order() returns on the first rejection, so
+    # this gate runs before gate_conviction_play/gate_long_play. Applying the
+    # flat max_position_pct to every play type meant a conviction play was
+    # rejected here before the gate that authorizes its larger size ever ran
+    # -- live proof: positions held only {'standard': 41}, the conviction
+    # bucket had never fired since shipping.
+
+    def test_conviction_play_uses_conviction_cap(self, params):
+        # $800 = 8% of portfolio: over the flat 6% cap, within conviction's 10%.
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "NVDA", "quantity": 8, "price": 100.0,
+                   "play_type": "conviction"}
+        granted, reason = executor.gate_position_size(context, action)
+        assert granted is True
+        assert "conviction-play cap" in reason
+
+    def test_conviction_play_still_capped_at_its_own_limit(self, params):
+        # $1200 = 12%, over conviction's own 10% cap -> still rejected.
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "NVDA", "quantity": 12, "price": 100.0,
+                   "play_type": "conviction"}
+        granted, reason = executor.gate_position_size(context, action)
+        assert granted is False
+        assert "conviction-play cap" in reason
+
+    def test_long_play_uses_long_cap(self, params):
+        # long_play.position_size_pct (3%) is SMALLER than max_position_pct
+        # today, so this gate must tighten, not loosen, for a long play.
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "NVDA", "quantity": 4, "price": 100.0,
+                   "play_type": "long"}
+        granted, reason = executor.gate_position_size(context, action)
+        assert granted is False
+        assert "long-play cap" in reason
+
+    def test_cap_follows_params_not_hardcoded_ordering(self, params):
+        """Whichever way params.json is tuned, each bucket is measured
+        against its own configured number -- the fix must not assume
+        conviction > standard > long."""
+        params["risk"]["conviction_play"]["position_size_pct"] = 2.0
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "NVDA", "quantity": 3, "price": 100.0,
+                   "play_type": "conviction"}
+        granted, _ = executor.gate_position_size(context, action)
+        assert granted is False  # 3% now over the (lowered) 2% conviction cap
+
 
 class TestGateLongPlay:
     """2026-07-30: risk.long_play -- small, short-horizon, evidence-gated
@@ -597,6 +644,84 @@ class TestGateBankroll:
         assert granted is True
         assert "$200.00" in reason
         assert calls == [(50.0, 9000.0)]
+
+    # ── play-type awareness (2026-08-01) ─────────────────────────────────
+    # The ceiling is a dollar amount, so it doesn't share max_position_pct's
+    # flat cap -- but it independently vetoed the whole conviction bucket
+    # anyway (live: $679 ceiling vs ~$1,042 for a 10% conviction position).
+
+    def test_conviction_play_floors_ceiling_at_its_configured_size(self, params, monkeypatch):
+        fake_bankroll = type("M", (), {
+            "read_bankroll": staticmethod(lambda: {"ceiling": 50.0}),
+            "effective_ceiling": staticmethod(lambda state, equity: 679.0),
+        })
+        monkeypatch.setitem(sys.modules, "bankroll", fake_bankroll)
+        # $900 > $679 ceiling, but within conviction_play's 10% of $10k.
+        granted, reason = executor.gate_bankroll(
+            {"portfolio_value": 10000.0},
+            {"action": "BUY", "quantity": 9, "price": 100.0, "play_type": "conviction"})
+        assert granted is True
+        assert "floors the ceiling" in reason
+
+    def test_conviction_play_still_bounded_by_its_own_size_cap(self, params, monkeypatch):
+        fake_bankroll = type("M", (), {
+            "read_bankroll": staticmethod(lambda: {"ceiling": 50.0}),
+            "effective_ceiling": staticmethod(lambda state, equity: 679.0),
+        })
+        monkeypatch.setitem(sys.modules, "bankroll", fake_bankroll)
+        # $1,500 exceeds both the ceiling and conviction_play's 10% ($1,000).
+        granted, reason = executor.gate_bankroll(
+            {"portfolio_value": 10000.0},
+            {"action": "BUY", "quantity": 15, "price": 100.0, "play_type": "conviction"})
+        assert granted is False
+        assert "exceeds bankroll ceiling" in reason
+
+    def test_standard_buy_ceiling_unchanged(self, params, monkeypatch):
+        fake_bankroll = type("M", (), {
+            "read_bankroll": staticmethod(lambda: {"ceiling": 50.0}),
+            "effective_ceiling": staticmethod(lambda state, equity: 679.0),
+        })
+        monkeypatch.setitem(sys.modules, "bankroll", fake_bankroll)
+        granted, reason = executor.gate_bankroll(
+            {"portfolio_value": 10000.0},
+            {"action": "BUY", "quantity": 9, "price": 100.0, "play_type": "standard"})
+        assert granted is False
+        assert "floors the ceiling" not in reason
+
+
+class TestConvictionPlayReachesItsOwnGate:
+    """Regression for the whole point of the 2026-08-01 gate fix: a
+    conviction-sized BUY has to survive the full ordered gate chain, not
+    just gate_conviction_play in isolation."""
+
+    def test_conviction_sized_buy_passes_full_chain(self, params, monkeypatch):
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000", "cash": "10000"})
+        monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+
+        class _FakeConn:
+            def close(self):
+                pass
+        monkeypatch.setattr(executor.trader_db, "get_conn", lambda: _FakeConn())
+        monkeypatch.setattr(executor.trader_db, "get_open_positions", lambda conn: [])
+        fake_bankroll = type("M", (), {
+            "read_bankroll": staticmethod(lambda: {"ceiling": 679.0}),
+            "effective_ceiling": staticmethod(lambda state, equity: 679.0),
+        })
+        monkeypatch.setitem(sys.modules, "bankroll", fake_bankroll)
+        params["guardrail_gates"]["hours"] = False  # tested separately, don't depend on wall clock
+        params["risk"]["max_portfolio_risk_pct"] = 50.0
+
+        # 9% of a $10k portfolio: over the flat 6% cap AND over the $679
+        # bankroll ceiling -- both of which used to reject it before
+        # gate_conviction_play (which allows up to 10%) ever ran.
+        granted, reason, results = executor.check_order(
+            "stonks", "BUY", "NVDA", 9, price=100.0, conviction=0.8, play_type="conviction")
+        assert granted is True, reason
+        by_gate = {r["gate"]: r for r in results}
+        assert by_gate["position_size"]["passed"] is True
+        assert by_gate["bankroll"]["passed"] is True
+        assert by_gate["conviction_play"]["passed"] is True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1258,7 +1383,11 @@ class TestCheckStops:
                 resolve_calls.append(ticker)
             monkeypatch.setattr(executor.trader_db, "resolve_long_play", fake_resolve)
         if label_calls is not None:
-            monkeypatch.setattr(executor.trader_db, "latest_unlabeled_training_example", lambda conn, ticker: 42)
+            # 2026-08-01: entry rows only -- see trader_db.find_entry_training_example.
+            monkeypatch.setattr(
+                executor.trader_db, "find_entry_training_example",
+                lambda conn, ticker, position_entry_time=None: {"id": 42, "example_type": "entry"},
+            )
 
             def fake_label(conn, training_example_id, trade_id, label_win, label_return_pct, label_horizon):
                 label_calls.append((training_example_id, label_win, label_return_pct, label_horizon))
@@ -1393,20 +1522,24 @@ class TestCloseTradeOutcome:
 
         class FakeDecisions:
             @staticmethod
-            def record_trade_close(trader_id, ticker, trade_id, pnl, return_pct):
-                recorded.update(trader_id=trader_id, ticker=ticker, pnl=pnl, return_pct=return_pct)
+            def record_trade_close(trader_id, ticker, trade_id, pnl, return_pct, position_entry_time=None):
+                recorded.update(trader_id=trader_id, ticker=ticker, pnl=pnl, return_pct=return_pct,
+                                 position_entry_time=position_entry_time)
                 return {"training_example_id": 1, "labeled": True}
 
         monkeypatch.setitem(sys.modules, "decisions", FakeDecisions)
 
-        result = executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=11.0, qty=5)
+        result = executor.close_trade_outcome("stonks", "SOFI", entry_price=10.0, exit_price=11.0, qty=5,
+                                               position_entry_time="2026-08-01T13:00:00+00:00")
 
         assert result["pnl"] == pytest.approx(5.0)
         assert result["return_pct"] == pytest.approx(10.0)
         assert result["outcome_label_warning"] is None
         assert fake_bankroll_module["recalc"] == {"pnl": pytest.approx(5.0), "is_win": True}
         assert fake_bankroll_module["written"] is True
-        assert recorded == {"trader_id": "stonks", "ticker": "SOFI", "pnl": pytest.approx(5.0), "return_pct": pytest.approx(10.0)}
+        assert recorded == {"trader_id": "stonks", "ticker": "SOFI", "pnl": pytest.approx(5.0),
+                             "return_pct": pytest.approx(10.0),
+                             "position_entry_time": "2026-08-01T13:00:00+00:00"}
         exp = json.loads(executor.EXPERIENCE_PATH.read_text())
         assert exp["total_wins"] == 1
         assert exp["total_losses"] == 0
@@ -1577,3 +1710,261 @@ class TestExperienceTracking:
         executor.record_order_submitted("KRC", "SELL", today="2026-07-27")
         state = json.loads(executor.EXPERIENCE_PATH.read_text())
         assert state["total_trades"] == 2
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Broker-side protective stops (2026-08-01)
+#
+# check_stops() only ever DETECTED breaches and handed them to the agent to
+# act on in the same tick — nothing existed at the broker, so any tick that
+# timed out (~23% of them) or any gateway restart left positions with no
+# enforced floor at all. These cover the resting stop order and the
+# cancel/replace cleanup that keeps it from conflicting with a real exit.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestProtectiveStopPricing:
+    def test_stop_price_matches_hard_stop_pct(self, params):
+        params["risk"]["stop_loss_pct"] = -10.0
+        assert executor.protective_stop_price(10.0) == pytest.approx(9.0)
+
+    def test_stop_price_follows_params_whatever_the_value(self, params):
+        params["risk"]["stop_loss_pct"] = -7.5
+        assert executor.protective_stop_price(20.0) == pytest.approx(18.5)
+
+    def test_rounds_down_to_penny_at_or_above_one_dollar(self):
+        # Rounding must never tighten a stop into a price it wasn't meant
+        # to trigger at.
+        assert executor._round_stop_price(9.019) == pytest.approx(9.01)
+
+    def test_sub_dollar_keeps_four_decimals(self):
+        # Alpaca only accepts sub-penny increments below $1.00.
+        assert executor._round_stop_price(0.45678) == pytest.approx(0.4567)
+
+    def test_identifies_protective_stop_orders(self):
+        assert executor.is_protective_stop_order({"side": "sell", "type": "stop"}) is True
+        assert executor.is_protective_stop_order({"side": "sell", "order_type": "trailing_stop"}) is True
+        assert executor.is_protective_stop_order({"side": "buy", "type": "stop"}) is False
+        assert executor.is_protective_stop_order({"side": "sell", "type": "market"}) is False
+        assert executor.is_protective_stop_order("not a dict") is False
+
+
+class TestEnsureProtectiveStop:
+    def _position(self, symbol="SOFI", qty="10", entry="10.00", current="10.50"):
+        return {"symbol": symbol, "qty": qty, "avg_entry_price": entry,
+                 "current_price": current, "market_value": str(float(qty) * float(current))}
+
+    def test_places_stop_at_hard_stop_price(self, params, monkeypatch):
+        params["risk"]["stop_loss_pct"] = -10.0
+        placed = []
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+        monkeypatch.setattr(executor, "place_stop_order",
+                             lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-1"})
+        result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
+        assert result["status"] == "placed"
+        assert placed == [("SOFI", 10, pytest.approx(9.0))]
+
+    def test_leaves_correct_existing_stop_alone(self, params, monkeypatch):
+        """Called every tick — an already-correct stop must not be
+        cancelled and re-placed, that's pure order churn."""
+        params["risk"]["stop_loss_pct"] = -10.0
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop",
+             "stop_price": "9.00", "qty": "10"},
+        ])
+        monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not re-place"))
+        monkeypatch.setattr(executor, "cancel_order", lambda *a, **k: pytest.fail("must not cancel"))
+        result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
+        assert result["status"] == "already_set"
+
+    def test_replaces_stop_with_wrong_size(self, params, monkeypatch):
+        """A trim leaves a stop covering more shares than are held."""
+        params["risk"]["stop_loss_pct"] = -10.0
+        cancelled, placed = [], []
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-old", "symbol": "SOFI", "side": "sell", "type": "stop",
+             "stop_price": "9.00", "qty": "25"},
+        ] if not cancelled else [])
+        monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(executor, "place_stop_order",
+                             lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
+        result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
+        assert result["status"] == "placed"
+        assert cancelled == ["stop-old"]
+        assert placed == [("SOFI", 10, pytest.approx(9.0))]
+
+    def test_no_position_cancels_orphan_stop(self, params, monkeypatch):
+        cancelled = []
+        monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-orphan", "symbol": "SOFI", "side": "sell", "type": "stop",
+             "stop_price": "9.00", "qty": "10"},
+        ])
+        monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        result = executor.ensure_protective_stop("stonks", "SOFI")
+        assert result["status"] == "no_position"
+        assert cancelled == ["stop-orphan"]
+
+    def test_already_through_the_floor_does_not_submit(self, params, monkeypatch):
+        """Alpaca rejects a sell stop at/above the current price, and the
+        position needs a market exit now — check_stops() reports it."""
+        params["risk"]["stop_loss_pct"] = -10.0
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+        monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
+        result = executor.ensure_protective_stop(
+            "stonks", "SOFI", position=self._position(current="8.50"))
+        assert result["status"] == "below_stop_already"
+
+    def test_disabled_via_params_toggle(self, params, monkeypatch):
+        params["guardrail_gates"]["broker_stop_order"] = False
+        monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
+        result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
+        assert result["status"] == "disabled"
+
+    def test_api_error_never_raises(self, params, monkeypatch):
+        params["risk"]["stop_loss_pct"] = -10.0
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+
+        def boom(*a, **k):
+            raise RuntimeError("alpaca 500")
+        monkeypatch.setattr(executor, "place_stop_order", boom)
+        result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
+        assert result["status"] == "error"
+
+
+class TestReconcileProtectiveStops:
+    def test_places_missing_stops_and_cancels_orphans(self, params, monkeypatch):
+        params["risk"]["stop_loss_pct"] = -10.0
+        placed, cancelled = [], []
+        orders = [
+            {"id": "stop-dead", "symbol": "GONE", "side": "sell", "type": "stop",
+             "stop_price": "5.00", "qty": "3"},
+        ]
+        monkeypatch.setattr(executor, "get_positions", lambda a: [
+            {"symbol": "SOFI", "qty": "10", "avg_entry_price": "10.00",
+             "current_price": "10.50", "market_value": "105.00"},
+        ])
+
+        def fake_open_orders(account, ticker=None):
+            if ticker is None:
+                return list(orders)
+            return [o for o in orders if o["symbol"] == ticker]
+        monkeypatch.setattr(executor, "get_open_orders", fake_open_orders)
+        monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(executor, "place_stop_order",
+                             lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
+
+        results = executor.reconcile_protective_stops("stonks")
+        statuses = {r.get("ticker"): r["status"] for r in results}
+        assert statuses["SOFI"] == "placed"
+        assert statuses["GONE"] == "orphan_cancelled"
+        assert cancelled == ["stop-dead"]
+        assert placed == [("SOFI", 10, pytest.approx(9.0))]
+
+    def test_positions_read_failure_never_raises(self, params, monkeypatch):
+        def boom(account):
+            raise RuntimeError("alpaca down")
+        monkeypatch.setattr(executor, "get_positions", boom)
+        results = executor.reconcile_protective_stops("stonks")
+        assert results[0]["status"] == "error"
+
+
+class TestCancelProtectiveStops:
+    def test_cancels_only_sell_stops(self, params, monkeypatch):
+        cancelled = []
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop"},
+            {"id": "limit-1", "symbol": "SOFI", "side": "sell", "type": "limit"},
+            {"id": "buy-1", "symbol": "SOFI", "side": "buy", "type": "stop"},
+        ])
+        monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(executor, "_wait_orders_cleared", lambda *a, **k: True)
+        assert executor.cancel_protective_stops("stonks", "SOFI") == ["stop-1"]
+        assert cancelled == ["stop-1"]
+
+    def test_cancel_failure_is_swallowed(self, params, monkeypatch):
+        """A 422 means the order is already gone; the SELL that follows is
+        where a genuine problem would surface loudly."""
+        monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop"},
+        ])
+
+        def boom(a, oid):
+            raise RuntimeError("422 order not cancelable")
+        monkeypatch.setattr(executor, "cancel_order", boom)
+        assert executor.cancel_protective_stops("stonks", "SOFI") == []
+
+
+class TestReconcileStoppedOutPositions:
+    """A broker-side stop can close a position while no tick is running --
+    the case the resting order exists for. Without this reconciliation the
+    new stop order would create exactly the state drift the labeling fix is
+    about: gone at the broker, still 'open' locally, training row unlabeled,
+    bankroll never told about the loss."""
+
+    class _FakeConn:
+        def close(self):
+            pass
+
+    def _mock_db(self, monkeypatch, open_rows, closed):
+        monkeypatch.setattr(executor.trader_db, "get_conn", lambda: self._FakeConn())
+        monkeypatch.setattr(executor.trader_db, "get_open_positions", lambda conn: open_rows)
+
+        def fake_close(conn, ticker, closed_at, close_reason, realized_pnl, realized_return_pct):
+            closed.append((ticker, close_reason, realized_pnl))
+        monkeypatch.setattr(executor.trader_db, "close_position", fake_close)
+
+    def test_closes_books_from_the_broker_fill(self, params, monkeypatch, tmp_path):
+        closed, outcomes = [], []
+        monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        self._mock_db(monkeypatch, [
+            {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
+        ], closed)
+        monkeypatch.setattr(executor, "get_closed_orders", lambda a, t, limit=10: [
+            {"id": "stop-1", "side": "sell", "status": "filled",
+             "filled_avg_price": "9.00", "filled_qty": "10"},
+        ])
+        monkeypatch.setattr(executor, "close_trade_outcome",
+                             lambda *a, **k: outcomes.append((a, k)) or
+                             {"pnl": -10.0, "return_pct": -10.0, "outcome_label_warning": None})
+        monkeypatch.setattr(executor, "record_order_submitted", lambda *a, **k: None)
+
+        results = executor.reconcile_stopped_out_positions("stonks")
+        assert results[0]["status"] == "closed_from_broker_fill"
+        assert results[0]["exit_price"] == pytest.approx(9.0)
+        assert closed[0][0] == "SOFI"
+        assert "broker-side stop fill" in closed[0][1]
+        # the entry_time correlation key must reach the labeling call
+        assert outcomes[0][1]["position_entry_time"] == "t1"
+
+    def test_still_held_positions_untouched(self, params, monkeypatch):
+        closed = []
+        monkeypatch.setattr(executor, "get_positions", lambda a: [{"symbol": "SOFI"}])
+        self._mock_db(monkeypatch, [
+            {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
+        ], closed)
+        monkeypatch.setattr(executor, "get_closed_orders",
+                             lambda *a, **k: pytest.fail("must not look up a held position"))
+        assert executor.reconcile_stopped_out_positions("stonks") == []
+        assert closed == []
+
+    def test_no_fill_found_reports_unresolved_rather_than_guessing(self, params, monkeypatch):
+        """Never invent a P&L off a stale entry price -- bankroll and the
+        win/loss label are downstream of this number."""
+        closed = []
+        monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        self._mock_db(monkeypatch, [
+            {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
+        ], closed)
+        monkeypatch.setattr(executor, "get_closed_orders", lambda a, t, limit=10: [])
+        monkeypatch.setattr(executor, "close_trade_outcome",
+                             lambda *a, **k: pytest.fail("must not price an unknown exit"))
+        results = executor.reconcile_stopped_out_positions("stonks")
+        assert results[0]["status"] == "unresolved"
+        assert closed == []
+
+    def test_api_failure_never_raises(self, params, monkeypatch):
+        def boom(account):
+            raise RuntimeError("alpaca down")
+        monkeypatch.setattr(executor, "get_positions", boom)
+        assert executor.reconcile_stopped_out_positions("stonks")[0]["status"] == "error"

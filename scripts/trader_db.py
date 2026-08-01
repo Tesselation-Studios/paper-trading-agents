@@ -46,6 +46,16 @@ CREATE TABLE IF NOT EXISTS journal (
     UNIQUE(timestamp)
 );
 
+-- training_examples: one row per decision, labeled with the eventual
+-- outcome once the position closes.
+--
+-- example_type ('entry' | 'exit' | 'observation', NULL on pre-2026-08-01
+-- rows) and position_entry_time exist because "which row does a close
+-- label?" was previously answered by "the newest unlabeled row for this
+-- ticker" -- which on a SELL is the SELL's own row, not the BUY row that
+-- actually carried the predictive signals. Only 'entry' rows are
+-- label-eligible, and position_entry_time links a row to the exact
+-- positions.entry_time it was opened for.
 CREATE TABLE IF NOT EXISTS training_examples (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     ticker              TEXT NOT NULL,
@@ -55,9 +65,16 @@ CREATE TABLE IF NOT EXISTS training_examples (
     label_return_pct    REAL,
     label_horizon       TEXT,
     features            TEXT NOT NULL,
-    created_at          TEXT NOT NULL
+    created_at          TEXT NOT NULL,
+    example_type        TEXT,
+    position_entry_time TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_training_examples_ticker_unlabeled ON training_examples(ticker, label_win);
+-- NOTE: the (ticker, example_type, label_win) index is created in
+-- init_schema() AFTER the column migration, not here. On an existing DB
+-- the CREATE TABLE above is a no-op, so an index over a column this
+-- script is about to add would fail with "no such column" before the
+-- migration ever ran.
 
 CREATE TABLE IF NOT EXISTS news_cache (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -214,6 +231,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
     # starving get looked at first.
     _migrate_add_column(conn, "watchlist_candidates", "last_evaluated_at", "TEXT")
     _migrate_add_column(conn, "watchlist_candidates", "eval_count", "INTEGER NOT NULL DEFAULT 0")
+    # 2026-08-01: outcome-labeling correlation -- see the training_examples
+    # CREATE TABLE comment above. Deliberately nullable with no default:
+    # a NULL example_type means "pre-migration row, type unknown", which is
+    # a state find_entry_training_example() has to treat differently from a
+    # row that is known not to be an entry.
+    _migrate_add_column(conn, "training_examples", "example_type", "TEXT")
+    _migrate_add_column(conn, "training_examples", "position_entry_time", "TEXT")
+    conn.execute("""CREATE INDEX IF NOT EXISTS idx_training_examples_entry_lookup
+                    ON training_examples(ticker, example_type, label_win)""")
     conn.commit()
 
 
@@ -283,15 +309,47 @@ def insert_journal_entry(conn: sqlite3.Connection, timestamp: str, ticker: str =
 def insert_training_example(conn: sqlite3.Connection, ticker: str, features: str,
                              decision_id: int = None, trade_id: str = None,
                              label_win: int = None, label_return_pct: float = None,
-                             label_horizon: str = None, created_at: str = None) -> int:
+                             label_horizon: str = None, created_at: str = None,
+                             example_type: str = None, position_entry_time: str = None) -> int:
+    """example_type: 'entry' (a BUY -- the row that carries the predictive
+    signals and is the only kind eligible for outcome labeling), 'exit' (a
+    SELL's own decision log), or 'observation' (HOLD). position_entry_time
+    is the positions.entry_time of the position this row was opened for --
+    the correlation key record_trade_close() uses to label the right row."""
     with conn:
         cur = conn.execute(
             """INSERT INTO training_examples
-               (ticker, decision_id, trade_id, label_win, label_return_pct, label_horizon, features, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (ticker, decision_id, trade_id, label_win, label_return_pct, label_horizon, features, created_at),
+               (ticker, decision_id, trade_id, label_win, label_return_pct, label_horizon, features,
+                created_at, example_type, position_entry_time)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (ticker, decision_id, trade_id, label_win, label_return_pct, label_horizon, features,
+             created_at, example_type, position_entry_time),
         )
         return cur.lastrowid
+
+
+def update_training_example_features(conn: sqlite3.Connection, training_example_id: int, features: str,
+                                      decision_id: int = None, position_entry_time: str = None) -> None:
+    """Merge richer data into an already-written row instead of inserting a
+    second one for the same position (2026-08-01). executor.py writes an
+    entry row deterministically the moment a BUY fills; if the agent later
+    logs the same trade via record_decision.py with real scored signals,
+    that has to land on the SAME row -- two rows for one position would
+    reintroduce exactly the "which row does the close label?" ambiguity
+    this whole mechanism exists to remove.
+
+    decision_id/position_entry_time are only overwritten when a non-NULL
+    value is passed (COALESCE), so a later merge can add a link but never
+    erase one."""
+    with conn:
+        conn.execute(
+            """UPDATE training_examples
+               SET features = ?,
+                   decision_id = COALESCE(?, decision_id),
+                   position_entry_time = COALESCE(?, position_entry_time)
+               WHERE id = ?""",
+            (features, decision_id, position_entry_time, training_example_id),
+        )
 
 
 def label_training_example(conn: sqlite3.Connection, training_example_id: int, trade_id: str,
@@ -313,6 +371,16 @@ def label_training_example(conn: sqlite3.Connection, training_example_id: int, t
 
 
 def latest_unlabeled_training_example(conn: sqlite3.Connection, ticker: str):
+    """DEPRECATED for outcome labeling -- kept only for callers that
+    genuinely want "newest unlabeled row, any type".
+
+    Do not use this to attach a win/loss label: on a SELL the newest
+    unlabeled row for the ticker is the SELL's own decision row (features
+    like {"stop_trigger": ...}), not the BUY row carrying the signals the
+    outcome is supposed to validate. Confirmed in the live DB 2026-08-01:
+    BUY rows sat permanently label_win=NULL while SELL rows got labeled in
+    their place, which is why the signal scorecard learned nothing. Use
+    find_entry_training_example() instead."""
     row = conn.execute(
         """SELECT id FROM training_examples
            WHERE ticker = ? AND label_win IS NULL
@@ -320,6 +388,54 @@ def latest_unlabeled_training_example(conn: sqlite3.Connection, ticker: str):
         (ticker,),
     ).fetchone()
     return row["id"] if row else None
+
+
+def find_entry_training_example(conn: sqlite3.Connection, ticker: str, position_entry_time: str = None):
+    """The open ENTRY row for `ticker` -- the row a close should label.
+
+    Two tiers, most specific first:
+      1. exact position link: an unlabeled row whose position_entry_time
+         matches the position being closed (written by executor.py at BUY
+         fill time),
+      2. newest unlabeled example_type='entry' row for the ticker -- covers
+         a row written before the position link existed, or a re-entry
+         whose entry_time drifted (Alpaca's avg_entry_price/entry_time can
+         move on a scale-in).
+
+    Never falls back to "newest unlabeled row of any type" -- that was the
+    bug. Pre-migration rows (example_type IS NULL) are handled separately
+    by the caller, see decisions.record_trade_close(). Returns a dict or
+    None."""
+    if position_entry_time:
+        row = conn.execute(
+            """SELECT * FROM training_examples
+               WHERE ticker = ? AND label_win IS NULL AND position_entry_time = ?
+               ORDER BY created_at DESC LIMIT 1""",
+            (ticker, position_entry_time),
+        ).fetchone()
+        if row:
+            return dict(row)
+    row = conn.execute(
+        """SELECT * FROM training_examples
+           WHERE ticker = ? AND label_win IS NULL AND example_type = 'entry'
+           ORDER BY created_at DESC LIMIT 1""",
+        (ticker,),
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def unlabeled_legacy_training_examples(conn: sqlite3.Connection, ticker: str) -> list:
+    """Unlabeled rows written before example_type existed (2026-08-01), newest
+    first. These can be a BUY row, a SELL row or a HOLD row -- indistinguishable
+    from the column alone, so the caller decides by inspecting features (see
+    decisions.record_trade_close's legacy tier)."""
+    rows = conn.execute(
+        """SELECT * FROM training_examples
+           WHERE ticker = ? AND label_win IS NULL AND example_type IS NULL
+           ORDER BY created_at DESC""",
+        (ticker,),
+    ).fetchall()
+    return [dict(r) for r in rows]
 
 
 def fetch_labeled_training_examples(conn: sqlite3.Connection, label_horizon: str = None) -> list:

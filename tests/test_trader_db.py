@@ -573,3 +573,68 @@ class TestAlpacaAuditLog:
         assert deleted == 1
         remaining = conn.execute("SELECT COUNT(*) AS n FROM alpaca_audit_log").fetchone()["n"]
         assert remaining == 1
+
+
+class TestEntryTrainingExampleLookup:
+    """2026-08-01: outcome labeling must attach to the BUY row, never to the
+    SELL row that happens to be newer (see find_entry_training_example)."""
+
+    def test_prefers_exact_position_link(self, tmp_path):
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        older = trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t1",
+            example_type="entry", position_entry_time="p1")
+        trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t2",
+            example_type="entry", position_entry_time="p2")
+        row = trader_db.find_entry_training_example(conn, "AAA", position_entry_time="p1")
+        conn.close()
+        assert row["id"] == older
+
+    def test_falls_back_to_newest_entry_row(self, tmp_path):
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t1", example_type="entry")
+        newest = trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t2", example_type="entry")
+        row = trader_db.find_entry_training_example(conn, "AAA")
+        conn.close()
+        assert row["id"] == newest
+
+    def test_never_returns_an_exit_row(self, tmp_path):
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t9", example_type="exit")
+        row = trader_db.find_entry_training_example(conn, "AAA")
+        conn.close()
+        assert row is None
+
+    def test_labeled_entry_rows_are_excluded(self, tmp_path):
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        te_id = trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t1", example_type="entry")
+        trader_db.label_training_example(conn, te_id, trade_id=None, label_win=1, label_return_pct=2.0)
+        row = trader_db.find_entry_training_example(conn, "AAA")
+        conn.close()
+        assert row is None
+
+    def test_legacy_rows_listed_separately(self, tmp_path):
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        legacy = trader_db.insert_training_example(conn, ticker="AAA", features="{}", created_at="t1")
+        trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t2", example_type="entry")
+        rows = trader_db.unlabeled_legacy_training_examples(conn, "AAA")
+        conn.close()
+        assert [r["id"] for r in rows] == [legacy]
+
+    def test_update_features_preserves_existing_links(self, tmp_path):
+        conn = trader_db.get_conn(tmp_path / "trader.db")
+        te_id = trader_db.insert_training_example(
+            conn, ticker="AAA", features="{}", created_at="t1",
+            example_type="entry", position_entry_time="p1", decision_id=7)
+        trader_db.update_training_example_features(conn, te_id, features='{"technical": {}}')
+        row = conn.execute("SELECT * FROM training_examples WHERE id = ?", (te_id,)).fetchone()
+        conn.close()
+        assert row["features"] == '{"technical": {}}'
+        assert row["position_entry_time"] == "p1"
+        assert row["decision_id"] == 7
