@@ -18,11 +18,11 @@
 
   "risk": {
     "stop_loss_pct": -10.0,
-    "trailing_stop_pct": 5.0,
+    "trailing_stop_pct": 7.0,
     "trailing_stop_mode": "volatility_scaled",
     "trail_k": 40.0,
-    "trail_min_pct": 4.0,
-    "trail_max_pct": 12.0,
+    "trail_min_pct": 7.0,
+    "trail_max_pct": 18.0,
     "profit_target_pct": 12.0,
     "profit_target_is_guide": true,
     "max_position_pct": 6.0,
@@ -63,7 +63,7 @@
 
   "bootstrap_phase": {
     "ceiling_threshold": 1000.0,
-    "quick_exit_min_return_pct": 1.0,
+    "quick_exit_min_return_pct": 5.0,
     "_source": "2026-07-28: while bankroll.py's ceiling (start $700, cap $2000, +2%/win -1%/loss -- see recalc_ceiling) is still below ceiling_threshold, strategy.md's Exit judgment biases toward banking small, fast, clearly-positive wins over letting them run -- ceiling growth is win-COUNT-driven (is_win boolean, magnitude-blind), so more frequent small wins compound the ceiling faster while capital is small. Fades out once ceiling crosses the threshold, reverting to the normal profit_target_pct-is-a-guide/let-winners-run judgment. Checked via trader_query.py bankroll's ceiling field, not lifetime_trades (see git log params.json for why)."
   },
 
