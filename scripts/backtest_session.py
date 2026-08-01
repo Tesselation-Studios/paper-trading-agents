@@ -204,6 +204,48 @@ def complete_day(session_id: str, date_str: str) -> dict:
     return manifest
 
 
+def compute_context(session_id: str, current_prices: dict = None) -> dict:
+    """Builds the {"portfolio_value", "cash", "positions"} context shape
+    executor.run_gates() expects, from a backtest session's own DB -- there's
+    no live Alpaca account to query, so this is replay_order.py's substitute
+    for check_order()'s get_account()/get_positions() calls.
+
+    cash = starting_capital - cost basis of currently open positions +
+    realized P&L of positions closed so far this session. current_prices
+    (optional {ticker: price} map) marks each open position at its current
+    price when the caller has one (e.g. the ticker it's evaluating this
+    tick); any other open position falls back to its own entry_price as an
+    approximate mark -- acceptable at the 15-min-snapshot granularity this
+    harness operates at, not meant to be exact mark-to-market."""
+    current_prices = current_prices or {}
+    manifest = get_session(session_id)
+    if manifest is None:
+        raise FileNotFoundError(f"no backtest session found for id={session_id!r}")
+
+    conn = trader_db.get_conn(Path(manifest["db_path"]))
+    try:
+        open_positions = trader_db.get_open_positions(conn)
+        closed_positions = [
+            p for p in conn.execute("SELECT * FROM positions WHERE status = 'closed'")
+        ]
+        realized_pnl = sum(p["realized_pnl"] or 0.0 for p in closed_positions)
+    finally:
+        conn.close()
+
+    cost_basis = sum(p["shares"] * p["entry_price"] for p in open_positions)
+    cash = manifest["starting_capital"] - cost_basis + realized_pnl
+
+    positions_ctx = []
+    portfolio_value = cash
+    for p in open_positions:
+        mark = current_prices.get(p["ticker"].upper(), p["entry_price"])
+        market_value = p["shares"] * mark
+        positions_ctx.append({"symbol": p["ticker"], "market_value": market_value})
+        portfolio_value += market_value
+
+    return {"portfolio_value": portfolio_value, "cash": cash, "positions": positions_ctx}
+
+
 def abandon_session(session_id: str, reason: str = "") -> dict:
     manifest = get_session(session_id)
     if manifest is None:
