@@ -249,3 +249,63 @@ class TestChainedModeNoDataAvailable:
         out = capsys.readouterr().out
         assert '"status": "skipped"' in out
         assert bs.get_session("chain-empty") is None
+
+
+# ── Experiment mode (2026-08-02) ───────────────────────────────────────────
+
+
+class TestExperimentMode:
+    def test_explicit_date_and_params_pass_through(self, env):
+        import json
+        rc = ptr.main(["--experiment-id", "exp1", "--date", TRADING_DAYS[2],
+                        "--params", '{"scorecard_override": {"technical": {"hit_rate": 0.8}}}'])
+        assert rc == 0
+        result = json.loads(env["output_path"].read_text())
+        assert result["mode"] == "experiment"
+        assert result["experiment_id"] == "exp1"
+        assert result["date"] == TRADING_DAYS[2]
+        assert result["params"] == {"scorecard_override": {"technical": {"hit_rate": 0.8}}}
+        assert "run_id" in result
+
+    def test_missing_date_errors(self, capsys, env):
+        rc = ptr.main(["--experiment-id", "exp1"])
+        assert rc == 1
+        out = capsys.readouterr().out
+        assert '"status": "error"' in out
+        assert "requires --date" in out
+
+    def test_invalid_params_json_errors(self, capsys, env):
+        rc = ptr.main(["--experiment-id", "exp1", "--date", TRADING_DAYS[0], "--params", "{not json"])
+        assert rc == 1
+        out = capsys.readouterr().out
+        assert '"status": "error"' in out
+
+    def test_same_date_can_be_run_repeatedly_with_different_params(self, env):
+        import json
+        ptr.main(["--experiment-id", "exp1", "--date", TRADING_DAYS[0], "--params", '{"weight": 1.0}'])
+        result1 = json.loads(env["output_path"].read_text())
+        ptr.main(["--experiment-id", "exp1", "--date", TRADING_DAYS[0], "--params", '{"weight": 2.0}'])
+        result2 = json.loads(env["output_path"].read_text())
+        assert result1["date"] == result2["date"] == TRADING_DAYS[0]
+        assert result1["params"] == {"weight": 1.0}
+        assert result2["params"] == {"weight": 2.0}
+
+    def test_experiment_run_never_touches_progress_file(self, env):
+        """The whole point of experiment mode is repeatability -- it must never
+        mark a date as 'replayed', unlike single-day mode, or a second run on
+        the same date would silently behave differently."""
+        assert not env["progress_path"].exists()
+        ptr.main(["--experiment-id", "exp1", "--date", TRADING_DAYS[0], "--params", "{}"])
+        assert not env["progress_path"].exists()
+
+    def test_date_not_in_cache_skips(self, env, capsys):
+        rc = ptr.main(["--experiment-id", "exp1", "--date", "2026-01-01", "--params", "{}"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert '"status": "skipped"' in out
+
+    def test_default_params_is_empty_object(self, env):
+        import json
+        ptr.main(["--experiment-id", "exp1", "--date", TRADING_DAYS[0]])
+        result = json.loads(env["output_path"].read_text())
+        assert result["params"] == {}

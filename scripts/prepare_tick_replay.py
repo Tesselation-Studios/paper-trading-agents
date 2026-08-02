@@ -56,6 +56,7 @@ from src.counterfactual import UniverseSampler  # noqa: E402
 CACHE_DIR = Path("/home/openclaw/paper-trading-rebuild/shared/cache/bars")
 PROGRESS_PATH = WORKSPACE / "state" / "tick_replay_progress.json"
 OUTPUT_PATH = WORKSPACE / "research" / "tick_replay_latest.json"
+EXPERIMENTS_DIR = WORKSPACE / "state" / "experiments"
 N_ALTERNATIVES_PER_TICKER = 3
 
 TICK_TIMES = [
@@ -348,6 +349,50 @@ def _main_chained(session_id: str, universe: list[str], start_date: Optional[str
     return 0
 
 
+def _main_experiment(experiment_id: str, date_str: str, universe: list[str], params: dict, run_id: str) -> int:
+    """Explicit-date, non-continuity, freely repeatable replay for controlled
+    single-variable experiments (e.g. a signal-scorecard override), as opposed
+    to single-day mode's auto-picked variety or chained mode's forward-walking
+    continuity. Deliberately never touches state/tick_replay_progress.json --
+    that file exists to stop single-day practice from repeating a date, which
+    is the exact opposite of what a controlled experiment needs to do.
+
+    `params` is opaque here -- this script doesn't interpret it, just passes
+    it through into the output file. It's the replay skill/agent's job to
+    apply it (e.g. merge into the real signal scorecard before calling
+    reconcile_signals) and to log the outcome via scripts/experiment_log.py,
+    which is what actually makes separate runs comparable afterward."""
+    if date_str not in _available_dates(universe):
+        print(json.dumps({
+            "status": "skipped",
+            "reason": f"{date_str} not in cached universe -- not enough symbols with data that day",
+        }))
+        return 0
+
+    result = build_replay_file(date_str, universe)
+    if len(result["ticks"]) < 5:
+        print(json.dumps({
+            "status": "skipped",
+            "reason": f"too few usable ticks ({len(result['ticks'])}) for {date_str}",
+        }))
+        return 0
+
+    result["mode"] = "experiment"
+    result["experiment_id"] = experiment_id
+    result["run_id"] = run_id
+    result["params"] = params
+
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(json.dumps(result, indent=2))
+
+    print(json.dumps({
+        "status": "ok", "mode": "experiment", "experiment_id": experiment_id, "run_id": run_id,
+        "date": date_str, "params": params, "n_ticks": len(result["ticks"]),
+        "n_symbols": len(result["universe"]), "output": str(OUTPUT_PATH),
+    }))
+    return 0
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--session-id", default=None,
@@ -361,6 +406,19 @@ def main(argv: Optional[list[str]] = None) -> int:
                          help="Only consulted when --session-id creates a brand-new session.")
     parser.add_argument("--starting-capital", type=float, default=backtest_session.STARTING_CASH_DEFAULT,
                          help="Only consulted when --session-id creates a brand-new session.")
+    parser.add_argument("--experiment-id", default=None,
+                         help="Controlled-experiment mode: explicit-date, non-continuity, freely "
+                              "repeatable replay for testing one varied parameter at a time (e.g. a "
+                              "signal-scorecard override) against an identical historical day. "
+                              "Requires --date. Unlike single-day mode, never marks the date as "
+                              "replayed, since experiments are meant to reuse the same date.")
+    parser.add_argument("--date", default=None,
+                         help="Required with --experiment-id: the exact historical date to replay "
+                              "(YYYY-MM-DD), reusable across as many runs as needed.")
+    parser.add_argument("--params", default="{}",
+                         help="JSON object describing what this run varies. Opaque to this script -- "
+                              "passed through into the output file for the replay skill/agent to "
+                              "apply and log via scripts/experiment_log.py.")
     args = parser.parse_args(argv)
 
     universe = current_universe()
@@ -368,6 +426,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(json.dumps({"status": "skipped", "reason": "empty universe"}))
         return 0
 
+    if args.experiment_id:
+        if not args.date:
+            print(json.dumps({"status": "error", "reason": "--experiment-id requires --date"}))
+            return 1
+        try:
+            params = json.loads(args.params)
+        except json.JSONDecodeError as e:
+            print(json.dumps({"status": "error", "reason": f"--params is not valid JSON: {e}"}))
+            return 1
+        run_id = datetime.now(market_hours.ET).strftime("%Y%m%dT%H%M%S")
+        return _main_experiment(args.experiment_id, args.date, universe, params, run_id)
     if args.session_id:
         return _main_chained(args.session_id, universe, args.start_date, args.end_date, args.starting_capital)
     return _main_single_day(universe)

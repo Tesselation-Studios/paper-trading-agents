@@ -6,12 +6,13 @@ A historical practice session, not a live tick. `scripts/prepare_tick_replay.py`
 
 Compressing extra practice reps into the evening — reading real data, forming real opinions, and leaving behind real memories, the same way a live tick does, just against a day that already happened instead of one still unfolding. This is deliberately NOT the numerical ML signal (`get_ml_signal`) — that's a separate model training on its own cadence. This is about your own judgment getting reps. Live trading only happens M-F 9:30-4:00 ET; this is how you get better during all the hours the market is closed.
 
-## Two modes — check `mode` at the top of the file first
+## Three modes — check `mode` at the top of the file first
 
 - **`mode` absent, or `"single-day"`** (the original mode): a fresh $10,000, one isolated day, no continuity with any other replay night. You track the virtual portfolio yourself in prose (see "Single-day mode" below) — no script writes anything for you.
 - **`mode: "chained"`**: this file is one day in a multi-day `backtest_session.py` chain (`session_id` field tells you which one). You have a real, persistent simulated portfolio (`portfolio.cash`, `portfolio.open_positions`) that was carried forward from the previous simulated day and will carry forward to the next one — a position you open today can still be open weeks of simulated-time later. Real BUY/SELL calls go through `scripts/replay_order.py` (see "Chained mode" below), which runs them through the exact same gate chain (`executor.run_gates`) and writes to the exact same `trader_db.py` schema live trading uses — just pointed at this session's own isolated DB file, never `state/trader.db`. This is what makes a replayed day feed the ML classifier and signal scorecard the same way a real trade does, not just a journal entry.
+- **`mode: "experiment"`**: a manually-triggered, single controlled-variable test (`experiment_id` and `run_id` fields tell you which). Structurally identical to single-day mode (fresh $10K, no continuity, no live-data tools) but the *date is explicit and repeatable* — the same historical day can and will come up again in a different run of the same experiment, deliberately, so you can compare how you traded it under different conditions. See "Experiment mode" below.
 
-Both modes exist on purpose and serve different goals: single-day for variety of judgment reps across many different unrelated days, chained for practicing the harder skill of holding a position across time and seeing how a multi-day/week thesis actually plays out.
+Three modes, three different goals: single-day for variety of judgment reps across many different unrelated days, chained for practicing the harder skill of holding a position across time, experiment for isolating whether one specific thing (a signal weighting, a parameter) actually changes the outcome on an otherwise-identical day. None replaces the others.
 
 ## What's in `tick_replay_latest.json` (both modes)
 
@@ -55,6 +56,26 @@ python3 scripts/backtest_session.py complete-day <session_id> --date <date>
 
 This is two-phase on purpose — the day was already reserved as in-progress before your turn started (`start_day()`, done by the prep script). If your turn errors or times out before you call `complete-day`, the *same* day gets prepared again next time, not silently skipped, so don't call `complete-day` early or speculatively.
 
+## Experiment mode: what to do
+
+This is manually triggered, not part of your nightly cadence — it exists for testing a specific hypothesis ("does weighting the technical signal higher actually help on this kind of day"), not for accumulating practice reps. `experiment_id` and `run_id` are both in the file; `params` is the one (or few) thing this run is deliberately varying — everything else about the setup is meant to be identical to any other run of the same `experiment_id`, including the date.
+
+**The discipline that makes this useful**: read `params` first and understand exactly what it's asking you to change before you do anything else. If `params` names a scorecard override (the most common shape — see below), apply *only* that override; trade the day exactly as you would in single-day mode otherwise. If you catch yourself making a different call than you think you'd make on a "normal" run of this same date for a reason that has nothing to do with `params`, that's contamination — the whole point is that any difference in outcome should be attributable to `params`, not to you reasoning differently for unrelated reasons.
+
+**Applying a signal-scorecard override**: load the real scorecard (`state/signal_scorecard.json`, the `signals` dict specifically — that's the shape `reconcile_signals()`'s `scorecard` argument expects), shallow-merge `params.scorecard_override` on top of it for this run only (never write the merged result back to the real file), and use that merged scorecard when reasoning about signal weight for every decision this session. If `params` is empty (`{}` or `{"scorecard_override": {}}`), that run is the baseline/control — trade it exactly like an unmodified single-day replay.
+
+Like single-day mode: fresh $10K, no continuity, track the portfolio yourself in prose, no live-data tools, no `executor.py`, no `replay_order.py` — this is intraday-only judgment, not a persistent position test (chained mode is the right tool if the thing being varied needs to be tested across a holding period, not one day).
+
+**When you finish the day**, after your normal end-of-day reflection (see "When you reach the end of the day" below — do this in full, same discipline as any other mode), log the run so it's actually comparable to others later:
+
+```
+python3 scripts/experiment_log.py append <experiment_id> --run-id <run_id> --date <date> \
+    --params '<the exact params object from the input file>' \
+    --result '{"final_pnl": ..., "trades": ..., <whatever else this experiment is measuring>}'
+```
+
+`--result`'s shape isn't fixed — include whatever numbers actually let this run be compared against others in the same `experiment_id` (final virtual P&L is close to always relevant; add per-trade signal detail, recommendation-agreement rate, whatever the hypothesis being tested actually needs). Use `python3 scripts/experiment_log.py list <experiment_id>` to see every prior run before writing your own reflection, and `diff <experiment_id> <run_id_a> <run_id_b>` to line two runs up side by side — if you're on a later run of an experiment that already has prior runs logged, read them and say explicitly in your journal entry whether this run's outcome supports or contradicts the hypothesis, not just what happened today in isolation.
+
 ## Point-in-time signal availability (chained mode especially — matters far more once you're replaying days more than ~5-6 days old)
 
 - **`news_cache`** is real but shallow (~5-6 days of RSS). For dates within that window, check it first.
@@ -64,7 +85,7 @@ This is two-phase on purpose — the day was already reserved as in-progress bef
 
 ## Self-improvement: surface gaps, don't just work around them
 
-If a replay session (either mode) surfaces something that isn't about this one trade — a tool you needed didn't exist, a script errored or behaved unexpectedly, a gate did something surprising, a pipeline silently produced no data — don't just note it in your own head and move past it. Add a line to `tasks/pending.md` (format: `- [ ] YYYY-MM-DD (tick-replay): description`) so it survives into the next nightly-maintenance/nightly-learning/weekly-review run instead of rotting in a journal entry nobody re-reads. This is exactly the same mechanism live trading uses for the same purpose.
+If a replay session (any mode) surfaces something that isn't about this one trade — a tool you needed didn't exist, a script errored or behaved unexpectedly, a gate did something surprising, a pipeline silently produced no data — don't just note it in your own head and move past it. Add a line to `tasks/pending.md` (format: `- [ ] YYYY-MM-DD (tick-replay): description`) so it survives into the next nightly-maintenance/nightly-learning/weekly-review run instead of rotting in a journal entry nobody re-reads. This is exactly the same mechanism live trading uses for the same purpose.
 
 ## When you reach the end of the day
 
@@ -77,5 +98,6 @@ This is judgment and discipline practice, not signal-mining — finding a numeri
 5. Look at `alternative_candidates` — would any of them genuinely have outperformed what you actually held? Be honest if the answer is no; "I'd make the same call again" is a real, useful finding, not a null result. If one genuinely would have, ask only whether something in the data you already had (the tick's own RSI/MACD/volume, portfolio state) pointed there and your read missed it — a grounded "I should have caught that." If it wouldn't have been visible in that data at all, leave it — that's not a gap in your judgment.
 6. Write a real reflection — what surprised you, what you'd do differently, anything worth remembering — to that day's journal entry (or append a dated section if one already exists) and to wiki via `wiki_apply` if something feels durable enough to inform future live decisions, not just this one replayed day.
 7. **Chained mode only**: after the journal write above succeeds, call `backtest_session.py complete-day` (see "Chained mode" above) — this is what advances the chain to the next simulated day.
+8. **Experiment mode only**: after the journal write above succeeds, log the run via `scripts/experiment_log.py append` (see "Experiment mode" above) — this is what makes it comparable to other runs of the same `experiment_id` later, not just a one-off journal entry.
 
-Single-day-mode nights accumulate across different historical days (tracked in `state/tick_replay_progress.json`, most recent day first) — real, varied practice, not the same day relived. Chained-mode nights accumulate as consecutive days inside a `state/backtest/<session_id>.db` session (tracked in `state/backtest/<session_id>.manifest.json`) — real, continuous practice at holding a thesis across simulated time. Both run side by side; neither replaces the other.
+Single-day-mode nights accumulate across different historical days (tracked in `state/tick_replay_progress.json`, most recent day first) — real, varied practice, not the same day relived. Chained-mode nights accumulate as consecutive days inside a `state/backtest/<session_id>.db` session (tracked in `state/backtest/<session_id>.manifest.json`) — real, continuous practice at holding a thesis across simulated time. Experiment-mode runs accumulate per `experiment_id` in `state/experiments/<experiment_id>.jsonl` — deliberately repeatable dates, isolating whether one named parameter change actually moves the outcome. All three run side by side; none replaces the others.
