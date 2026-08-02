@@ -44,6 +44,8 @@ state/trader.db-shm
 state/*.lock
 state/tick_replay_progress.json
 state/bars_universe_history.json
+state/backups/
+state/backtest/
 research/tick_replay_latest.json
 
 # Secrets — never commit these

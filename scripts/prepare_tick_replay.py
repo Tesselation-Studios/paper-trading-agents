@@ -15,11 +15,26 @@ fetches or trade-placing scripts. See skills/tick-replay-practice.md.
 
 Progress is tracked in state/tick_replay_progress.json so each night
 picks a fresh day instead of re-replaying the same one -- most recent
-available day first, working backward.
+available day first, working backward. This is the default, single-day
+mode: fresh $10k, no continuity across nights, optimized for variety of
+judgment reps.
+
+A second, chained mode (--session-id) exists alongside it for continuity:
+walks FORWARD day-by-day through a state/backtest/<id>.db backtest
+session (see scripts/backtest_session.py), carrying portfolio state
+(cash + open positions) from one simulated day to the next so Stan can
+practice genuinely holding a position across many replayed days/weeks,
+not just intraday. Two-phase: this script only reserves the day
+(start_day()) -- current_date doesn't advance until the replay skill
+calls `backtest_session.py complete-day` after a successful journal
+write, so a timed-out/errored fire retries the same day next time
+instead of silently skipping it.
 
 Usage:
     python3 scripts/prepare_tick_replay.py
+    python3 scripts/prepare_tick_replay.py --session-id practice-chain-1 [--start-date 2026-05-01] [--end-date 2026-06-01] [--starting-capital 10000]
 """
+import argparse
 import json
 import sys
 from datetime import datetime, time as dtime
@@ -34,6 +49,8 @@ sys.path.insert(0, str(WORKSPACE))
 sys.path.insert(0, "/home/openclaw/paper-trading-rebuild")
 from sync_historical_bars import current_universe  # noqa: E402
 import market_hours  # noqa: E402
+import backtest_session  # noqa: E402
+import trader_db  # noqa: E402
 from src.counterfactual import UniverseSampler  # noqa: E402
 
 CACHE_DIR = Path("/home/openclaw/paper-trading-rebuild/shared/cache/bars")
@@ -63,10 +80,11 @@ def _save_progress(progress: dict) -> None:
 MIN_SYMBOLS_PER_REPLAY_DAY = 5
 
 
-def _available_dates(universe: list[str]) -> list[str]:
+def _available_dates(universe: list[str], reverse: bool = True) -> list[str]:
     """Trading days with cached data for a usable chunk of the universe,
-    most recent first, weekends/holidays excluded (shouldn't have bars
-    anyway, but belt-and-suspenders).
+    most recent first by default, weekends/holidays excluded (shouldn't
+    have bars anyway, but belt-and-suspenders). Chained mode passes
+    reverse=False to walk forward instead.
 
     A fixed floor, not a fraction of the universe: Stan's watchlist skews
     toward newly-added, thinly-traded small-caps that genuinely don't have
@@ -91,7 +109,53 @@ def _available_dates(universe: list[str]) -> list[str]:
         d = datetime.fromisoformat(date_str).date()
         return d.weekday() < 5 and not market_hours.is_holiday(d)
 
-    return sorted((d for d in good_dates if is_real_trading_day(d)), reverse=True)
+    return sorted((d for d in good_dates if is_real_trading_day(d)), reverse=reverse)
+
+
+def _next_chain_date(available_asc: list[str], manifest: dict) -> Optional[str]:
+    """First cached trading day strictly after manifest['current_date'],
+    or manifest['start_date'] itself if no day has completed yet. Respects
+    end_date as a hard ceiling -- a chain never walks past its own end."""
+    current = manifest.get("current_date")
+    start = manifest["start_date"]
+    end = manifest.get("end_date")
+    for d in available_asc:
+        if end and d > end:
+            break
+        if current is None:
+            if d >= start:
+                return d
+        elif d > current:
+            return d
+    return None
+
+
+def _portfolio_state(session_id: str) -> dict:
+    """Cash + open positions from a backtest session's own DB, carried
+    into the replay file so the agentTurn starts from 'here's what you're
+    holding', same as live tick_prompt.md, instead of reconstructing it."""
+    manifest = backtest_session.get_session(session_id)
+    conn = trader_db.get_conn(Path(manifest["db_path"]))
+    try:
+        open_positions = trader_db.get_open_positions(conn)
+    finally:
+        conn.close()
+    context = backtest_session.compute_context(session_id)
+    return {
+        "cash": context["cash"],
+        "portfolio_value": context["portfolio_value"],
+        "open_positions": [
+            {
+                "ticker": p["ticker"],
+                "shares": p["shares"],
+                "entry_price": p["entry_price"],
+                "entry_time": p["entry_time"],
+                "sector": p["sector"],
+                "thesis": p["thesis"],
+            }
+            for p in open_positions
+        ],
+    }
 
 
 def _snapshot_at(symbol: str, df: pd.DataFrame, as_of: datetime) -> dict | None:
@@ -191,12 +255,7 @@ def build_replay_file(date_str: str, universe: list[str]) -> dict:
     }
 
 
-def main() -> int:
-    universe = current_universe()
-    if not universe:
-        print(json.dumps({"status": "skipped", "reason": "empty universe"}))
-        return 0
-
+def _main_single_day(universe: list[str]) -> int:
     progress = _load_progress()
     replayed = set(progress.get("replayed_dates", []))
     candidates = [d for d in _available_dates(universe) if d not in replayed]
@@ -219,10 +278,99 @@ def main() -> int:
     _save_progress(progress)
 
     print(json.dumps({
-        "status": "ok", "date": date_str, "n_ticks": len(result["ticks"]),
+        "status": "ok", "mode": "single-day", "date": date_str, "n_ticks": len(result["ticks"]),
         "n_symbols": len(result["universe"]), "output": str(OUTPUT_PATH),
     }))
     return 0
+
+
+def _main_chained(session_id: str, universe: list[str], start_date: Optional[str],
+                   end_date: Optional[str], starting_capital: float) -> int:
+    manifest = backtest_session.get_session(session_id)
+    available_asc = _available_dates(universe, reverse=False)
+
+    if manifest is None:
+        if not available_asc:
+            print(json.dumps({"status": "skipped", "reason": "no cached trading days available yet to start a session"}))
+            return 0
+        manifest = backtest_session.create_session(
+            session_id,
+            start_date=start_date or available_asc[0],
+            end_date=end_date,
+            starting_capital=starting_capital,
+        )
+
+    if manifest["status"] != "active":
+        print(json.dumps({
+            "status": "skipped",
+            "reason": f"session {session_id!r} is {manifest['status']!r}, not active -- use a new --session-id",
+        }))
+        return 0
+
+    # Retry semantics: a day left in-progress by a prior fire that never
+    # completed (timeout/error) gets replayed again, not skipped -- see
+    # backtest_session.py's two-phase start_day()/complete_day() docstring.
+    if manifest.get("day_in_progress"):
+        date_str = manifest["day_in_progress"]
+    else:
+        date_str = _next_chain_date(available_asc, manifest)
+        if date_str is None:
+            print(json.dumps({
+                "status": "skipped",
+                "reason": f"session {session_id!r} chain exhausted -- no further cached trading days "
+                          f"after {manifest.get('current_date') or manifest['start_date']}",
+            }))
+            return 0
+        backtest_session.start_day(session_id, date_str)
+
+    result = build_replay_file(date_str, universe)
+
+    if len(result["ticks"]) < 5:
+        # day_in_progress stays set on purpose -- next fire retries this
+        # same date rather than silently skipping a thin day.
+        print(json.dumps({
+            "status": "skipped", "session_id": session_id, "date": date_str,
+            "reason": f"too few usable ticks ({len(result['ticks'])}) for {date_str}",
+        }))
+        return 0
+
+    result["mode"] = "chained"
+    result["session_id"] = session_id
+    result["portfolio"] = _portfolio_state(session_id)
+
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(json.dumps(result, indent=2))
+
+    print(json.dumps({
+        "status": "ok", "mode": "chained", "session_id": session_id, "date": date_str,
+        "n_ticks": len(result["ticks"]), "n_symbols": len(result["universe"]), "output": str(OUTPUT_PATH),
+    }))
+    return 0
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--session-id", default=None,
+                         help="Chained multi-day mode: walk forward through a backtest_session.py "
+                              "session, carrying portfolio state day to day. Creates the session if "
+                              "it doesn't exist yet. Omit for the default single-day mode.")
+    parser.add_argument("--start-date", default=None,
+                         help="Only consulted when --session-id creates a brand-new session; "
+                              "defaults to the earliest cached trading day available.")
+    parser.add_argument("--end-date", default=None,
+                         help="Only consulted when --session-id creates a brand-new session.")
+    parser.add_argument("--starting-capital", type=float, default=backtest_session.STARTING_CASH_DEFAULT,
+                         help="Only consulted when --session-id creates a brand-new session.")
+    args = parser.parse_args(argv)
+
+    universe = current_universe()
+    if not universe:
+        print(json.dumps({"status": "skipped", "reason": "empty universe"}))
+        return 0
+
+    if args.session_id:
+        return _main_chained(args.session_id, universe, args.start_date, args.end_date, args.starting_capital)
+    return _main_single_day(universe)
 
 
 if __name__ == "__main__":
