@@ -310,6 +310,72 @@ class TestPositions:
         assert row["prediction_reason"] == "earnings beat expected"
 
 
+class TestBacktestExport:
+    """2026-08-02: backtest_closed_trades is the export target
+    scripts/export_backtest_trades.py writes into the LIVE db -- its own
+    table, not `positions` (ticker PK collision) or `training_examples`
+    (ml_trainer_service.py doesn't read that table)."""
+
+    def test_get_closed_trades_for_export_excludes_open(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.upsert_position(conn, ticker="BBB", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.close_position(conn, ticker="BBB", closed_at="t2", close_reason="exit", realized_pnl=1.0, realized_return_pct=10.0)
+        trades = trader_db.get_closed_trades_for_export(conn)
+        assert [t["ticker"] for t in trades] == ["BBB"]
+
+    def test_get_closed_trades_for_export_excludes_fabricated_timestamp_rows(self, conn):
+        """entry_time == closed_at marks a pre-migration row with a
+        placeholder timestamp -- not a real duration, shouldn't train a
+        walk-forward-dated model."""
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.close_position(conn, ticker="AAA", closed_at="t1", close_reason="exit", realized_pnl=1.0, realized_return_pct=10.0)
+        assert trader_db.get_closed_trades_for_export(conn) == []
+
+    def test_get_closed_trades_for_export_excludes_null_return_pct(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.execute("UPDATE positions SET status='closed', closed_at='t2' WHERE ticker='AAA'")
+        conn.commit()
+        assert trader_db.get_closed_trades_for_export(conn) == []
+
+    def test_export_closed_trade_inserts_new_row(self, conn):
+        inserted = trader_db.export_closed_trade(
+            conn, session_id="s1", ticker="AAA", entry_time="2026-06-01T10:00:00Z",
+            closed_at="2026-06-02T15:00:00Z", realized_pnl=5.0, realized_return_pct=10.0,
+            sector="Technology", thesis="test", close_reason="target hit",
+        )
+        assert inserted is True
+        row = conn.execute("SELECT * FROM backtest_closed_trades WHERE session_id='s1'").fetchone()
+        assert row["ticker"] == "AAA"
+        assert row["realized_return_pct"] == 10.0
+
+    def test_export_closed_trade_is_idempotent(self, conn):
+        kwargs = dict(
+            session_id="s1", ticker="AAA", entry_time="2026-06-01T10:00:00Z",
+            closed_at="2026-06-02T15:00:00Z", realized_pnl=5.0, realized_return_pct=10.0,
+        )
+        first = trader_db.export_closed_trade(conn, **kwargs)
+        second = trader_db.export_closed_trade(conn, **kwargs)
+        assert first is True
+        assert second is False  # already exported, no-op
+        count = conn.execute("SELECT COUNT(*) AS n FROM backtest_closed_trades").fetchone()["n"]
+        assert count == 1
+
+    def test_export_closed_trade_same_ticker_different_sessions_both_land(self, conn):
+        """Two different backtest chains that both happened to trade AAPL
+        must NOT collide -- this is the exact scenario `positions`'
+        ticker PK would have made impossible."""
+        trader_db.export_closed_trade(
+            conn, session_id="chain-a", ticker="AAPL", entry_time="t1", closed_at="t2",
+            realized_pnl=1.0, realized_return_pct=1.0,
+        )
+        trader_db.export_closed_trade(
+            conn, session_id="chain-b", ticker="AAPL", entry_time="t1", closed_at="t2",
+            realized_pnl=2.0, realized_return_pct=2.0,
+        )
+        count = conn.execute("SELECT COUNT(*) AS n FROM backtest_closed_trades WHERE ticker='AAPL'").fetchone()["n"]
+        assert count == 2
+
+
 class TestWatchlistCandidates:
     def test_upsert_new_candidate_idle_ticks_zero(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="LDRX", source="discovery_pool gen 2")

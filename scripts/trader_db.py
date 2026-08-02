@@ -14,6 +14,7 @@ step rather than a rewrite.
 Nothing calls this yet -- lands unwired, mirroring discovery_db.py's own
 landing before discovery_daemon.py existed.
 """
+import datetime
 import re
 import sqlite3
 from pathlib import Path
@@ -189,6 +190,35 @@ CREATE TABLE IF NOT EXISTS bankroll_history (
     ceiling_after   REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_bankroll_history_ts ON bankroll_history(timestamp);
+
+-- backtest_closed_trades (2026-08-02): export target for
+-- scripts/export_backtest_trades.py, one row per closed position copied
+-- out of a completed backtest_session.py session's own isolated DB.
+-- Deliberately its OWN table, not a write into `positions` -- `positions`
+-- has `ticker TEXT PRIMARY KEY`, so a backtest AAPL close would collide
+-- with a live open/closed AAPL row (or a different session's own AAPL
+-- close). The UNIQUE constraint below is what makes re-running the
+-- export script after every completed day safe -- INSERT OR IGNORE just
+-- no-ops on a trade already exported instead of erroring or duplicating.
+-- paper-trading-rebuild's ml_trainer_service.py's _stan_closed_trades()
+-- UNIONs this table with live `positions` closed rows -- it does NOT
+-- read training_examples, so this is the actual integration point real
+-- training reps flow through, not that table.
+CREATE TABLE IF NOT EXISTS backtest_closed_trades (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id           TEXT NOT NULL,
+    ticker               TEXT NOT NULL,
+    entry_time           TEXT NOT NULL,
+    closed_at            TEXT NOT NULL,
+    realized_pnl         REAL,
+    realized_return_pct  REAL,
+    sector               TEXT,
+    thesis               TEXT,
+    close_reason         TEXT,
+    exported_at          TEXT NOT NULL,
+    UNIQUE(session_id, ticker, entry_time, closed_at)
+);
+CREATE INDEX IF NOT EXISTS idx_backtest_closed_trades_session ON backtest_closed_trades(session_id);
 """
 
 
@@ -613,6 +643,49 @@ def get_all_positions(conn: sqlite3.Connection) -> list:
 def get_position(conn: sqlite3.Connection, ticker: str):
     row = conn.execute("SELECT * FROM positions WHERE ticker = ?", (ticker,)).fetchone()
     return dict(row) if row else None
+
+
+# ── Backtest trade export (scripts/export_backtest_trades.py) ───────────
+
+def get_closed_trades_for_export(conn: sqlite3.Connection) -> list:
+    """Closed positions from a backtest session's own DB, filtered the
+    same way ml_trainer_service.py's _stan_closed_trades() filters live
+    positions -- realized_return_pct populated and entry_time != closed_at
+    (excludes the pre-2026-07-28 migration rows with fabricated
+    timestamps upstream; a fresh backtest session can't produce one of
+    those, but keeping the same filter here means both sources stay
+    comparable). conn should be opened against the session's db_path, not
+    the live DB."""
+    rows = conn.execute(
+        """SELECT ticker, entry_time, closed_at, realized_pnl, realized_return_pct, sector, thesis, close_reason
+           FROM positions
+           WHERE status = 'closed' AND realized_return_pct IS NOT NULL AND entry_time != closed_at"""
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def export_closed_trade(conn: sqlite3.Connection, session_id: str, ticker: str, entry_time: str,
+                         closed_at: str, realized_pnl: float, realized_return_pct: float,
+                         sector: str = None, thesis: str = None, close_reason: str = None,
+                         now: str = None) -> bool:
+    """Writes one closed backtest trade into the LIVE db's
+    backtest_closed_trades table (conn should be opened against the live
+    trader.db, not the session's own file). INSERT OR IGNORE against the
+    (session_id, ticker, entry_time, closed_at) UNIQUE constraint makes
+    this safe to call repeatedly for the same session -- returns False
+    (no-op) on an already-exported trade, True if it actually inserted a
+    new row, so the caller can report real vs. skipped-duplicate counts."""
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with conn:
+        cur = conn.execute(
+            """INSERT OR IGNORE INTO backtest_closed_trades
+                   (session_id, ticker, entry_time, closed_at, realized_pnl, realized_return_pct,
+                    sector, thesis, close_reason, exported_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (session_id, ticker, entry_time, closed_at, realized_pnl, realized_return_pct,
+             sector, thesis, close_reason, now),
+        )
+    return cur.rowcount > 0
 
 
 # ── Watchlist candidates ─────────────────────────────────────────────────
