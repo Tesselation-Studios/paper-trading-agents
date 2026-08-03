@@ -1,11 +1,11 @@
 # BFH Position Thesis
 
 - **Entry**: $107.72 avg | 2 shares
-- **Current**: $111.32 (+3.35% unrealized)
-- **Market Value**: $222.64
-- **Unrealized P&L**: $+7.21 (+3.35%)
+- **Current**: $111.31 (+3.33% unrealized)
+- **Market Value**: $222.61
+- **Unrealized P&L**: $+7.18 (+3.33%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-03 17:30:26 UTC
+- **Last sync**: 2026-08-03 17:40:52 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
