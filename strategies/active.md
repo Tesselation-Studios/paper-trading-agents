@@ -205,23 +205,22 @@
 - (same as last tick)
 
 ## 10:25 AM — CHOPPY continues, rotation complete
-- **Portfolio**: $10,400.42 | Cash $9,334.41 (89.8%) | 10 positions | Drawdown 0.25%
-- **Regime**: CHOPPY (0.644) | SPY flat, no fade
+(same as above)
+
+## 10:30 AM — CHOPPY grind, batch 15 gated
+- **Portfolio**: $10,400.58 | Cash $9,334.41 (89.7%) | 10 positions | Drawdown 0.25%
+- **Regime**: CHOPPY (0.644) | SPY $747.03 +0.72% RSI 52.6 MACDh -0.09 — flat, no fade
 - **Stops**: All 10 active, no breaches ✅
-- **Bootstrap**: ceiling $658.84 (<$1000), no triggers (FLXS +3.61%, BFH +3.50% — both < 5%)
-- **Positions**: FLXS +3.61% (strongest) | BFH +3.50% MACDh +1.81 | KEX -2.05% RSI 34 oversold MACDh +0.49 | HLN -3.04% (worst, in-band)
-- **Batches 12-14** (full rotation, 18/18 evaluated): all correctly gated
-  - CYCU/TW/MDXG/RELX/BILL/TBLA/REPX/EVLV: null prices
-  - MGN $0.11 / ONMD $0.69 / PRZO $0.54: sub-$1
-  - LSE $4.30 MACDh +0.09 vol 7.5x — falling, no catalyst
-  - NMI $10.85 near-zero MACDh, sentiment -0.87, CEF not equity
-  - HTOO $2.66 near-zero MACDh — weak, no catalyst
-  - FDBC $52.12 MACDh +0.058 (faded from +0.688), no catalyst/sentiment
-  - FCHL $1.12 near-zero MACDh — pump-dump, skip
-  - ESCA $19.87 MACDh +0.12 — mild, no catalyst
-  - GPMT $1.49 near-zero MACDh — thin near $1 floor
+- **Bootstrap**: ceiling $658.84 (<$1000), no triggers (BFH +3.72%, FLXS +3.61% — both < 5%)
+- **Market-context**: SPY flat, no exit triggers on BFH/FLXS above 2% threshold
+- **Positions**: FLXS MACDh +2.64 strongest | VSXY MACDh +3.39 but flat | KEX -1.81% RSI 34 oversold MACDh +0.49 (bull divergence, hold) | HLN -3.33% worst (in-band)
+- **Batch 15** (CYCU/TW/LSE/MGN/NMI/ONMD) evaluated & marked:
+  - CYCU/TW: null prices, can't evaluate
+  - LSE $4.30 RSI 46.5 MACDh +0.09 — mild, no catalyst/sentiment
+  - MGN $0.11 / ONMD $0.69 — sub-$1 floor
+  - NMI $10.85 near-zero MACDh, sent -0.87, CEF not equity
   - All correctly gated — no non-technical edge in CHOPPY
 - **Discovery**: merge/promote skipped (all already in watchlist), pipeline dry
-- **Deployment**: 89.8% cash, 33 consecutive under-deployed, no escalation triggers
-- **Action**: HOLD all. 0 buys, 0 sells. CHOPPY doing what CHOPPY does.
+- **Deployment**: 89.7% cash, 33 consecutive under-deployed, no escalation
+- **Action**: HOLD all 10. 0 buys, 0 sells. CHOPPY doing what CHOPPY does.
 
