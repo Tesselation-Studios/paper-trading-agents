@@ -1,11 +1,11 @@
 # TRIP Position Thesis
 
 - **Entry**: $14.15 avg | 2 shares
-- **Current**: $14.21 (+0.46% unrealized)
-- **Market Value**: $28.43
-- **Unrealized P&L**: $+0.13 (+0.46%)
+- **Current**: $14.24 (+0.64% unrealized)
+- **Market Value**: $28.48
+- **Unrealized P&L**: $+0.18 (+0.64%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-03 15:05:06 UTC
+- **Last sync**: 2026-08-03 15:25:17 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
