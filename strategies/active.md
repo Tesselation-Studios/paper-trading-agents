@@ -51,3 +51,17 @@
 - **Discovery**: merge/promote skipped (all already in watchlist)
 - **Action**: ZBRA sell at 9:30 open. FDBC worth a gestalt look post-open.
 
+## 9:20 AM — Pre-market, OOMA breach flagged
+- **Portfolio**: $10,385.98 | Cash $8,928.16 (86.0%) | 13 positions | Drawdown 0.39%
+- **🚨 OOMA trailing stop breached**: -8.0% off peak $22.50 (stop $20.92, current $20.70) → SELL gated by hours (09:21). **Must execute at 9:30 open.**
+- **ZBRA**: $293.82 (+3.31% vs entry $284.40) — below 5% bootstrap trigger now (was +5.12% at 9:06). Hold.
+- **Batch 1** re-evaluated with live quotes:
+  - CYCU $0.89 -44.84% — crashed below $1 floor, dead
+  - BILL $45.13 RSI 60.2 MACDh +2.06 — strong technicals, best name in rotation, no catalyst/sentiment to fire
+  - RELX $35.42 RSI 56.0 MACDh +0.62 — decent, no catalyst
+  - MDXG/TW/TBLA — near-zero MACDh or noise, skip
+- **Discovery**: merge/promote skipped (all in watchlist), 12 watchlist all at eval_count≥2
+- **Deployment**: 21 consecutive under-deployed, 86% cash, no escalation triggers
+- **SPY**: $747.03 RSI 52.6 MACDh -0.09 — flat, no market-context exit triggers on existing positions
+- **Action**: OOMA SELL at 9:30 open. All 12 watchlist evaluated, rotation complete. Next fresh batch due.
+
