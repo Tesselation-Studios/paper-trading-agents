@@ -4,6 +4,15 @@ directly from tick_prompt.md via shell exec (not through the standalone
 Trading Terminal, which stays unwired). Reuses the exact modules already
 tested there (db.py, decisions.py, signals.py).
 
+2026-08-02: executor.py now also writes `decisions` rows directly on every
+real BUY/SELL fill (mechanized, see executor.py::_record_decision_row) —
+this CLI is no longer the only path to a decisions row, matching the same
+2026-08-01 mechanization already done for training_examples via
+record_entry_example(). This module is unchanged and still needed for: the
+`reconcile` subcommand (called standalone before the executor BUY/SELL call,
+per tick_prompt.md step 8, to get combined_confidence), and any manual/
+backfill invocation.
+
 Usage:
   python3 scripts/record_decision.py decision --ticker SOFI --action BUY \
     --conviction 0.6 --rationale "momentum entry, RSI 58" --regime momentum_bull \

@@ -28,17 +28,27 @@ Keys: `ALPACA_STONKS_KEY` / `ALPACA_STONKS_SECRET`.
 
 Missing field → gate skips (fail-open), never blocks on missing data. Always pass `--price` on SELL — it's what lets the bankroll ceiling adapt.
 
+**`gate_status`** (2026-08-02, `--action status` output only): a fresh-computed, read-only snapshot of every "count vs cap" guardrail — `gate_status.sector_concentration.by_sector.<sector>` (`open`/`cap`/`at_cap`, mirrors `risk_guards.max_positions_per_sector`), `gate_status.daily_order_count` (`count_today`/`threshold`/`at_threshold`/`gate_enabled`, mirrors `risk_guards.order_count_audit_threshold_daily` + `guardrail_gates.order_count_audit`), `gate_status.max_positions` (`open_count`/`cap`/`gate_enabled`, mirrors `risk.max_positions` + `guardrail_gates.max_positions`). Computed from the exact same data/helpers the real gates above use — not a re-derived copy. Read this fresh every tick (tick_prompt.md step 4) and treat it as authoritative over anything recalled from a prior tick — a sector/limit that was "FULL" several ticks ago may not be anymore.
+
 **Bankroll ceiling**: starts $50, +2%/win, -1%/loss (`scripts/bankroll.py`). Every SELL auto-records win/loss and recalculates — no separate call needed. Check anytime: `python3 bankroll.py`.
 
 **Stop-loss scan** (tick_prompt.md step 6): `--action check-stops` returns positions past hard stop (`risk.stop_loss_pct`) or trailing stop (`risk.trailing_stop_pct`, ratchets up from peak since entry) — anything returned must be sold this tick, **except** `stop_type: "long_play_resolved"` (a long play's `predicted_by_date` arrived — informational, resolved automatically, not a sell signal; see `risk.long_play`). Toggle: `guardrail_gates.hard_stop` / `.trailing_stop` / `.long_play`.
 
 ## Decision Logging
 
+**Mechanized as of 2026-08-02** — no separate call needed. The BUY/SELL executor call above already writes the `decisions` table row directly from the same `--conviction`/`--thesis`/`--features`/`--sector`/`--close-reason` you pass it, and SELL's win/loss outcome labeling is likewise automatic (`close_trade_outcome`). Writes to local `state/trader.db`'s `decisions` + `training_examples` tables — signal-level data for "which signal predicted wins."
+
+`record_decision.py` still has one required standalone use — `reconcile`, to get `combined_confidence` for the `--conviction` you pass to the executor call (step 8 of tick_prompt.md):
+
 ```bash
-python3 scripts/record_decision.py decision --ticker SOFI --action BUY --conviction 0.6 \
-  --rationale "..." --regime momentum_bull \
+python3 scripts/record_decision.py reconcile \
   --features '{"sentiment": {"direction": "bullish", "confidence": 0.7}, "technical": {"direction": "bullish", "confidence": 0.6}}'
-python3 scripts/record_decision.py close --ticker SOFI --pnl 12.50 --return-pct 4.2
 ```
 
-BUY/SELL only, not HOLD. Writes to local `state/trader.db`'s `decisions` + `training_examples` tables — signal-level data for "which signal predicted wins."
+`decision`/`close` subcommands still exist (manual/backfill invocation only — not a required per-trade step anymore):
+
+```bash
+python3 scripts/record_decision.py decision --ticker SOFI --action BUY --conviction 0.6 \
+  --rationale "..." --regime momentum_bull --features '{...}'
+python3 scripts/record_decision.py close --ticker SOFI --pnl 12.50 --return-pct 4.2
+```

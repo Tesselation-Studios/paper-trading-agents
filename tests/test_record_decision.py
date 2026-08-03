@@ -15,6 +15,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 import record_decision  # noqa: E402
 import signals  # noqa: E402
+import trader_db  # noqa: E402
 
 
 class TestReconcileSubcommand:
@@ -93,3 +94,29 @@ class TestDecisionConvictionDefault:
         out = json.loads(capsys.readouterr().out)
         assert "reconciled" in out
         assert "combined_confidence" in out["reconciled"]
+
+
+class TestDecisionSubcommandStandaloneStillWorks:
+    """2026-08-02: executor.py now also writes decisions rows directly on
+    every real BUY/SELL fill (mechanized) -- this doesn't remove the
+    standalone CLI path, only makes it optional for the tick loop. Real
+    tmp_path DB, not mocked (matching test_trader_query.py's un-mocked
+    convention), to guard against this path silently breaking now that
+    it's no longer the only writer."""
+
+    def test_decision_subcommand_still_writes_real_decisions_row_standalone(self, monkeypatch, capsys, tmp_path):
+        monkeypatch.setattr(trader_db, "DB_PATH", tmp_path / "trader.db")
+        monkeypatch.setattr(sys, "argv", [
+            "record_decision.py", "decision", "--ticker", "AAA", "--action", "BUY",
+            "--conviction", "0.6", "--rationale", "standalone backfill entry",
+        ])
+        record_decision.main()
+
+        conn = trader_db.get_conn()
+        try:
+            row = conn.execute("SELECT * FROM decisions WHERE ticker = 'AAA'").fetchone()
+        finally:
+            conn.close()
+        assert row is not None
+        assert row["decision"] == "BUY"
+        assert row["rationale"] == "standalone backfill entry"

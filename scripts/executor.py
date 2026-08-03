@@ -1854,6 +1854,38 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     return {"pnl": pnl, "return_pct": return_pct, "outcome_label_warning": outcome_label_warning}
 
 
+def _record_decision_row(action: str, ticker: str, conviction, rationale: str,
+                          features: Dict[str, Any], regime: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Mechanized `decisions` table write, called from the BUY/SELL paths
+    below on every real fill. Previously the only writer of this table was
+    the standalone `record_decision.py decision` CLI, a second manual step
+    per tick_prompt.md step 9 distinct from the executor call itself —
+    confirmed stopped firing reliably after 2026-07-31 (decisions table: 34
+    rows, all before then, while real trades kept happening and
+    experience.json's total_trades -- mechanized separately, see
+    _load_experience's docstring -- kept incrementing normally). Same
+    root-cause pattern as that fix and as close_trade_outcome's Postgres
+    labeling above, applied to the one table neither of those touches.
+
+    Fail-open, same philosophy as close_trade_outcome/record_entry_example
+    above — a logging failure must never look like a failed order, the
+    order has already executed by the time this runs.
+    """
+    try:
+        import decisions
+        result = decisions.record_decision(
+            trader_id="stonks", ticker=ticker, action=action,
+            rationale=rationale or "", conviction=conviction if conviction is not None else 0.0,
+            regime=regime, features=features or {},
+        )
+        if result.get("error"):
+            print(json.dumps({"warning": f"decision log failed: {result['error']}"}), file=sys.stderr)
+        return result
+    except Exception as e:
+        print(json.dumps({"warning": f"decision log failed: {e}"}), file=sys.stderr)
+        return None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CLI
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1943,6 +1975,76 @@ def main():
             "cash_pct": round(cash_pct, 2),
             "consecutive_under_deployed_ticks": pressure_state["consecutive_under_deployed_ticks"],
             **deployment_pressure.research_escalation(pressure_state),
+        }
+
+        # gate_status: fresh-computed snapshot of every "count vs cap"
+        # guardrail, folded into the always-called status action (same
+        # "zero extra cost, computed from data already fetched here"
+        # reasoning as deployment_pressure above) rather than a separate
+        # subcommand the agent has to remember to call. Exists to eliminate
+        # the LLM tick-agent's own stale-recall of these numbers across
+        # ticks: confirmed live 2026-07-31, FLXS gated "Consumer Cyclical
+        # FULL" for 29 consecutive ticks on a remembered 2/2 sector cap
+        # while params.json's max_positions_per_sector had already been
+        # raised to 5 hours earlier (journal/2026-07-31.md) -- the agent
+        # never even reached the point of calling any execution path for a
+        # candidate it had already self-excluded, so this has to be visible
+        # in the one call that runs every tick regardless of what gets
+        # decided next. Same root-cause class as the phantom "10 orders/day"
+        # limit (real threshold is risk_guards.order_count_audit_threshold_daily,
+        # and that gate is off via guardrail_gates.order_count_audit=false)
+        # -- both were the agent treating a previously-derived number as
+        # gospel instead of re-reading the source of truth. Nothing here is
+        # a new gate or a new constraint -- read-only mirror of what
+        # gate_sector_concentration/gate_daily_order_count/gate_max_positions
+        # already compute on every guardrail check (same helpers, not a
+        # re-derived copy, so this can't drift from the real gate math),
+        # surfaced BEFORE the agent reasons about a trade instead of only
+        # as a rejection message after one is attempted.
+        risk_guards = params.get("risk_guards", {})
+        gate_toggles = params.get("guardrail_gates", {})
+
+        sector_counts: Dict[str, int] = {}
+        try:
+            conn = trader_db.get_conn()
+            try:
+                for row in trader_db.get_open_positions(conn):
+                    sector = row.get("sector")
+                    if sector:
+                        sector_counts[sector] = sector_counts.get(sector, 0) + 1
+            finally:
+                conn.close()
+        except Exception:
+            sector_counts = {}
+
+        max_per_sector = risk_guards.get("max_positions_per_sector")
+        daily_count = _load_daily_order_count(_today_et({}))
+        order_count_threshold = risk_guards.get("order_count_audit_threshold_daily")
+        max_positions = params.get("risk", {}).get("max_positions")
+
+        result["gate_status"] = {
+            "sector_concentration": {
+                "gate_mode": gate_toggles.get("sector_concentration", True),
+                "cap_per_sector": max_per_sector,
+                "by_sector": {
+                    sector: {
+                        "open": count, "cap": max_per_sector,
+                        "at_cap": max_per_sector is not None and count >= max_per_sector,
+                    }
+                    for sector, count in sector_counts.items()
+                },
+            },
+            "daily_order_count": {
+                "gate_enabled": gate_toggles.get("order_count_audit", True) is not False,
+                "count_today": daily_count,
+                "threshold": order_count_threshold,
+                "at_threshold": order_count_threshold is not None and daily_count >= order_count_threshold,
+            },
+            "max_positions": {
+                "gate_enabled": gate_toggles.get("max_positions", True) is not False,
+                "open_count": len(positions),
+                "cap": max_positions,
+            },
         }
 
         print(json.dumps(result, indent=2))
@@ -2051,6 +2153,47 @@ def main():
                     pre_sell_qty = float(p["qty"])
                     break
 
+            if entry_price is None:
+                # Live Alpaca lookup missed this ticker (stale broker sync, a
+                # race right at fill time, or the position already closed
+                # elsewhere) -- fall back to the local trader_db positions
+                # row before giving up entirely. Only trust it if still
+                # 'open': a closed/stale local row would be worse than no
+                # data. Never fabricate entry_price = exit_price as a last
+                # resort -- that would record a false win/loss and corrupt
+                # bankroll/experience/training data, a worse failure mode
+                # than skipping the outcome bookkeeping below.
+                try:
+                    conn = trader_db.get_conn()
+                    try:
+                        fallback_row = trader_db.get_position(conn, args.ticker.upper())
+                    finally:
+                        conn.close()
+                except Exception:
+                    fallback_row = None
+                if fallback_row and fallback_row.get("status") == "open":
+                    if fallback_row.get("entry_price") is not None:
+                        entry_price = float(fallback_row["entry_price"])
+                    if pre_sell_qty is None and fallback_row.get("shares") is not None:
+                        pre_sell_qty = float(fallback_row["shares"])
+
+            if entry_price is None:
+                # Previously failed silently here: close_trade_outcome()
+                # below never ran (its call is gated on entry_price is not
+                # None), which skipped the bankroll update, experience.json
+                # win/loss bump, and decisions/training_examples outcome
+                # label for a real, already-executed SELL -- with zero
+                # visibility. Confirmed live: 27 of 61 total_trades sit
+                # "unclassified". Loud now instead of silent; the skip
+                # itself is still correct (no real entry_price to compute
+                # pnl from), only the visibility changes.
+                print(json.dumps({
+                    "warning": f"entry_price unavailable for SELL {args.ticker.upper()} "
+                               f"(missing from both live Alpaca positions and local trader_db) -- "
+                               f"outcome bookkeeping (bankroll/experience/decisions/training_examples) "
+                               f"skipped for this trade",
+                }), file=sys.stderr)
+
             # MUST happen before the SELL is submitted: a resting GTC sell
             # stop reserves the shares it covers, so Alpaca rejects a market
             # SELL of the same position for insufficient quantity while that
@@ -2088,6 +2231,16 @@ def main():
                                        position_entry_time=position_entry_time)
         if outcome["outcome_label_warning"]:
             print(json.dumps({"outcome_label_warning": outcome["outcome_label_warning"]}), file=sys.stderr)
+
+        # Note: decisions.record_decision() also inserts a fresh "exit"-type
+        # training_examples row here (example_type != ENTRY, so it can't
+        # merge into the BUY's row) -- this stays permanently unlabeled
+        # (nothing calls label_training_example on it; record_trade_close
+        # above already labeled the real ENTRY row) and so is correctly
+        # excluded from signal_scorecard.py's fetch_labeled_training_examples
+        # (WHERE label_win IS NOT NULL). Verified no double-counting risk,
+        # just an extra inert row -- checked before shipping this change.
+        _record_decision_row("SELL", args.ticker.upper(), args.conviction, args.close_reason, entry_features)
 
         # positions table bookkeeping -- best-effort, never blocks the
         # trade (the order already executed by the time this runs, same
@@ -2236,6 +2389,8 @@ def main():
                        file=sys.stderr)
         except Exception as e:
             print(json.dumps({"warning": f"training_example write failed: {e}"}), file=sys.stderr)
+
+        _record_decision_row("BUY", args.ticker.upper(), args.conviction, args.thesis, features)
 
 
 if __name__ == "__main__":

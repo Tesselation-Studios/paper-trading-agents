@@ -63,6 +63,14 @@ def _read_audit_rows():
         conn.close()
 
 
+def _read_decisions_rows():
+    conn = trader_db.get_conn()
+    try:
+        return [dict(r) for r in conn.execute("SELECT * FROM decisions ORDER BY id").fetchall()]
+    finally:
+        conn.close()
+
+
 class _FakeResponse:
     def __init__(self, body):
         self._body = json.dumps(body).encode()
@@ -363,6 +371,190 @@ class TestBuySellPersistsPositions:
 
         err = capsys.readouterr().err
         assert "positions table write failed" in err
+
+
+class TestDecisionLogging:
+    """2026-08-02: decisions-table row is now written directly from
+    executor.py's BUY/SELL paths (_record_decision_row), not only via the
+    standalone record_decision.py CLI -- see that file's updated docstring
+    and _load_experience()'s docstring in this module for the root cause
+    this mirrors."""
+
+    def test_buy_writes_decisions_row(self, monkeypatch, capsys):
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order10"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--conviction", "0.72", "--thesis", "momentum entry",
+            "--skip-guardrails",
+        ])
+        rows = _read_decisions_rows()
+        assert len(rows) == 1
+        assert rows[0]["ticker"] == "AAA"
+        assert rows[0]["decision"] == "BUY"
+        assert rows[0]["conviction"] == pytest.approx(0.72)
+        assert rows[0]["rationale"] == "momentum entry"
+
+    def test_sell_writes_decisions_row_with_close_reason_as_rationale(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order11"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "12.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "1",
+            "--price", "12.00", "--conviction", "0.5", "--close-reason", "trailing stop breach",
+            "--skip-guardrails",
+        ])
+        rows = _read_decisions_rows()
+        assert len(rows) == 1
+        assert rows[0]["decision"] == "SELL"
+        assert rows[0]["rationale"] == "trailing stop breach"
+
+    def test_buy_decisions_row_features_match_training_example_features(self, monkeypatch, capsys):
+        """Regression guard against the decisions row and the training_examples
+        row (written by the pre-existing record_entry_example mechanization)
+        drifting apart -- both should reflect the same scored signal."""
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order12"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--conviction", "0.6",
+            "--features", '{"technical": {"direction": "bullish", "confidence": 0.6}}',
+            "--skip-guardrails",
+        ])
+        decisions_row = _read_decisions_rows()[0]
+        decision_features = json.loads(decisions_row["decision_json"])["features"]
+        assert decision_features["technical"]["confidence"] == pytest.approx(0.6)
+
+        conn = trader_db.get_conn()
+        try:
+            te_row = conn.execute("SELECT * FROM training_examples WHERE ticker = ?", ("AAA",)).fetchone()
+        finally:
+            conn.close()
+        te_features = json.loads(te_row["features"])
+        assert te_features["technical"]["confidence"] == pytest.approx(0.6)
+
+    def test_decision_logging_failure_does_not_block_trade(self, monkeypatch, capsys):
+        """Not optional -- the single highest-risk regression this change
+        could introduce is a working trade suddenly failing because of a
+        bookkeeping bug. Same fail-open discipline as
+        test_positions_write_failure_does_not_block_trade above."""
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order13"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+
+        import decisions as decisions_module
+        def raise_record_decision(*a, **kw):
+            raise RuntimeError("simulated decision-log failure")
+        monkeypatch.setattr(decisions_module, "record_decision", raise_record_decision)
+
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--skip-guardrails",
+        ])  # must not raise
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["status"] == "open"  # the trade itself still went through
+
+        err = capsys.readouterr().err
+        assert "decision log failed" in err
+
+
+class TestSellEntryPriceFallback:
+    """2026-08-02: SELL-path entry_price lookup falls back to the local
+    trader_db positions row when the live Alpaca get_positions() scan
+    misses the ticker (stale broker sync, a race, already-flat) -- see
+    executor.py's inline comments for the full incident history (27 of 61
+    total_trades sitting 'unclassified')."""
+
+    def test_falls_back_to_local_position_when_missing_from_live(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        # Live Alpaca positions list does NOT include AAA -- simulates the
+        # stale-lookup case. place_order's own response still succeeds.
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order20"},
+            positions_response=[],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--price", "12.00", "--skip-guardrails",
+        ])
+
+        err = capsys.readouterr().err
+        assert "entry_price unavailable" not in err
+
+        rows = _read_decisions_rows()
+        assert len(rows) == 1
+        assert rows[0]["decision"] == "SELL"  # close_trade_outcome ran -> decision row got written
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["status"] == "closed"
+        # entry_price=10.0 (local fallback), exit_price=12.00 (--price) -> pnl = 2.0 * 2 shares
+        assert row["realized_pnl"] == pytest.approx(4.0)
+
+    def test_unavailable_both_sources_logs_warning_and_skips_outcome(self, monkeypatch, capsys):
+        # No local position row seeded, and live Alpaca positions also empty.
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order21"},
+            positions_response=[],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "ZZZ", "--qty", "1",
+            "--price", "12.00", "--skip-guardrails",
+        ])
+
+        err = capsys.readouterr().err
+        assert "entry_price unavailable for SELL ZZZ" in err
+        assert "missing from both live Alpaca positions and local trader_db" in err
+
+        # Outcome bookkeeping skipped entirely -- no decisions row, no
+        # bankroll/experience update -- silent skip must become a LOUD
+        # skip, not become a forced (fabricated) success.
+        assert _read_decisions_rows() == []
+
+    def test_prefers_live_over_local_when_both_present(self, monkeypatch, capsys):
+        """Live lookup is unchanged/preferred when it succeeds -- this
+        fallback only fires when live is missing."""
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order22"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "12.00", "market_value": "24.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--price", "12.00", "--skip-guardrails",
+        ])
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        # entry_price=12.0 (LIVE, not the local row's 10.0), exit_price=12.00 -> pnl = 0
+        assert row["realized_pnl"] == pytest.approx(0.0)
 
 
 class TestLongPlayCli:

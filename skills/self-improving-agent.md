@@ -10,13 +10,13 @@ On any BUY/SELL decision, for every signal that genuinely informed it, add an en
 
 ## Pre-trade: `reconcile` is where conviction comes from
 
-`--conviction` isn't a number you guess at decision time. Before sizing/executing a BUY, run `python3 scripts/record_decision.py reconcile --features '...'` (same `--features` shape as above, no DB write, safe to call as many times as you want while still deciding) and use its `combined_confidence` as the `--conviction` you pass to both the executor's BUY call and the later `record_decision.py decision --conviction <same number>` log call for that same trade — see `tick_prompt.md` step 8. `gate_conviction` (`scripts/executor.py`) only checks this against a flat sanity floor (`params.json: risk.conviction_floor`) — it catches a broken/zero score, it isn't a bar the number needs to clear. Real entry quality is the gestalt reasoning behind the number, not the number itself.
+`--conviction` isn't a number you guess at decision time. Before sizing/executing a BUY, run `python3 scripts/record_decision.py reconcile --features '...'` (same `--features` shape as above, no DB write, safe to call as many times as you want while still deciding) and use its `combined_confidence` as the `--conviction` you pass to the executor's BUY call — see `tick_prompt.md` step 8/9. That single executor call now also writes the decisions-table log directly (mechanized 2026-08-02, no separate `record_decision.py decision` call needed). `gate_conviction` (`scripts/executor.py`) only checks this against a flat sanity floor (`params.json: risk.conviction_floor`) — it catches a broken/zero score, it isn't a bar the number needs to clear. Real entry quality is the gestalt reasoning behind the number, not the number itself.
 
 You may still deviate from the reconciled number (size up/down) if you have a concrete reason not captured in a scored signal — say why in `--rationale`, same as always.
 
 ## The reconciled read, echoed post-trade too
 
-`record_decision.py decision` also still echoes back `result.reconciled` after logging — same computation as the pre-trade `reconcile` call above (recommendation, confidence, per-signal detail including `scorecard_multiplier`, see below), just confirming what was actually stored. If you passed an explicit `--conviction` that deviated from the pre-trade reconcile, this echo won't match it — that's expected and fine, the disagreement itself is useful signal for the scorecard.
+The pre-trade `reconcile` call above (recommendation, confidence, per-signal detail including `scorecard_multiplier`, see below) is your one look at the combined read before you commit to a `--conviction` — the mechanized executor-call logging (2026-08-02) doesn't echo a second `reconciled` confirmation back afterward the way the standalone `record_decision.py decision` CLI used to. If you passed an explicit `--conviction` that deviated from the pre-trade reconcile, that's expected and fine, and still worth saying in `--rationale` — the disagreement itself is useful signal for the scorecard, it's just not auto-echoed anymore.
 
 ## Signal scorecard — real track record, not a guess
 
