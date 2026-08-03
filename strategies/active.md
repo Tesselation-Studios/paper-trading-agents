@@ -202,19 +202,26 @@
 - **Action**: HOLD all 10. 0 buys, 0 sells. Batch correctly gated.
 
 ## 10:20 AM — CHOPPY grind, batch 11 gated
-- **Portfolio**: $10,399.36 | Cash $9,334.41 (89.76%) | 10 positions | Drawdown 0.26%
-- **Regime**: CHOPPY (0.644) | SPY $747.03 +0.72% RSI 52.6 MACDh -0.09 — flat, no fade
+- (same as last tick)
+
+## 10:25 AM — CHOPPY continues, rotation complete
+- **Portfolio**: $10,400.42 | Cash $9,334.41 (89.8%) | 10 positions | Drawdown 0.25%
+- **Regime**: CHOPPY (0.644) | SPY flat, no fade
 - **Stops**: All 10 active, no breaches ✅
-- **Bootstrap**: ceiling $658.84 (<$1000), no triggers — BFH/FLXS both faded from earlier highs (BFH +0.3% from +3.3%, FLXS +0.04% from +3.6%)
-- **Positions**: VSXY MACDh +3.39 (strongest) | KEX RSI 34 MACDh +0.49 (bull divergence, hold) | HLN -3.2% worst (in-band) | all others flat
-- **Batch 11** (PRZO/REPX/EVLV/FCHL/ESCA/GPMT) evaluated & marked:
-  - PRZO $0.54 MACDh near-zero — sub-$1, untradeable
-  - FCHL $1.12 MACDh near-zero vol 10x — pump-dump near $1, skip
+- **Bootstrap**: ceiling $658.84 (<$1000), no triggers (FLXS +3.61%, BFH +3.50% — both < 5%)
+- **Positions**: FLXS +3.61% (strongest) | BFH +3.50% MACDh +1.81 | KEX -2.05% RSI 34 oversold MACDh +0.49 | HLN -3.04% (worst, in-band)
+- **Batches 12-14** (full rotation, 18/18 evaluated): all correctly gated
+  - CYCU/TW/MDXG/RELX/BILL/TBLA/REPX/EVLV: null prices
+  - MGN $0.11 / ONMD $0.69 / PRZO $0.54: sub-$1
+  - LSE $4.30 MACDh +0.09 vol 7.5x — falling, no catalyst
+  - NMI $10.85 near-zero MACDh, sentiment -0.87, CEF not equity
+  - HTOO $2.66 near-zero MACDh — weak, no catalyst
+  - FDBC $52.12 MACDh +0.058 (faded from +0.688), no catalyst/sentiment
+  - FCHL $1.12 near-zero MACDh — pump-dump, skip
   - ESCA $19.87 MACDh +0.12 — mild, no catalyst
-  - GPMT $1.49 MACDh near-zero — thin near $1 floor
-  - REPX/EVLV — null prices
-  - All 6 correctly gated, no edge in CHOPPY
-- **Discovery**: 1 promote (PRZO — sub-$1, in watchlist), merge skipped. 18 watchlist, no stale to drop.
-- **Deployment**: 89.76% cash, 32 consecutive under-deployed, no escalation triggers
+  - GPMT $1.49 near-zero MACDh — thin near $1 floor
+  - All correctly gated — no non-technical edge in CHOPPY
+- **Discovery**: merge/promote skipped (all already in watchlist), pipeline dry
+- **Deployment**: 89.8% cash, 33 consecutive under-deployed, no escalation triggers
 - **Action**: HOLD all. 0 buys, 0 sells. CHOPPY doing what CHOPPY does.
 
