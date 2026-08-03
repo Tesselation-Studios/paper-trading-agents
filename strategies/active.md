@@ -16,3 +16,22 @@
 - **Deployment**: 20 consecutive under-deployed ticks, no escalation triggers yet
 - **Action**: Pre-market — can't trade until 9:30. Watch ZBRA/OOMA at open for bootstrap quick-exit. Evaluate batch after quotes populate.
 
+## 9:10 AM — Pre-market, quotes live
+- **Portfolio**: $10,387.30 | Cash $8,928.16 (86.0%) | 13 positions same
+- **Regime**: call failed (no healthy workers), skip
+- **Stops**: All 13 active, no breaches ✅
+- **Bootstrap**: ceiling $679 (<$1000) — quick-exit bias active
+  - **ZBRA +5.12%** ($297.00, entry $282.53) ⚡ above 5% trigger → SELL at open
+  - OOMA +4.06% ($22.05, entry $21.19) — below 5%, no trigger
+- **Batch 1** (CYCU/MDXG/TW/RELX/BILL/TBLA) evaluated & marked:
+  - CYCU crashed -44.84% to $0.89 — below $1 floor, untradeable
+  - MDXG $4.13 RSI 50.8 MACDh +0.12 — tepid, no catalyst
+  - TW $100.50 RSI 50.0 MACDh +0.01 near-zero — noise, skip
+  - RELX $35.42 RSI 56.0 MACDh +0.62 — decent setup but no catalyst/sentiment
+  - BILL $45.13 RSI 60.2 MACDh +2.06 — strong technicals, best of batch
+  - TBLA $5.01 RSI 47.4 MACDh +0.04 near-zero — noise, skip
+  - All: no sentiment/headline data — catalyst-led entries can't fire
+- **Discovery**: promote merged 4 (FCHL, ESCA, GPMT, FDBC), merge skipped (already in watchlist)
+- **Deployment**: 21 consecutive under-deployed, no escalation yet
+- **Action**: Only trade at 9:30 — ZBRA sell for bootstrap quick-exit. BILL worth a closer look post-open if catalyst emerges.
+
