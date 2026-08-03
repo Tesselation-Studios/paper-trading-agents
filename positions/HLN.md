@@ -1,11 +1,11 @@
 # HLN Position Thesis
 
 - **Entry**: $10.20 avg | 1 shares
-- **Current**: $9.81 (-3.82% unrealized)
-- **Market Value**: $9.81
-- **Unrealized P&L**: $-0.39 (-3.82%)
+- **Current**: $9.80 (-3.87% unrealized)
+- **Market Value**: $9.80
+- **Unrealized P&L**: $-0.40 (-3.87%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-03 18:25:49 UTC
+- **Last sync**: 2026-08-03 18:40:10 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

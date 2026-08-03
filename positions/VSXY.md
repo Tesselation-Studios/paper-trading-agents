@@ -1,11 +1,11 @@
 # VSXY Position Thesis
 
 - **Entry**: $89.41 avg | 2 shares
-- **Current**: $87.66 (-1.96% unrealized)
-- **Market Value**: $175.32
-- **Unrealized P&L**: $-3.50 (-1.96%)
+- **Current**: $87.80 (-1.80% unrealized)
+- **Market Value**: $175.60
+- **Unrealized P&L**: $-3.22 (-1.80%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-03 18:25:49 UTC
+- **Last sync**: 2026-08-03 18:40:10 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
