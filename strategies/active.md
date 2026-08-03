@@ -185,3 +185,19 @@
 - **Deployment**: 89.76% cash, 28 consecutive under-deployed, no escalation triggers
 - **Action**: HOLD all. 0 buys, 0 sells. Batch correctly gated — no edge in CHOPPY, all live candidates exhausted.
 
+## 10:15 AM — CHOPPY holds, batch 10 gated
+- **Portfolio**: $10,398.45 | Cash $9,334.41 (89.77%) | 10 positions | Drawdown 0.27%
+- **Regime**: CHOPPY (0.644) | SPY $747.03 +0.72% RSI 52.6 MACDh -0.09 near-zero — flat
+- **Stops**: All 10 active, no breaches ✅
+- **Bootstrap**: ceiling $658.84 (<$1000), no triggers (FLXS +3.61% highest, BBSI new at +1.09%)
+- **Market-context**: SPY flat, no fade — BFH +3.02%/FLXS +3.61% above 2% but no exit trigger
+- **Positions**: FLXS +3.61% MACDh +2.64 strongest | BFH +3.02% MACDh +1.81 | VSXY MACDh +3.39 but flat | KEX -2.64% RSI 34 oversold MACDh +0.49 bull divergence (hold) | HLN -2.84% worst (in-band)
+- **Batch 10** (RELX/BILL/TBLA/FDBC/HTOO/MDXG) evaluated & marked:
+  - FDBC $52.60 RSI 58.3 MACDh +0.688 vol 2.43x — best technicals, but no sentiment/headline → reconcile 0.0 conf, gated
+  - HTOO $2.65 RSI 47.5 MACDh -0.058 bearish vol 0.99x — weak, MACDh flipped from cached value, no catalyst → reconcile 0.0, gated
+  - RELX/BILL/TBLA/MDXG — null prices, can't evaluate
+  - Probe attempted (FDBC): correctly gated — no non-technical edge in CHOPPY
+- **Discovery**: merge/promote skipped (all already in watchlist), pipeline flat
+- **Watchlist**: 15, rotation advances — 31 consecutive under-deployed, no escalation yet
+- **Action**: HOLD all 10. 0 buys, 0 sells. Batch correctly gated.
+
