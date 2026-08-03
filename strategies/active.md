@@ -111,3 +111,20 @@
 - **Deployment**: 85.9% cash, 22 consecutive under-deployed, no escalation triggers
 - **Action**: 2 bootstrap sells submitted. 0 buys. Rotation advances.
 
+## 9:40 AM — Watchlist exhausted, CHOPPY holds
+- **Portfolio**: $10,390.74 | Cash $9,312.01 (89.6%) | 11 positions | No breaches ✅
+- **Regime**: CHOPPY (0.644) | SPY $747.03 RSI 52.6 MACDh -0.09 — flat
+- **Bootstrap**: ceiling $665 (<$1000) — OOMA dropped to +2.64% ($21.75), no quick-exit triggers
+- **Market-context**: BFH $108.07 (+0.3%) dropped from earlier +2% but SPY recovering — no exit
+- **Top**: ANDG +1.5% RSI 66.3 | FLXS MACDh +2.64 strongest | VSXY MACDh +3.39 but -0.8%
+- **Bottom**: KEX -2.3% RSI 34 oversold MACDh +0.49 | HLN -3.2% RSI 52.7
+- **Batch 6** (REPX/EVLV/FCHL/ESCA/GPMT/MDXG) evaluated & marked:
+  - FCHL $1.12 RSI 46 MACDh -0.01 near-zero → pump pattern, skip
+  - ESCA $19.87 RSI 58.7 MACDh +0.12 → no catalyst/sentiment, skip
+  - GPMT $1.49 RSI 63.3 MACDh +0.01 near-zero → thin $1 floor, skip
+  - REPX/EVLV/MDXG null price → can't evaluate
+  - 13/13 watchlist fully evaluated this morning — rotation complete
+- **Discovery**: merge/promote skipped (all already in watchlist)
+- **Deployment**: 89.6% cash, 23 consecutive under-deployed, no escalation
+- **Action**: HOLD all. Batch correctly gated — no catalyst or non-technical edge in CHOPPY.
+
