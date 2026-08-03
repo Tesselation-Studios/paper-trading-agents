@@ -167,3 +167,21 @@
 - **Watchlist**: 14, rotation advances — 26 consecutive under-deployed, no escalation yet
 - **Action**: HOLD all. 0 buys, 0 sells. CHOPPY doing what CHOPPY does.
 
+## 10:08 AM — CHOPPY grind, batch 9 gated
+- **Portfolio**: $10,398.78 | Cash $9,334.41 (89.76%) | 10 positions | Drawdown 0.26%
+- **Regime**: CHOPPY (0.644) | SPY $747.03 +0.72% RSI 52.6 MACDh -0.09 near-zero — flat
+- **Stops**: All 10 active, no breaches ✅
+- **Bootstrap**: ceiling $658.84 (<$1000), no quick-exit triggers (FLXS +3.61% highest)
+- **Positions**: VSXY MACDh +3.39 strongest | FLXS +3.61% MACDh +2.64 | KEX -2.63% RSI 34 oversold MACDh +0.49 | BFH +3.05% MACDh +1.81 (no SPY fade)
+- **Market-context**: SPY flat, no exit triggers on BFH/FLXS above 2% threshold
+- **Batch 9** (LSE/MGN/NMI/ONMD/CYCU/TW) evaluated & marked:
+  - LSE $4.26 -7.39% vol 7.5x sell-off, MACDh +0.07 near-zero — falling knife
+  - MGN $0.11/ONMD $0.69/CYCU $0.89 — all below $1 floor
+  - NMI $10.85 MACDh near-zero, sentiment -0.87, CEF not equity — skip
+  - TW null price — can't evaluate
+  - All 6 correctly gated
+- **Discovery**: 2 promoted (NMI, ONMD), merge skipped (all already in watchlist)
+- **Watchlist**: 15, no stale to drop — rotation advances
+- **Deployment**: 89.76% cash, 28 consecutive under-deployed, no escalation triggers
+- **Action**: HOLD all. 0 buys, 0 sells. Batch correctly gated — no edge in CHOPPY, all live candidates exhausted.
+
