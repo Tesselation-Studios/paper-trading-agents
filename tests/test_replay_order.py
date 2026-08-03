@@ -188,6 +188,72 @@ class TestBuy:
         assert "no backtest session" in out["error"]
 
 
+class TestThesisPersistence:
+    """2026-08-03: --thesis-claim/--thesis-invalidation, mirroring
+    executor.py's live-trading equivalent -- the backtest harness needs
+    these to actually exercise conviction/long-play thesis persistence
+    during a chained-mode multi-day validation session."""
+
+    def test_conviction_play_missing_thesis_invalidation_rejected(self, session_env, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", _buy(
+            play_type="conviction", prediction_reason="strong momentum",
+        ))
+        assert replay_order.main() == 1
+        out = json.loads(capsys.readouterr().out)
+        assert "--play-type conviction requires --thesis-invalidation" in out["error"]
+
+    def test_long_play_missing_thesis_invalidation_rejected(self, session_env, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", _buy(
+            play_type="long", predicted_by_date="2026-06-10", prediction_reason="catalyst expected",
+        ))
+        assert replay_order.main() == 1
+        out = json.loads(capsys.readouterr().out)
+        assert "--play-type long requires --thesis-invalidation" in out["error"]
+
+    def test_conviction_play_persists_thesis_fields(self, session_env, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", _buy(
+            play_type="conviction", prediction_reason="strong momentum",
+            thesis_claim="SOFI re-rates up over 2 weeks on loan growth",
+            thesis_invalidation="closes below 20-day MA on rising volume",
+            features=json.dumps({"technical": {"direction": "bullish", "confidence": 0.8}}),
+        ))
+        assert replay_order.main() == 0
+
+        conn = trader_db.get_conn(Path(session_env["manifest"]["db_path"]))
+        pos = trader_db.get_position(conn, "SOFI")
+        log = trader_db.get_thesis_log(conn, "SOFI")
+        conn.close()
+        assert pos["thesis_claim"] == "SOFI re-rates up over 2 weeks on loan growth"
+        assert pos["thesis_invalidation"] == "closes below 20-day MA on rising volume"
+        assert pos["thesis_entry_signals"] == json.dumps({"technical": {"direction": "bullish", "confidence": 0.8}})
+        assert len(log) == 1
+        assert log[0]["event_type"] == "entry"
+
+    def test_standard_buy_thesis_invalidation_optional(self, session_env, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", _buy())  # standard, no thesis-claim/invalidation
+        assert replay_order.main() == 0
+
+    def test_scale_in_logs_scale_in_event(self, session_env, monkeypatch, capsys):
+        monkeypatch.setattr(sys, "argv", _buy(
+            play_type="conviction", prediction_reason="x",
+            thesis_claim="initial thesis", thesis_invalidation="y",
+        ))
+        replay_order.main()
+        capsys.readouterr()
+        monkeypatch.setattr(sys, "argv", _buy(
+            qty=3, price=4.20, play_type="conviction", prediction_reason="x",
+            thesis_claim="adding on strength", thesis_invalidation="y",
+        ))
+        replay_order.main()
+
+        conn = trader_db.get_conn(Path(session_env["manifest"]["db_path"]))
+        log = trader_db.get_thesis_log(conn, "SOFI")
+        conn.close()
+        assert len(log) == 2
+        assert log[0]["event_type"] == "scale_in"
+        assert log[1]["event_type"] == "entry"
+
+
 class TestBacktestDisabledGatesDontTouchLiveState:
     """Regression tests for bug 2. Every one of these gates would read
     and/or WRITE a fixed-path live state file if it ran for real --

@@ -89,10 +89,11 @@ def _backtest_toggles() -> dict:
 
 def _simulate_buy(session_id: str, db_path: Path, ticker: str, qty: int, price: float,
                    sim_timestamp: str, conviction, sector, thesis, play_type, predicted_by_date,
-                   prediction_reason, features: dict) -> dict:
+                   prediction_reason, features: dict, thesis_claim=None, thesis_invalidation=None) -> dict:
     conn = trader_db.get_conn(db_path)
     try:
         existing = trader_db.get_position(conn, ticker)
+        is_scale_in = bool(existing and existing.get("status") == "open")
         if existing and existing.get("status") == "open":
             # Scale-in: weighted-average entry price, matching the economics
             # of buying more shares at a different price. Live executor.py
@@ -107,11 +108,20 @@ def _simulate_buy(session_id: str, db_path: Path, ticker: str, qty: int, price: 
             entry_price = price
             entry_time = sim_timestamp
 
+        thesis_entry_signals = json.dumps(features) if features else None
         trader_db.upsert_position(
             conn, ticker=ticker, shares=total_shares, entry_price=entry_price,
             entry_time=entry_time, sector=sector, thesis=thesis, play_type=play_type,
             predicted_by_date=predicted_by_date, prediction_reason=prediction_reason,
+            thesis_claim=thesis_claim, thesis_invalidation=thesis_invalidation,
+            thesis_entry_signals=thesis_entry_signals,
         )
+        if thesis_claim or thesis_invalidation:
+            trader_db.log_thesis_event(
+                conn, ticker=ticker, event_type="scale_in" if is_scale_in else "entry",
+                claim=thesis_claim, invalidation=thesis_invalidation,
+                signals_snapshot=thesis_entry_signals, now=sim_timestamp,
+            )
         # upsert_position()'s ON CONFLICT clause deliberately does NOT
         # update entry_price on a scale-in (live trading treats Alpaca's
         # own avg_entry_price as the source of truth, not this field --
@@ -221,6 +231,12 @@ def main() -> int:
     parser.add_argument("--play-type", default="standard", choices=["standard", "long", "conviction"])
     parser.add_argument("--predicted-by-date", default=None)
     parser.add_argument("--prediction-reason", default=None)
+    parser.add_argument("--thesis-claim", default=None,
+                         help="The falsifiable directional claim. Hard-required for --play-type long/conviction, "
+                              "same as executor.py.")
+    parser.add_argument("--thesis-invalidation", default=None,
+                         help="The specific, checkable condition that would prove --thesis-claim wrong. "
+                              "Hard-required for --play-type long/conviction, same as executor.py.")
     parser.add_argument("--close-reason", default=None, help="SELL only")
     parser.add_argument("--features", default=None, help="JSON object, same shape as executor.py's --features")
     args = parser.parse_args()
@@ -240,6 +256,14 @@ def main() -> int:
         db_path = backtest_session.resolve_session_db_path(args.session_id)
     except FileNotFoundError as e:
         print(json.dumps({"error": str(e)}))
+        return 1
+
+    if args.play_type in ("long", "conviction") and not args.thesis_invalidation:
+        print(json.dumps({
+            "error": f"--play-type {args.play_type} requires --thesis-invalidation "
+                     "(the specific, checkable condition that would prove this wrong -- "
+                     "a conviction/long play held on an unfalsifiable thesis is just hoping)",
+        }))
         return 1
 
     features = {}
@@ -271,6 +295,7 @@ def main() -> int:
             args.session_id, db_path, ticker, args.qty, args.price, sim_now.isoformat(), args.conviction,
             args.sector, args.thesis, args.play_type, args.predicted_by_date,
             args.prediction_reason, features,
+            thesis_claim=args.thesis_claim, thesis_invalidation=args.thesis_invalidation,
         )
     else:
         result = _simulate_sell(
