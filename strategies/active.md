@@ -95,3 +95,19 @@
 - **Deployment**: 86% cash, 21 consecutive under-deployed, no escalation triggers
 - **Action**: No buy, no sell. Batch correctly gated — no non-technical edge in CHOPPY. Rotation advances for next tick.
 
+## 9:35 AM — Bootstrap quick-exits fire 🎯
+- **Portfolio**: $10,394 | Cash $8,928 (85.9%) | 13→11 positions (sells pending fill)
+- **Regime**: CHOPPY (0.644) | SPY $747.03 RSI 52.6 MACDh -0.09 — flat, no fade
+- **Stops**: All 11 active, no breaches ✅
+- **🔔 ZBRA SELL**: +5.33% ($297.60, entry $282.53) — bootstrap quick-exit (ceiling $679 < $1000)
+- **🔔 DXCM SELL**: +5.28% ($86.42, entry $82.08) — bootstrap quick-exit (ceiling $679 < $1000)
+- **Holders**: OOMA +4.58%, BFH +2.29%, TRIP +2.19% — none above 5% trigger
+- **Losers**: KEX -3.56%, HLN -2.45%, UTMD -1.37% — in-band, no stop breaches
+- **Batch 5** (TBLA/TW/CYCU/RELX/BILL/HTOO) evaluated & marked:
+  - BILL $45.13 RSI 60.2 MACDh +2.06 — strongest technicals, checked: insiders none, sentiment noise (SpaceX, not BILL Holdings) → reconcile 0.0, skip
+  - CYCU crashed below $1, TW/TBLA near-zero MACDh, RELX OK but no catalyst, HTOO bearish thin vol
+  - All correctly gated — no non-technical edge in CHOPPY
+- **Discovery**: merge/promote skipped (all already in watchlist), 13 watchlist, rotation advances
+- **Deployment**: 85.9% cash, 22 consecutive under-deployed, no escalation triggers
+- **Action**: 2 bootstrap sells submitted. 0 buys. Rotation advances.
+
