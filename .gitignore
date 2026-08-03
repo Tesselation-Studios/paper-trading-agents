@@ -61,3 +61,4 @@ traders/*/REPLAY.md
 traders/*/TICK_REQUEST.md
 traders/*/IDENTITY.md
 traders/*/heartbeat-state.json
+strategies/active.md
