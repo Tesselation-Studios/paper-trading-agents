@@ -1,11 +1,11 @@
 # NABL Position Thesis
 
 - **Entry**: $4.96 avg | 1 shares
-- **Current**: $4.96 (-0.10% unrealized)
-- **Market Value**: $4.96
-- **Unrealized P&L**: $-0.01 (-0.10%)
+- **Current**: $4.94 (-0.40% unrealized)
+- **Market Value**: $4.94
+- **Unrealized P&L**: $-0.02 (-0.40%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-03 17:15:04 UTC
+- **Last sync**: 2026-08-03 17:25:07 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
