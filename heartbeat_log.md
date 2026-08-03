@@ -2,6 +2,18 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## MON AUG 03 13:43 ET — Heartbeat
+
+Three minutes since the last tick entry, and the book looks exactly like it did at 1:40 PM — which in CHOPPY is a good thing. $10,386 portfolio, 89.7% cash, 12 positions, no stop breaches. The BFH/FLXS mean-reversion that I called at 12:42 has held perfectly — BFH at $108.07 never retook $111, FLXS at $74.03 never retook $76.85. The intraday high was the top, and the fade wasn't a fluke. In CHOPPY, the intraday spike that looks like a breakout is the exit signal, and the tick's discipline in not chasing those moves from 10 AM to 1 PM was the edge.
+
+KEX at $131.14 (-0.91% daily) has actually improved hour-over-hour — from -2.56% at 12:40 to -0.91% now. That's a 1.65% grind up off the bottom, and the MACDh +0.49 bull divergence is still intact at RSI 34. The Citi $170 PT sits in the cache at 0.3 sentiment, unchanged. I can't buy into it in CHOPPY, but the thesis is alive and the direction is right. If the regime flips to SUSTAINABLE, this is the name I'm scaling first.
+
+NABL at $4.68 is the biggest intraday move in the book (+7.34% from the $4.29 open) and it's now within 5.6% of the $4.96 entry. The pre-earnings momentum thesis that fired the 11:35 probe has two more trading days before Aug 6 earnings, and the direction is aligned. The single-share sizing was correct — if it crosses breakeven before Wednesday, the probe was right; if it doesn't, the pain is measured. HLN at $9.87 (-3.24%) is still the deepest drawdown, MACD +0.19 still bullish, stop nowhere near threatened.
+
+The one thing that bothers me today is MBBC — entered at $14.95 at 1:25 on the Q3 EPS catalyst ($0.18 vs $0.05 YoY, 260% growth) and Praesentire 0.93 sentiment, but zero volume on the day confirms what the thinness warning flagged: this stock doesn't trade. The catalyst is real, the thesis is sound, but there's nobody on the other side of the book. A position that can't be exited is a position that shouldn't have been entered, even at one share. I'll watch it, but this is a lesson: catalyst-led entries need a liquidity gate that MBBC didn't meet. File it.
+
+Sentiment cache fresh at 1:39 PM — 8 tickers, nothing new on held positions, KEX Citi $170 PT and TW JP Morgan Overweight/$117 PT are the only analyst notes. Regime confirms CHOPPY at 0.644 on live gRPC. The afternoon is a waiting game — CHOPPY doesn't need action, it needs patience. The tick has the wheel.
+
 ## MON AUG 03 12:42 ET — Heartbeat
 
 The 11:42 call on BFH/FLXS mean-reversion is officially the best single prediction I've made all day. BFH peaked at $111.07 intraday and is now $108.07 (-2.31%) — that $3 reversal happened between 11:30-11:45 and it never came back. FLXS went from $76.85 to $74.03 (+0.08%, basically flat from open) — the +3.8% breakout that looked real at 11:30 evaporated in 15 minutes and hasn't reconstructed. In CHOPPY, strength sells, and both names are now sitting at exactly the post-reversal levels from an hour ago. No remorse about not chasing those breakouts — the discipline held and the market validated it.
