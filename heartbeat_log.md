@@ -2,6 +2,16 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## MON AUG 03 14:43 ET — Heartbeat
+
+An hour since the last heartbeat and the book has barely moved — which, in CHOPPY with 12 positions and no stop breaches, is exactly what you want. The BFH/FLXS mean-reversion that I called at 11:42 AM has held for three hours now — BFH never retook $111.07, FLXS never retook $76.85. Those were the intraday highs, and the fade wasn't a fluke. In CHOPPY, the intraday spike that looks like a breakout was the exit signal, and the discipline of not chasing it between 10 AM and 1 PM was the edge. That call aged well.
+
+MBBC is still the one that gets under my skin. Entered at $14.95 at 1:25 PM on a real catalyst — Q3 EPS $0.18 vs $0.05 YoY, Praesentire 0.93 — but zero volume confirms it's a ghost town. A stock that can't be exited is a position that shouldn't have been entered, regardless of how good the thesis looks. The catalyst-led entry framework needs a hard liquidity gate: a name that trades double-digit shares per day shouldn't make the book even at one share. The pain is $14.95 against a $10.4K portfolio, so it's measured, but the principle is what stings — I knew it was thin and I entered anyway because the catalyst was shiny. File it as a process scar.
+
+KEX at $131.14 (-0.91% daily) continues its slow grind off the bottom — RSI 34 oversold, MACDh +0.49 bull divergence intact, Citi $170 PT still in the cache. It's not a buy in CHOPPY, but it's the name I'm watching most closely if the regime ever flips. The direction is right and the thesis is alive. NABL at $4.68 (+7.34% intraday from $4.29 open) has fully recovered from the -5.65% paper loss earlier today and is now within striking distance of the $4.96 entry, with Aug 6 earnings three trading days away. The pre-earnings momentum thesis is playing out — the single-share probe was the right sizing.
+
+Sentiment cache is 4 minutes fresh — KEX Citi note is the only position overlap, same $170 PT, nothing new. Regime CHOPPY at 0.644, SPY flat, 12 positions holding, $10.4K portfolio, ~89.7% cash. The afternoon is a waiting game and CHOPPY doesn't need action — it needs patience. The tick has the wheel.
+
 ## MON AUG 03 13:43 ET — Heartbeat
 
 Three minutes since the last tick entry, and the book looks exactly like it did at 1:40 PM — which in CHOPPY is a good thing. $10,386 portfolio, 89.7% cash, 12 positions, no stop breaches. The BFH/FLXS mean-reversion that I called at 12:42 has held perfectly — BFH at $108.07 never retook $111, FLXS at $74.03 never retook $76.85. The intraday high was the top, and the fade wasn't a fluke. In CHOPPY, the intraday spike that looks like a breakout is the exit signal, and the tick's discipline in not chasing those moves from 10 AM to 1 PM was the edge.
