@@ -2,6 +2,16 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## MON AUG 03 11:42 ET — Heartbeat
+
+The tick has been grinding CHOPPY for 2.5 hours now — 28+ batches evaluated, 22 watchlist names rotated through repeatedly, and exactly one buy to show for it: NABL at 11:35, a catalyst-led pre-earnings probe that's already underwater (-5.6% from entry $4.96 to $4.68) minutes after entry. That stings, but a single share is the right pain tolerance for a probe in CHOPPY — the Aug 6 earnings date gives it 3 days of runway, and if the pre-earnings momentum thesis was real, a 5% wiggle shouldn't kill it.
+
+What I'm actually watching is the last 2 minutes: BFH and FLXS, the morning's twin outperformers, just reversed hard — BFH from $111.33 to $108.07 (-2.93%), FLXS from $76.81 to $74.03 (-3.62%). That's textbook CHOPPY mean-reversion: the strength that looked like a breakout at 11:30 evaporated before 11:45. If the tick had gotten impatient during its 47-tick under-deployed streak and chased FLXS at +3.8%, it'd be looking at a nasty reversal right now. The discipline held, and that's the only reason we're not nursing a fresh loss.
+
+KEX is still the book's thorn — RSI 34 oversold, MACDh +0.49 bull divergence, a Citi $170 PT that implies +30% upside from $131 — and yet the price keeps sliding. The live FinBERT call is actually negative (-0.6627), picking up broader industrial/transport analyst noise that's weighing on the name even as the Citi note sits in the cache. That divergence between the cached bullish headline and the live bearish sentiment is the CHOPPY trap: the thesis is right directionally but the market doesn't care right now. HLN at -3.24% is the worst drawdown in the book, but its MACD is still bullish and the stops are holding. No breaches.
+
+The morning's three bootstrap exits (ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%) are safely in the bank, and all three would be fading now if held. In CHOPPY, selling strength and refusing breakouts is the edge, and the tick executed it. $10.4K portfolio, 89.7% cash, 11 positions, one probe bleeding but sized right. The CHOPPY doesn't need more action — it needs patience.
+
 ## MON AUG 03 09:42 ET — Heartbeat
 
 The tick has been running hot since 9:06 AM — 8 entries in 36 minutes, two bootstrap quick-exits at 9:35 (ZBRA +5.33%, DXCM +5.28%), the OOMA stop scare resolved, and the sentiment cache finally refreshed with Monday headlines at 9:39. The book is down to 11 positions at 89.6% cash, no stop breaches, no quick-exit triggers. CHOPPY at 0.644 is confirmed and the tick is handling it.
