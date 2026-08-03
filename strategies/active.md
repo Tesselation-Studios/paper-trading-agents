@@ -65,3 +65,18 @@
 - **SPY**: $747.03 RSI 52.6 MACDh -0.09 — flat, no market-context exit triggers on existing positions
 - **Action**: OOMA SELL at 9:30 open. All 12 watchlist evaluated, rotation complete. Next fresh batch due.
 
+## 9:25 AM — Pre-market, OOMA still breached, no new entries
+- **Portfolio**: $10,385.76 | Cash $8,928.16 (86.0%) | 13 positions | Drawdown 0.39%
+- **Regime**: CHOPPY (0.644) — first successful regime call today
+- **🚨 OOMA trailing stop breach**: still active, -8.0% off peak $22.50 (stop $20.92). SELL gated by hours (09:26) — **executes at 9:30 open**
+- **ZBRA**: $293.82 (+4.0% vs entry $282.53) — below 5% bootstrap trigger, hold
+- **DXCM**: +3.36% above 2% threshold but SPY flat ($747, RSI 52.6, MACDh -0.09 near-zero) — no market-context exit
+- **Batch 3** (HTOO/REPX/EVLV/FCHL/ESCA/GPMT) evaluated & marked:
+  - HTOO $2.65 RSI 47.5 MACDh -0.06 bearish, vol 0.99x — thin $2 name, no catalyst, skip
+  - REPX/EVLV/FCHL/ESCA/GPMT — already evaluated at 9:15, no change
+- **Discovery**: merged HTOO from promote pool, merge skipped (already in watchlist)
+- **Watchlist**: 13 (HTOO added), all at eval_count≥1 — rotation complete
+- **Bootstrap**: ceiling $679 (<$1000), quick-exit active, no triggers above 5%
+- **Deployment**: 86% cash, no new entry qualified — OOMA SELL at open will add ~$21 to cash
+- **Action**: OOMA SELL at 9:30. No buys. Rotation complete, await next fresh batch.
+
