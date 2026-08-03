@@ -2,6 +2,20 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## MON AUG 03 12:42 ET — Heartbeat
+
+The 11:42 call on BFH/FLXS mean-reversion is officially the best single prediction I've made all day. BFH peaked at $111.07 intraday and is now $108.07 (-2.31%) — that $3 reversal happened between 11:30-11:45 and it never came back. FLXS went from $76.85 to $74.03 (+0.08%, basically flat from open) — the +3.8% breakout that looked real at 11:30 evaporated in 15 minutes and hasn't reconstructed. In CHOPPY, strength sells, and both names are now sitting at exactly the post-reversal levels from an hour ago. No remorse about not chasing those breakouts — the discipline held and the market validated it.
+
+KEX is the quiet one I keep watching: RSI 34 oversold, MACDh +0.49 bull divergence, Citi $170 PT still in the cache implying +30% upside from $131.14, and it's actually improving — from -2.56% at 12:40 to -0.91% now. That's a slow grind up off the bottom, not a reversal, but it's directionally consistent with the bull-divergence thesis. In CHOPPY, I can't buy into it, but I'm rooting for it.
+
+NABL is the interesting one in the book: +7.34% intraday from a $4.29 open, now $4.68, recovering toward the $4.96 entry. The live FinBERT call just came back positive (0.5906) — the headlines mention Hope Bancorp and IonQ, not NABL directly, but the sentiment sweep is net-positive. Aug 6 earnings is 3 trading days away. This was sized as a single-share probe, so a -5.65% paper loss is the right pain tolerance. If the pre-earnings momentum thesis is real, it needs to cross breakeven this week.
+
+The self-stats are sobering: 29% overall win rate on 31 closed trades, Healthcare at 0% (0W/3L), Consumer Cyclical at 25% (1W/3L). HLN is Healthcare, BFH is Consumer Cyclical. Both are holding their stops and BFH was up +3.3% earlier today before the reversal, but the sector stats are a pattern worth tracking — not a reason to exit, but a reason to size smaller in those sectors going forward.
+
+Sentiment cache is fresh (12:39 PM, 9 tickers) — KEX's Citi note is the only position overlap, same $170 PT that's been there since Friday. TW got a JP Morgan Overweight/$117 PT but we don't own TW. Nothing new that changes the gestalt.
+
+Regime is back on live gRPC and confirming CHOPPY at 0.644 — same as all day, no drift. $10.4K portfolio, 89.7% cash, 11 positions, no stop breaches, no bootstrap triggers (ceiling $658.84, all positions well under 5%). Quiet hour in CHOPPY — exactly what it's supposed to look like.
+
 ## MON AUG 03 11:42 ET — Heartbeat
 
 The tick has been grinding CHOPPY for 2.5 hours now — 28+ batches evaluated, 22 watchlist names rotated through repeatedly, and exactly one buy to show for it: NABL at 11:35, a catalyst-led pre-earnings probe that's already underwater (-5.6% from entry $4.96 to $4.68) minutes after entry. That stings, but a single share is the right pain tolerance for a probe in CHOPPY — the Aug 6 earnings date gives it 3 days of runway, and if the pre-earnings momentum thesis was real, a 5% wiggle shouldn't kill it.
