@@ -199,6 +199,8 @@ CREATE TABLE IF NOT EXISTS bankroll_state (
     lifetime_net_pnl        REAL NOT NULL DEFAULT 0.0,
     lifetime_wins           INTEGER NOT NULL DEFAULT 0,
     lifetime_losses         INTEGER NOT NULL DEFAULT 0,
+    lifetime_win_pnl_sum    REAL NOT NULL DEFAULT 0.0,
+    lifetime_loss_pnl_sum   REAL NOT NULL DEFAULT 0.0,
     ceiling_pct             REAL NOT NULL DEFAULT 0.067,
     updated_at              TEXT NOT NULL
 );
@@ -262,6 +264,11 @@ def get_conn(db_path: Path = None) -> sqlite3.Connection:
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
     _migrate_add_column(conn, "bankroll_state", "ceiling_pct", "REAL NOT NULL DEFAULT 0.067")
+    # 2026-08-03: magnitude-weighted ceiling growth (bankroll.py
+    # recalc_ceiling/_lifetime_payoff_ratio) needs avg win/loss $, not just
+    # counts -- these two running sums back that.
+    _migrate_add_column(conn, "bankroll_state", "lifetime_win_pnl_sum", "REAL NOT NULL DEFAULT 0.0")
+    _migrate_add_column(conn, "bankroll_state", "lifetime_loss_pnl_sum", "REAL NOT NULL DEFAULT 0.0")
     # 2026-07-30: long-play support -- play_type distinguishes a small,
     # short-horizon "predicted up by predicted_by_date" bet from a normal
     # position; predicted_by_date/prediction_reason are NULL for standard
@@ -956,6 +963,7 @@ def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate:
                            losses_session: int = 0, net_pnl_session: float = 0.0,
                            total_deployed_session: float = 0.0, lifetime_trades: int = 0,
                            lifetime_net_pnl: float = 0.0, lifetime_wins: int = 0, lifetime_losses: int = 0,
+                           lifetime_win_pnl_sum: float = 0.0, lifetime_loss_pnl_sum: float = 0.0,
                            ceiling_pct: float = None, now: str = None) -> None:
     """ceiling_pct defaults to None -- callers that don't know about the
     2026-07-28 equity-scaled-ceiling addition (e.g. bankroll.py's existing
@@ -971,8 +979,9 @@ def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate:
             """INSERT INTO bankroll_state
                    (id, ceiling, growth_rate, decay_rate, target_profit_pct, closed_trades_session,
                     wins_session, losses_session, net_pnl_session, total_deployed_session,
-                    lifetime_trades, lifetime_net_pnl, lifetime_wins, lifetime_losses, ceiling_pct, updated_at)
-               VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0.067), ?)
+                    lifetime_trades, lifetime_net_pnl, lifetime_wins, lifetime_losses,
+                    lifetime_win_pnl_sum, lifetime_loss_pnl_sum, ceiling_pct, updated_at)
+               VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, 0.067), ?)
                ON CONFLICT(id) DO UPDATE SET
                    ceiling = excluded.ceiling, growth_rate = excluded.growth_rate,
                    decay_rate = excluded.decay_rate, target_profit_pct = excluded.target_profit_pct,
@@ -981,11 +990,14 @@ def upsert_bankroll_state(conn: sqlite3.Connection, ceiling: float, growth_rate:
                    total_deployed_session = excluded.total_deployed_session,
                    lifetime_trades = excluded.lifetime_trades, lifetime_net_pnl = excluded.lifetime_net_pnl,
                    lifetime_wins = excluded.lifetime_wins, lifetime_losses = excluded.lifetime_losses,
+                   lifetime_win_pnl_sum = excluded.lifetime_win_pnl_sum,
+                   lifetime_loss_pnl_sum = excluded.lifetime_loss_pnl_sum,
                    ceiling_pct = COALESCE(?, bankroll_state.ceiling_pct),
                    updated_at = excluded.updated_at""",
             (ceiling, growth_rate, decay_rate, target_profit_pct, closed_trades_session, wins_session,
              losses_session, net_pnl_session, total_deployed_session, lifetime_trades, lifetime_net_pnl,
-             lifetime_wins, lifetime_losses, ceiling_pct, now, ceiling_pct),
+             lifetime_wins, lifetime_losses, lifetime_win_pnl_sum, lifetime_loss_pnl_sum,
+             ceiling_pct, now, ceiling_pct),
         )
 
 

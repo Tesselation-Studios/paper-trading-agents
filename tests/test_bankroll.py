@@ -53,6 +53,8 @@ class TestReadBankrollDefaults:
         assert state["losses"] == 0
         assert state["net_pnl"] == 0.0
         assert state["history"] == []
+        assert state["lifetime_win_pnl_sum"] == 0.0
+        assert state["lifetime_loss_pnl_sum"] == 0.0
 
 
 class TestReadWriteRoundTrip:
@@ -102,6 +104,18 @@ class TestReadWriteRoundTrip:
         assert reread["lifetime_wins"] == 12
         assert reread["lifetime_losses"] == 5
 
+    def test_lifetime_pnl_sums_round_trip(self, bankroll_file):
+        """2026-08-03: back the magnitude-weighted growth-rate calibration's
+        avg-win/avg-loss payoff ratio -- must survive read/write like the
+        other lifetime_* fields."""
+        state = bankroll.read_bankroll()
+        state["lifetime_win_pnl_sum"] = 95.75
+        state["lifetime_loss_pnl_sum"] = 31.20
+        bankroll.write_bankroll(state)
+        reread = bankroll.read_bankroll()
+        assert reread["lifetime_win_pnl_sum"] == pytest.approx(95.75)
+        assert reread["lifetime_loss_pnl_sum"] == pytest.approx(31.20)
+
 
 class TestRecordDeployment:
     """2026-07-27: nothing ever called into total_deployed on the BUY side --
@@ -128,28 +142,139 @@ class TestRecordDeployment:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# _magnitude_factor — the sqrt-scaled, capped magnitude multiplier
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestMagnitudeFactor:
+    def test_at_reference_returns_1(self):
+        assert bankroll._magnitude_factor(8.0, 8.0) == pytest.approx(1.0)
+
+    def test_below_reference_returns_less_than_1(self):
+        factor = bankroll._magnitude_factor(1.0, 8.0)
+        assert 0.0 < factor < 1.0
+        assert factor == pytest.approx((1.0 / 8.0) ** 0.5)
+
+    def test_above_reference_before_cap_scales_sublinearly(self):
+        factor = bankroll._magnitude_factor(16.0, 8.0)
+        assert factor == pytest.approx(2.0 ** 0.5)
+        # sub-linear: doubling pnl does not double the factor
+        assert factor < 2.0
+
+    def test_at_or_above_cap_returns_magnitude_cap_multiple(self):
+        # sqrt(x/8) == 2.5 at x = 8 * 2.5**2 = 50.0
+        assert bankroll._magnitude_factor(50.0, 8.0) == pytest.approx(bankroll.MAGNITUDE_CAP_MULTIPLE)
+        assert bankroll._magnitude_factor(1_000_000.0, 8.0) == pytest.approx(bankroll.MAGNITUDE_CAP_MULTIPLE)
+
+    def test_zero_or_negative_pnl_returns_zero(self):
+        assert bankroll._magnitude_factor(0.0, 8.0) == 0.0
+        assert bankroll._magnitude_factor(-5.0, 8.0) == 0.0
+
+    def test_zero_reference_returns_zero(self):
+        assert bankroll._magnitude_factor(5.0, 0.0) == 0.0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# _lifetime_payoff_ratio — avg win $ / avg loss $
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestLifetimePayoffRatio:
+    def test_none_when_fewer_than_3_wins(self):
+        state = {"lifetime_wins": 2, "lifetime_losses": 5,
+                 "lifetime_win_pnl_sum": 20.0, "lifetime_loss_pnl_sum": 10.0}
+        assert bankroll._lifetime_payoff_ratio(state) is None
+
+    def test_none_when_fewer_than_3_losses(self):
+        state = {"lifetime_wins": 5, "lifetime_losses": 2,
+                 "lifetime_win_pnl_sum": 20.0, "lifetime_loss_pnl_sum": 10.0}
+        assert bankroll._lifetime_payoff_ratio(state) is None
+
+    def test_none_when_avg_loss_is_zero(self):
+        state = {"lifetime_wins": 5, "lifetime_losses": 5,
+                 "lifetime_win_pnl_sum": 20.0, "lifetime_loss_pnl_sum": 0.0}
+        assert bankroll._lifetime_payoff_ratio(state) is None
+
+    def test_computes_ratio_correctly(self):
+        state = {"lifetime_wins": 4, "lifetime_losses": 5,
+                 "lifetime_win_pnl_sum": 31.92, "lifetime_loss_pnl_sum": 12.48}
+        # matches the real live 2026-08-03 numbers: avg win $7.98, avg loss $2.496
+        ratio = bankroll._lifetime_payoff_ratio(state)
+        assert ratio == pytest.approx(7.98 / 2.496, rel=1e-3)
+        assert ratio == pytest.approx(3.197, rel=1e-2)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # recalc_ceiling — win/loss adjustment
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 class TestRecalcCeilingWinLoss:
-    def test_ceiling_grows_2pct_on_win(self, bankroll_file):
+    def test_ceiling_grows_2pct_on_win_at_reference_magnitude(self, bankroll_file):
+        """2026-08-03: a win at exactly WIN_MAGNITUDE_REFERENCE reproduces
+        the old flat +2% exactly -- the magnitude-weighted formula is a
+        pure extension of the old baseline, not a re-tuning."""
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
-        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        bankroll.recalc_ceiling(state, pnl=bankroll.WIN_MAGNITUDE_REFERENCE, is_win=True)
         assert state["ceiling"] == pytest.approx(102.0)
         assert state["wins"] == 1
         assert state["closed_trades"] == 1
-        assert state["net_pnl"] == pytest.approx(5.0)
+        assert state["net_pnl"] == pytest.approx(bankroll.WIN_MAGNITUDE_REFERENCE)
+        assert state["lifetime_win_pnl_sum"] == pytest.approx(bankroll.WIN_MAGNITUDE_REFERENCE)
 
-    def test_ceiling_shrinks_1pct_on_loss(self, bankroll_file):
+    def test_ceiling_shrinks_1pct_on_loss_at_reference_magnitude(self, bankroll_file):
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
-        bankroll.recalc_ceiling(state, pnl=-5.0, is_win=False)
+        bankroll.recalc_ceiling(state, pnl=-bankroll.LOSS_MAGNITUDE_REFERENCE, is_win=False)
         assert state["ceiling"] == pytest.approx(99.0)
         assert state["losses"] == 1
         assert state["closed_trades"] == 1
-        assert state["net_pnl"] == pytest.approx(-5.0)
+        assert state["net_pnl"] == pytest.approx(-bankroll.LOSS_MAGNITUDE_REFERENCE)
+        assert state["lifetime_loss_pnl_sum"] == pytest.approx(bankroll.LOSS_MAGNITUDE_REFERENCE)
+
+    def test_bigger_win_grows_ceiling_more_than_smaller_win(self, bankroll_file):
+        """The motivating case: under the old flat-rate mechanism a $1 win
+        and a $16 win grew the ceiling identically. They must not anymore."""
+        small = bankroll.read_bankroll()
+        small["ceiling"] = 100.0
+        bankroll.recalc_ceiling(small, pnl=1.0, is_win=True)
+
+        big = bankroll.read_bankroll()
+        big["ceiling"] = 100.0
+        bankroll.recalc_ceiling(big, pnl=16.0, is_win=True)
+
+        assert big["ceiling"] > small["ceiling"]
+        assert small["ceiling"] > 100.0  # still a real win, just a smaller bump
+
+    def test_bigger_loss_shrinks_ceiling_more_than_smaller_loss(self, bankroll_file):
+        small = bankroll.read_bankroll()
+        small["ceiling"] = 100.0
+        bankroll.recalc_ceiling(small, pnl=-0.15, is_win=False)
+
+        big = bankroll.read_bankroll()
+        big["ceiling"] = 100.0
+        bankroll.recalc_ceiling(big, pnl=-8.45, is_win=False)
+
+        assert big["ceiling"] < small["ceiling"]
+        assert small["ceiling"] < 100.0  # still a real loss, just a smaller ding
+
+    def test_string_of_small_wins_differs_from_one_big_win(self, bankroll_file):
+        """Direct proof this is no longer win-COUNT-driven: under the old
+        flat-rate mechanism, 5 wins of any size summing to the same total
+        pnl as 1 big win would grow the ceiling identically (5 x +2% vs
+        1 x +2%, pnl-total-invariant). Sub-additive sqrt scaling breaks
+        that equivalence."""
+        many_small = bankroll.read_bankroll()
+        many_small["ceiling"] = 100.0
+        for _ in range(5):
+            bankroll.recalc_ceiling(many_small, pnl=1.0, is_win=True)
+
+        one_big = bankroll.read_bankroll()
+        one_big["ceiling"] = 100.0
+        bankroll.recalc_ceiling(one_big, pnl=5.0, is_win=True)
+
+        assert many_small["ceiling"] != pytest.approx(one_big["ceiling"])
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -159,10 +284,15 @@ class TestRecalcCeilingWinLoss:
 
 class TestRecalcCeilingCaps:
     def test_floor_cap_respected(self, bankroll_file):
+        """2026-08-03: a $1 loss no longer breaches the floor here -- the
+        magnitude-weighted decay is dampened well below the old flat -1%
+        for a below-reference loss (sqrt(1/2.5) ~ 0.63x). Use a large
+        enough loss to hit MAGNITUDE_CAP_MULTIPLE (2.5x -> 2.5% decay) and
+        still meaningfully exercise the floor clamp."""
         state = bankroll.read_bankroll()
         state["ceiling"] = 50.5  # just above the $50 floor
-        bankroll.recalc_ceiling(state, pnl=-1.0, is_win=False)
-        # 50.5 * 0.99 = 49.995, which is below FLOOR -> clamped to 50.0
+        bankroll.recalc_ceiling(state, pnl=-50.0, is_win=False)
+        # 50.5 * (1 - 0.025) = 49.2375, below FLOOR -> clamped to 50.0
         assert state["ceiling"] == pytest.approx(bankroll.FLOOR)
 
     def test_floor_cap_respected_at_exact_floor(self, bankroll_file):
@@ -172,12 +302,47 @@ class TestRecalcCeilingCaps:
         assert state["ceiling"] == pytest.approx(bankroll.FLOOR)
 
     def test_max_ceiling_cap_respected(self, bankroll_file):
+        """2026-08-03: pnl=500 pushes well past MAGNITUDE_CAP_MULTIPLE
+        (sqrt(500/8) >> 2.5), so this unambiguously tests saturation at the
+        cap rather than landing near a magnitude-factor boundary."""
         state = bankroll.read_bankroll()
         state["ceiling"] = 1990.0
         state["growth_rate"] = 0.02
-        bankroll.recalc_ceiling(state, pnl=50.0, is_win=True)
-        # 1990 * 1.02 = 2029.8, above MAX_CEILING -> clamped to 2000.0
+        bankroll.recalc_ceiling(state, pnl=500.0, is_win=True)
+        # capped growth: 1990 * (1 + 0.02*2.5) = 2089.5, above MAX_CEILING -> clamped
         assert state["ceiling"] == pytest.approx(bankroll.MAX_CEILING)
+
+    def test_magnitude_cap_multiple_never_exceeded(self, bankroll_file):
+        """A $10,000 win and a $1,000,000 win from the same starting
+        ceiling (well below MAX_CEILING, so the cap doesn't mask this)
+        must produce the IDENTICAL resulting ceiling -- proves
+        MAGNITUDE_CAP_MULTIPLE is a hard cap on the multiplier, not just a
+        big sqrt that happens to look capped."""
+        moderate = bankroll.read_bankroll()
+        moderate["ceiling"] = 100.0
+        bankroll.recalc_ceiling(moderate, pnl=10_000.0, is_win=True)
+
+        huge = bankroll.read_bankroll()
+        huge["ceiling"] = 100.0
+        bankroll.recalc_ceiling(huge, pnl=1_000_000.0, is_win=True)
+
+        assert moderate["ceiling"] == pytest.approx(huge["ceiling"])
+        # both capped at exactly MAGNITUDE_CAP_MULTIPLE * GROWTH_RATE
+        expected = 100.0 * (1 + bankroll.GROWTH_RATE * bankroll.MAGNITUDE_CAP_MULTIPLE)
+        assert moderate["ceiling"] == pytest.approx(expected)
+
+    def test_magnitude_cap_multiple_never_exceeded_on_loss(self, bankroll_file):
+        moderate = bankroll.read_bankroll()
+        moderate["ceiling"] = 1000.0
+        bankroll.recalc_ceiling(moderate, pnl=-10_000.0, is_win=False)
+
+        huge = bankroll.read_bankroll()
+        huge["ceiling"] = 1000.0
+        bankroll.recalc_ceiling(huge, pnl=-1_000_000.0, is_win=False)
+
+        assert moderate["ceiling"] == pytest.approx(huge["ceiling"])
+        expected = 1000.0 * (1 - bankroll.DECAY_RATE * bankroll.MAGNITUDE_CAP_MULTIPLE)
+        assert moderate["ceiling"] == pytest.approx(expected)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -186,12 +351,17 @@ class TestRecalcCeilingCaps:
 
 
 class TestGrowthRateCalibration:
-    def test_growth_rate_accelerates_above_55pct_win_rate(self, bankroll_file):
-        # 2026-07-27: calibration gates on lifetime_trades/lifetime_wins now
-        # (survive --reset), not the session closed_trades/wins counters --
-        # those used to silently zero this calibration's evidence on every
-        # reset. Session counters still tracked below for the current-tick
-        # bookkeeping, just no longer what gates the bonus.
+    """2026-08-03: calibration switched from lifetime win RATE to lifetime
+    avg-win/avg-loss PAYOFF RATIO -- a win-rate-based calibration would
+    fight the magnitude-weighted per-trade math above (a "cut losers fast,
+    let winners run" style structurally produces more losing trades by
+    count even while net-$-profitable, so it would keep tripping a
+    win-rate penalty even while making money). Payoff ratio is
+    scale-invariant, unlike a fixed-$ expectancy threshold."""
+
+    def test_growth_rate_accelerates_above_1_5_payoff_ratio(self, bankroll_file):
+        # 2026-07-27: calibration gates on lifetime_* (survive --reset), not
+        # the session closed_trades/wins counters -- still true here.
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
         state["closed_trades"] = 9
@@ -199,18 +369,25 @@ class TestGrowthRateCalibration:
         state["losses"] = 3
         state["lifetime_trades"] = 9
         state["lifetime_wins"] = 6
-        # 10th trade, a win -> 7/10 = 70% lifetime win rate, > 0.55 threshold
-        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
+        state["lifetime_losses"] = 3
+        state["lifetime_win_pnl_sum"] = 60.0   # avg win $10 pre-trade
+        state["lifetime_loss_pnl_sum"] = 15.0  # avg loss $5 pre-trade -> ratio 2.0
+        # 10th trade, a win -> payoff ratio stays well above 1.5 after the update
+        bankroll.recalc_ceiling(state, pnl=8.0, is_win=True)
         assert state["closed_trades"] == 10
         assert state["wins"] == 7
         assert state["lifetime_trades"] == 10
         assert state["lifetime_wins"] == 7
-        # bonus = min(0.03, (0.7 - 0.55) * 0.15) = 0.0225
-        expected_rate = round(min(0.08, bankroll.GROWTH_RATE + 0.0225), 4)
+        avg_win = state["lifetime_win_pnl_sum"] / state["lifetime_wins"]
+        avg_loss = state["lifetime_loss_pnl_sum"] / state["lifetime_losses"]
+        payoff_ratio = avg_win / avg_loss
+        assert payoff_ratio > 1.5
+        bonus = min(0.03, (payoff_ratio - 1.5) * 0.01)
+        expected_rate = round(min(0.08, bankroll.GROWTH_RATE + bonus), 4)
         assert state["growth_rate"] == pytest.approx(expected_rate)
         assert state["growth_rate"] > bankroll.GROWTH_RATE
 
-    def test_growth_rate_decelerates_below_45pct_win_rate(self, bankroll_file):
+    def test_growth_rate_decelerates_below_0_75_payoff_ratio(self, bankroll_file):
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
         state["closed_trades"] = 9
@@ -218,10 +395,17 @@ class TestGrowthRateCalibration:
         state["losses"] = 6
         state["lifetime_trades"] = 9
         state["lifetime_wins"] = 3
-        # 10th trade, a loss -> 3/10 = 30% lifetime win rate, < 0.45 threshold
-        bankroll.recalc_ceiling(state, pnl=-5.0, is_win=False)
+        state["lifetime_losses"] = 6
+        state["lifetime_win_pnl_sum"] = 9.0    # avg win $3 pre-trade
+        state["lifetime_loss_pnl_sum"] = 48.0  # avg loss $8 pre-trade -> ratio 0.375
+        # 10th trade, a loss -> payoff ratio stays well below 0.75 after the update
+        bankroll.recalc_ceiling(state, pnl=-2.5, is_win=False)
         assert state["closed_trades"] == 10
         assert state["lifetime_trades"] == 10
+        avg_win = state["lifetime_win_pnl_sum"] / state["lifetime_wins"]
+        avg_loss = state["lifetime_loss_pnl_sum"] / state["lifetime_losses"]
+        payoff_ratio = avg_win / avg_loss
+        assert payoff_ratio < 0.75
         expected_rate = round(max(0.01, bankroll.GROWTH_RATE - 0.003), 4)
         assert state["growth_rate"] == pytest.approx(expected_rate)
         assert state["growth_rate"] < bankroll.GROWTH_RATE
@@ -229,8 +413,8 @@ class TestGrowthRateCalibration:
     def test_growth_rate_gated_by_lifetime_not_session(self, bankroll_file):
         """The actual 2026-07-27 bug: a --reset wiped session wins/closed_trades
         but the acceleration used to key off those, not lifetime_* -- so a real
-        sustained 70% win-rate track record spanning a reset never triggered
-        the bonus. Confirms it now does."""
+        sustained strong track record spanning a reset never triggered the
+        bonus. Confirms it now does, under the new payoff-ratio calibration."""
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
         # session counters look freshly reset (post --reset), but lifetime
@@ -240,8 +424,14 @@ class TestGrowthRateCalibration:
         state["losses"] = 0
         state["lifetime_trades"] = 9
         state["lifetime_wins"] = 6
-        bankroll.recalc_ceiling(state, pnl=5.0, is_win=True)
-        expected_rate = round(min(0.08, bankroll.GROWTH_RATE + 0.0225), 4)
+        state["lifetime_losses"] = 3
+        state["lifetime_win_pnl_sum"] = 60.0
+        state["lifetime_loss_pnl_sum"] = 15.0
+        bankroll.recalc_ceiling(state, pnl=8.0, is_win=True)
+        avg_win = state["lifetime_win_pnl_sum"] / state["lifetime_wins"]
+        avg_loss = state["lifetime_loss_pnl_sum"] / state["lifetime_losses"]
+        bonus = min(0.03, (avg_win / avg_loss - 1.5) * 0.01)
+        expected_rate = round(min(0.08, bankroll.GROWTH_RATE + bonus), 4)
         assert state["growth_rate"] == pytest.approx(expected_rate)
 
     def test_growth_rate_untouched_below_10_trades(self, bankroll_file):
@@ -254,18 +444,39 @@ class TestGrowthRateCalibration:
         assert state["closed_trades"] == 6  # still under 10
         assert state["growth_rate"] == bankroll.GROWTH_RATE
 
-    def test_growth_rate_untouched_between_45_and_55pct(self, bankroll_file):
+    def test_growth_rate_untouched_in_neutral_payoff_band(self, bankroll_file):
         state = bankroll.read_bankroll()
         state["ceiling"] = 100.0
         state["closed_trades"] = 9
         state["wins"] = 5
         state["losses"] = 4
-        # 10th trade a win -> 6/10 = 60%... use a win rate that lands in the
-        # neutral band instead: 5 wins / 10 = 50%
-        bankroll.recalc_ceiling(state, pnl=5.0, is_win=False)
-        # closed_trades=10, wins stayed 5 (loss recorded), win_rate = 5/10 = 50%
+        state["lifetime_trades"] = 9
+        state["lifetime_wins"] = 5
+        state["lifetime_losses"] = 4
+        state["lifetime_win_pnl_sum"] = 25.0   # avg win $5
+        state["lifetime_loss_pnl_sum"] = 20.0  # avg loss $5 -> ratio 1.0, neutral band
+        bankroll.recalc_ceiling(state, pnl=-5.0, is_win=False)
         assert state["closed_trades"] == 10
         assert state["wins"] == 5
+        avg_win = state["lifetime_win_pnl_sum"] / state["lifetime_wins"]
+        avg_loss = state["lifetime_loss_pnl_sum"] / state["lifetime_losses"]
+        payoff_ratio = avg_win / avg_loss
+        assert 0.75 <= payoff_ratio <= 1.5
+        assert state["growth_rate"] == bankroll.GROWTH_RATE
+
+    def test_growth_rate_untouched_when_sample_size_too_thin(self, bankroll_file):
+        """>=10 lifetime_trades but fewer than 3 losses -- payoff ratio
+        would be noisy (avg_loss from 1-2 losses), so calibration must not
+        act on it yet, regardless of lifetime_trades."""
+        state = bankroll.read_bankroll()
+        state["ceiling"] = 100.0
+        state["lifetime_trades"] = 9
+        state["lifetime_wins"] = 8
+        state["lifetime_losses"] = 1
+        state["lifetime_win_pnl_sum"] = 800.0  # huge apparent payoff ratio
+        state["lifetime_loss_pnl_sum"] = 1.0
+        bankroll.recalc_ceiling(state, pnl=8.0, is_win=True)
+        assert state["lifetime_trades"] == 10
         assert state["growth_rate"] == bankroll.GROWTH_RATE
 
 

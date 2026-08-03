@@ -14,6 +14,7 @@ Usage:
 """
 
 import argparse
+import math
 import re
 import sys
 from datetime import date, datetime, timezone
@@ -36,6 +37,49 @@ MAX_CEILING = 2000.00       # hard cap
 GROWTH_RATE = 0.02          # +2% per win
 DECAY_RATE = 0.01           # -1% per loss
 TARGET_PROFIT_PCT = 0.01    # 1% of position = take-profit target
+
+# ── Magnitude-weighted growth/decay (2026-08-03) ─────────────────────────────
+# Raf's request: reward the DOLLAR SIZE of a win/loss, not just its sign.
+# Previously a $1 win and a $16 win both grew the ceiling by an identical
+# flat +2% (GROWTH_RATE), and every loss shrank it by an identical flat -1%
+# (DECAY_RATE) regardless of size -- structurally punished a "cut losers
+# fast, let winners run" style, which produces MORE losing trades by count
+# even while net-$-profitable (real live data, 2026-08-03: 4 wins avg $7.98,
+# 5 losses avg -$2.50, net +$19.43 over the first 9 trades with trustworthy
+# $ realized_pnl -- a real, asymmetric edge a win/loss-COUNT mechanism
+# doesn't reward).
+#
+# WIN_MAGNITUDE_REFERENCE/LOSS_MAGNITUDE_REFERENCE anchor "a typical trade"
+# -- a win/loss at exactly the reference size reproduces today's exact flat
+# GROWTH_RATE/DECAY_RATE (magnitude factor == 1.0), so this is a pure
+# extension, not a re-tuning, of the existing baseline. Two separate
+# references (not one shared reference for both signs) so the magnitude
+# signal ("is this a typically-sized win/loss") stays orthogonal to the
+# pre-existing GROWTH_RATE/DECAY_RATE asymmetry. Anchored to the real
+# 2026-08-03 numbers -- revisit once more trustworthy-$-pnl trade history
+# accumulates (today's window is only 9 trades).
+WIN_MAGNITUDE_REFERENCE = 8.00
+LOSS_MAGNITUDE_REFERENCE = 2.50
+
+# Per-step dampener/cap -- HOOD (-$1,344.96, pre-mid-July) and RDDT (-$40.35,
+# 2026-07-31) are the caution this exists for: an uncapped magnitude-weighted
+# formula would let ONE outlier trade swing the ceiling far more than the
+# flat-rate mechanism ever could. Two layers: sqrt (not linear) scaling, so
+# doubling pnl does not double the rate; and a hard cap on the multiplier
+# regardless of how large pnl gets, so even a huge pnl can't move the
+# ceiling further than 2.5x the flat rate in one step (max 5% growth / 2.5%
+# decay per trade).
+MAGNITUDE_CAP_MULTIPLE = 2.5
+
+
+def _magnitude_factor(pnl_abs: float, reference: float) -> float:
+    """1.0 at `reference` (reproduces today's flat rate exactly), grows
+    sub-linearly above it via sqrt, shrinks below it, hard-capped at
+    MAGNITUDE_CAP_MULTIPLE regardless of how large pnl_abs gets."""
+    if reference <= 0 or pnl_abs <= 0:
+        return 0.0
+    return min(MAGNITUDE_CAP_MULTIPLE, math.sqrt(pnl_abs / reference))
+
 
 # ── Competition mode (2026-07-23) ────────────────────────────────────────────
 # Goal is most money by the deadline, not risk-adjusted return -- see
@@ -136,6 +180,8 @@ def read_bankroll(db_path: Path = None) -> dict:
         "lifetime_net_pnl": 0.0,
         "lifetime_wins": 0,
         "lifetime_losses": 0,
+        "lifetime_win_pnl_sum": 0.0,
+        "lifetime_loss_pnl_sum": 0.0,
     }
     conn = trader_db.get_conn(db_path)
     try:
@@ -154,6 +200,8 @@ def read_bankroll(db_path: Path = None) -> dict:
             state["lifetime_net_pnl"] = db_state["lifetime_net_pnl"]
             state["lifetime_wins"] = db_state["lifetime_wins"]
             state["lifetime_losses"] = db_state["lifetime_losses"]
+            state["lifetime_win_pnl_sum"] = db_state["lifetime_win_pnl_sum"]
+            state["lifetime_loss_pnl_sum"] = db_state["lifetime_loss_pnl_sum"]
 
         history_rows = trader_db.get_bankroll_history(conn, limit=50)
         state["history"] = [
@@ -188,6 +236,8 @@ def write_bankroll(state: dict, db_path: Path = None):
             lifetime_net_pnl=state.get("lifetime_net_pnl", 0.0),
             lifetime_wins=state.get("lifetime_wins", 0),
             lifetime_losses=state.get("lifetime_losses", 0),
+            lifetime_win_pnl_sum=state.get("lifetime_win_pnl_sum", 0.0),
+            lifetime_loss_pnl_sum=state.get("lifetime_loss_pnl_sum", 0.0),
         )
         with conn:
             conn.execute("DELETE FROM bankroll_history")
@@ -213,14 +263,34 @@ def record_deployment(state: dict, cost: float):
     state["total_deployed"] = state.get("total_deployed", 0.0) + max(0.0, cost)
 
 
+def _lifetime_payoff_ratio(state: dict) -> float | None:
+    """avg win $ / avg loss $ over lifetime (survives --reset, same as the
+    other lifetime_* fields). None if there isn't enough same-side evidence
+    yet to trust the ratio (avg_loss computed from too few losses is noisy --
+    one lucky/unlucky loss would swing it wildly)."""
+    wins = state.get("lifetime_wins", 0)
+    losses = state.get("lifetime_losses", 0)
+    if wins < 3 or losses < 3:
+        return None
+    avg_win = state.get("lifetime_win_pnl_sum", 0.0) / wins
+    avg_loss = state.get("lifetime_loss_pnl_sum", 0.0) / losses
+    if avg_loss <= 0:
+        return None
+    return avg_win / avg_loss
+
+
 def recalc_ceiling(state: dict, pnl: float, is_win: bool):
     trade_count = state["closed_trades"] + 1
 
     if is_win:
-        state["ceiling"] = min(MAX_CEILING, state["ceiling"] * (1 + state["growth_rate"]))
+        magnitude = _magnitude_factor(pnl, WIN_MAGNITUDE_REFERENCE)
+        effective_rate = state["growth_rate"] * magnitude
+        state["ceiling"] = min(MAX_CEILING, state["ceiling"] * (1 + effective_rate))
         state["wins"] += 1
     else:
-        state["ceiling"] = max(FLOOR, state["ceiling"] * (1 - state["decay_rate"]))
+        magnitude = _magnitude_factor(abs(pnl), LOSS_MAGNITUDE_REFERENCE)
+        effective_rate = state["decay_rate"] * magnitude
+        state["ceiling"] = max(FLOOR, state["ceiling"] * (1 - effective_rate))
         state["losses"] += 1
 
     state["closed_trades"] = trade_count
@@ -229,23 +299,33 @@ def recalc_ceiling(state: dict, pnl: float, is_win: bool):
     state["lifetime_net_pnl"] = state.get("lifetime_net_pnl", 0.0) + pnl
     if is_win:
         state["lifetime_wins"] = state.get("lifetime_wins", 0) + 1
+        state["lifetime_win_pnl_sum"] = state.get("lifetime_win_pnl_sum", 0.0) + pnl
     else:
         state["lifetime_losses"] = state.get("lifetime_losses", 0) + 1
+        state["lifetime_loss_pnl_sum"] = state.get("lifetime_loss_pnl_sum", 0.0) + abs(pnl)
 
-    # Dynamic calibration: growth rate accelerates with consistent wins.
+    # Dynamic calibration: growth rate accelerates with a strong payoff
+    # ratio (avg win $ / avg loss $), not win RATE -- a win-rate-based
+    # calibration would fight the exact per-trade magnitude weighting above:
+    # a "cut losers fast, let winners run" style structurally produces MORE
+    # losing trades by count even while net-$-profitable, so it would keep
+    # tripping the old win_rate < 0.45 penalty branch even as it's making
+    # money. Payoff ratio is scale-invariant (a $16/$1 ratio carries the
+    # same signal as a future $1600/$100 ratio as position sizes grow with
+    # the ceiling), unlike a fixed-$ expectancy threshold.
     # Uses lifetime_wins/lifetime_trades (survive --reset), not the session
     # counters above (wins/closed_trades) -- those get wiped by --reset,
     # which was silently resetting this calibration's evidence back to zero
     # every time (2026-07-27 fix).
     lifetime_trades = state.get("lifetime_trades", 0)
-    lifetime_wins = state.get("lifetime_wins", 0)
-    if lifetime_trades >= 10 and lifetime_wins > 0:
-        win_rate = lifetime_wins / lifetime_trades
-        if win_rate > 0.55:
-            bonus = min(0.03, (win_rate - 0.55) * 0.15)
-            state["growth_rate"] = round(min(0.08, GROWTH_RATE + bonus), 4)
-        elif win_rate < 0.45:
-            state["growth_rate"] = round(max(0.01, GROWTH_RATE - 0.003), 4)
+    if lifetime_trades >= 10:
+        payoff_ratio = _lifetime_payoff_ratio(state)
+        if payoff_ratio is not None:
+            if payoff_ratio > 1.5:
+                bonus = min(0.03, (payoff_ratio - 1.5) * 0.01)
+                state["growth_rate"] = round(min(0.08, GROWTH_RATE + bonus), 4)
+            elif payoff_ratio < 0.75:
+                state["growth_rate"] = round(max(0.01, GROWTH_RATE - 0.003), 4)
 
     # Target profit shrinks as ceiling grows (take smaller % on bigger bets)
     if state["ceiling"] > 500:
