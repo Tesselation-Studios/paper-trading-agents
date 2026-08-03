@@ -238,6 +238,35 @@ def check_local_db_health() -> List[Finding]:
     return []
 
 
+def check_position_reconciliation() -> List[Finding]:
+    """2026-08-03: reads state/reconciliation_status.json, written daily by
+    scripts/reconcile_positions.py (stonks-off-hours cron) -- a phantom
+    Alpaca position (real money at risk, untracked in trader_db) or a
+    phantom DB position (STVN/KEX/DXCM pattern, tasks/pending.md) is a
+    critical finding that blocks trading via --gate until a later clean
+    reconciliation run clears it. A quantity mismatch is warning-tier.
+    Doesn't run the reconciliation itself here -- that's a real Alpaca API
+    call, too expensive for every tick's --gate check; this only reads the
+    daily job's last result. Missing/unreadable status file is silently
+    skipped (not yet run, or a stale/corrupt file) rather than flagged --
+    the absence of a reconciliation isn't itself a critical drift the way
+    a version mismatch or missing params.json key is."""
+    status_path = STATE_DIR / "reconciliation_status.json"
+    if not status_path.exists():
+        return []
+    try:
+        status = json.loads(status_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    findings: List[Finding] = []
+    for msg in status.get("critical", []):
+        findings.append(("critical", f"position reconciliation: {msg}"))
+    for msg in status.get("warnings", []):
+        findings.append(("warning", f"position reconciliation: {msg}"))
+    return findings
+
+
 def run_all_checks() -> Dict[str, Any]:
     params_raw = _load_params_raw()
     strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
@@ -251,6 +280,7 @@ def run_all_checks() -> Dict[str, Any]:
     findings += check_guardrail_gates_drift(params, executor_text)
     findings += check_dead_params(params)
     findings += check_local_db_health()
+    findings += check_position_reconciliation()
 
     critical = [msg for sev, msg in findings if sev == "critical"]
     warnings = [msg for sev, msg in findings if sev == "warning"]
