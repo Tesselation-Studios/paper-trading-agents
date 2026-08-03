@@ -224,3 +224,18 @@
 - **Deployment**: 89.7% cash, 33 consecutive under-deployed, no escalation
 - **Action**: HOLD all 10. 0 buys, 0 sells. CHOPPY doing what CHOPPY does.
 
+## 10:40 AM — CHOPPY grind, batch 16 gated
+- **Portfolio**: $10,400.81 | Cash $9,334.41 (89.7%) | 10 positions | Drawdown 0.24%
+- **Regime**: CHOPPY (0.644) | SPY $747.03 +0.72% RSI 52.6 MACDh -0.09 — flat
+- **Stops**: All 10 active, no breaches ✅
+- **Bootstrap**: ceiling $659 (<$1000), no triggers (BFH +3.35%, FLXS +3.97% — both <5%)
+- **Market-context**: SPY flat, no exit triggers on BFH/FLXS above 2%
+- **Positions**: FLXS +3.97% MACDh +2.64 🔥 | BFH +3.35% MACDh +1.81 | KEX -2.10% RSI 34 oversold MACDh +0.49 bull div | HLN -3.72% worst (in-band)
+- **Batch 16** (MDXG/RELX/BILL/TBLA/FDBC/HTOO) evaluated & marked:
+  - MDXG/RELX/BILL/TBLA: null prices, can't evaluate
+  - FDBC $52.60 RSI 58.3 MACDh +0.688 vol 2.43x — solid technicals, no catalyst/sentiment → correctly gated in CHOPPY
+  - HTOO $2.66 RSI 48.6 MACDh +0.021 near-zero, sent 0.3 generic — skip
+- **Discovery**: SVIV promoted ($10.21, thin vol, MACDh near-zero), merge skipped (all already in watchlist)
+- **Watchlist**: 19, rotation advances — 36 consecutive under-deployed, no escalation
+- **Action**: HOLD all 10. 0 buys, 0 sells. Batch correctly gated — no non-technical edge in CHOPPY.
+
