@@ -80,3 +80,18 @@
 - **Deployment**: 86% cash, no new entry qualified — OOMA SELL at open will add ~$21 to cash
 - **Action**: OOMA SELL at 9:30. No buys. Rotation complete, await next fresh batch.
 
+## 9:30 AM — Market open, OOMA recovers, no action
+- **Portfolio**: $10,386 | Cash $8,928 (86.0%) | 13 positions | Drawdown 0.38%
+- **Regime**: CHOPPY (0.644) | SPY $747.03 RSI 52.6 MACDh -0.09 near-zero — flat, no fade
+- **OOMA recovered**: +4.29% ($22.10, entry $21.19) — pre-market trailing stop breach resolved. No active breaches ✅
+- **Top movers**: ZBRA +4.5% RSI 70.1 🔥 | DXCM +4.3% RSI 68.1 | OOMA +4.3% RSI 62.2
+- **Bootstrap**: ceiling $679, no quick-exit triggers (ZBRA +4.5% < 5%, DXCM/OOMA < 5%)
+- **Batch 4** (FDBC/BILL/RELX/MDXG/TW/CYCU) evaluated & marked:
+  - FDBC $52.60 RSI 58.3 MACDh +0.688 vol 2.43x — best technicals of batch, no catalyst/sentiment/insiders → reconcile 0.0 conf in CHOPPY, skip
+  - BILL $45.13 RSI 60.2 MACDh +2.058 — strong technicals, no edge beyond them → reconcile 0.0, skip
+  - RELX/MDXG/TW — near-zero MACDh or noise, no catalyst
+  - CYCU crashed below $1 — dead
+- **Discovery**: no new merges/promotes (all already in watchlist), 13 watchlist, no stale to drop
+- **Deployment**: 86% cash, 21 consecutive under-deployed, no escalation triggers
+- **Action**: No buy, no sell. Batch correctly gated — no non-technical edge in CHOPPY. Rotation advances for next tick.
+
