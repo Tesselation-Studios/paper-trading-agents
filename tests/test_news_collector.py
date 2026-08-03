@@ -16,6 +16,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
@@ -226,47 +228,219 @@ class TestExtractTickersEdgeCases:
 
 
 class TestScoreSentiment:
-    """score_sentiment() added 2026-07-23: real FinBERT scoring with a
-    keyword-based fallback when FinBERT is unreachable or errors."""
+    """score_sentiment() (rewritten 2026-08-03 to route through the
+    gpu-compute worker's `sentiment` job type via gRPC instead of a
+    standalone FinBERT HTTP service) -- thin single-text wrapper over
+    score_sentiment_batch(), with the same keyword-based fallback when the
+    worker is unreachable or errors. Mocks only the gRPC boundary
+    (_score_sentiment_batch_via_worker), matching this repo's convention of
+    faking the external network call, not the logic around it."""
 
-    def test_empty_text_returns_zero_without_calling_finbert(self, monkeypatch):
+    def test_empty_text_returns_zero_without_calling_worker(self, monkeypatch):
         called = []
-        monkeypatch.setattr(news_collector.requests, "post", lambda *a, **k: called.append(1))
+        monkeypatch.setattr(
+            news_collector, "_score_sentiment_batch_via_worker",
+            lambda texts: called.append(texts) or [],
+        )
         assert news_collector.score_sentiment("") == 0.0
         assert called == []
 
-    def test_uses_finbert_score_on_success(self, monkeypatch):
-        class FakeResp:
-            status_code = 200
-            def json(self):
-                return {"sentiment_score": 0.87, "label": "positive"}
-        monkeypatch.setattr(news_collector.requests, "post", lambda *a, **k: FakeResp())
+    def test_uses_worker_score_on_success(self, monkeypatch):
+        monkeypatch.setattr(
+            news_collector, "_score_sentiment_batch_via_worker", lambda texts: [0.87],
+        )
         assert news_collector.score_sentiment("great earnings beat") == 0.87
 
-    def test_falls_back_to_keyword_on_non_200(self, monkeypatch):
-        class FakeResp:
-            status_code = 500
-            text = "server error"
-        monkeypatch.setattr(news_collector.requests, "post", lambda *a, **k: FakeResp())
+    def test_falls_back_to_keyword_when_worker_returns_none(self, monkeypatch):
+        monkeypatch.setattr(
+            news_collector, "_score_sentiment_batch_via_worker", lambda texts: None,
+        )
         # "surge" is a known positive keyword -> nonzero fallback score.
         result = news_collector.score_sentiment("shares surge on strong demand")
         assert result == news_collector._compute_sentiment("shares surge on strong demand")
 
-    def test_falls_back_to_keyword_on_connection_error(self, monkeypatch):
-        def raise_error(*a, **k):
-            raise news_collector.requests.RequestException("connection refused")
-        monkeypatch.setattr(news_collector.requests, "post", raise_error)
+    def test_falls_back_to_keyword_on_length_mismatch(self, monkeypatch):
+        # Defensive case: worker returns a differently-sized list than the
+        # batch sent -- must not silently misalign scores to texts.
+        monkeypatch.setattr(
+            news_collector, "_score_sentiment_batch_via_worker", lambda texts: [0.1, 0.2],
+        )
         result = news_collector.score_sentiment("shares plunge on weak guidance")
         assert result == news_collector._compute_sentiment("shares plunge on weak guidance")
 
-    def test_falls_back_on_malformed_response(self, monkeypatch):
-        class FakeResp:
-            status_code = 200
-            def json(self):
-                return {"unexpected_shape": True}
-        monkeypatch.setattr(news_collector.requests, "post", lambda *a, **k: FakeResp())
-        result = news_collector.score_sentiment("neutral filing update")
-        assert result == news_collector._compute_sentiment("neutral filing update")
+
+class TestScoreSentimentBatchViaWorker:
+    """_score_sentiment_batch_via_worker() does the actual gRPC round-trip
+    (submit_sentiment + wait_for_job against the gpu-compute WorkerPool).
+    Mocks WorkerPool itself (the true external boundary) rather than the
+    network socket, matching how other gRPC-adjacent tests in this
+    ecosystem are structured."""
+
+    def _install_fake_worker_pool(self, monkeypatch, *, job_id="job-1",
+                                   phase=None, result_json=None, submit_returns=None):
+        import types
+        from generated import gpu_compute_pb2 as pb
+
+        phase = phase if phase is not None else pb.JobPhase.COMPLETED
+
+        class FakeUpdate:
+            def __init__(self):
+                self.phase = phase
+                self.result_json = result_json or b"{}"
+
+        class FakePool:
+            def __init__(self):
+                self.closed = False
+                self.submitted_texts = None
+
+            async def submit_sentiment(self, texts):
+                self.submitted_texts = texts
+                return submit_returns if submit_returns is not None else job_id
+
+            async def wait_for_job(self, jid, timeout):
+                if job_id is None:
+                    return None
+                return FakeUpdate()
+
+            async def close(self):
+                self.closed = True
+
+        fake_module = types.SimpleNamespace(WorkerPool=types.SimpleNamespace(from_env=lambda: FakePool()))
+        monkeypatch.setitem(sys.modules, "orchestrator.gpu_client", fake_module)
+        return fake_module
+
+    def test_happy_path_returns_polarity_weighted_scores(self, monkeypatch):
+        result_json = json.dumps({
+            "results": [
+                {"text": "a", "label": "positive", "score": 0.9, "polarity": 1.0},
+                {"text": "b", "label": "negative", "score": 0.8, "polarity": -1.0},
+            ],
+        }).encode()
+        self._install_fake_worker_pool(monkeypatch, result_json=result_json)
+
+        scores = news_collector._score_sentiment_batch_via_worker(["a", "b"])
+        assert scores == pytest.approx([0.9, -0.8])
+
+    def test_submit_returning_none_falls_back(self, monkeypatch):
+        self._install_fake_worker_pool(monkeypatch, submit_returns=None)
+        assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+
+    def test_job_not_completed_falls_back(self, monkeypatch):
+        from generated import gpu_compute_pb2 as pb
+        self._install_fake_worker_pool(monkeypatch, phase=pb.JobPhase.FAILED)
+        assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+
+    def test_wait_for_job_timeout_returns_none_falls_back(self, monkeypatch):
+        self._install_fake_worker_pool(monkeypatch, job_id=None)
+        assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+
+    def test_import_error_falls_back_without_raising(self, monkeypatch):
+        # Simulates gpu-compute not being importable at all (e.g. GPU_COMPUTE_ROOT
+        # misconfigured) -- must degrade, not crash the caller.
+        real_import = __import__
+
+        def fake_import(name, *a, **k):
+            if name == "orchestrator.gpu_client":
+                raise ImportError("no gpu-compute checkout found")
+            return real_import(name, *a, **k)
+
+        monkeypatch.setattr("builtins.__import__", fake_import)
+        assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+
+
+class TestScoreSentimentBatch:
+    """score_sentiment_batch() -- the public batching entry point used by
+    fetch_all_feeds()/main() to score N articles in one round-trip."""
+
+    def test_empty_list_returns_empty_without_calling_worker(self, monkeypatch):
+        called = []
+        monkeypatch.setattr(
+            news_collector, "_score_sentiment_batch_via_worker",
+            lambda texts: called.append(texts) or [],
+        )
+        assert news_collector.score_sentiment_batch([]) == []
+        assert called == []
+
+    def test_single_call_scores_all_texts_together(self, monkeypatch):
+        calls = []
+
+        def fake_worker(texts):
+            calls.append(texts)
+            return [0.5] * len(texts)
+
+        monkeypatch.setattr(news_collector, "_score_sentiment_batch_via_worker", fake_worker)
+        texts = ["h1", "h2", "h3"]
+        scores = news_collector.score_sentiment_batch(texts)
+
+        assert len(calls) == 1  # one round-trip, not one per text
+        assert calls[0] == texts
+        assert scores == [0.5, 0.5, 0.5]
+
+    def test_falls_back_to_keyword_per_text_when_worker_unreachable(self, monkeypatch):
+        monkeypatch.setattr(news_collector, "_score_sentiment_batch_via_worker", lambda texts: None)
+        texts = ["shares surge on strong demand", "shares plunge on weak guidance"]
+        scores = news_collector.score_sentiment_batch(texts)
+        assert scores == [news_collector._compute_sentiment(t) for t in texts]
+
+
+class TestFetchAllFeedsBatchesSentiment:
+    """fetch_all_feeds() used to call score_sentiment() once per article
+    inline in the per-feed loop -- now collects every article across every
+    feed and scores them in a single score_sentiment_batch() call."""
+
+    def test_scores_all_articles_across_feeds_in_one_batch_call(self, monkeypatch):
+        def fake_fetch_rss_feed(url, timeout=15):
+            # Two feeds, two articles each -> 4 total.
+            return [
+                {"title": f"headline for {url}", "summary": "s", "url": f"{url}/1"},
+                {"title": f"headline2 for {url}", "summary": "s2", "url": f"{url}/2"},
+            ]
+        monkeypatch.setattr(news_collector, "fetch_rss_feed", fake_fetch_rss_feed)
+
+        calls = []
+
+        def fake_batch(texts):
+            calls.append(texts)
+            return [0.1] * len(texts)
+        monkeypatch.setattr(news_collector, "score_sentiment_batch", fake_batch)
+
+        articles = news_collector.fetch_all_feeds()
+
+        assert len(calls) == 1
+        assert len(calls[0]) == len(news_collector.RSS_FEEDS) * 2
+        assert all(a["sentiment_score"] == 0.1 for a in articles)
+
+
+class TestMainBatchesAlpacaSentiment:
+    """main()'s Alpaca News leg used to call score_sentiment() once per
+    article inline -- now batches all Alpaca articles in one call."""
+
+    def test_alpaca_articles_scored_in_one_batch_call(self, monkeypatch):
+        monkeypatch.setattr(sys, "argv", ["news_collector.py", "AAA"])
+        monkeypatch.setattr(news_collector, "ensure_news_cache_table", lambda: None)
+        monkeypatch.setattr(news_collector, "fetch_all_feeds", lambda: [])
+        monkeypatch.setattr(news_collector, "upsert_articles", lambda articles: 0)
+        monkeypatch.setattr(news_collector, "recent_watchlist_articles", lambda tickers, hours=24: [])
+        monkeypatch.setattr(news_collector, "write_sentiment_cache", lambda ticker_sentiment, path=None: None)
+
+        alpaca_articles = [
+            {"title": "AAA beats earnings", "summary": "s1", "url": "u1", "tickers": ["AAA"]},
+            {"title": "AAA guidance raised", "summary": "s2", "url": "u2", "tickers": ["AAA"]},
+        ]
+        monkeypatch.setattr(news_collector, "fetch_alpaca_news", lambda tickers: alpaca_articles)
+
+        calls = []
+
+        def fake_batch(texts):
+            calls.append(texts)
+            return [0.2] * len(texts)
+        monkeypatch.setattr(news_collector, "score_sentiment_batch", fake_batch)
+
+        news_collector.main()
+
+        assert len(calls) == 1
+        assert len(calls[0]) == 2
+        assert all(a["sentiment_score"] == 0.2 for a in alpaca_articles)
 
 
 class TestFetchAlpacaNews:

@@ -241,11 +241,11 @@ def run_cycle(conn, cursor_state: dict, config: dict, now: str = None) -> dict:
 def maybe_confirm_news(conn, cursor_state: dict, config: dict, now: str = None) -> dict:
     """Separate, much slower cadence than the screening loop -- calls
     discovery_scan.confirm_with_news() on the current top in-band pool
-    candidates. Any exception from that leg (Alpaca News + FinBERT POST to
-    legend-of-macs.local, 8s timeout) is caught here and never propagates
-    -- this is the one leg with a real, previously-undocumented network
-    cost, and it must not be able to block or kill the cheap screening
-    loop."""
+    candidates. Any exception from that leg (Alpaca News + FinBERT via the
+    gpu-compute worker, SENTIMENT_JOB_TIMEOUT-bounded) is caught here and
+    never propagates -- this is the one leg with a real, previously-
+    undocumented network cost, and it must not be able to block or kill the
+    cheap screening loop."""
     now = now or _now_iso()
     cursor_state = dict(cursor_state)
     last = cursor_state.get("last_finbert_confirmation_at")

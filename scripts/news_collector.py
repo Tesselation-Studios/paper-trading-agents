@@ -19,6 +19,13 @@ could read. `write_sentiment_cache()` fixes that: a local
 stonks-sentiment-refresh cron), so the tick loop gets a fast local read
 instead of a live network round-trip mid-tick.
 
+2026-08-03: FinBERT scoring moved off the standalone HTTP service
+(legend-of-macs.local:5004, separate repo/deploy) onto the gpu-compute
+worker's `sentiment` job type (gRPC, same worker already used for regime
+retraining) — all ML work now routes through one service. See
+score_sentiment_batch()/score_sentiment() below; keyword fallback
+unchanged.
+
 Fetches from free RSS feeds (no API keys) + Alpaca News (ALPACA_STONKS_KEY/
 SECRET), deduplicates by URL, stores results in the local trader_db.py
 news_cache table (additive-only, migrated 2026-07-28 from remote Postgres
@@ -34,6 +41,7 @@ replay_check.py/universe_scan.py.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -55,9 +63,11 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SENTIMENT_CACHE_PATH = REPO_ROOT / "state" / "sentiment_cache.json"
 
-FINBERT_HOST = os.environ.get("FINBERT_HOST", "legend-of-macs.local")
-FINBERT_PORT = int(os.environ.get("FINBERT_PORT", "5004"))
-FINBERT_URL = f"http://{FINBERT_HOST}:{FINBERT_PORT}"
+# gpu-compute worker (gRPC, sentiment job type) -- see score_sentiment_batch().
+GPU_COMPUTE_ROOT = os.environ.get("GPU_COMPUTE_ROOT", str(Path.home() / "projects" / "gpu-compute"))
+if GPU_COMPUTE_ROOT not in sys.path:
+    sys.path.insert(0, GPU_COMPUTE_ROOT)
+SENTIMENT_JOB_TIMEOUT = int(os.environ.get("SENTIMENT_JOB_TIMEOUT", "30"))
 
 ALPACA_NEWS_URL = "https://data.alpaca.markets/v1beta1/news"
 
@@ -195,26 +205,72 @@ def _compute_sentiment(text: str) -> float:
     return max(-1.0, min(1.0, avg))
 
 
+def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]:
+    """One gRPC round-trip through the gpu-compute worker's `sentiment` job
+    type for the whole batch. Returns None (not a list of zeros) on any
+    failure -- worker unreachable, job failed/timed out, unexpected
+    response shape -- so the caller falls back to the keyword scorer
+    instead of silently returning wrong scores."""
+    try:
+        from generated import gpu_compute_pb2 as pb
+        from orchestrator.gpu_client import WorkerPool
+    except ImportError as e:
+        log.warning("gpu_client unavailable (%s), falling back to keyword sentiment", e)
+        return None
+
+    async def _run() -> Optional[List[float]]:
+        pool = WorkerPool.from_env()
+        try:
+            job_id = await pool.submit_sentiment(texts=texts)
+            if job_id is None:
+                return None
+            update = await pool.wait_for_job(job_id, timeout=SENTIMENT_JOB_TIMEOUT)
+            if update is None or update.phase != pb.JobPhase.COMPLETED:
+                return None
+            result = json.loads(update.result_json)
+            return [r["polarity"] * r["score"] for r in result["results"]]
+        finally:
+            await pool.close()
+
+    try:
+        return asyncio.run(_run())
+    except Exception as e:
+        log.warning("Sentiment worker call failed (%s), falling back to keyword sentiment", e)
+        return None
+
+
+def score_sentiment_batch(texts: List[str]) -> List[float]:
+    """Score a batch of texts in a single gRPC round-trip to the gpu-compute
+    worker's `sentiment` job type (real FinBERT, signed -1..1). Falls back
+    to the keyword scorer (_compute_sentiment) per-text if the worker is
+    unreachable, the job fails, or times out -- fail-open, same "never let
+    a tick stall" philosophy as the rest of this pipeline. Returns a list
+    the same length and order as `texts`. Prefer this over score_sentiment()
+    for anything scoring more than one text -- each score_sentiment() call
+    is its own round-trip.
+    """
+    if not texts:
+        return []
+    scores = _score_sentiment_batch_via_worker(texts)
+    if scores is not None and len(scores) == len(texts):
+        return scores
+    return [_compute_sentiment(t) for t in texts]
+
+
 def score_sentiment(text: str, ticker: str = "", timeout: int = 8) -> float:
-    """Real FinBERT sentiment (signed -1..1, confirmed via live probe:
-    positive text -> positive score, negative -> negative, neutral -> 0.0),
-    falling back to the keyword scorer above if FinBERT is unreachable or
-    errors — fail-open, same "never let a tick stall" philosophy as the
-    rest of this pipeline. Not cached at this layer; callers that need to
-    avoid re-scoring the same text repeatedly should dedupe first.
+    """Real FinBERT sentiment (signed -1..1) via the gpu-compute worker's
+    `sentiment` job type (consolidated 2026-08-03 off a standalone HTTP
+    FinBERT service), falling back to the keyword scorer if the worker is
+    unreachable or errors. Thin single-text wrapper over
+    score_sentiment_batch() for callers that only have one text at a
+    time -- prefer calling that directly when scoring several texts, to
+    avoid a separate gRPC round-trip per call. `ticker`/`timeout` are
+    accepted for call-site compatibility but unused (SENTIMENT_JOB_TIMEOUT
+    governs the round-trip; the worker doesn't take a per-text ticker).
     """
     if not text:
         return 0.0
-    try:
-        resp = requests.post(
-            f"{FINBERT_URL}/analyze", json={"text": text, "ticker": ticker}, timeout=timeout,
-        )
-        if resp.status_code == 200:
-            return float(resp.json()["sentiment_score"])
-        log.warning("FinBERT returned %s, falling back to keyword sentiment", resp.status_code)
-    except (requests.RequestException, KeyError, ValueError, TypeError) as e:
-        log.warning("FinBERT unreachable (%s), falling back to keyword sentiment", e)
-    return _compute_sentiment(text)
+    return score_sentiment_batch([text])[0]
 
 
 def fetch_alpaca_news(tickers: List[str], limit: int = 20, timeout: int = 15) -> Optional[List[Dict[str, Any]]]:
@@ -426,10 +482,16 @@ def fetch_all_feeds(timeout: int = 15) -> List[Dict[str, Any]]:
         log.info("Fetched %d articles from %s", len(articles), source_name)
         for article in articles:
             article["source"] = source_name
-            combined = f"{article.get('title', '')} {article.get('summary', '')}"
-            article["sentiment_score"] = score_sentiment(combined)
-            article["tickers"] = extract_tickers(combined, KNOWN_TICKERS)
         all_articles.extend(articles)
+
+    # One batched sentiment round-trip for every article across every feed,
+    # not one gRPC call per article.
+    combined_texts = [f"{a.get('title', '')} {a.get('summary', '')}" for a in all_articles]
+    scores = score_sentiment_batch(combined_texts)
+    for article, combined, score in zip(all_articles, combined_texts, scores):
+        article["sentiment_score"] = score
+        article["tickers"] = extract_tickers(combined, KNOWN_TICKERS)
+
     deduped = _deduplicate(all_articles)
     log.info("Total articles: %d (deduplicated from %d)", len(deduped), len(all_articles))
     return deduped
@@ -559,9 +621,10 @@ def main():
     fetch_failed = alpaca_articles is None
     if fetch_failed:
         alpaca_articles = []
-    for a in alpaca_articles:
-        combined = f"{a.get('title', '')} {a.get('summary', '')}"
-        a["sentiment_score"] = score_sentiment(combined)
+    alpaca_texts = [f"{a.get('title', '')} {a.get('summary', '')}" for a in alpaca_articles]
+    alpaca_scores = score_sentiment_batch(alpaca_texts)
+    for a, score in zip(alpaca_articles, alpaca_scores):
+        a["sentiment_score"] = score
 
     try:
         relevant = recent_watchlist_articles(watchlist_tickers) if watchlist_tickers else []

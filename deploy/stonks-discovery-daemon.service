@@ -10,8 +10,9 @@ Environment=HOME=/home/openclaw
 # ALPACA_STONKS_KEY/ALPACA_STONKS_SECRET -- confirmed 2026-07-27 this is the
 # real source cron-executed scripts read from (via the OpenClaw agent's own
 # session init, which this standalone systemd unit doesn't inherit).
-# FINBERT_HOST/FINBERT_PORT need no entry here -- news_collector.py defaults
-# to legend-of-macs.local:5004 when unset, same as every other caller.
+# GPU_WORKERS/GPU_WORKER need no entry here -- news_collector.py's
+# gpu_client defaults to 192.168.1.237:5002 (the gpu-compute worker,
+# `sentiment` job type) when unset, same as every other caller.
 EnvironmentFile=/home/openclaw/.openclaw/agents/trader-stonks/agent/.env
 ExecStart=/usr/bin/python3 /home/openclaw/.openclaw/workspace-trader-stonks/scripts/discovery_daemon.py
 Restart=on-failure
