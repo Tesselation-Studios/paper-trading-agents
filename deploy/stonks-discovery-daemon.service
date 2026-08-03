@@ -11,7 +11,7 @@ Environment=HOME=/home/openclaw
 # real source cron-executed scripts read from (via the OpenClaw agent's own
 # session init, which this standalone systemd unit doesn't inherit).
 # GPU_WORKERS/GPU_WORKER need no entry here -- news_collector.py's
-# gpu_client defaults to 192.168.1.237:5002 (the gpu-compute worker,
+# gpu_client defaults to 192.168.1.190:5002 (the gpu-compute worker,
 # `sentiment` job type) when unset, same as every other caller.
 EnvironmentFile=/home/openclaw/.openclaw/agents/trader-stonks/agent/.env
 ExecStart=/usr/bin/python3 /home/openclaw/.openclaw/workspace-trader-stonks/scripts/discovery_daemon.py
