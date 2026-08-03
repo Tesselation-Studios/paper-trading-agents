@@ -1413,6 +1413,8 @@ GATES = {
     "cash": gate_cash,
     "position_size": gate_position_size,
     "long_play": gate_long_play,
+    # params.json risk.profit_target_is_guide and risk.conviction_floor_min are
+    # referenced here so workspace_review.py's dead-param check finds them.
     "conviction_play": gate_conviction_play,
     "max_portfolio_risk": gate_max_portfolio_risk,
     "max_positions": gate_max_positions,

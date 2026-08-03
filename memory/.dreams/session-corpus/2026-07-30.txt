@@ -385,3 +385,5 @@
 [trader-stonks/sessions/trader-stonks/fd2148fd-fa40-4de7-b685-9ea5de289425.jsonl#L43] Assistant: **HEARTBEAT_OK** --- **Tick 15:05 ET summary:** All 12 positions HOLD. PV $10,390, cash $9,078 (87.4%). No breaches, no scale-in triggers, no qualifying entries. Batch #7 (AUBN/BIPH/BPYPO/CYCU/TLNCU/SYZ) all correctly gated — AUBN qualifies but Fi
 [trader-stonks/sessions/trader-stonks/fd6254b3-8ab2-45ce-b3d5-0f5a7d895a00.jsonl#L12] Assistant: No cards on the `stonks-schedule` board — nothing to drain. HEARTBEAT_OK.
 [trader-stonks/sessions/trader-stonks/fdd8378d-4c2c-462e-8c7a-3c83b93dcd46.jsonl#L10] Assistant: No cards in the `stonks-schedule` queue — nothing to drain. **HEARTBEAT_OK**.
+[trader-stonks/sessions/trader-stonks/ace69aaa-a7fd-4ea0-af79-86a26c4785b6.jsonl#L132] Assistant: 6 labeled examples. **All signals still below the 10-sample threshold.** No status changes. Technical closest at 5 samples. ### Step 4 — Replay Check The data keeps pushing toward simplicity: - **v1.0 baseline** (simple RSI entry, fixed stop/targ
+[trader-stonks/sessions/trader-stonks/ace69aaa-a7fd-4ea0-af79-86a26c4785b6.jsonl#L132] Assistant: logged to `off_hours/2026-07-30.md`

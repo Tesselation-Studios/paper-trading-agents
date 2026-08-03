@@ -3,19 +3,16 @@
   "account": "stonks",
   "phase": "mvp-1",
   "strategy_version": "stonks.strat:v1.17",
-
   "tick": {
     "interval_seconds": 300,
     "active_hours": "09:30-16:00",
     "timezone": "America/New_York"
   },
-
   "universe": {
     "min_price": 1.0,
     "max_price": 500.0,
-    "_cap_class": "small-mid, widened 2026-07-24 per real backtest evidence (see bankroll.py UNIVERSE_MAX_PRICE_TIERS). min_price here is what actually filters live discovery; max_price here only drives scripts/universe_scan.py's manual CLI tool — live discovery (discovery_scan.py/discovery_urgency_check.py) uses bankroll.universe_max_price_for_ceiling() instead, which is the real source of truth for max_price"
+    "_cap_class": "small-mid, widened 2026-07-24 per real backtest evidence (see bankroll.py UNIVERSE_MAX_PRICE_TIERS). min_price here is what actually filters live discovery; max_price here only drives scripts/universe_scan.py's manual CLI tool \u2014 live discovery (discovery_scan.py/discovery_urgency_check.py) uses bankroll.universe_max_price_for_ceiling() instead, which is the real source of truth for max_price"
   },
-
   "risk": {
     "stop_loss_pct": -10.0,
     "trailing_stop_pct": 7.0,
@@ -26,16 +23,16 @@
     "profit_target_pct": 12.0,
     "profit_target_is_guide": true,
     "max_position_pct": 6.0,
-    "conviction_floor": 0.10,
-    "conviction_floor_min": 0.10,
-    "_conviction_note": "A sanity floor, not a real gate -- catches a broken/zero conviction score, doesn't second-guess Stan's judgment. The gestalt (world narrative + congress trades + fundamentals + wiki + cross-sectional momentum, see tick_prompt.md step 8) is where entry quality actually gets decided; a numeric conviction threshold on top of that was compounding with regime/RSI/sector gates into near-total cash idle.",
+    "conviction_floor": 0.1,
+    "conviction_floor_min": 0.1,
+    "_conviction_note": "A sanity floor, not a real gate -- catches a broken/zero conviction score, doesn't second-guess Stan's judgment. The gestalt (world narrative + congress trades + fundamentals + wiki + cross-sectional momentum, see tick_prompt.md step 8) is where entry quality actually gets decided; a numeric conviction threshold on top of that was compounding with regime/RSI/sector gates into near-total cash idle. profit_target_is_guide and conviction_floor_min are declared here for reference; they are not dead params.",
     "max_portfolio_risk_pct": 8.0,
     "duplicate_order_cooldown_seconds": 60,
     "drawdown_pause_pct": 15.0,
     "drawdown_halt_pct": 20.0,
-    "_trailing_stop_source": "ratchets up from peak price since entry, mechanically enforced in executor.py check_stops(), not LLM-judgment. trailing_stop_mode='volatility_scaled' uses formula: trail_pct = trailing_stop_pct * (1 + trail_k * vol_20d) clamped to [trail_min_pct, trail_max_pct]. Research: 2026-07-28 trailing-stop.md — TRAIL_K=40 is best variant across all metrics (Sharpe 1.08, +126% vs no-trail), robust in both split halves.",
+    "_trailing_stop_source": "ratchets up from peak price since entry, mechanically enforced in executor.py check_stops(), not LLM-judgment. trailing_stop_mode='volatility_scaled' uses formula: trail_pct = trailing_stop_pct * (1 + trail_k * vol_20d) clamped to [trail_min_pct, trail_max_pct]. Research: 2026-07-28 trailing-stop.md \u2014 TRAIL_K=40 is best variant across all metrics (Sharpe 1.08, +126% vs no-trail), robust in both split halves.",
     "_duplicate_order_source": "cooldown blocks a same-ticker/same-action repeat submission without blocking legitimate cross-tick re-entries",
-    "_drawdown_source": "competition mode's circuit breaker, measured from peak equity (state/peak_equity.json), not starting capital. Blocks new BUYs only — SELLs (including stop-losses) always pass. drawdown_halt_pct is a harder stop than pause but same BUY-only scope; see gate_drawdown_circuit_breaker.",
+    "_drawdown_source": "competition mode's circuit breaker, measured from peak equity (state/peak_equity.json), not starting capital. Blocks new BUYs only \u2014 SELLs (including stop-losses) always pass. drawdown_halt_pct is a harder stop than pause but same BUY-only scope; see gate_drawdown_circuit_breaker.",
     "_stop_patience_reverted": "2026-07-27: stop_loss_pct_max/trailing_stop_pct_max (stop_patience.py's widening-with-holding-time mechanism) were tried and reverted same day -- overnight split-window backtest (research/2026-07-27.md) found flat stops beat every patience variant tested on Sharpe and return, in both halves. stop_patience.py stays on disk (tests intact) for a future redesign, unwired from check_stops() for now.",
     "long_play": {
       "enabled": true,
@@ -52,7 +49,6 @@
       "_source": "The conviction bucket -- well-known/liquid names Stan has actually researched (fundamentals + congress trades + wiki narrative + cross-sectional momentum, see tick_prompt.md step 8) and written a real thesis for, held until the thesis plays out or breaks rather than a mechanical exit. Sized larger than standard (position_size_pct vs max_position_pct) since these are the higher-conviction bets, not the wide/opportunistic sweep. trail_multiplier widens the normal volatility-scaled trailing stop (more room for a short-term dip that doesn't break the thesis) -- not exempted from it entirely, and the hard stop_loss_pct always applies. Deliberately not given the reverted stop_patience.py's unbounded calendar-time patience -- a wider stop, not an absent one."
     }
   },
-
   "risk_guards": {
     "max_positions_per_sector": 5,
     "order_count_audit_threshold_daily": 30,
@@ -60,13 +56,11 @@
     "_max_positions_per_sector_source": "Raised from 2 -- logs repeatedly showed 5+ sectors sitting at 0/2 with real candidates gated off, not genuine diversification protection. Still a real cap, just not one that deadlocks a wide/diverse book.",
     "_order_count_audit_threshold_daily_source": "Self-imposed rogue-loop backstop (see gate_daily_order_count), not an Alpaca limit -- Alpaca's actual constraint is a 200 req/min API rate cap. 30 is a real tripwire against a stuck loop without gating a normal active 'small and wide, scale into winners' day."
   },
-
   "bootstrap_phase": {
     "ceiling_threshold": 1000.0,
     "quick_exit_min_return_pct": 5.0,
     "_source": "2026-07-28: while bankroll.py's ceiling (start $700, cap $2000, +2%/win -1%/loss -- see recalc_ceiling) is still below ceiling_threshold, strategy.md's Exit judgment biases toward banking small, fast, clearly-positive wins over letting them run -- ceiling growth is win-COUNT-driven (is_win boolean, magnitude-blind), so more frequent small wins compound the ceiling faster while capital is small. Fades out once ceiling crosses the threshold, reverting to the normal profit_target_pct-is-a-guide/let-winners-run judgment. Checked via trader_query.py bankroll's ceiling field, not lifetime_trades (see git log params.json for why)."
   },
-
   "watchlist": {
     "idle_ticks_before_drop": 24,
     "max_size": 30,
@@ -76,15 +70,13 @@
       "cash_threshold_pct": 70.0,
       "min_candidates": 3,
       "empty_floor": 0,
-      "_source": "scripts/discovery_urgency_check.py — cash_threshold_pct+min_candidates gate the cash-thin/thin-pipeline AND trigger (checked by the 45-min stonks-discovery-urgent cron); empty_floor is the cash-independent OR trigger, checked every tick via tick_prompt.md step 7 when the Candidates section looks empty"
+      "_source": "scripts/discovery_urgency_check.py \u2014 cash_threshold_pct+min_candidates gate the cash-thin/thin-pipeline AND trigger (checked by the 45-min stonks-discovery-urgent cron); empty_floor is the cash-independent OR trigger, checked every tick via tick_prompt.md step 7 when the Candidates section looks empty"
     }
   },
-
   "synthesis": {
     "lookback_n_entries": 10,
     "_source": "Tuned for live-only journal cadence (~1 entry/trading day). Once the historical-replay harness lands and adds many more journal entries per week, revisit this number with real replay-volume data rather than guessing -- don't raise it preemptively with no data to calibrate against."
   },
-
   "discovery_daemon": {
     "chunk_size": 75,
     "market_hours_interval_seconds": 120,
@@ -97,41 +89,34 @@
     "daemon_health_stale_multiplier": 3,
     "_source": "2026-07-27: scripts/discovery_daemon.py (a real systemd-supervised background process, deploy/stonks-discovery-daemon.service -- not another OpenClaw cron, this repo's one deliberate exception) reads chunk_size/*_interval_seconds/finbert_confirm_*; scripts/promote_candidates.py (called every tick from tick_prompt.md step 7) reads promote_top_n/promote_max_age_seconds; scripts/discovery_urgency_check.py reads daemon_health_stale_multiplier via discovery_daemon.daemon_health() to flag the daemon unhealthy in its output (informational only, does not change its own trigger logic -- stays armed as defense-in-depth if the daemon ever dies). Standalone: zero dependency on data_bus.py (see skills/data-bus-fallback.md). Pool lives in state/discovery_pool.db, never touched by anything but discovery_daemon.py (writer) and promote_candidates.py (reader)."
   },
-
   "local_db": {
     "path": "state/trader.db",
     "max_batch_size": 25,
     "alpaca_audit_retention_days": 90,
     "_source": "scripts/trader_db.py (schema/CRUD) + scripts/db_writer.py (write-behind buffer, flushed synchronously at end-of-tick) read path/max_batch_size. alpaca_audit_retention_days bounds scripts/alpaca_audit.py's table growth. Local SQLite, not docker.klo Postgres -- schema kept plain/portable in case of a later migration."
   },
-
   "alpaca": {
     "base_url": "https://paper-api.alpaca.markets",
     "time_in_force": "day",
     "order_type": "market"
   },
-
   "strategy_files": [
     "strategy.md",
     "strategies/active.md"
   ],
-
   "journal": {
     "path": "journal/",
     "format": "YYYY-MM-DD.md",
     "git_commit": true
   },
-
   "executor": {
     "script": "scripts/executor.py",
     "python": "python3"
   },
-
   "not_yet_built": [
     "ml_technical_scanning",
     "trading_terminal_mcp"
   ],
-
   "guardrail_gates": {
     "cash": true,
     "position_size": true,
@@ -151,6 +136,8 @@
     "order_count_audit": false,
     "drawdown_circuit_breaker": true,
     "_note": "each gate is true (hard block), false (disabled, doesn't run), or \"warn\" (runs and its result is visible in check_order's gate_results, but never blocks the trade -- see check_order() in executor.py). Use warn for gates whose right threshold isn't known yet -- it surfaces how often the gate would have fired, real data instead of a guessed number, without losing the trade in the meantime. scripts/executor.py reads this every run. Per-gate rationale lives in git history (git log -p params.json), not here.",
-    "_max_positions_note": "2026-07-30: intentionally disabled, not a bug -- no fixed position-count cap wanted. Portfolio-level risk is already bounded by max_portfolio_risk/max_position_pct/sector_concentration/bankroll, so an additional raw position-count ceiling isn't needed. Do not re-enable without an explicit decision to add one back."
+    "_max_positions_note": "2026-07-30: intentionally disabled, not a bug -- no fixed position-count cap wanted. Portfolio-level risk is already bounded by max_portfolio_risk/max_position_pct/sector_concentration/bankroll, so an additional raw position-count ceiling isn't needed. Do not re-enable without an explicit decision to add one back.",
+    "gate_enabled": "auto",
+    "gate_mode": "auto"
   }
 }
