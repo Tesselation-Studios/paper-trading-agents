@@ -557,6 +557,107 @@ class TestSellEntryPriceFallback:
         assert row["realized_pnl"] == pytest.approx(0.0)
 
 
+class TestSellExitPriceFallback:
+    """2026-08-03: the SELL path had no real-fill lookup, so omitting
+    --price silently collapsed exit_price to entry_price -> $0.00 pnl,
+    mislabeled as a LOSS (live incident: ZBRA/DXCM/OOMA bootstrap
+    quick-exits). Fixed to mirror the BUY path's wait_for_fill() lookup."""
+
+    def _fake_urlopen(self, order_response, positions_response, fill_response):
+        def fake_urlopen(req):
+            url = req.full_url
+            method = req.get_method()
+            if url.endswith("/v2/orders") and method == "POST":
+                return _FakeResponse(order_response)
+            if "/v2/orders/" in url and method == "GET":
+                return _FakeResponse(fill_response)
+            if url.endswith("/v2/positions"):
+                return _FakeListResponse(positions_response)
+            if url.endswith("/v2/account"):
+                return _FakeResponse({"equity": "10000", "cash": "5000"})
+            return _FakeResponse({})
+        return fake_urlopen
+
+    def test_sell_without_price_uses_real_fill_price(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order30"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "22.74"}],
+            fill_response={"id": "order30", "status": "filled", "filled_avg_price": "11.37"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--close-reason", "bootstrap quick-exit", "--skip-guardrails",
+        ])
+
+        err = capsys.readouterr().err
+        assert "exit_price unavailable" not in err
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["status"] == "closed"
+        # entry=10.0, real fill=11.37 -> pnl = 1.37 * 2, NOT $0.00
+        assert row["realized_pnl"] == pytest.approx(2.74)
+
+    def test_sell_with_price_still_takes_priority_over_fill_price(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        # A different fill price (11.37) is mocked, but an explicit --price
+        # must still win -- preserves every existing caller's behavior.
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order31"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "24.00"}],
+            fill_response={"id": "order31", "status": "filled", "filled_avg_price": "11.37"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--price", "12.00", "--close-reason", "trailing stop breach", "--skip-guardrails",
+        ])
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        # entry=10.0, --price=12.00 wins over the mocked 11.37 fill -> pnl = 2.0 * 2
+        assert row["realized_pnl"] == pytest.approx(4.0)
+
+    def test_sell_falls_back_to_entry_price_and_warns_when_no_price_and_no_fill(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        # fill_response has no filled_avg_price (order never filled within
+        # wait_for_fill's timeout) -- true last-resort fallback path.
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order32"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+            fill_response={"id": "order32", "status": "new"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "1",
+            "--close-reason", "bootstrap quick-exit", "--skip-guardrails",
+        ])
+
+        err = capsys.readouterr().err
+        assert "exit_price unavailable for SELL AAA" in err
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["realized_pnl"] == pytest.approx(0.0)
+
+
 class TestLongPlayCli:
     """End-to-end CLI coverage for --play-type long (2026-07-30,
     params.json risk.long_play) -- the validation in main() (both

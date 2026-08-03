@@ -2251,7 +2251,35 @@ def main():
         except Exception:
             position_entry_time = None  # falls back to newest-open-entry-row matching
 
-        exit_price = args.price if args.price is not None else entry_price
+        # 2026-08-03: --price is optional and, unlike the BUY path, this used
+        # to fall straight back to entry_price when omitted -- silently
+        # computing exit_price == entry_price -> pnl == $0.00, mislabeling a
+        # real profitable exit as a LOSS (live incident: ZBRA/DXCM/OOMA
+        # bootstrap quick-exits on 2026-08-03). Now mirrors the BUY path's
+        # wait_for_fill() real-fill lookup when --price wasn't supplied, and
+        # only truly falls back to entry_price (loudly) if that also fails.
+        sell_fill_price = None
+        if args.price is None and order.get("id"):
+            filled_sell_order = wait_for_fill(args.account, order.get("id"))
+            if filled_sell_order and filled_sell_order.get("filled_avg_price"):
+                try:
+                    sell_fill_price = float(filled_sell_order["filled_avg_price"])
+                except (TypeError, ValueError):
+                    sell_fill_price = None
+
+        if args.price is not None:
+            exit_price = args.price
+        elif sell_fill_price is not None:
+            exit_price = sell_fill_price
+        else:
+            exit_price = entry_price
+            print(json.dumps({
+                "warning": f"exit_price unavailable for SELL {args.ticker.upper()} "
+                           f"(--price not passed and no fill price from wait_for_fill) -- "
+                           f"falling back to entry_price, realized_pnl for this trade will be $0.00 "
+                           f"and does not reflect the real exit",
+            }), file=sys.stderr)
+
         outcome = close_trade_outcome(args.account, args.ticker, entry_price, exit_price, args.qty,
                                        position_entry_time=position_entry_time)
         if outcome["outcome_label_warning"]:
