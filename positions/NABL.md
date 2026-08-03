@@ -1,9 +1,9 @@
-# KEX Position Thesis
+# NABL Position Thesis
 
-- **Entry**: $134.19 avg | 2 shares
-- **Current**: $131.56 (-1.96% unrealized)
-- **Market Value**: $263.12
-- **Unrealized P&L**: $-5.25 (-1.96%)
+- **Entry**: $4.96 avg | 1 shares
+- **Current**: $4.96 (+0.00% unrealized)
+- **Market Value**: $4.96
+- **Unrealized P&L**: $+0.00 (+0.00%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-03 15:40:51 UTC
 
