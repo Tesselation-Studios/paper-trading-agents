@@ -1,11 +1,11 @@
 # ANDG Position Thesis
 
 - **Entry**: $46.62 avg | 1 shares
-- **Current**: $47.02 (+0.87% unrealized)
-- **Market Value**: $47.02
-- **Unrealized P&L**: $+0.41 (+0.87%)
+- **Current**: $47.34 (+1.54% unrealized)
+- **Market Value**: $47.34
+- **Unrealized P&L**: $+0.72 (+1.54%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-03 18:10:23 UTC
+- **Last sync**: 2026-08-03 18:20:44 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
