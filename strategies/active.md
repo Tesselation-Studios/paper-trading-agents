@@ -128,3 +128,16 @@
 - **Deployment**: 89.6% cash, 23 consecutive under-deployed, no escalation
 - **Action**: HOLD all. Batch correctly gated — no catalyst or non-technical edge in CHOPPY.
 
+## 9:45 AM — Bootstrap OOMA exit, CHOPPY holds
+- **Portfolio**: ~$10,395 | Cash ~$9,334 (89.8%) | 11→10 positions (OOMA sold) | Drawdown 0.34%
+- **Regime**: CHOPPY (0.644) | SPY $747.03 RSI 52.6 MACDh -0.09 — flat, no fade
+- **🔔 OOMA SELL**: +6.1% bootstrap quick-exit (ceiling $665 < $1000 threshold, 5% trigger)
+- **Stops**: All 10 active, no breaches ✅
+- **Top**: FLXS MACDh +2.64 strongest | VSXY MACDh +3.39 | ANDG +2.7% RSI 66.3
+- **Bottom**: KEX -3.9% RSI 34 oversold MACDh +0.49 bull | HLN -2.5% | UTMD -1.4%
+- **Bootstrap**: no remaining triggers (BFH +1.7%, TRIP +2.2%, ANDG +1.8% — all ≤2.2%)
+- **Batch eval** (FDBC/CYCU/TW/RELX/BILL/TBLA) & marked: only FDBC live $52.60 RSI 58.3 MACDh +0.688 vol 2.43x — no catalyst/sentiment, correctly gated in CHOPPY
+- **Watchlist**: all 13 fully rotated (6+ batches this AM), no new discoveries/merges/promotes
+- **Deployment**: 89.8% cash, 25 consecutive under-deployed, no escalation triggers
+- **Action**: 1 sell. 0 buys. Rotation complete — no non-technical edge in CHOPPY.
+
