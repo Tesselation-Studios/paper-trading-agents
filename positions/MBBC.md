@@ -1,9 +1,9 @@
-# BFH Position Thesis
+# MBBC Position Thesis
 
-- **Entry**: $107.72 avg | 2 shares
-- **Current**: $111.32 (+3.35% unrealized)
-- **Market Value**: $222.64
-- **Unrealized P&L**: $+7.21 (+3.35%)
+- **Entry**: $15.30 avg | 1 shares
+- **Current**: $15.20 (-0.65% unrealized)
+- **Market Value**: $15.20
+- **Unrealized P&L**: $-0.10 (-0.65%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-03 17:30:26 UTC
 
