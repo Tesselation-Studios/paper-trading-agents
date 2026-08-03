@@ -572,7 +572,8 @@ class TestLongPlayCli:
             "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
             "--price", "10.00", "--thesis", "earnings beat expected",
             "--play-type", "long", "--predicted-by-date", "2026-08-02",
-            "--prediction-reason", "earnings beat expected", "--skip-guardrails",
+            "--prediction-reason", "earnings beat expected",
+            "--thesis-invalidation", "guidance cut on the call", "--skip-guardrails",
         ])
         conn = trader_db.get_conn()
         try:
@@ -582,6 +583,7 @@ class TestLongPlayCli:
         assert row["play_type"] == "long"
         assert row["predicted_by_date"] == "2026-08-02"
         assert row["prediction_reason"] == "earnings beat expected"
+        assert row["thesis_invalidation"] == "guidance cut on the call"
 
     def test_long_play_missing_predicted_by_date_rejected(self, monkeypatch, capsys):
         with pytest.raises(SystemExit):
@@ -643,6 +645,112 @@ class TestLongPlayCli:
         finally:
             conn.close()
         assert row["play_type"] == "standard"
+
+
+class TestThesisPersistenceCli:
+    """2026-08-03: --thesis-claim/--thesis-invalidation on BUY. Hard-required
+    for --play-type long/conviction (alongside the existing --prediction-reason
+    requirement); soft-required (warn-only) for standard, matching --thesis's
+    existing precedent."""
+
+    def test_conviction_play_missing_thesis_invalidation_rejected(self, monkeypatch, capsys):
+        with pytest.raises(SystemExit):
+            _run_executor(monkeypatch, [
+                "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
+                "--price", "10.00", "--play-type", "conviction",
+                "--prediction-reason", "strong earnings momentum", "--skip-guardrails",
+            ])
+        err = capsys.readouterr().out
+        assert "--play-type conviction requires --thesis-invalidation" in err
+
+    def test_long_play_missing_thesis_invalidation_rejected(self, monkeypatch, capsys):
+        with pytest.raises(SystemExit):
+            _run_executor(monkeypatch, [
+                "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "5",
+                "--price", "10.00", "--play-type", "long",
+                "--predicted-by-date", "2026-08-02", "--prediction-reason", "earnings beat expected",
+                "--skip-guardrails",
+            ])
+        err = capsys.readouterr().out
+        assert "--play-type long requires --thesis-invalidation" in err
+
+    def test_conviction_play_buy_persists_thesis_fields(self, monkeypatch, capsys):
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-cv1"},
+            positions_response=[{"symbol": "BVS", "qty": "10", "avg_entry_price": "10.00", "market_value": "100.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "BVS", "--qty", "10",
+            "--price", "10.00", "--thesis", "strong momentum", "--play-type", "conviction",
+            "--prediction-reason", "strong earnings momentum",
+            "--thesis-claim", "BVS re-rates up over 3 weeks on margin expansion",
+            "--thesis-invalidation", "closes below 20-day MA on rising volume",
+            "--features", '{"technical": {"direction": "bullish", "confidence": 0.8}}',
+            "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "BVS")
+            log = trader_db.get_thesis_log(conn, "BVS")
+        finally:
+            conn.close()
+        assert row["thesis_claim"] == "BVS re-rates up over 3 weeks on margin expansion"
+        assert row["thesis_invalidation"] == "closes below 20-day MA on rising volume"
+        assert row["thesis_entry_signals"] == '{"technical": {"direction": "bullish", "confidence": 0.8}}'
+        assert len(log) == 1
+        assert log[0]["event_type"] == "entry"
+        assert log[0]["claim"] == "BVS re-rates up over 3 weeks on margin expansion"
+
+    def test_standard_buy_thesis_invalidation_optional(self, monkeypatch, capsys):
+        """A plain BUY must not require --thesis-claim/--thesis-invalidation
+        at all -- only a stderr warning, matching --thesis's own precedent."""
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-std1"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])  # must not raise
+        err = capsys.readouterr().err
+        assert "no --thesis-claim/--thesis-invalidation" in err
+
+    def test_scale_in_logs_scale_in_event_not_entry(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t0")
+        conn.close()
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-si1"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "20.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis-claim", "adding on strength",
+            "--thesis-invalidation", "closes below 9.50", "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            log = trader_db.get_thesis_log(conn, "AAA")
+        finally:
+            conn.close()
+        assert log[0]["event_type"] == "scale_in"
+
+    def test_thesis_detail_write_failure_does_not_block_trade(self, monkeypatch, capsys):
+        """Fail-open: a broken log_thesis_event must never turn a
+        successful fill into a failed order."""
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-fo1"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        monkeypatch.setattr(trader_db, "log_thesis_event",
+                             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("simulated DB failure")))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis-claim", "x", "--thesis-invalidation", "y",
+            "--skip-guardrails",
+        ])  # must not raise
+        err = capsys.readouterr().err
+        assert "positions table write failed" in err
 
 
 class TestSectorGateReadsDb:

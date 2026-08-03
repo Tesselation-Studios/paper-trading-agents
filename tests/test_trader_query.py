@@ -48,6 +48,28 @@ class TestPositions:
         result = _run(monkeypatch, capsys, db_path, ["positions", "--ticker", "ZZZ"])
         assert "error" in result
 
+    def test_with_history_includes_thesis_log(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1",
+                                   thesis_claim="breakout thesis")
+        trader_db.log_thesis_event(conn, ticker="AAA", event_type="entry", claim="breakout thesis")
+        conn.close()
+        result = _run(monkeypatch, capsys, db_path, ["positions", "--ticker", "aaa", "--with-history"])
+        assert result["ticker"] == "AAA"
+        assert len(result["thesis_log"]) == 1
+        assert result["thesis_log"][0]["claim"] == "breakout thesis"
+
+    def test_without_with_history_flag_omits_thesis_log(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+        result = _run(monkeypatch, capsys, db_path, ["positions", "--ticker", "aaa"])
+        assert "thesis_log" not in result
+
+    def test_with_history_on_unknown_ticker_still_errors_cleanly(self, monkeypatch, capsys, db_path):
+        result = _run(monkeypatch, capsys, db_path, ["positions", "--ticker", "ZZZ", "--with-history"])
+        assert "error" in result
+
 
 class TestWatchlist:
     def test_lists_candidates(self, monkeypatch, capsys, db_path):

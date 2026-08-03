@@ -124,6 +124,28 @@ CREATE TABLE IF NOT EXISTS positions (
 );
 CREATE INDEX IF NOT EXISTS idx_positions_status ON positions(status);
 
+-- position_thesis_log (2026-08-03): append-only history of what was
+-- claimed about a position and when it was re-checked -- positions.thesis
+-- is a single blob that gets silently overwritten on every update (a scale-in
+-- note replaces the original entry rationale with no trace), which is fine
+-- for "what do I believe right now" but useless for "did my read hold up
+-- over time". Same current-state-table/append-only-log split already used
+-- for positions/decisions vs journal. signals_snapshot is the reconcile()
+-- feature breakdown at the time of the event, so a later recheck diffs
+-- against what was actually believed, not a re-derived memory of it.
+CREATE TABLE IF NOT EXISTS position_thesis_log (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticker              TEXT NOT NULL,
+    event_type          TEXT NOT NULL,  -- 'entry' | 'scale_in' | 'recheck' | 'invalidated' | 'resolved'
+    claim               TEXT,
+    invalidation        TEXT,
+    signals_snapshot    TEXT,  -- JSON, the reconcile() features dict
+    verdict             TEXT,  -- 'intact' | 'weakening' | 'broken' | NULL
+    note                TEXT,
+    created_at          TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_position_thesis_log_ticker_ts ON position_thesis_log(ticker, created_at);
+
 -- watchlist_candidates: replaces strategies/watchlist.md's ## Candidates
 -- section. note holds Stan's own reasoning text (why it's on the list,
 -- signal read), same role watchlist.md's inline note played.
@@ -270,6 +292,20 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _migrate_add_column(conn, "training_examples", "position_entry_time", "TEXT")
     conn.execute("""CREATE INDEX IF NOT EXISTS idx_training_examples_entry_lookup
                     ON training_examples(ticker, example_type, label_win)""")
+    # 2026-08-03: thesis persistence for conviction/long plays -- extends
+    # the existing thesis/prediction_reason columns rather than replacing
+    # them. thesis_claim/thesis_invalidation separate "why I believe this"
+    # from "what would prove me wrong" (a different, more falsifiable
+    # question than prediction_reason answers); thesis_entry_signals snapshots
+    # the reconcile() breakdown at entry so a later recheck has something
+    # concrete to diff against. thesis_last_checked_at/thesis_check_count
+    # gate the daily re-confirmation cadence (see position_thesis_log above).
+    # All nullable -- NULL for standard positions and every pre-existing row.
+    _migrate_add_column(conn, "positions", "thesis_claim", "TEXT")
+    _migrate_add_column(conn, "positions", "thesis_invalidation", "TEXT")
+    _migrate_add_column(conn, "positions", "thesis_entry_signals", "TEXT")
+    _migrate_add_column(conn, "positions", "thesis_last_checked_at", "TEXT")
+    _migrate_add_column(conn, "positions", "thesis_check_count", "INTEGER NOT NULL DEFAULT 0")
     conn.commit()
 
 
@@ -573,7 +609,8 @@ def prune_alpaca_audit_log(conn: sqlite3.Connection, retention_days: int, now: s
 def upsert_position(conn: sqlite3.Connection, ticker: str, shares: float, entry_price: float,
                      entry_time: str, sector: str = None, thesis: str = None, now: str = None,
                      play_type: str = "standard", predicted_by_date: str = None,
-                     prediction_reason: str = None) -> None:
+                     prediction_reason: str = None, thesis_claim: str = None,
+                     thesis_invalidation: str = None, thesis_entry_signals: str = None) -> None:
     """Open a new position or update an existing one's thesis/shares (e.g.
     a scale-in). Does not touch status/close fields.
 
@@ -583,21 +620,75 @@ def upsert_position(conn: sqlite3.Connection, ticker: str, shares: float, entry_
     normal ('standard') position. Set once at initial entry -- deliberately
     NOT in the ON CONFLICT SET clause below, so a later scale-in can never
     change a position's play_type after the fact, same principle as
-    sector/thesis being COALESCEd rather than blindly overwritten."""
+    sector/thesis being COALESCEd rather than blindly overwritten.
+
+    thesis_claim/thesis_invalidation/thesis_entry_signals (2026-08-03) are
+    COALESCEd like thesis/sector, not set-once like prediction_reason -- they
+    represent Stan's *current* read, which a scale-in can legitimately
+    update. Unlike the old bare `thesis` column, this doesn't lose history:
+    every entry/scale-in should also get its own position_thesis_log row
+    (see log_thesis_event) so the prior claim isn't gone, just superseded."""
     import datetime
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
         conn.execute(
             """INSERT INTO positions (ticker, shares, entry_price, entry_time, sector, thesis, status, updated_at,
-                                       play_type, predicted_by_date, prediction_reason)
-               VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?)
+                                       play_type, predicted_by_date, prediction_reason,
+                                       thesis_claim, thesis_invalidation, thesis_entry_signals)
+               VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?, ?, ?)
                ON CONFLICT(ticker) DO UPDATE SET
                    shares = excluded.shares,
                    sector = COALESCE(excluded.sector, positions.sector),
                    thesis = COALESCE(excluded.thesis, positions.thesis),
+                   thesis_claim = COALESCE(excluded.thesis_claim, positions.thesis_claim),
+                   thesis_invalidation = COALESCE(excluded.thesis_invalidation, positions.thesis_invalidation),
+                   thesis_entry_signals = COALESCE(excluded.thesis_entry_signals, positions.thesis_entry_signals),
                    updated_at = excluded.updated_at""",
             (ticker, shares, entry_price, entry_time, sector, thesis, now,
-             play_type, predicted_by_date, prediction_reason),
+             play_type, predicted_by_date, prediction_reason,
+             thesis_claim, thesis_invalidation, thesis_entry_signals),
+        )
+
+
+def log_thesis_event(conn: sqlite3.Connection, ticker: str, event_type: str, claim: str = None,
+                      invalidation: str = None, signals_snapshot: str = None, verdict: str = None,
+                      note: str = None, now: str = None) -> int:
+    """Append-only write to position_thesis_log -- the history upsert_position's
+    COALESCE-on-current-state can't provide by itself. Call this alongside
+    every upsert_position('entry'/'scale_in') and every daily recheck
+    ('recheck', with verdict set)."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with conn:
+        cur = conn.execute(
+            """INSERT INTO position_thesis_log
+                   (ticker, event_type, claim, invalidation, signals_snapshot, verdict, note, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (ticker, event_type, claim, invalidation, signals_snapshot, verdict, note, now),
+        )
+        return cur.lastrowid
+
+
+def get_thesis_log(conn: sqlite3.Connection, ticker: str, limit: int = 20) -> list:
+    """Most-recent-first thesis history for one ticker."""
+    rows = conn.execute(
+        """SELECT * FROM position_thesis_log WHERE ticker = ?
+           ORDER BY created_at DESC, id DESC LIMIT ?""",
+        (ticker, limit),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def update_thesis_check(conn: sqlite3.Connection, ticker: str, checked_at: str) -> None:
+    """Bump thesis_last_checked_at/thesis_check_count after a daily
+    recheck -- separate from log_thesis_event so a caller can update the
+    cadence-gating state and append the log row as two explicit steps."""
+    with conn:
+        conn.execute(
+            """UPDATE positions SET thesis_last_checked_at = ?,
+                   thesis_check_count = thesis_check_count + 1
+               WHERE ticker = ?""",
+            (checked_at, ticker),
         )
 
 

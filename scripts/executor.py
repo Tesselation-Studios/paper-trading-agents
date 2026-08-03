@@ -1917,6 +1917,15 @@ def main():
     parser.add_argument("--prediction-reason", help="BUY only, required with --play-type long or conviction -- "
                          "the specific evidence behind the thesis (cite fundamentals/congress/wiki narrative/"
                          "sentiment, not just optimism). Persisted to positions.prediction_reason.")
+    parser.add_argument("--thesis-claim", help="BUY only -- the falsifiable directional claim ('X re-rates up "
+                         "over N weeks because Y'), distinct from --prediction-reason's evidence citation. "
+                         "Persisted to positions.thesis_claim and logged to position_thesis_log. Soft-required "
+                         "for standard; hard-required for --play-type long/conviction (see --thesis-invalidation).")
+    parser.add_argument("--thesis-invalidation", help="BUY only -- the specific, checkable condition that would "
+                         "prove --thesis-claim wrong ('closes below 195', 'margin guidance cut'), not a vibe. "
+                         "Persisted to positions.thesis_invalidation. Hard-required for --play-type long/"
+                         "conviction (a conviction/long play held on an unfalsifiable thesis is just hoping); "
+                         "soft-required for standard, matching --thesis's existing warn-only precedent.")
     parser.add_argument("--features", help="BUY only -- the same per-signal JSON passed to "
                          "record_decision.py decision ('{\"technical\": {\"direction\": \"bullish\", "
                          "\"confidence\": 0.6}, ...}'). Stored on the training_examples row written "
@@ -2096,6 +2105,13 @@ def main():
         except ValueError:
             print(json.dumps({"error": f"--predicted-by-date must be YYYY-MM-DD, got {args.predicted_by_date!r}"}))
             sys.exit(1)
+        if not args.thesis_invalidation:
+            print(json.dumps({
+                "error": "--play-type long requires --thesis-invalidation "
+                         "(the specific, checkable condition that would prove this wrong -- a long play "
+                         "held on an unfalsifiable thesis is just hoping)",
+            }))
+            sys.exit(1)
 
     if args.play_type == "conviction":
         if args.action != "BUY":
@@ -2105,6 +2121,13 @@ def main():
             print(json.dumps({
                 "error": "--play-type conviction requires --prediction-reason "
                          "(a stated, evidence-backed thesis -- see params.json risk.conviction_play)",
+            }))
+            sys.exit(1)
+        if not args.thesis_invalidation:
+            print(json.dumps({
+                "error": "--play-type conviction requires --thesis-invalidation "
+                         "(the specific, checkable condition that would prove this wrong -- a conviction play "
+                         "held on an unfalsifiable thesis is just hoping)",
             }))
             sys.exit(1)
 
@@ -2291,6 +2314,11 @@ def main():
         # never drift from reality.
         if not args.thesis:
             print(json.dumps({"warning": "BUY executed with no --thesis provided"}), file=sys.stderr)
+        if not args.thesis_claim or not args.thesis_invalidation:
+            print(json.dumps({
+                "warning": "BUY executed with no --thesis-claim/--thesis-invalidation -- "
+                           "position won't have a falsifiable thesis to re-check later",
+            }), file=sys.stderr)
         try:
             now_iso = datetime.now(timezone.utc).isoformat()
             total_shares = args.qty
@@ -2300,12 +2328,22 @@ def main():
                     break
             conn = trader_db.get_conn()
             try:
+                existing = trader_db.get_position(conn, args.ticker.upper())
+                is_scale_in = bool(existing and existing.get("status") == "open")
                 trader_db.upsert_position(
                     conn, ticker=args.ticker, shares=total_shares, entry_price=args.price,
                     entry_time=now_iso, sector=args.sector, thesis=args.thesis,
                     play_type=args.play_type, predicted_by_date=args.predicted_by_date,
                     prediction_reason=args.prediction_reason,
+                    thesis_claim=args.thesis_claim, thesis_invalidation=args.thesis_invalidation,
+                    thesis_entry_signals=args.features,
                 )
+                if args.thesis_claim or args.thesis_invalidation:
+                    trader_db.log_thesis_event(
+                        conn, ticker=args.ticker, event_type="scale_in" if is_scale_in else "entry",
+                        claim=args.thesis_claim, invalidation=args.thesis_invalidation,
+                        signals_snapshot=args.features, now=now_iso,
+                    )
             finally:
                 conn.close()
         except Exception as e:

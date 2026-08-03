@@ -11,6 +11,7 @@ tests/dry-runs. See skills/trader-db.md for when to use which subcommand.
 Usage:
     python3 scripts/trader_query.py positions
     python3 scripts/trader_query.py positions --ticker AAA
+    python3 scripts/trader_query.py positions --ticker AAA --with-history
     python3 scripts/trader_query.py watchlist
     python3 scripts/trader_query.py watchlist --batch 6
     python3 scripts/trader_query.py bankroll
@@ -36,7 +37,12 @@ def _print(obj) -> None:
 def cmd_positions(args, conn) -> None:
     if args.ticker:
         row = trader_db.get_position(conn, args.ticker.upper())
-        _print(row or {"error": f"no position found for {args.ticker.upper()}"})
+        if not row:
+            _print({"error": f"no position found for {args.ticker.upper()}"})
+            return
+        if args.with_history:
+            row["thesis_log"] = trader_db.get_thesis_log(conn, args.ticker.upper())
+        _print(row)
     else:
         _print(trader_db.get_open_positions(conn))
 
@@ -99,6 +105,9 @@ def main() -> int:
 
     p = sub.add_parser("positions", help="Open positions, or one ticker's position")
     p.add_argument("--ticker", default=None)
+    p.add_argument("--with-history", action="store_true",
+                    help="With --ticker, also include recent position_thesis_log rows "
+                         "(thesis_claim/thesis_invalidation history + recheck verdicts)")
 
     p = sub.add_parser("watchlist", help="Current watchlist candidates")
     p.add_argument("--batch", type=int, default=None,

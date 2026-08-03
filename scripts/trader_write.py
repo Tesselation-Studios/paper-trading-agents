@@ -16,8 +16,10 @@ Usage:
     python3 scripts/trader_write.py watchlist-remove --ticker AAA
     python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB,CCC
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --thesis "..."
+    python3 scripts/trader_write.py position-update-thesis --ticker AAA --verdict weakening --note "RSI rolled over"
 """
 import argparse
+import datetime
 import json
 import sys
 from pathlib import Path
@@ -30,6 +32,10 @@ PARAMS_PATH = WORKSPACE_DIR / "params.json"
 
 def _print(obj) -> None:
     print(json.dumps(obj, indent=2, default=str))
+
+
+def _now_iso() -> str:
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
 def _load_drop_thresholds() -> tuple[int, float]:
@@ -109,16 +115,36 @@ def cmd_watchlist_mark_evaluated(args, conn) -> None:
 
 
 def cmd_position_update_thesis(args, conn) -> None:
+    """--thesis alone still just edits the current blob (unchanged
+    behavior). --verdict (2026-08-03, daily thesis re-confirmation, see
+    tick_prompt.md step 6) appends a 'recheck' row to position_thesis_log
+    instead -- it's a history event, not a current-state edit, so it
+    doesn't touch positions.thesis/thesis_claim at all. Both may be passed
+    together (e.g. updating the blob while also recording the recheck)."""
     ticker = args.ticker.upper()
     existing = trader_db.get_position(conn, ticker)
     if not existing or existing["status"] != "open":
         _print({"error": f"no open position found for {ticker}"})
         sys.exit(1)
-    trader_db.upsert_position(
-        conn, ticker=ticker, shares=existing["shares"], entry_price=existing["entry_price"],
-        entry_time=existing["entry_time"], sector=existing["sector"], thesis=args.thesis,
-    )
-    _print({"ticker": ticker, "thesis": args.thesis})
+    if not args.thesis and not args.verdict:
+        _print({"error": "at least one of --thesis or --verdict is required"})
+        sys.exit(1)
+
+    result = {"ticker": ticker}
+    if args.thesis:
+        trader_db.upsert_position(
+            conn, ticker=ticker, shares=existing["shares"], entry_price=existing["entry_price"],
+            entry_time=existing["entry_time"], sector=existing["sector"], thesis=args.thesis,
+        )
+        result["thesis"] = args.thesis
+    if args.verdict:
+        trader_db.update_thesis_check(conn, ticker, checked_at=_now_iso())
+        trader_db.log_thesis_event(
+            conn, ticker=ticker, event_type="recheck", verdict=args.verdict, note=args.note,
+        )
+        result["verdict"] = args.verdict
+        result["note"] = args.note
+    _print(result)
 
 
 def main() -> int:
@@ -149,9 +175,14 @@ def main() -> int:
                              "(call after a batch eval)")
     p.add_argument("--tickers", required=True, help="Comma-separated tickers evaluated this tick")
 
-    p = sub.add_parser("position-update-thesis", help="Update an open position's thesis (not tied to a trade)")
+    p = sub.add_parser("position-update-thesis", help="Update an open position's thesis (not tied to a trade), "
+                                                        "or record a daily thesis recheck verdict")
     p.add_argument("--ticker", required=True)
-    p.add_argument("--thesis", required=True)
+    p.add_argument("--thesis", default=None, help="Edit the current thesis blob (positions.thesis)")
+    p.add_argument("--verdict", default=None, choices=["intact", "weakening", "broken"],
+                    help="Record a daily recheck verdict -- appends to position_thesis_log and bumps "
+                         "thesis_last_checked_at/thesis_check_count. Does not edit positions.thesis.")
+    p.add_argument("--note", default=None, help="Optional context for --verdict (e.g. what changed)")
 
     args = parser.parse_args()
     db_path = Path(args.db_path) if args.db_path else None

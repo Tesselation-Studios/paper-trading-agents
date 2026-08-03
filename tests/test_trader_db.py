@@ -310,6 +310,137 @@ class TestPositions:
         assert row["prediction_reason"] == "earnings beat expected"
 
 
+class TestThesisPersistence:
+    """2026-08-03: thesis_claim/thesis_invalidation/thesis_entry_signals +
+    position_thesis_log -- extends the existing thesis/prediction_reason
+    columns rather than replacing them. Unlike play_type/prediction_reason
+    (set once, immutable), these are COALESCEd like thesis/sector -- a
+    scale-in can legitimately update the current read, with history
+    preserved separately in position_thesis_log."""
+
+    def test_upsert_accepts_thesis_fields(self, conn):
+        trader_db.upsert_position(
+            conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1",
+            thesis_claim="breakout above 200dma", thesis_invalidation="closes below 195",
+            thesis_entry_signals='{"technical": {"direction": "bullish", "confidence": 0.8}}',
+        )
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_claim"] == "breakout above 200dma"
+        assert row["thesis_invalidation"] == "closes below 195"
+        assert row["thesis_entry_signals"] == '{"technical": {"direction": "bullish", "confidence": 0.8}}'
+
+    def test_defaults_null_and_zero(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_claim"] is None
+        assert row["thesis_invalidation"] is None
+        assert row["thesis_entry_signals"] is None
+        assert row["thesis_last_checked_at"] is None
+        assert row["thesis_check_count"] == 0
+
+    def test_scale_in_without_new_claim_preserves_existing(self, conn):
+        trader_db.upsert_position(
+            conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1",
+            thesis_claim="breakout above 200dma", thesis_invalidation="closes below 195",
+        )
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_claim"] == "breakout above 200dma"
+        assert row["thesis_invalidation"] == "closes below 195"
+        assert row["shares"] == 2.0
+
+    def test_scale_in_with_new_claim_updates_current_read(self, conn):
+        """COALESCE means a scale-in CAN update the claim -- distinct from
+        play_type's set-once-immutable behavior. History of the change
+        lives in position_thesis_log, not here."""
+        trader_db.upsert_position(
+            conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1",
+            thesis_claim="initial breakout thesis",
+        )
+        trader_db.upsert_position(
+            conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1",
+            thesis_claim="scale-in: momentum confirmed",
+        )
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_claim"] == "scale-in: momentum confirmed"
+
+
+class TestPositionThesisLog:
+    def test_log_and_fetch(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.log_thesis_event(
+            conn, ticker="AAA", event_type="entry", claim="breakout above 200dma",
+            invalidation="closes below 195", signals_snapshot='{"technical": 0.8}',
+            now="2026-08-03T10:00:00Z",
+        )
+        log = trader_db.get_thesis_log(conn, "AAA")
+        assert len(log) == 1
+        assert log[0]["event_type"] == "entry"
+        assert log[0]["claim"] == "breakout above 200dma"
+        assert log[0]["verdict"] is None
+
+    def test_history_preserved_across_scale_in_even_though_current_state_updates(self, conn):
+        """The exact gap this table was built to close: positions.thesis_claim
+        only ever shows the latest read, but the log keeps every prior one."""
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1",
+                                   thesis_claim="initial breakout thesis")
+        trader_db.log_thesis_event(conn, ticker="AAA", event_type="entry", claim="initial breakout thesis",
+                                    now="2026-08-01T10:00:00Z")
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1",
+                                   thesis_claim="scale-in: momentum confirmed")
+        trader_db.log_thesis_event(conn, ticker="AAA", event_type="scale_in", claim="scale-in: momentum confirmed",
+                                    now="2026-08-02T10:00:00Z")
+
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_claim"] == "scale-in: momentum confirmed"  # only the latest
+
+        log = trader_db.get_thesis_log(conn, "AAA")
+        assert len(log) == 2  # but both are preserved in the log
+        assert log[0]["claim"] == "scale-in: momentum confirmed"  # most-recent-first
+        assert log[1]["claim"] == "initial breakout thesis"
+
+    def test_recheck_writes_verdict(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.log_thesis_event(conn, ticker="AAA", event_type="recheck", verdict="weakening",
+                                    note="RSI rolled over, watching")
+        log = trader_db.get_thesis_log(conn, "AAA")
+        assert log[0]["verdict"] == "weakening"
+        assert log[0]["note"] == "RSI rolled over, watching"
+
+    def test_limit_caps_returned_rows(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        for i in range(5):
+            trader_db.log_thesis_event(conn, ticker="AAA", event_type="recheck", verdict="intact",
+                                        now=f"2026-08-0{i+1}T10:00:00Z")
+        log = trader_db.get_thesis_log(conn, "AAA", limit=3)
+        assert len(log) == 3
+
+    def test_different_tickers_do_not_leak(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.upsert_position(conn, ticker="BBB", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.log_thesis_event(conn, ticker="AAA", event_type="entry", claim="AAA thesis")
+        trader_db.log_thesis_event(conn, ticker="BBB", event_type="entry", claim="BBB thesis")
+        assert [r["claim"] for r in trader_db.get_thesis_log(conn, "AAA")] == ["AAA thesis"]
+        assert [r["claim"] for r in trader_db.get_thesis_log(conn, "BBB")] == ["BBB thesis"]
+
+
+class TestUpdateThesisCheck:
+    def test_bumps_count_and_sets_timestamp(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.update_thesis_check(conn, "AAA", "2026-08-03T09:30:00Z")
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_last_checked_at"] == "2026-08-03T09:30:00Z"
+        assert row["thesis_check_count"] == 1
+
+    def test_repeated_calls_increment(self, conn):
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        trader_db.update_thesis_check(conn, "AAA", "2026-08-03T09:30:00Z")
+        trader_db.update_thesis_check(conn, "AAA", "2026-08-04T09:30:00Z")
+        row = trader_db.get_position(conn, "AAA")
+        assert row["thesis_check_count"] == 2
+        assert row["thesis_last_checked_at"] == "2026-08-04T09:30:00Z"
+
+
 class TestBacktestExport:
     """2026-08-02: backtest_closed_trades is the export target
     scripts/export_backtest_trades.py writes into the LIVE db -- its own

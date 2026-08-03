@@ -229,3 +229,51 @@ class TestPositionUpdateThesis:
             "position-update-thesis", "--ticker", "AAA", "--thesis", "x",
         ], expect_exit=1)
         assert "error" in result
+
+    def test_verdict_appends_recheck_log_row_without_touching_thesis_blob(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1",
+                                   thesis="original blob")
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, [
+            "position-update-thesis", "--ticker", "AAA", "--verdict", "weakening", "--note", "RSI rolled over",
+        ])
+        assert result["verdict"] == "weakening"
+        assert result["note"] == "RSI rolled over"
+        assert "thesis" not in result
+
+        conn = trader_db.get_conn(db_path)
+        try:
+            row = trader_db.get_position(conn, "AAA")
+            assert row["thesis"] == "original blob"  # untouched
+            assert row["thesis_check_count"] == 1
+            assert row["thesis_last_checked_at"] is not None
+            log = trader_db.get_thesis_log(conn, "AAA")
+            assert log[0]["event_type"] == "recheck"
+            assert log[0]["verdict"] == "weakening"
+            assert log[0]["note"] == "RSI rolled over"
+        finally:
+            conn.close()
+
+    def test_thesis_and_verdict_together(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, [
+            "position-update-thesis", "--ticker", "AAA",
+            "--thesis", "updated read", "--verdict", "intact",
+        ])
+        assert result["thesis"] == "updated read"
+        assert result["verdict"] == "intact"
+
+    def test_neither_thesis_nor_verdict_errors_cleanly(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, [
+            "position-update-thesis", "--ticker", "AAA",
+        ], expect_exit=1)
+        assert "error" in result
