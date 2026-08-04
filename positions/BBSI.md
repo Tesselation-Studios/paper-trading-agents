@@ -1,11 +1,11 @@
 # BBSI Position Thesis
 
 - **Entry**: $39.11 avg | 1 shares
-- **Current**: $39.66 (+1.39% unrealized)
-- **Market Value**: $39.66
-- **Unrealized P&L**: $+0.55 (+1.39%)
+- **Current**: $39.95 (+2.14% unrealized)
+- **Market Value**: $39.95
+- **Unrealized P&L**: $+0.83 (+2.14%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-04 18:40:04 UTC
+- **Last sync**: 2026-08-04 19:40:04 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
