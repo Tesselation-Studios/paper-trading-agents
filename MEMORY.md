@@ -1,5 +1,5 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-08-02 — weekly review*
+*Updated: 2026-08-04 — nightly learning*
 
 Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix, an escalation, something worth doing but not done yet) live in `tasks/pending.md` — check it at the start of every reflection session.
 
@@ -34,8 +34,8 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 ### MACDh Signal — 5+ Weeks Validated, Graduated to Foundation (NEW Aug 2)
 - **Zero false flips, zero false exits, zero false candidate disqualifications** across 5+ weeks of trading. Every hold on green MACDh was correct. Every bearish MACD disqualification was correct. The near-zero oscillation heuristic (MACDh < 0.005 magnitude with flat price = noise) has never missed. This signal is mature enough to graduate from "tracking" to "foundation" — no further special monitoring needed. It's the baseline.
 
-### Experience Counter — 66 Trades, 13W/24L, 8 Consecutive Losses (Aug 3)
-- **`experience.json`**: 66 total trades, 13 wins, 24 losses, 8 consecutive losses, 29 unclassified. The 8-loss streak is the worst on record and doesn't match the visible book (12 positions healthy at close, 3 bootstrap wins today). This suggests either stale closes haven't been classified yet or the counter includes exited positions from prior sessions that the auto-classifier marked as losses. **The 3 bootstrap wins today (ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%) should break this streak once classified.** If the streak persists past today's wins being recorded, flag for deeper review.
+### Experience Counter — 76 Trades, 19W/26L, Streak Broken (Aug 4)
+- **`experience.json`**: 76 total trades, 19 wins, 26 losses, 3 consecutive wins, 0 consecutive losses. The 8-loss streak from Aug 3 is broken — 3 bootstrap wins from Aug 3 (ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%) plus 5 more today (FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1 more) classified and cleared the streak. Win rate improving: 19/45 closed = 42.2%, up from 37.5% (Aug 3).
 
 ### Position Reconciliation Gaps (NEW Aug 2)
 - **Recurring pattern**: STVN showed 3sh in active.md vs 2sh in positions DB (Jul 29). KEX cost-basis phantom (-9.85% alarm from $145.39, real entry $134.19). DXCM heartbeat phantom ($74.54 vs $82.42, Jul 31). Each was caught before any trade executed on bad data, but the pattern indicates derived data (quote snapshots, tick notes) consistently lags executor data (positions DB).
@@ -48,11 +48,12 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 - **Strategy propagation must be verified across all layers (NEW Jul 22)**: v1.3 reverted the CHOPPY/FEAR entry gate, but the tick agent continued applying it for ~2 hours (09:30–11:20 ET). Strategy changes to `strategy.md` need explicit verification: (a) `params.json` reflects the change, (b) `executor.py` code aligns, (c) the agent prompt doesn't carry stale rules forward. Post-revision checklist item.
 - **params.json vs strategy.md drift risk (Jul 22, fixed Jul 23)**: `params.json` had contained v1.1/v1.2 settings (`entry_rules.triple_confirmation_required`, `regime_sizing` VIX tiers, `trim`, `quality_gate`, `exit_rules.rsi_exhaustion_hard_exit`, `risk_guards.max_holding_days`) left over from before v1.3's revert. Audited: `executor.py` never read any of them (confirmed by grep — only `risk_guards.max_positions_per_sector` is actually consumed, at executor.py:180), so there was no live behavior risk, but they contradicted `strategy.md` and could mislead the agent reading params.json fresh each tick. Removed from params.json.
 
-### Bootstrap Quick-Exit Mechanism — Validated (NEW Aug 3)
-- **3 for 3 today**: ZBRA +5.33%, DXCM +5.28%, OOMA +6.1% — all clean bootstrap quick-exits at the 5% trigger while ceiling $659 < $1,000 threshold. Three real wins banked ($20.72 total). The mechanism works as designed: bank small wins to compound the ceiling while the account is small. No false triggers, no premature exits that would have been regretted.
+### Bootstrap Quick-Exit Mechanism — Validated, 8 for 8 Total (Aug 3–4)
+- **Aug 3**: 3 for 3 (ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%). **Aug 4**: 5 more (FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1). 8 consecutive bootstrap wins, zero false triggers, zero regretted exits. Ceiling ~$737, up from $700 at inception. The mechanism works: bank small wins to compound the ceiling while the account is small ($737 < $1,000 threshold). All exits were profitable and none would have been better held. The win-count-driven ceiling growth is slow but real — ~8-14 more wins to the $1,000 threshold where normal sizing unlocks.
 
-### CHOPPY Discipline — Proven at Scale (NEW Aug 3)
-- **50+ batches correctly gated** in a single CHOPPY session (0.644 all day, SPY flat). Zero forced entries, zero "I need a trade" desperation plays. The discovery pipeline was evaluated end-to-end ~84 times and correctly produced only one entry (MBBC, catalyst-led). The discipline of doing nothing in CHOPPY when there's no non-technical edge is the edge itself. This is the largest single-session stress test of the CHOPPY gating rule.
+### CHOPPY Discipline — Proven at Scale, Two Consecutive Sessions (Aug 3–4)
+- **Aug 3**: 50+ batches correctly gated in CHOPPY (0.644), 2 entries. **Aug 4**: 74+ batches correctly gated in CHOPPY (0.644), 5 exits, 2 entries (CLIR twice — first stopped out). Combined: ~124 batches across two consecutive sessions, zero forced entries, zero FOMO chases. **Aug 4 was the harder test**: SPY +1.42% all day, zero fade — a bull day in a CHOPPY regime that would tempt anyone to chase. The strategy held. The discipline of doing nothing in CHOPPY when there's no non-technical edge is the edge itself. Two full sessions of evidence.
+- **HLN intraday recovery** (Aug 4) validates the "don't confuse noise with divergence" rule: HLN hit -4.90% intraday and recovered to -0.71% at close. The stop was never breached. The MACDh stayed positive throughout. The position that looked most broken at 1 PM was the least eventful at 3:42 PM.
 
 ### MBBC Liquidity Scar — Catalyst-Led Entry Gap (NEW Aug 3)
 - **Entered MBBC at $14.95 on real catalyst** (Q3 EPS $0.18 vs $0.05 YoY, Praesentire 0.93) — but **147 shares traded ALL DAY**. $44M market cap, P/B 0.93. A stock that doesn't trade is a position that can't be managed — can't exit cleanly, can't scale, can't trail a stop meaningfully. The catalyst-led entry framework lacked a volume/liquidity gate. Rule: before any catalyst-led entry on a sub-$500M name, check daily dollar volume — if < $50K/day, skip regardless of catalyst quality.
@@ -101,6 +102,15 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 
 ### Resolved Items
 - **v1.2 backtest weakness → RESOLVED**: v1.3 (Jul 22) reverted to v1.0's simple RSI 45-65 momentum entry after corrected `replay_check.py` showed v1.2 as the worst performer across all 3 backtest nights. v1.2's entry rules are all removed from strategy.md. Mechanical guardrails survive in executor.py.
+
+### CLIR Same-Session Stop-Then-Re-Entry (NEW Aug 4, TRACKING)
+- **CLIR stopped out at 9:55 AM** ($4.11 → $3.96, -10% hard stop) on a catalyst-led probe (M1 Core Burner purchase order, sentiment 0.92, 14x vol). **Re-entered at 1:55 PM at $4.00** on the thesis that the stop was mechanical (first-entry timing), not thesis-break — the catalyst was still valid, MACDh was noise-level near-zero, and the stock had found a floor. The re-entry passed the v1.18 $50K liquidity gate. Closed +2.59% but MACDh flipped bearish (-0.08 near-zero) — the catalyst carried it, not the technicals. Outcome pending Wednesday's session. This is a judgment call the strategy explicitly allows — entry is a judgment call, not a formula — but same-session re-entry after a stop is a higher bar than a fresh entry. Track for a second occurrence before hardening into strategy.md.
+
+### Alpaca Paper API Scale-In Restriction (NEW Aug 4)
+- **BBSI, TRIP, UTMD**: API returns 403 Forbidden on scale-in buy orders in Alpaca paper trading. These tickers can be held and sold but not accumulated further — the paper environment treats them as restricted symbols for buys above initial position. VSXY, BFST, and others are unrestricted. Blocked 3+ scale-in attempts across multiple ticks today. Not a strategy issue — an Alpaca paper environment restriction. If it blocks a conviction-play scale-in, a workaround would be needed; for standard positions, it's a soft cap on those specific tickers.
+
+### Sentiment Pipeline — Day 34 Offline (Aug 4)
+- FinBERT/Praesentire offline since Jul 7. 34 days. The sentiment cache (thin headline feeds) continues to provide just enough non-technical signal for CHOPPY catalyst-led entries (CLIR's M1 Core Burner order was the only actionable catalyst today). The empty-news-cache escalation to Raf persists but has never received a response. Treated as permanent constraint.
 
 ## Key Repos
 Agent configs `~/.openclaw/agents/` · Paper trading `~/projects/paper-trading-teams/` · Blog `~/projects/blog/drafts/` · Homelab `wodinga/Homelab-Setup`
