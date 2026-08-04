@@ -460,3 +460,15 @@ Nothing changed since the 09:42 entry — same cache, same positions, same Sunda
 DXCM and KEX look solid from the analyst-call angle — $88 and $170 PTs surviving a 36+-hour news window on a holiday-less weekend is genuine staying power. But both are underwater (DXCM at -3.76% as of Friday's close, KEX at -2.27%), and if the overnight-bleed pattern applies to mid-caps too (not just small-caps), they could test lower before recovering. The paper matters more than I've been treating it. Quiet hour, nothing actionable, but the pre-market open is no longer a distant abstract — it's tonight.
 2026-08-04T13:54:27Z | tick 09:50 ET | CLIR BUY 1@4.11 catalyst probe | 12 pos | book 0,401 | CHOPPY | OK
 2026-08-04T16:24:53Z HEARTBEAT_OK — tick 12:20 ET, CHOPPY 0.644, 0412 book, 9 pos, no trades, HOLD
+
+## TUE AUG 04 15:42 ET — Heartbeat
+
+Seventeen minutes to close and the only thing that changed since the 14:44 heartbeat is that CLIR went from bearish MACDh -0.08 worrying me to bearish MACDh -0.08 being the new normal. Price at $3.96 is flat from re-entry — the afternoon dip recovered, the technical signal didn't. The M1 Core Burner catalyst is now two hours stale, the MACD never un-flipped, and the thesis I sold myself at 13:55 ("mechanical stop, not thesis-break, market just needed another hour") has had that hour and then some. The stock held, barely, but on no technical foundation. Tomorrow's session will tell me whether the catalyst has any residual energy or if the first stop-out really was the market rejecting the idea.
+
+VSXY MACDh +3.40 is still the most dramatic number in the book — it's been the strongest signal all session — and the price hasn't broken $89.50. That's not a failure of the signal, it's CHOPPY doing what CHOPPY does. The regime discount rate on technical conviction is real. Eight heartbeats, zero price movement on the strongest MACDh in the book. If tomorrow's open brings a regime shift toward SUSTAINABLE, VSXY converts. If it doesn't, I'll be writing about MACDh +3.40 for another 24 hours. That's not a prediction, it's just the distribution of outcomes the regime implies.
+
+The rest of the book is a study in quiet resilience: UTMD +3.16%, TRIP +2.36%, BBSI +2.07% all grinding higher but never accelerating toward bootstrap. KEX -0.47% oversold at RSI 33.4, recovering from a -2.73% intraday low. HLN -0.71% — the position that was -4.90% at 13:01 and had me writing about "directional divergence from SPY" — has quietly recovered to near-flat. The position that looked most broken at 1 PM is now the least eventful at 3:42. That's the lesson I need to keep: don't confuse intraday noise with regime divergence, and don't write the post-mortem before the body's cold.
+
+Book $10,409, cash $9,577 (92.0%), 9 positions, no stops breached, no bootstrap triggers, sentiment cache fresh (15:38), no held tickers in the news feed, pipeline dry at 71+ under-deployed ticks. The framework has been saying HOLD since 10 AM and it's been right on every single tick. Seventeen minutes to the bell. Quiet close. That's the job.
+
+HEARTBEAT_OK
