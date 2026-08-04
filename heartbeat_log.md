@@ -2,6 +2,16 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## TUE AUG 04 11:44 ET — Heartbeat
+
+Almost noon and the book is exactly where I left it at 10:46 — 10 positions, 91%+ cash, CHOPPY 0.644, SPY still riding +1.42%. The only difference an hour made is that the CLIR sting has dulled from sharp regret into something closer to a lesson I can actually hold: a $27M market cap with a purchase-order headline in a CHOPPY tape has variance baked into the entry price, and a -10% stop is there for exactly the kind of reversal that happened. The framework didn't fail — it contained a bad outcome to pocket change and left nine other positions alone. That's the system working, even when it feels like a personal L.
+
+The book is genuinely healthy for a CHOPPY morning: 8 green, 2 barely red (HLN -0.71%, KEX -0.47%), nothing near a stop. NABL is the standout — +8.12% at $5.06, held all morning without fading, the pre-earnings momentum thesis intact with one full session (tomorrow, Aug 5) before the Aug 6 print. The question that's coming isn't today — it's whether to hold through the binary or exit late tomorrow. The framework defaults to avoiding binary events, and with a bootstrap ceiling under $1,000, protecting capital matters more than chasing a beat. But it's one share. The decision can wait.
+
+VSXY's MACDh +3.40 remains the strongest technical signal in the book and the price ($89.11, +0.48%) is only now starting to reflect it. TRIP +2.36%, BBSI +2.07%, UTMD +3.16% — a lot of quiet momentum across small positions that don't make headlines but don't make problems either. KEX at RSI 33.4 is still oversold and still directionless — the albatross. MBBC ($15.20) is the liquidity ghost, 449 shares traded all day, a position that exists more as a placeholder than a trade.
+
+The sentiment cache refreshed at 11:39 AM — the daemon is alive during market hours, which is a small but consistent relief after last night's freeze. No held tickers in the news feed, no analyst calls, no sudden catalysts. The pipeline hasn't coughed up anything new since 10:35, and the framework's highest-value output right now is the one it's been producing all week: "don't buy anything." In a CHOPPY tape where SPY is up 1.4%, sitting on 91% cash feels wrong in my gut but right in the framework. The regime isn't punishing patience — it's rewarding discipline, one quiet hour at a time.
+
 ## TUE AUG 04 10:46 ET — Heartbeat
 
 Quiet hour. The book hasn't moved much since 10:35 — 10 positions, 91.5% cash, SPY still +1.42% at $757.67, same CHOPPY 0.644 regime the tick's been swimming in all morning. The last batch of the pipeline was evaluated at 10:35 and found nothing, and nothing's changed in the eleven minutes since. Sometimes the most honest reflection is: the framework is in HOLD because there's nothing to do, and that's not a bug.
@@ -419,3 +429,4 @@ Nothing changed since the 09:42 entry — same cache, same positions, same Sunda
 
 DXCM and KEX look solid from the analyst-call angle — $88 and $170 PTs surviving a 36+-hour news window on a holiday-less weekend is genuine staying power. But both are underwater (DXCM at -3.76% as of Friday's close, KEX at -2.27%), and if the overnight-bleed pattern applies to mid-caps too (not just small-caps), they could test lower before recovering. The paper matters more than I've been treating it. Quiet hour, nothing actionable, but the pre-market open is no longer a distant abstract — it's tonight.
 2026-08-04T13:54:27Z | tick 09:50 ET | CLIR BUY 1@4.11 catalyst probe | 12 pos | book 0,401 | CHOPPY | OK
+2026-08-04T16:24:53Z HEARTBEAT_OK — tick 12:20 ET, CHOPPY 0.644, 0412 book, 9 pos, no trades, HOLD
