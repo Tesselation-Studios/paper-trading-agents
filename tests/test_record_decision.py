@@ -18,6 +18,19 @@ import signals  # noqa: E402
 import trader_db  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def isolated_scorecard(monkeypatch, tmp_path):
+    """record_decision.py's reconcile/decision paths load the REAL
+    state/signal_scorecard.json (SCORECARD_PATH) and pass it into
+    reconcile_signals() -- surfaced 2026-08-04 when live trading pushed
+    the 'technical' signal past signal_scorecard.py's 10-labeled-example
+    threshold, giving it a real non-1.0 multiplier that broke a test
+    comparing against a neutral-scorecard expected value. Point at a
+    path that doesn't exist so _load_scorecard() returns None (neutral),
+    matching what every test's own hand-computed "expected" value assumes."""
+    monkeypatch.setattr(record_decision, "SCORECARD_PATH", tmp_path / "signal_scorecard.json")
+
+
 class TestReconcileSubcommand:
     def test_reconcile_prints_combined_confidence(self, monkeypatch, capsys):
         monkeypatch.setattr(sys, "argv", [

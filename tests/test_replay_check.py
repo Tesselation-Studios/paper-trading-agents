@@ -125,9 +125,11 @@ class TestScaleIntoWinners:
     def test_bigger_winner_gets_bigger_add(self):
         """v1.7: size scales with magnitude, not a fixed increment. Both
         magnitudes stay under PROFIT_TARGET_PCT (12%) so the exit check
-        doesn't fire first, and under the pnl where SCALE_IN_MAX_MULTIPLE
-        (3x at 3x SCALE_IN_MIN_PNL_PCT = 9%) caps the multiple, which would
-        otherwise mask the size difference."""
+        doesn't fire first; big_winner's +6% pnl is enough to hit the
+        SCALE_IN_MAX_MULTIPLE cap (1.5x as of 2026-08-04, at 1.5x
+        SCALE_IN_MIN_PNL_PCT = 4.5%) while small_winner's +3.5% isn't,
+        which is what keeps the size difference visible rather than both
+        saturating the same cap."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
         small_tick, small_winner_portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.35)  # +3.5%
@@ -154,18 +156,23 @@ class TestScaleIntoWinners:
         assert decision.shares <= expected_max_shares
 
     def test_scale_in_max_multiple_override_produces_smaller_add(self):
-        """2026-07-24 follow-up: gentler cap than the module default should
-        cap the add smaller, holding everything else equal."""
+        """2026-07-24 follow-up: a gentler cap should cap the add smaller,
+        holding everything else equal. Compares two explicit overrides
+        (not "default vs override") since 2026-08-04 promoted the module
+        default itself to 1.5 -- see SCALE_IN_MAX_MULTIPLE's comment --
+        so this now tests the override mechanism directly rather than
+        depending on the module default being the looser of the two."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
-        default_trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
+        loose_trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True,
+                                                  scale_in_max_multiple=3.0)
         gentle_trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True,
                                                    scale_in_max_multiple=1.5)
         tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=11.1)  # +11%, saturates both caps
 
-        default_decision = default_trader(tick, portfolio)
+        loose_decision = loose_trader(tick, portfolio)
         gentle_decision = gentle_trader(tick, portfolio)
-        assert default_decision.decision == gentle_decision.decision == "BUY"
-        assert gentle_decision.shares < default_decision.shares
+        assert loose_decision.decision == gentle_decision.decision == "BUY"
+        assert gentle_decision.shares < loose_decision.shares
 
     def test_scale_in_max_per_day_blocks_second_same_day_scale_in(self):
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)

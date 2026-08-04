@@ -136,7 +136,20 @@ PROFIT_TRIM_PCT = 0.25              # trim.profit_target_trim_pct (partial, not 
 # the add gets.
 SCALE_IN_MIN_PNL_PCT = 3.0           # only a REAL winner, not noise, qualifies at all
 SCALE_IN_SIZE_FACTOR = 0.5           # base add size at exactly the threshold — scales up from here
-SCALE_IN_MAX_MULTIPLE = 3.0          # cap on how far magnitude-scaling can push the add size
+# 2026-08-04: promoted from 3.0 to 1.5 (the former "v1.7-gentle" variant's
+# value) -- proposals/2026-08-02-gentler-scale-in-cap-3-0-1-5-improves-both-half-sharpe-and-r.md,
+# split-window backtest on 34 live tickers/104 days: 1.5 strictly dominates
+# 3.0 on both-half Sharpe (2.407 vs 1.918) and max drawdown (-5.11% vs
+# -8.45%), 3.0 only wins on first-half raw return at 3x the drawdown
+# penalty. Root cause: aggressive scaling over-concentrates in winners that
+# then reverse -- the Jul 31 RDDT loss (-22.66% in 18 min) is the live
+# manifestation of that overconcentration risk. Backtest-proxy-only change
+# (this constant, not a live params.json/strategy.md cap -- live scale-in
+# sizing is genuine LLM judgment per tick_prompt.md step 8); makes the
+# nightly v1.7 comparison a more representative reference point for what
+# disciplined sizing looks like. "v1.7-gentle" below is now redundant with
+# "v1.7" (both 1.5) -- left as-is rather than removed, harmless duplication.
+SCALE_IN_MAX_MULTIPLE = 1.5          # cap on how far magnitude-scaling can push the add size
 LEGACY_MAX_POSITIONS = 25            # the cap that was live before v1.6 removed it
 ENTRY_CONVICTION = 0.6               # matches v1.0/v1.1's fresh-entry conviction below
 MAX_POSITION_PCT = 0.06              # mirrors params.json risk.max_position_pct; also what
@@ -563,13 +576,16 @@ VARIANT_LABELS = {
     "v1.7": "== live strategy.md v1.7: v1.1 rules (regime-gated entry, MACDh-flip exit) + "
             "no position cap + scale-into-winners, no pacing, magnitude-scaled sizing "
             "(rule-based proxy: +3% pnl, RSI still in-band, reconsidered every tick, size scales "
-            "with pnl magnitude up to SCALE_IN_MAX_MULTIPLE — real thing is LLM judgment, "
+            "with pnl magnitude up to SCALE_IN_MAX_MULTIPLE (1.5 as of 2026-08-04, promoted from "
+            "3.0 -- see the constant's own comment) — real thing is LLM judgment, "
             "see SCALE_IN_* constants)",
     "v1.7-daily": "same as v1.7 but scale_in_max_per_day=1 — this harness replays DAILY bars "
                   "(one tick per ticker per day for every variant), so this is expected to be a "
                   "no-op vs v1.7 here, not a real test of intraday pacing (see module docstring)",
-    "v1.7-gentle": "same as v1.7 but scale_in_max_multiple=1.5 instead of 3.0 — tests whether a "
-                   "gentler size-scaling cap recovers some of v1.6's better Sharpe",
+    "v1.7-gentle": "2026-08-04: now REDUNDANT with v1.7 -- explicitly pins scale_in_max_multiple=1.5, "
+                   "which is also v1.7's new default since the promotion (see SCALE_IN_MAX_MULTIPLE's "
+                   "comment). Kept only as a historical marker of the exact comparison that motivated "
+                   "the promotion; expect it to match v1.7 in every future run.",
     "v1.0-trail": "v1.0 rules + a flat trailing_stop_pct simulated for the first time (win-rate "
                   "investigation, 2026-07-28 — trailing stops are the dominant loss category in "
                   "real trade history; see make_trader's trailing_stop_pct docstring)",
