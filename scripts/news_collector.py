@@ -215,17 +215,23 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
     failure -- worker unreachable, job failed/timed out, unexpected
     response shape -- so the caller falls back to the keyword scorer
     instead of silently returning wrong scores."""
-    # 2026-08-05: sibling scripts in this repo (prepare_tick_replay.py,
-    # replay_check.py) sys.path.insert(0, ".../paper-trading-rebuild") for
-    # unrelated reasons (pulling in that repo's replay/backtest code) --
-    # that directory happens to also carry its own stale generated/
-    # package (no SentimentJob). If the process running this script ever
-    # shares a Python interpreter with one of those (a cron runner reusing
-    # a worker), "generated" is already cached in sys.modules pointing at
-    # the stale copy, and no sys.path ordering here can override an
-    # already-imported module. Evict any pre-existing cache so this always
-    # resolves fresh against GPU_COMPUTE_ROOT above -- confirmed live this
-    # was the actual root cause of the "no attribute SentimentJob" failures.
+    # 2026-08-05: root-caused live. On the no-TICKER-args path (exactly how
+    # stonks-sentiment-refresh invokes this), main() below lazily imports
+    # replay_check for load_live_universe() -- and replay_check.py (and
+    # prepare_tick_replay.py) sys.path.insert(0, ".../paper-trading-rebuild")
+    # at ITS OWN module level, for unrelated reasons (pulling in that repo's
+    # replay/backtest code). That insert happens AFTER the GPU_COMPUTE_ROOT
+    # insert up top (which only runs once, at this script's own import time,
+    # before main() does anything) and lands ahead of it in sys.path --
+    # paper-trading-rebuild happens to also carry its own stale generated/
+    # package (no SentimentJob), so it silently wins the next `from generated
+    # import ...` in here. Re-assert priority at the point of use rather than
+    # trusting whatever sys.path looks like by now, and evict any stale cache
+    # so the re-assertion actually takes effect (an already-imported module
+    # name ignores sys.path entirely).
+    if GPU_COMPUTE_ROOT in sys.path:
+        sys.path.remove(GPU_COMPUTE_ROOT)
+    sys.path.insert(0, GPU_COMPUTE_ROOT)
     for _mod_name in list(sys.modules):
         if _mod_name == "generated" or _mod_name.startswith("generated."):
             del sys.modules[_mod_name]
