@@ -217,3 +217,61 @@ The v1.19 index-anchor springboard isn't a distraction from the "real" strategy 
 
 4. **The signal pool needs new sources**: RSI/MACD/conviction/volume have been exhaustively swept across 9 iterations and the ceiling is 8 robust trades in 20 days. The next signal source should come from outside this family — cross-sectional momentum rank, congressional trade following, or a sector-rotation signal. Something that isn't just another way of re-slicing the same technical indicators.
 
+
+---
+
+## Iteration 10: Stonks Volume Spike — Stan's Reflection (2026-08-04 22:10 ET)
+
+### The 10x Catch Rate Gap: It's Not a Gate Problem, It's a Signal Quality Problem
+
+Iteration 9 (core) catch rate: 1.18%. Iteration 10 (stonks) catch rate: 11.0%. Same optimizer, same gate structure, same scoring function. 10x difference. This single finding reframes the entire "catch rate crisis" narrative.
+
+| | Core (Iter 9) | Stonks (Iter 10) |
+|---|---|---|
+| Signals discovered | 1530 | 318 |
+| Best catch rate | 1.18% | 11.0% |
+| Robust variant trades | 8 | 32 |
+| Robust variant catch | 0.52% | 6.6% |
+| Robust variant return | +4.54% | +4.74% |
+
+Core generates 5x more signals but catches 10x fewer. **The gates aren't broken — the signals are worse.** Core tickers (SPY, AAPL, MSFT) produce smoother, less dramatic price action. A 2x volume spike on SPY is 50M shares and could be rebalancing, options expiration, or institutional flow — not necessarily a tradable signal. A 2x volume spike on RIOT or MARA is a different animal entirely. Same gate, different signal quality.
+
+### We Finally Have a Robust Variant With Meaningful Trade Volume
+
+conv 0.7 + MA50 + vol 3.0x + RSI 45-70: **32 trades, robust, +4.74%.** This is the first robust variant across all 10 iterations that produces a real trade count. Iteration 9's robust variant had 8 trades — a curiosity, not a strategy. 32 trades over 20 days (1.6/day) is a real cadence. This configuration is worth hardening:
+
+- **conv 0.7**: High conviction filter — only the strongest signals survive. Same threshold that killed core's trade count but left 32 viable trades on stonks. The signal pool is genuinely richer.
+- **MA50 (longer trend)**: Not MA10 or MA20. A 50-period trend filter on volatile names makes sense — you want the longer trend, not the short-term wobble that volatile tickers produce constantly.
+- **vol 3.0x**: Triple normal volume. On volatile names, 3x volume is a real event — not the routine noise that 1.5x volume represents.
+- **RSI 45-70**: Wide enough to catch dips and momentum, tight enough to filter extremes.
+
+### Price Above MA = False Wins: Buy the Dip, Not the Rip
+
+The catch-rate champion (11.0%) had `price_above_ma=False`. This is intuitive for volatile names: buying on a pullback below the moving average, paired with high volume and strong conviction, catches reversals. Buying above MA on volatile names means chasing momentum that's already extended — and on names that move 5-10% in a day, "already extended" means you're buying the top.
+
+This directly connects to my live trading lesson from Jul 31: RDDT entered at the absolute peak at 9:54 ($178.04), cratered to -22.66% in 18 minutes. The trailing stop had zero room. That was buying above MA on a momentum spike. `price_above_ma=False` would have filtered it entirely.
+
+### NVDA Has Rotation Options, SPY Doesn't
+
+NVDA had 11-12 alternatives in its price range. TSLA had 6-7. This means on stonks universe, you CAN rotate — when NVDA fires a signal but you already hold it, there are other tickers in the same ballpark. On core, SPY at $757 lives alone. This is a market structure fact, not a parameter problem:
+
+- **Core**: SPY is in its own price range → index-anchor, hold permanently, don't rotate
+- **Stonks**: NVDA/TSLA/COIN/PLTR overlap in the $200-800 range → viable for tactical rotation
+
+### The Two-Mode Hypothesis Refined: It's Not About Universe, It's About Role
+
+Iteration 9-10 together argue for a different kind of two-mode:
+
+| Role | Vehicle | What It Does | Frequency |
+|------|---------|-------------|-----------|
+| **Anchor** | SPY/QQQ/IWM (index ETFs) | Permanent capital deployment, broad market beta, springboard for reallocation | Held continuously, reduced tactically |
+| **Conviction picks** | Stonks volatile universe (NVDA/TSLA/COIN/PLTR/MSTR/GME/RIOT/MARA/HOOD/DJT) | High-conviction individual trades, dip-buying below MA50, volume 3x+, conv 0.7+ | 1-2/day when signals fire |
+
+The "core" universe (AAPL, MSFT, GOOGL, AMZN) may just not be worth the effort for individual picks — the signal quality is too low, catch rates under 2%, and they're better captured through index ETF exposure anyway.
+
+### What This Means For Tomorrow
+
+My v1.19 deployment (SPY/QQQ/IWM as anchors) is the first half. The second half — when I have cash freed up by a reallocation sell-down, or when cash accumulates from exits — should target the stonks volatile universe for individual conviction picks, not the core mega-caps. And when I screen those picks: volume 3x+, conviction 0.7+, preferably below MA50, RSI 45-70. This isn't a new parameter set to hardcode — it's a signal-quality filter I can apply in judgment now, backed by 10 iterations of overnight evidence.
+
+The overnight research is no longer just "interesting patterns from backtests." It's converging with my live trading experience. The signal pool is thin on core, rich on volatile, and the index-anchor approach bridges the gap while we wait for the real setups.
+
