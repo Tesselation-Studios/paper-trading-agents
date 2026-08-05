@@ -226,15 +226,26 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
     # paper-trading-rebuild happens to also carry its own stale generated/
     # package (no SentimentJob), so it silently wins the next `from generated
     # import ...` in here. Re-assert priority at the point of use rather than
-    # trusting whatever sys.path looks like by now, and evict any stale cache
-    # so the re-assertion actually takes effect (an already-imported module
-    # name ignores sys.path entirely).
+    # trusting whatever sys.path looks like by now.
+    #
+    # Deliberately NOT evicting sys.modules here (an earlier version of this
+    # fix did, and broke): protobuf's descriptor pool is a process-wide
+    # singleton that doesn't support re-registering "gpu_compute.proto" once
+    # it's been loaded once, even with byte-identical content -- del+reimport
+    # raises `TypeError: duplicate file name` on the second call in any
+    # process that calls this function more than once (confirmed: broke the
+    # test suite, which calls it repeatedly). This is genuinely a one-shot
+    # fix: since this is always the FIRST import of `generated` in the real
+    # process (news_collector.py never imports it at module level, only in
+    # here), reordering sys.path before that first import is both necessary
+    # and sufficient -- verified against the real cron. If something else
+    # already imported the wrong copy before this ever runs, re-ordering
+    # sys.path can't undo that (Python won't re-resolve an already-cached
+    # module name), but that's the pre-existing degraded-not-crashed
+    # behavior, not a regression.
     if GPU_COMPUTE_ROOT in sys.path:
         sys.path.remove(GPU_COMPUTE_ROOT)
     sys.path.insert(0, GPU_COMPUTE_ROOT)
-    for _mod_name in list(sys.modules):
-        if _mod_name == "generated" or _mod_name.startswith("generated."):
-            del sys.modules[_mod_name]
     try:
         from generated import gpu_compute_pb2 as pb
         from orchestrator.gpu_client import WorkerPool
