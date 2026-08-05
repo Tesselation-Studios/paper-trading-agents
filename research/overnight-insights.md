@@ -155,3 +155,65 @@ The RSI=50-70 / Vol=2x / Conv=0.6 family wins **6 out of 8** iterations across v
 - [ ] Run a 5-day window on CORE tickers to isolate the "window length" variable from the "universe" variable
 - [ ] Add a test: run the ultra-conservative winner (RSI=45-70, Vol=3x, Conv=0.7) on the 5-day window
 - [ ] Investigate whether the scoring function penalizes low-signal configs — this could explain why high-signal families always win even if they're worse per-trade
+
+---
+
+## Iteration 9: Wide RSI Net — Stan's Reflection (2026-08-04 22:05 ET)
+
+### The Catch Rate Problem Is Not What It Looks Like
+
+18 out of 1530 signals caught. 1.18%. That's not a discovery overcount — it's a **signal-quality crisis masquerading as a catch-rate problem**. Here's why:
+
+The wide RSI net (40-75) was supposed to cast a bigger net. It didn't. Catch went DOWN, not up, relative to narrower ranges. The bottleneck isn't the RSI gate — if RSI 40-75 catches 1.18%, and RSI 50-70 catches ~0.8%, the difference is marginal. The bottleneck is **everything after the technical screen**: conviction scoring, catalyst presence, volume thresholds, and whatever scoring function is deciding what makes a signal "actionable."
+
+1530 signals discovered, 18 caught. The 1512 that didn't make it aren't getting caught by slightly wider RSI nets. They're failing deeper checks — the ones that actually separate noise from edge.
+
+### The Robustness Paradox: Only the Filter That Never Fires Is Robust
+
+This is the most important finding, and it's been hiding in plain sight across all 9 iterations:
+
+| Config | Robust? | Trade Count |
+|--------|---------|-------------|
+| Conv 0.5, RSI 50-60, Vol 1.5x | ❌ | 17 |
+| CEO 0.1, Conv 0.6, RSI 50-65, Vol 3.0x | ❌ | 14 |
+| **Catalyst 0.3, Conv 0.7, RSI 55-60, Vol 3.0x** | ✅ | **8** |
+
+The ONLY robust variant is the one that barely trades. Every looser config produces more trades with worse robustness. The relationship is monotonic: **more trades = less robustness, less trades = more robustness.**
+
+This isn't a parameter tuning problem. This is a **signal-to-noise problem in the underlying data.** The signal pool has a tiny nucleus of genuine edge (8 trades in 20 days) surrounded by a massive cloud of noise (1500+ trades). Looser filters don't capture more edge — they capture noise that happens to look like edge in the training window.
+
+**Implication**: We can't solve the catch-rate problem by relaxing gates. Relaxing gates just lets noise through. We need to either:
+1. Find a different signal source entirely (not just re-tuning the same RSI/MACD/conviction combo)
+2. Accept that 0.4 trades/day is the honest rate in this universe and size them bigger
+3. Use the broad market as the primary vehicle (index anchors) and treat individual-stock picks as rare, high-conviction supplements
+
+### The Winning Family Is a Mirage — And We Have 9 Iterations of Evidence
+
+RSI=50-70, Vol=2x, Conv=0.6, Pos=25% won 6 out of 9 iterations. It has NEVER been robust. Not once. The only time a different config won was when we artificially constrained the optimizer so hard it couldn't find the usual family (iteration 6).
+
+This is the classic overfitting signature: a config that looks great on aggregate returns but can't survive a split-window test. The optimizer isn't finding edge — it's finding the config that happened to work in this specific 20-day window. When you split the window, the pattern doesn't hold.
+
+**The scoring function is part of the problem.** If the scoring function penalizes low-signal configs, then configs that fire more often (the 17-trade family) will always outscore configs that fire rarely (the 8-trade robust family), even if the rare config is genuinely better per-trade. The optimizer is being steered toward high-trade-count configs regardless of quality.
+
+### SPY Zero-Alternatives: The Finding That Validates v1.19
+
+SPY trading days had zero alternative tickers in the same price range across all 20 days. This isn't a bug — it's a market structure fact. SPY at $750+ lives in a price range where no other liquid ticker trades. You can't build a "rotation out of SPY" strategy because there's nothing to rotate INTO.
+
+This directly validates today's v1.19 index-anchor framework. If SPY has no peers, don't try to time it. Hold it as a permanent anchor, reduce tactically when individual-stock opportunities clear their own gates, and let the broad market do the heavy lifting while we wait for the rare individual-stock conviction setup.
+
+### What This Means For My Trading Tomorrow
+
+The overnight backtest and my live trading are saying the same thing: **individual-stock signals are extremely thin right now.** I spent 74 ticks today unable to find a single qualifying entry. The backtest spent 20 days finding 8 robust trades. Same signal, different lens.
+
+The v1.19 index-anchor springboard isn't a distraction from the "real" strategy — it IS the strategy while the individual-stock signal pool is this thin. Deploy into SPY/QQQ/IWM, let the broad market compound, and when a genuine individual-stock signal appears (the kind that would survive a robustness check), fund it by selling down an anchor.
+
+### Proposed Improvements
+
+1. **Scoring function redesign**: The current scorer penalizes low-trade-count configs, which means it will never select the genuinely robust variant. The split-window Sharpe test should be the primary scorer, not a secondary check. A config with 8 robust trades and a positive split-window Sharpe should outscore one with 17 non-robust trades and a higher aggregate return.
+
+2. **Two-mode isn't the answer — index-anchor + rare conviction picks is**: The two-mode hypothesis (volatile universe + core universe with different params) makes intuitive sense but adds complexity without addressing the fundamental problem: noise dominates signal across BOTH universes. The robust variant found 8 trades in 20 days on core. On volatile, it might find 12. Still not a strategy. The index-anchor model is simpler and directly addresses the deployment problem.
+
+3. **Test the index-anchor thesis itself**: Next overnight run: simulate holding SPY/QQQ/IWM as permanent positions, selling down 10-20% when individual-stock signals fire, re-buying when cash accumulates. Compare total return against the current "wait for individual signals only" baseline. I suspect the index-anchor baseline will dominate purely on deployment efficiency — 92% cash earns 0%, SPY earns whatever SPY earns.
+
+4. **The signal pool needs new sources**: RSI/MACD/conviction/volume have been exhaustively swept across 9 iterations and the ceiling is 8 robust trades in 20 days. The next signal source should come from outside this family — cross-sectional momentum rank, congressional trade following, or a sector-rotation signal. Something that isn't just another way of re-slicing the same technical indicators.
+
