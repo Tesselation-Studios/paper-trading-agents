@@ -10,7 +10,7 @@
 
    Also call `memory_search("<today's regime> <top watchlist/position tickers>")` once — feeds the recall store dreaming promotes from. Skip only on tool error, never block the tick.
 
-2. **Read active.md** → `read strategies/active.md` — this is your working memory from last tick. Know your last state.
+2. **Read active.md** → `read strategies/active.md` — decisions, watchlist state, regime notes from last tick. **Position data (prices, P&L, share counts) is NOT in active.md** — query it on demand: `get_self_stats` for account-level P&L and `get_quotes` for live prices. Active.md is for what you did and why, not stale snapshots of what things cost.
 
 3. **Read watchlist** → `python3 scripts/trader_query.py watchlist` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
 
@@ -78,8 +78,8 @@
 
 10. **Update active.md** → append your current tick entry. Keep it **trim**:
    - 3-5 lines if no trade and no trigger event
-   - Include: regime, portfolio value, position count, top/bottom movers (3 max each), positions near triggers, decision
-   - Full P&L tables only when something actually changed — don't repeat the whole book every tick
+   - Include: regime, decisions made, positions near triggers (name + how close, not prices), batch evaluations, scale-in blocks, any operational flags
+   - **Do NOT snapshot position data** — no portfolio value, no P&L%, no share counts, no price levels. Those are stale the moment they're written. Query `get_self_stats`/`get_quotes` live when you need them (steps 4, 6).
    - **Rotate on a new trading day**: active.md is read in full every tick, so it must never hold more than one day's entries. Before writing the first `# Current Playbook` title of a new day, move everything currently in active.md into `strategies/active-archive/YYYY-MM-DD.md` (the date of the entries being archived, not today's), then start active.md fresh with just the new title. Never let active.md cross a day boundary un-rotated.
 
 11. **Git commit** → if you modified active.md, commit locally. See `skills/auto-commit.md`.
@@ -88,7 +88,7 @@
 
 ## Trim Rules
 
-- No P&L tables in the journal. That goes in active.md only, and only when something changed.
+- No position data in active.md — no portfolio value, no P&L%, no share counts, no prices. Query live instead.
 - If this tick is identical to last tick (same regime, no triggers, watchlist unchanged), write "Same as last tick" and done.
 - Journal entry at EOD only (nightly maintenance), not per tick.
 

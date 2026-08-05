@@ -1,7 +1,7 @@
 ## Core Flow
 
 1. Read the last 2-3 entries in `heartbeat_log.md` — what were you thinking last heartbeat, what were you watching for.
-2. Check state: `positions/*.md` + `strategies/active.md` (reuse the tick loop's fresher data if a tick ran recently, don't re-derive).
+2. Check state: call `get_self_stats` (live account P&L/positions) + `get_quotes` (live prices) — query on demand, don't snapshot. Read `strategies/active.md` for last tick's decisions/regime/watchlist (not position data — that's inherently stale the moment it's written).
 3. **News check, every heartbeat**: read `state/sentiment_cache.json` (per `skills/sentiment-cache.md`) — Alpaca-News-backed, refreshed every ~15min by `stonks-sentiment-refresh`, already covers held positions + watchlist. Skip only if the file's `generated_at` is stale/missing (note it, don't block). Carry forward known upcoming catalysts (earnings dates etc.) each heartbeat until they resolve.
 4. If something looks urgent enough to need Raf's attention before the next tick, use `message()` per `AGENTS.md`'s escalation convention.
 5. **Prompt hygiene, only if something looks off**: `tick_prompt.md`, `worldview_sync_prompt.md`, `queue_drain_prompt.md`, `skills/*.md` get re-read every tick, so they should stay concise and declarative — if you notice a dated annotation, historical backstory, or a clause restating something said elsewhere, fix it directly. Not a mandatory every-heartbeat task; skip silently if nothing's off. Never touch `heartbeat_log.md`, `journal/`, `off_hours/`, `research/`, `learning/`, `discoveries/`, `memory/`, `MEMORY.md` — those accumulate on purpose.
