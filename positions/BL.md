@@ -1,9 +1,9 @@
-# MBBC Position Thesis
+# BL Position Thesis
 
-- **Entry**: $15.30 avg | 1 shares
-- **Current**: $15.29 (-0.07% unrealized)
-- **Market Value**: $15.29
-- **Unrealized P&L**: $-0.01 (-0.07%)
+- **Entry**: $30.00 avg | 2 shares
+- **Current**: $30.47 (+1.58% unrealized)
+- **Market Value**: $60.94
+- **Unrealized P&L**: $+0.95 (+1.58%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-05 20:15:44 UTC
 

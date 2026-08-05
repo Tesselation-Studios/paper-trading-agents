@@ -1,11 +1,11 @@
 # CLIR Position Thesis
 
-- **Entry**: $4.00 avg | 1 shares
-- **Current**: $4.00 (+0.00% unrealized)
-- **Market Value**: $4.00
-- **Unrealized P&L**: $+0.00 (+0.00%)
+- **Entry**: $4.20 avg | 1 shares
+- **Current**: $3.89 (-7.38% unrealized)
+- **Market Value**: $3.89
+- **Unrealized P&L**: $-0.31 (-7.38%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-04 20:30:09 UTC
+- **Last sync**: 2026-08-05 20:15:44 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

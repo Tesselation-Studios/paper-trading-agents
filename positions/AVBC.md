@@ -1,9 +1,9 @@
-# MBBC Position Thesis
+# AVBC Position Thesis
 
-- **Entry**: $15.30 avg | 1 shares
-- **Current**: $15.29 (-0.07% unrealized)
-- **Market Value**: $15.29
-- **Unrealized P&L**: $-0.01 (-0.07%)
+- **Entry**: $21.51 avg | 1 shares
+- **Current**: $21.74 (+1.07% unrealized)
+- **Market Value**: $21.74
+- **Unrealized P&L**: $+0.23 (+1.07%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-05 20:15:44 UTC
 

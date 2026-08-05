@@ -2,6 +2,64 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## WED AUG 05 14:42 ET — Heartbeat
+
+CNH is back at $10.94 — the $11.22 recovery I was writing about an hour ago evaporated while I was feeling relieved about it. Two hours from buy to relief to reversal, and the only thing that actually happened is a few cents of noise on one share. The framework's 0.39 > 0.10 floor got the entry right and the CHOPPY discount rate was right, and my emotional arc about it — from anxiety at $10.97, to relief at $11.22, to whatever this is now — was the only thing that was wrong. File that.
+
+BLFS appeared in the book at $33.40, now $33.36 (-0.12%) — another quiet 1-share probe that materialized without any narrative from me. BioLife Solutions, $1.4B-ish life sciences company. I have no opinion about it, which is probably why it'll work. The pattern from BBSI and AVBC holds: the entries I don't pour words into are the ones that run, and the ones I do (CLIR at $3.96, frozen in amber for 18 hours) go nowhere. This isn't causation, but at 13 positions with 13 consecutive ticks refusing to deploy, it's a useful filter — if I feel the urge to write a paragraph about a position, I should probably sell it.
+
+KEX at $131.42 is still deteriorating — was $132.42 when I last checked, $134.19 entry, RSI 37.4 oversold, MACDh -0.39 bearish. Two shares, the largest dollar position in the book at $262.84. It's not near the stop and v1.13 says don't exit on oversold, but it's the one position where the directionality is unambiguous: every heartbeat shows it lower. BFST at 4 shares (+0.70%) remains the one I'd scale if the 403 papercut were resolved. The book is 5 green, 8 red, all within range, nothing approaching a trigger. CHOPPY 0.644 earning its name.
+
+Sentiment cache at 2:40 PM is fresh — same analyst PT noise, BL the only held ticker (Cantor Neutral $36 PT). Nothing actionable. Between 13:42 and now, the framework apparently evaluated another batch, found nothing, and quietly added BLFS. That's the process working as designed: reject 90% of what it sees, probe the 10% it can justify, let the market sort it out. I don't need to do anything except not confuse the CNH reversal with a story.
+
+## WED AUG 05 13:42 ET — Heartbeat
+
+The CNH probe recovered — $11.08 entry to $11.22 (+1.26%), up +3.89% on the day with 1.49x volume — and I notice the relief more than the signal. Two hours ago I was writing about CHOPPY winning and MACD barely pulsing, and now the same setup looks prescient. That's not analysis, it's emotional whiplash, and it's a reminder that a one-cent move on a one-share probe shouldn't produce this much narrative. The framework bought it because 0.39 > 0.10, not because CNH was going to rip, and the fact that it ripped anyway doesn't retroactively make the CHOPPY discount rate wrong.
+
+12 positions now with AVBC in the book at $21.51 — another quiet micro-cap entry that appeared without fanfare, the same way BBSI at $39.11 snuck in and ran +2.48% while I was writing paragraphs about CLIR. The book's pattern is consistent: the entries I don't narrativize are the ones that work, and the ones I pour words into (CLIR at $4.00, still -4.76% from $4.20 entry, still bearish MACD -0.06, still one share) are the ones that go nowhere. That's not causation — but it's a decent heuristic for where I'm misallocating attention.
+
+BFST at $32.07 (+0.91% on 4 shares) remains the strongest absolute performer, still unscaleable because of the stop-order conflict. The 403 papercut from two hours ago hasn't resolved, and I should probably ask Raf whether there's a way to temporarily lift a protective stop for a scale-in without leaving the position naked. Not urgent — the 4-share position is fine as-is — but it's a recurring infrastructure friction that's costing real edge.
+
+Book is 6 red, 6 green-ish (BL at $33.12 flat from the 11:50 entry), all within stops. CHOPPY 0.644. Sentiment cache at 1:39 PM is the same analyst PT noise — none touch a held position. The afternoon drift is exactly what CHOPPY afternoons look like. Nothing to do except let the framework keep saying no.
+
+## WED AUG 05 11:42 ET — Heartbeat
+
+The CNH buy at 10:46 ($11.08) was the framework fighting CHOPPY — and CHOPPY is winning so far. MACD bull +0.045 is barely a pulse, RSI 57.2 is middling, and here we are an hour later at $10.97 (-0.95%). The framework found a setup it could reconcile against the 0.39 > 0.10 floor and pulled the trigger, but this is a CHOPPY probe, not a conviction buy. If the regime were SUSTAINABLE I'd feel differently about that MACD; at 0.644, every entry has a discount rate.
+
+The BFST 403 block stings more than the CNH drift. That was the strongest performer in the book — MACD +0.56, RSI 66.3, +0.45% unrealized on 4 shares — and the process wanted to scale into the winner exactly when it should, and the API said no. That's not a thesis failure; it's an infrastructure papercut, and those are somehow more frustrating because there's nothing to learn from them.
+
+Ten positions now, 91.9% cash, 90 consecutive under-deployed ticks. The active.md has a "cash crisis" section that references `deployment_pressure.py` not existing — that's process anxiety dressed as a signal. The framework is doing exactly what it should in CHOPPY: saying no 90 ticks in a row. The cash hoard isn't a crisis; it's discipline. But I notice the tension between "don't confuse boredom with a signal" and an active.md that's visibly stressed about deployment. Those two things can't both be right, and I trust the boredom interpretation more.
+
+CLIR at $4.11 — up from $4.00, still below the $4.20 entry. HLN at $9.90 — up from $9.78, still below $10.20. KEX at $130.79 is the only real deterioration this hour — was $132.42 at 10:42, now down another $1.63. TRIP slipped from $14.33 to $13.91. The book is 7 red, 3 green, all within stops. The CNH probe is the story of the hour; the BFST papercut is the feeling.
+
+## WED AUG 05 10:42 ET — Heartbeat
+
+BBSI at $40.08 is running — +2.48% from the $39.11 entry, MACDh +1.38, volume 1.51x — and I've written exactly zero words about it across six heartbeats because all the narrative energy went to CLIR's one-cent drama on a $27M market cap. That's not just a spotlight problem; it's a cognitive distortion worth flagging. The position that's actually working — the quiet micro-cap bought at a value level with improving technicals — got no attention at all while I wrote paragraphs about rounding errors. The heartbeat caught the CLIR attachment, which is good, but it missed the BBSI signal entirely. The framework bought it at $39.11 and it's up 2.5% in a CHOPPY regime where most of the book is grinding sideways. That's not noise — that's the process producing a good entry, and I should have noticed sooner.
+
+The empty `active.md` (just a date header, no playbook) is worth noting. Either today's tick processed and found nothing actionable — which would be consistent with CHOPPY 0.644 and nine positions all within range — or something didn't run. The heartbeat isn't the mechanism to investigate that, but I'm filing it.
+
+HLN at $9.78 is back to where it was at close yesterday — the stock that dominated four heartbeats of angst (-4.90% at the lows) resolved to a rounding error, exactly as predicted. TRIP at $14.33 (-1.17%) on 1.80x volume is the only mild concern — heavier selling on good MACDh (+0.41) is worth watching, not acting on. KEX at $132.42 (+1.45% from open) is green today but still oversold (RSI 37.4) and underwater from the $134.19 entry. VSXY touched $91.89 before settling at $89.21 — the MACDh +3.39 signal is so strong it keeps attracting momentary interest, but CHOPPY 0.644 absorbs everything. CLIR at $4.00 on 0.25x volume is the same photograph it's been for 18 hours.
+
+The sentiment cache refreshed at 10:38 AM — same analyst PT noise (MNTN, APPS, BL, XGN, LIDR, OESX, SSRM), none touch a held position. The book is nine positions, all within range, nothing near a trigger. Quiet session, 42 minutes in. The framework says "don't buy anything" and the book says "nothing to sell" — that's not a problem, it's the regime working.
+
+## WED AUG 05 09:47 ET — Heartbeat
+
+CLIR is back at $4.00 and I don't feel the satisfaction I expected to. Three heartbeats last night were circling the same question — was the $3.96 close a signal or noise — and the pre-market gave me the round number back like a punchline with no setup. Volume ratio 0.25: almost nothing traded hands. The price is $4.00 because one share printed there at a round number, not because anyone suddenly agrees with the M1 Core Burner thesis. MACDh improved from -0.08 to -0.06, which is the same thing dressed in different clothes. The pre-market didn't answer the question — it just restated it at a more comfortable number. I need to be honest about that instead of pretending the symmetry resolves anything.
+
+The book is nine positions, all within range, nothing near a trigger. KEX at $132.42 (+1.45%) is finally green — RSI 37.4 still oversold, still underwater from the $134.19 entry, but not bleeding. VSXY's MACDh +3.39 is still sitting there like a loaded spring that the CHOPPY regime refuses to release. TRIP at $14.33 (-1.17%) on 1.8x volume is the only mild concern — heavier selling on good MACDh (+0.41) is worth watching, not acting on.
+
+The sentiment cache refreshed at 9:38 AM and it's the usual analyst PT adjustments — none of the tickers (BL, XGN, APPS, LIDR, OESX, MNTN, SSRM) touch a single held position. SSRM's earnings miss is interesting for the gold miners sector but irrelevant to my book. NABL reports tomorrow and we already banked the +8.12% — that ship sailed, and regardless of the print, the framework did its job without hesitating.
+
+What's actually on my mind: I spent three evening heartbeats narrativizing a one-cent move on a $27M market cap stock. That's not monitoring — that's attachment. The heartbeat is supposed to catch those impulses, which it did, but I'm noticing how much cognitive real estate CLIR occupied for a position that's literally one share. The framework said HOLD every hour yesterday and would say HOLD again now, and the only thing that changed between 22:42 last night and 09:47 this morning is that the price moved back to a number I can tell a nicer story about. That's a me problem, not a market problem. The book is quiet and stable. That's not a crisis to solve.
+
+## TUE AUG 04 22:42 ET — Heartbeat
+
+Fifth consecutive quiet post-close hour. The position sync at 22:30 ET confirmed CLIR at $4.00 — the round number held through another data point, which means the after-hours tape is consistent. On a $27M market cap with one share, two identical $4.00 prints hours apart is a rounding error squared, but I notice I'm still checking. The part of me that wanted symmetry at $4.00 back at 17:42 got it and has kept getting it, and that's not the part of me I trust.
+
+HLN at $9.78 (-4.12%), KEX at $132.42 (-1.32%), the green positions cooling from session highs — the book is a photograph at this point, not a movie. Nine positions, all within stops, 92% cash. The sentiment cache at 20:03 ET is the same after-hours noise (analyst PT changes, "12 stocks moving" roundups) and won't refresh again until the next scheduled cron run, which won't catch anything meaningful until pre-market. The process is designed to go quiet when there's nothing to do, and five consecutive heartbeats of "nothing changed" is the process working, not failing.
+
+Tomorrow is August 5 — the last session before NABL reports Aug 6. We banked the +8.12% at 11:51 yesterday and won't know until Wednesday morning whether that was genius or cowardice. CLIR is still the only open question, and the pre-market heartbeat will answer it. The book needs nothing from me tonight except the discipline to not confuse five hours of stillness with something broken. It's doing exactly what it should be doing: holding stops, waiting for bootstraps, not manufacturing urgency. I can go to sleep at peace with that.
+
 ## TUE AUG 04 21:42 ET — Heartbeat
 
 Fourth consecutive quiet post-close hour. The position sync at 21:30 ET shows CLIR back at $4.00 — I spent three heartbeats correcting my own narrative about $3.96, and now the after-hours tape is giving me the round number I wanted at 17:42. On a $27M market cap with one share, this is noise, not signal, and I know that. But I notice the part of me that's satisfied by the symmetry, and I file that alongside every other impulse to narrativize a rounding error.
@@ -540,5 +598,25 @@ The reallocation sell-down mechanism is the part I like most. These aren't stati
 What I'm watching: tomorrow morning's regime read. If CHOPPY persists (which it should, given the 0.644 hasn't budged), the index anchors go in at a steady tape — no chasing a spike, no buying a dip, just deploying into the prevailing trend. If the regime flips overnight toward SUSTAINABLE, even better — the conviction score gets a tailwind. If it somehow flips bearish/distribution, that changes the thesis claim before I even place the order. The pre-flight is solid: live quotes for QQQ/IWM to size whole shares, reconcile with regime/macro/cross-index technicals, then fire. Two conviction slots stay free for the individual picks that the framework will eventually find.
 
 Book closed at $10,407, 9 standard positions, all green or flat except HLN (-4.12%) and KEX (-1.32%). No overnight landmines in the sentiment cache. Tomorrow's the real test.
+
+## WED AUG 05 12:42 ET — Heartbeat
+
+Still CHOPPY at 0.644 — the regime hasn't budged since open, and at this point I don't expect it to before close. The index anchors from last night's plan still haven't fired. It's now the afternoon and 91.6% of the book is cash. The v1.19 deployment was supposed to be the mechanical override to this exact paralysis, but the tick framework hasn't pulled the trigger on SPY/QQQ/IWM, and I don't have the execution auth from a heartbeat to do it myself. So the cash sits.
+
+CLIR is the thing I'm watching closest right now. It was -2.26% at 11:42 and now it's -5.71% — a -3.45% intraday slide that's accelerating toward the -10% stop at $3.78. Still a buffer there, but if the afternoon tape doesn't reverse, this gets interesting before close. The stop is set, which is the right answer mechanically, but a -10% trip on a 1-share probe still stings when the book is this cash-heavy and every loss lands harder on a small equity base.
+
+CNH actually improved a tick — -0.90% now vs -0.95% earlier. The MACD bull cross was weak (+0.045) and CHOPPY punished it, but it's not cratering. It's just... there. Same with BL at +1.07% — the Cantor Fitzgerald neutral note in the sentiment cache is about as exciting as this probe gets. BFST at +0.57% is the steadiest winner, and I still can't scale into it because of that stop-order conflict. That's three ticks now where the framework wanted to add to the strongest position and Alpaca said no.
+
+Sentiment cache is fresh — nothing on held positions beyond BL's analyst note. SSRM missed earnings (sentiment -0.30) but we don't hold it. Quiet hour overall. The real story is the cash sitting idle and a small position slowly bleeding toward its stop.
+
+HEARTBEAT_OK
+
+## WED AUG 05 15:45 ET — Heartbeat
+
+BJDX just taught the same lesson CNH taught two hours ago, but faster and meaner. At 3:35 it was +6.1%, the top performer in the book, and six minutes later it crashed through a trailing stop and got sold at -5.6% realized. A $0.50 peak-to-trough whipsaw on a $1.44 micro-cap in CHOPPY — the bid showed up, the framework correctly noted it as noise rather than signal (no exits triggered at +6.1% because quick-exit is at +5%), and then the bid evaporated. The trailing stop did its job, but the speed is what sticks with me. At 3:41 we were selling BJDX at a loss and simultaneously buying USEA on a catalyst-led earnings beat, which is either disciplined capital rotation or a team that can't sit still for five minutes in CHOPPY. I think it's the former — BJDX was a stop hit, not a decision — but the optics of selling one small cap to buy another at the same timestamp are uncomfortable.
+
+The book is now 15 positions, which is the largest it's been. LARK at $31.23 (fundamental-value probe, P/E ~10, 2.59% div) and USEA at $2.77 (catalyst-led earnings beat, MACD just turned bullish) joined within six minutes of each other. Both are 1-share probes, both in CHOPPY, neither should be expected to run. The framework keeps rejecting 90% of what it sees and still finds things it can justify. At 90.5% cash, the risk is fine, but 15 positions is a lot of overhead for an agent that's mostly just watching. CLIR at $4.00 is back to exactly the same price it was when I flagged the emotional attachment at 10:42 — the whole arc from anxiety to relief to anxiety never moved the position a single cent. That's a three-heartbeat reminder wrapped in a bow.
+
+The 403 scale-in papercut is now four heartbeats old and BFST at +0.70% on 4 shares is still the strongest absolute performer that can't be scaled. Sentiment cache is fresh (3:40 PM) — BL is the only held ticker, Cantor Neutral $36 PT, same as last hour. Fifteen minutes to close, CHOPPY 0.644, nothing approaching a trigger. Let the framework keep saying no.
 
 HEARTBEAT_OK

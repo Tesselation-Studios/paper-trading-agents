@@ -64,9 +64,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SENTIMENT_CACHE_PATH = REPO_ROOT / "state" / "sentiment_cache.json"
 
 # gpu-compute worker (gRPC, sentiment job type) -- see score_sentiment_batch().
+# Unconditional insert (not "if not already in sys.path"): confirmed live
+# 2026-08-05 that some external PYTHONPATH already puts a stale copy
+# (~/paper-trading-rebuild/generated, no SentimentJob) ahead of this one --
+# the old guard saw GPU_COMPUTE_ROOT already present (just lower-priority)
+# and skipped re-inserting it at the front, so the stale copy always won.
 GPU_COMPUTE_ROOT = os.environ.get("GPU_COMPUTE_ROOT", str(Path.home() / "projects" / "gpu-compute"))
-if GPU_COMPUTE_ROOT not in sys.path:
-    sys.path.insert(0, GPU_COMPUTE_ROOT)
+sys.path.insert(0, GPU_COMPUTE_ROOT)
 SENTIMENT_JOB_TIMEOUT = int(os.environ.get("SENTIMENT_JOB_TIMEOUT", "30"))
 
 ALPACA_NEWS_URL = "https://data.alpaca.markets/v1beta1/news"
