@@ -2260,6 +2260,17 @@ def main():
             # conflicting exits on one position" cleanup — the trailing-stop
             # exit and the broker-side floor must never both be live.
             cancelled_stops = cancel_protective_stops(args.account, args.ticker)
+        elif args.action == "BUY":
+            # Same requirement as the SELL path above, opposite direction:
+            # Alpaca 403s a new BUY on a symbol that already carries a
+            # resting protective (sell) stop -- confirmed live 2026-08-05,
+            # blocked every BFST/BBSI scale-in attempt for the session.
+            # Cancel it first; ensure_protective_stop() below (existing,
+            # unconditional BUY-path call) re-places it sized to the whole
+            # position after the fill, so the floor is never actually gone,
+            # just briefly absent around this one order.
+            if open_protective_stops(args.account, args.ticker):
+                cancelled_stops = cancel_protective_stops(args.account, args.ticker)
 
         side = args.action.lower()
         order = place_order(args.account, args.ticker, args.qty, side)

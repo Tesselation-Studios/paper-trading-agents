@@ -235,7 +235,12 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
     try:
         return asyncio.run(_run())
     except Exception as e:
-        log.warning("Sentiment worker call failed (%s), falling back to keyword sentiment", e)
+        try:
+            from generated import gpu_compute_pb2 as _pb_diag
+            diag = f"pb={_pb_diag.__file__} has_SentimentJob={hasattr(_pb_diag, 'SentimentJob')} sys.path[:3]={sys.path[:3]}"
+        except Exception as diag_e:
+            diag = f"diag failed: {diag_e}"
+        log.warning("Sentiment worker call failed (%s), falling back to keyword sentiment [%s]", e, diag)
         return None
 
 

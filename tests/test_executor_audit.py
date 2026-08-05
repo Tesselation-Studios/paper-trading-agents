@@ -965,3 +965,55 @@ class TestProtectiveStopCliFlow:
         kinds = [c[0] for c in calls]
         assert "DELETE" in kinds, calls
         assert kinds.index("DELETE") < kinds.index("POST"), calls
+
+    def test_buy_scale_in_cancels_resting_stop_before_submitting(self, monkeypatch, capsys):
+        """2026-08-05: a BUY scale-in on a position that already carries a
+        resting protective stop was 403ing at Alpaca all session (confirmed
+        live -- BFST/BBSI). Same requirement as the SELL half above, mirrored:
+        cancel the resting stop before submitting the new BUY, then
+        ensure_protective_stop() (already unconditional on the BUY path)
+        re-places it sized to the post-fill position.
+        """
+        calls = []
+        open_orders = [{"id": "stop-1", "symbol": "AAA", "side": "sell", "type": "stop",
+                         "stop_price": "9.00", "qty": "5"}]
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            calls,
+            positions=[{"symbol": "AAA", "qty": "7", "avg_entry_price": "10.00",
+                         "current_price": "10.20", "market_value": "71.40"}],
+            open_orders=open_orders,
+        ))
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=5.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "2",
+            "--price", "10.00", "--thesis", "scale-in", "--skip-guardrails",
+        ])
+        kinds = [c[0] for c in calls]
+        assert "DELETE" in kinds, calls
+        buy_post_idx = next(i for i, c in enumerate(calls) if c[0] == "POST" and c[2] == "buy")
+        assert kinds.index("DELETE") < buy_post_idx, calls
+        # the floor comes back afterward, sized to the whole post-fill position
+        stop_posts = [c for c in calls if c[0] == "POST" and c[1] == "stop"]
+        assert len(stop_posts) == 1
+        assert stop_posts[0][2] == "sell"
+
+    def test_buy_new_position_skips_cancel_when_no_resting_stop(self, monkeypatch, capsys):
+        """A first-time BUY (no existing position, no resting stop) shouldn't
+        attempt a cancel at all -- nothing to cancel, and no extra DELETE
+        round-trip for the common case."""
+        calls = []
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            calls,
+            positions=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00",
+                         "current_price": "10.20", "market_value": "20.40"}],
+            open_orders=[],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "2",
+            "--price", "10.00", "--thesis", "new entry", "--skip-guardrails",
+        ])
+        kinds = [c[0] for c in calls]
+        assert "DELETE" not in kinds, calls
