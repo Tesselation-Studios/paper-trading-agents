@@ -215,6 +215,20 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
     failure -- worker unreachable, job failed/timed out, unexpected
     response shape -- so the caller falls back to the keyword scorer
     instead of silently returning wrong scores."""
+    # 2026-08-05: sibling scripts in this repo (prepare_tick_replay.py,
+    # replay_check.py) sys.path.insert(0, ".../paper-trading-rebuild") for
+    # unrelated reasons (pulling in that repo's replay/backtest code) --
+    # that directory happens to also carry its own stale generated/
+    # package (no SentimentJob). If the process running this script ever
+    # shares a Python interpreter with one of those (a cron runner reusing
+    # a worker), "generated" is already cached in sys.modules pointing at
+    # the stale copy, and no sys.path ordering here can override an
+    # already-imported module. Evict any pre-existing cache so this always
+    # resolves fresh against GPU_COMPUTE_ROOT above -- confirmed live this
+    # was the actual root cause of the "no attribute SentimentJob" failures.
+    for _mod_name in list(sys.modules):
+        if _mod_name == "generated" or _mod_name.startswith("generated."):
+            del sys.modules[_mod_name]
     try:
         from generated import gpu_compute_pb2 as pb
         from orchestrator.gpu_client import WorkerPool
@@ -240,8 +254,16 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
         return asyncio.run(_run())
     except Exception as e:
         try:
+            import generated as _gen_diag
             from generated import gpu_compute_pb2 as _pb_diag
-            diag = f"pb={_pb_diag.__file__} has_SentimentJob={hasattr(_pb_diag, 'SentimentJob')} sys.path[:3]={sys.path[:3]}"
+            diag = (
+                f"pb={_pb_diag.__file__} has_SentimentJob={hasattr(_pb_diag, 'SentimentJob')} "
+                f"generated.__path__={list(getattr(_gen_diag, '__path__', []))} "
+                f"cwd={os.getcwd()} argv0={sys.argv[0]} "
+                f"env.GPU_COMPUTE_ROOT={os.environ.get('GPU_COMPUTE_ROOT')!r} "
+                f"env.PYTHONPATH={os.environ.get('PYTHONPATH')!r} "
+                f"sys.path={sys.path}"
+            )
         except Exception as diag_e:
             diag = f"diag failed: {diag_e}"
         log.warning("Sentiment worker call failed (%s), falling back to keyword sentiment [%s]", e, diag)
