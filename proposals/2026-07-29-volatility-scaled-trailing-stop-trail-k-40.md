@@ -1,6 +1,6 @@
 # Proposal: Volatility-scaled trailing stop (TRAIL_K=40)
 
-**Status**: escalated
+**Status**: applied
 **Tier**: review_required
 **Created**: 2026-07-29T01:06:56.322028+00:00
 **Files changed**: scripts/guardrails.py, params.json
@@ -16,3 +16,7 @@ replay_check.py --split-window: v1.0-trail (flat 5%) fails split-window, Sharpe 
 ## Resolution
 
 escalated at 2026-07-30T23:31:06.411835+00:00
+
+## Resolution
+
+applied at 2026-08-05T14:14:13.807430+00:00

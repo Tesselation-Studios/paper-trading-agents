@@ -494,6 +494,48 @@ class TestGateSectorConcentration:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# gate_catalyst_liquidity
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestGateCatalystLiquidity:
+    def test_no_market_cap_fails_open(self, params):
+        context = {"positions": []}
+        action = {"action": "BUY", "ticker": "XYZ"}
+        granted, reason = executor.gate_catalyst_liquidity(context, action)
+        assert granted is True
+        assert "fail-open" in reason
+
+    def test_market_cap_above_threshold_not_applicable(self, params):
+        context = {"positions": []}
+        action = {"action": "BUY", "ticker": "AAPL", "market_cap": 600_000_000}
+        granted, reason = executor.gate_catalyst_liquidity(context, action)
+        assert granted is True
+        assert "not applicable" in reason
+
+    def test_sub_threshold_no_volume_data_fails_open(self, params):
+        context = {"positions": []}
+        action = {"action": "BUY", "ticker": "MBBC", "market_cap": 44_000_000}
+        granted, reason = executor.gate_catalyst_liquidity(context, action)
+        assert granted is True
+        assert "fail-open" in reason
+
+    def test_sub_threshold_thin_volume_blocks(self, params):
+        context = {"positions": []}
+        action = {"action": "BUY", "ticker": "MBBC", "market_cap": 44_000_000, "avg_dollar_volume": 5_000}
+        granted, reason = executor.gate_catalyst_liquidity(context, action)
+        assert granted is False
+        assert "v1.18 skip" in reason
+
+    def test_sub_threshold_adequate_volume_passes(self, params):
+        context = {"positions": []}
+        action = {"action": "BUY", "ticker": "MBBC", "market_cap": 44_000_000, "avg_dollar_volume": 60_000}
+        granted, reason = executor.gate_catalyst_liquidity(context, action)
+        assert granted is True
+        assert "60,000" in reason
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # gate_hours (timestamp injected via context["_test_now"] — see executor.py)
 # ─────────────────────────────────────────────────────────────────────────────
 

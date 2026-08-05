@@ -963,6 +963,31 @@ def gate_sector_concentration(context: Dict[str, Any], action: Dict[str, Any]) -
     return True, f"{sector} has {same_sector_count}/{max_per_sector} positions"
 
 
+def gate_catalyst_liquidity(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
+    """v1.18 rule mechanized (2026-08-05): catalyst-led entries on sub-$500M
+    names need a real daily-dollar-volume floor, or skip regardless of
+    catalyst quality. Fail-open when market_cap/avg_dollar_volume aren't
+    passed -- only applies when Stan is entering a sub-$500M name and has
+    already looked these up via get_fundamentals (tick_prompt.md step 8)."""
+    if action.get("action") != "BUY":
+        return True, "non-BUY, skipped"
+    market_cap = action.get("market_cap")
+    if market_cap is None:
+        return True, "no market_cap data, skipped (fail-open)"
+    gate_params = load_params().get("risk_guards", {}).get("catalyst_liquidity_gate", {})
+    threshold = gate_params.get("market_cap_threshold", 500_000_000)
+    if market_cap >= threshold:
+        return True, f"mkt cap ${market_cap:,.0f} >= ${threshold:,.0f}, gate not applicable"
+    avg_dollar_volume = action.get("avg_dollar_volume")
+    if avg_dollar_volume is None:
+        return True, "sub-$500M name but no avg_dollar_volume data, skipped (fail-open)"
+    min_volume = gate_params.get("min_daily_dollar_volume", 50_000)
+    if avg_dollar_volume < min_volume:
+        return False, (f"mkt cap ${market_cap:,.0f} (<${threshold:,.0f}), avg dollar volume "
+                        f"${avg_dollar_volume:,.0f}/day < ${min_volume:,.0f} floor — v1.18 skip")
+    return True, f"avg dollar volume ${avg_dollar_volume:,.0f}/day >= ${min_volume:,.0f} floor"
+
+
 def gate_hours(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, str]:
     """Reject any BUY/SELL outside 09:30-16:00 ET, Mon-Fri, or on an NYSE
     holiday (fixed + floating, e.g. Thanksgiving/Easter-derived) or early
@@ -1419,6 +1444,7 @@ GATES = {
     "max_portfolio_risk": gate_max_portfolio_risk,
     "max_positions": gate_max_positions,
     "sector_concentration": gate_sector_concentration,
+    "catalyst_liquidity": gate_catalyst_liquidity,
     "hours": gate_hours,
     "conviction": gate_conviction,
     "bankroll": gate_bankroll,
@@ -1496,7 +1522,8 @@ def run_gates(context: Dict[str, Any], trade_action: Dict[str, Any],
 
 def check_order(account: str, action: str, ticker: str, qty: int, price: Optional[float] = None,
                  conviction: Optional[float] = None, sector: Optional[str] = None,
-                 play_type: Optional[str] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
+                 play_type: Optional[str] = None, market_cap: Optional[float] = None,
+                 avg_dollar_volume: Optional[float] = None) -> Tuple[bool, str, List[Dict[str, Any]]]:
     """Run a proposed trade through all enabled gates. First rejection stops the chain."""
     account_data = get_account(account)
     positions = get_positions(account)
@@ -1509,6 +1536,7 @@ def check_order(account: str, action: str, ticker: str, qty: int, price: Optiona
     trade_action = {
         "action": action.upper(), "ticker": ticker.upper(), "quantity": qty,
         "price": price, "conviction": conviction, "sector": sector, "play_type": play_type,
+        "market_cap": market_cap, "avg_dollar_volume": avg_dollar_volume,
     }
     return run_gates(context, trade_action)
 
@@ -1902,6 +1930,11 @@ def main():
     parser.add_argument("--price", type=float, help="current/estimated price, used by guardrail checks")
     parser.add_argument("--conviction", type=float, help="0-1, used by the conviction gate on BUY")
     parser.add_argument("--sector", help="used by the sector-concentration gate; also persisted to positions on BUY")
+    parser.add_argument("--market-cap", type=float, help="BUY only -- used by the catalyst-liquidity gate "
+                         "(v1.18). Optional/fail-open: only blocks when both this and --avg-dollar-volume "
+                         "are passed and the name is sub-$500M with too-thin volume.")
+    parser.add_argument("--avg-dollar-volume", type=float, help="BUY only -- avg daily dollar volume, used "
+                         "by the catalyst-liquidity gate alongside --market-cap.")
     parser.add_argument("--thesis", help="why this trade -- reuse the same rationale passed to record_decision.py. "
                          "Persisted to the positions table on BUY. Soft-required: a missing thesis logs a warning, "
                          "never blocks the order.")
@@ -2157,7 +2190,8 @@ def main():
             granted, reason, gate_results = check_order(
                 args.account, args.action, args.ticker, args.qty,
                 price=args.price, conviction=args.conviction, sector=args.sector,
-                play_type=args.play_type,
+                play_type=args.play_type, market_cap=args.market_cap,
+                avg_dollar_volume=args.avg_dollar_volume,
             )
             if not granted:
                 print(json.dumps({"error": f"guardrail: {reason}", "gates": gate_results}, indent=2))

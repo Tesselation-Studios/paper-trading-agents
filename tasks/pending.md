@@ -12,7 +12,6 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ## Open
 
-- [ ] 2026-08-03 (nightly-maintenance): MBBC liquidity gate — implement pre-entry daily dollar volume check in `record_decision.py` for catalyst-led entries on sub-$500M names. < $50K/day avg dollar volume = skip regardless of catalyst quality. Strategy.md v1.18 already encodes the rule; code change needed to mechanize it. MBBC position still trapped (449 vol Aug 4).
 - [ ] 2026-08-03 (nightly-maintenance): Track watchlist-to-entry conversion rate by regime. Add a counter or field to `active.md`'s daily template — CHOPPY converted at ~2% Aug 3, 0% Aug 4. Need SUSTAINABLE comparison data (no SUSTAINABLE sessions in lookback).
 - [ ] 2026-08-03 (tick-replay): CHOPPY index ≠ every name chops — evaluate whether the "CHOPPY suppresses all entries" rule should be softened to "CHOPPY suppresses broad sweep but individual names with independent confirmed setups can still enter." Needs more data across different CHOPPY days. Wiki synthesis created at `syntheses/choppy-regime-individual-name-entry-guidance.md`.
 - [ ] 2026-08-02 (weekly-review): Peak entry timing rule — track RDDT as occurrence #1 of first-30-min entry failure. If a second comparable loss happens from early-session momentum-spike entries, harden into strategy.md as "no new entries first 30 min or higher bar (limit orders, wider stop)."

@@ -53,9 +53,14 @@
   "risk_guards": {
     "max_positions_per_sector": 5,
     "order_count_audit_threshold_daily": 30,
+    "catalyst_liquidity_gate": {
+      "market_cap_threshold": 500000000,
+      "min_daily_dollar_volume": 50000
+    },
     "_source": "concentration/rogue-trading guards",
     "_max_positions_per_sector_source": "Raised from 2 -- logs repeatedly showed 5+ sectors sitting at 0/2 with real candidates gated off, not genuine diversification protection. Still a real cap, just not one that deadlocks a wide/diverse book.",
-    "_order_count_audit_threshold_daily_source": "Self-imposed rogue-loop backstop (see gate_daily_order_count), not an Alpaca limit -- Alpaca's actual constraint is a 200 req/min API rate cap. 30 is a real tripwire against a stuck loop without gating a normal active 'small and wide, scale into winners' day."
+    "_order_count_audit_threshold_daily_source": "Self-imposed rogue-loop backstop (see gate_daily_order_count), not an Alpaca limit -- Alpaca's actual constraint is a 200 req/min API rate cap. 30 is a real tripwire against a stuck loop without gating a normal active 'small and wide, scale into winners' day.",
+    "_catalyst_liquidity_gate_source": "v1.18 (2026-08-03), mechanized 2026-08-05: MBBC (genuine Q3 EPS 260% growth catalyst, 147-449 shares/day, $44M mkt cap) sat un-exitable after entry -- a stock that can't be exited shouldn't be entered. Binary failure mode, no gray zone to calibrate, hardenable from one data point. See gate_catalyst_liquidity in executor.py."
   },
   "bootstrap_phase": {
     "ceiling_threshold": 1000.0,
@@ -126,6 +131,7 @@
     "max_portfolio_risk": true,
     "max_positions": false,
     "sector_concentration": "warn",
+    "catalyst_liquidity": true,
     "hours": true,
     "conviction": "warn",
     "hard_stop": true,
