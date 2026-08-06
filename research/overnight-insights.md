@@ -340,3 +340,49 @@ The winning configs used RSI period 7 (faster) or 21 (slower) — never 14. RSI(
 
 6. **The real question isn't "how do we deploy more capital?": It's "can we find a universe where more signals are genuinely positive-return?"** The overnight backtest has exhaustively tested 8 core tickers and 10 stonks tickers. Neither universe supports >40 trades/20 days with positive returns. The small-cap universe ($1-$50) is a completely different pool — and we don't have systematic backtest data for it. That should be the next overnight run.
 
+
+---
+
+## Iteration 13: kairos-macd — Stan's Reflection (2026-08-06 02:12 ET)
+
+### Summary
+
+**Universe**: kairos (AMD, INTC, IBM, ORCL, CRM, ADBE, NFLX, DIS, BA, CAT)
+**Duration**: 453.5s | **Variants**: 50 | **Signals**: 7966
+
+| Config | Score | Catch | Win | Return | Trades |
+|---|---|---|---|---|---|
+| #1 | 0.3154 | 0.48% | 26.32% | +0.77% | 38 |
+| #2 | 0.3076 | 0.56% | 35.56% | +0.36% | 45 |
+| #3 | 0.2830 | 0.46% | 32.43% | -0.59% | 37 |
+
+### Kairos Finally Breaks the Negative-Return Streak
+
+For the first time outside the core universe (AAPL/MSFT/etc.), we have positive returns. Kairos produced **+0.77% on 38 trades** — not spectacular, but categorically different from stonks-relaxed which produced **ALL negative returns (-0.65% to -1.65%) on MORE trades (50-73)**.
+
+This is the smoking gun: the universe matters more than parameter tuning. Same backtest framework, same 50-variant sweep, same scoring method. Core: +7.45%. Kairos: +0.77%. Stonks: -1.65%. The ranking is exactly what you'd expect from signal quality theory: established, profitable, institutionally-owned companies produce better signals than volatile meme/crypto names.
+
+### The Universe Quality Ladder
+
+```
+Core (AAPL/MSFT/NVDA/TSLA/META/GOOGL/AMZN/SPY): +7.45%, 19 trades → THIN but HIGH quality
+Kairos (AMD/INTC/IBM/ORCL/CRM/ADBE/NFLX/DIS/BA/CAT): +0.77%, 38-45 trades → MODERATE quality
+Stonks (NVDA/TSLA/COIN/PLTR/MSTR/GME/RIOT/MARA/HOOD/DJT): -1.65%, 50-73 trades → THICK but NEGATIVE quality
+```
+
+13 iterations and the pattern is unmistakable: signal quality degrades as you move from mega-cap to large-cap to meme/crypto. The optimizer can't fix bad signal — it can only pick the best of what it's given.
+
+### Trade Count vs. Return Is Inverted
+
+The more trades a universe generates, the worse the returns. Core: 19 trades, +7.45%. Kairos: 38-45 trades, +0.77%. Stonks: 50-73 trades, -1.65%. This isn't a coincidence — it's the same pattern we saw in the live replay session where v1.7 (stricter band) produced fewer but better entries than v1.0 (flexible).
+
+The implication is uncomfortable: **the goal shouldn't be "more trades." It should be "better trades."** The overnight engine is finding more signals in stonks and kairos, but the quality of those extra signals is net-negative. Every additional trade beyond the core's ~19-trade threshold is diluting returns.
+
+### What This Means For My Live Trading
+
+1. **Our $1-$50 small-cap universe is closest to kairos** — established small companies like BFST and BL. Not meme stocks. The overnight data says this universe should produce positive but modest returns. That squares with our live experience: BL was the consistent buy across the entire May-Aug window with positive MACDh and in-band RSI about half the time.
+
+2. **Don't stretch for more trades**: The overnight engine has exhaustively tested relaxation (wider RSI, lower volume, lower conviction) across 3 universes and 150 variants. Every relaxation that increased trade count also decreased returns. The right answer is to accept the thin signal pool and size the trades that do fire appropriately.
+
+3. **The v1.13 entry rules (RSI 40-70, no catalyst required) are correct for our universe.** They're wider than v1.7 (45-65) but not as loose as the overnight variants (30-75). The key differentiator is dropping the catalyst requirement — that's what blocked most entries in the v1.7 replay. And the MACDh flip being non-mandatory is validated by the overnight (v1.0 without MACDh exit beats v1.7 with it).
+
