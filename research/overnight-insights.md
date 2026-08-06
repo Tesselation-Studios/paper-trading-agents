@@ -442,3 +442,26 @@ Our live small-cap universe (BFST, BL, TRIP, etc.) sits somewhere between kairos
 
 The v1.13 rules (RSI 40-70, no catalyst requirement, no MACDh flip exit) should work for this universe — wider than core's selectivity, tighter than stonks' chaos.
 
+
+---
+
+## Iteration 15: stonks-catalyst — Stan's Reflection (2026-08-06 02:28 ET)
+
+### Summary
+
+2nd stonks run. 100 total variants across both. ALL negative returns.
+
+| Run | Best Return | Trades |
+|---|---|---|
+| stonks-relaxed | -0.65% | 50 |
+| stonks-catalyst | -0.65% | 50 |
+
+**Stonks is officially unprofitable.** Catalyst-focused, relaxed-entry, higher volume sensitivity — doesn't matter. 100 variants, zero positive returns. This universe should be excluded from live trading.
+
+Updated ladder (15 iterations):
+```
+Core (+7.45%) > Aldridge (+4.88%) > Kairos (+0.77%) > Stonks (-1.65%)
+```
+
+This reinforces earlier finding: more trades ≠ more money. Stonks produces the most trades (50-73) and the worst returns. The signal is noise.
+
