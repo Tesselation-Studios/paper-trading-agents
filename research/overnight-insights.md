@@ -275,3 +275,68 @@ My v1.19 deployment (SPY/QQQ/IWM as anchors) is the first half. The second half 
 
 The overnight research is no longer just "interesting patterns from backtests." It's converging with my live trading experience. The signal pool is thin on core, rich on volatile, and the index-anchor approach bridges the gap while we wait for the real setups.
 
+
+---
+
+## Iteration 11 & 12: Core-Default & Stonks-Relaxed — Stan's Reflection (2026-08-06 01:30 ET)
+
+### Summary
+
+Two overnight runs completed:
+- **core-default**: Core (AAPL/MSFT/NVDA/TSLA/META/GOOGL/AMZN/SPY), default params
+- **stonks-relaxed**: Stonks (NVDA/TSLA/COIN/PLTR/MSTR/GME/RIOT/MARA/HOOD/DJT), relaxed RSI (30/75), lower volume threshold
+
+| | core-default | stonks-relaxed |
+|---|---|---|
+| Score | 0.3384 | 0.2445 |
+| Win Rate | 36.84% | 32.00% |
+| Return | +7.45% | -0.65% |
+| Trades | 19 | 50-73 |
+| Catch Rate | 0.31% | 0.70-1.02% |
+| Cash Idle | 99.6% | 98.7-99.1% |
+| Duration | 349s | 473s |
+
+### The 99% Cash Idle Problem Is Now Cross-Validated
+
+11 iterations across every universe, every parameter set, every window length. **Cash idle is 98-99% in EVERY variant.** This isn't a parameter problem — it's a structural constraint of how the entry gates are designed. The conviction/catalyst/volume triple-gate is so tight that even when we "relax" it (stonks-relaxed dropped volume to 1.0x, widened RSI to 30-75), we still can't deploy capital.
+
+The top stonks-relaxed config (RSI 45-75, vol 3.0x, conv 0.4, pos 6%) did 50 trades — the most of any config — and still kept 99% cash idle. The position sizing cap is the bottleneck. Even at 6% per position × 50 trades, you'd only deploy 3% of capital if you somehow held them all simultaneously, which you wouldn't because most would exit before the next entry.
+
+### Stonks Trades More But Loses Money
+
+This is the critical finding from Iteration 12: **the stonks universe produces MORE signals (50-73 vs 16-23) but ALL have negative returns (-0.65% to -1.65%).** The core universe produces fewer trades but positive returns (+4.54% to +7.45%).
+
+The interpretation from Iteration 10 ("stonks volatile universe is where the edge is") was wrong — or at least incomplete. Yes, stonks generates more signals and higher catch rates. But the signal QUALITY on stonks is worse. Those extra trades are noise masquerading as edge. The high-volatility tickers produce more false positives, and the increased trade count isn't compensated by higher win rates.
+
+This flips the two-mode hypothesis: **the core universe is actually the better signal pool**, just extremely thin. The edge is real but rare. Stonks gives you volume — 50 trades in 20 days — but the returns are negative because the W/L ratio on those extra trades doesn't clear the noise threshold.
+
+### The Paradox Resolved: RSI 45-65 Band Is Doing Its Job
+
+My live trading v1.19 uses RSI 45-65 for entries. The backtests show this band produces near-zero entries in many market conditions. I spent 74 ticks in CHOPPY on Aug 5 without finding a single entry in-band. The backtests confirm: **the RSI 45-65 band IS conservative, and that's its job.** It's filtering out the noise that stonks-relaxed let through (which produced -0.65% return).
+
+The frustration from the replay session earlier tonight — v1.7's 45-65 band gating out BL at RSI 41-44, TRIP at RSI 66-73 — was actually correct behavior. V1.7 bought BL 7 times (always at RSI 49-64, in-band) and TRIP 3 times (RSI 52-63, in-band). The v1.0 strategy bought both more often (including out-of-band entries), and the overnight suggests those out-of-band entries on volatile names are losers.
+
+The tension between "doing nothing is a cost" and "don't enter without signal" is a real one, but the backtest data says: when you enter out-of-band on volatile names, you lose money. The quiet book IS the correct state when nothing qualifies.
+
+### Top Config Used price_above_ma=False
+
+Both runs' top configs used `price_above_ma=False` — entry below the moving average. This is consistent with Iteration 10's finding and my live lesson from RDDT. The counter-trend entry (buying dips below MA) works better than trend-following entries on both core and stonks universes.
+
+### RSI Period 7 or 21, Not 14
+
+The winning configs used RSI period 7 (faster) or 21 (slower) — never 14. RSI(7) at entry band 55-70 catches faster momentum. RSI(21) at entry band 45-75 catches broader swings. The default 14 is a middle ground that's neither fast enough for momentum nor slow enough for trend.
+
+### What This Means For My Strategy
+
+1. **The RSI 45-65 band is correct for our universe**: The backtests show out-of-band entries on volatile names produce negative returns. The quiet book is a feature, not a bug.
+
+2. **Core universe > Stonks universe for signal quality**: Core produces fewer but better trades. Stonks produces more but worse trades. Our current small-cap focus ($1-$50) is a different universe entirely from both — we don't have backtest data for it. But the logic applies: more signals ≠ better signals.
+
+3. **Cash idle at 99% is NOT a problem to solve**: It's the natural consequence of an honest signal pool. The 19 trades that fired had +7.45% return. The 50 trades from stonks-relaxed had -0.65%. More trades ≠ more money. The right answer may be to accept 19 trades/20 days and size them appropriately, not to chase volume into negative territory.
+
+4. **price_above_ma=False for all future screening**: Consistent across 3 iterations now. Buy dips, not rips.
+
+5. **RSI period 7 for momentum, 21 for trend**: The default 14 is suboptimal. Consider dual-RSI screening in future versions.
+
+6. **The real question isn't "how do we deploy more capital?": It's "can we find a universe where more signals are genuinely positive-return?"** The overnight backtest has exhaustively tested 8 core tickers and 10 stonks tickers. Neither universe supports >40 trades/20 days with positive returns. The small-cap universe ($1-$50) is a completely different pool — and we don't have systematic backtest data for it. That should be the next overnight run.
+
