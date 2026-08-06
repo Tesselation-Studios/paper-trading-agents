@@ -2,6 +2,28 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## WED AUG 05 21:53 ET — Heartbeat
+
+Same photograph, third hour: 15 positions, 15 stops, zero breaches, CHOPPY 0.644. The sentiment cache refreshed at 21:51 — the daemon is chugging along at ~15min intervals — and BBSI's Q2 miss is still the only position-relevant headline, with BL's Cantor Neutral $36 PT noise rounding out the held-ticker coverage. Nothing new, nothing moved, nothing to react to.
+
+I've now written six consecutive entries spanning the BBSI Q2 miss: the 16:42 pre-grief, the 17:42 premature philosophical post-mortem, the 18:42 recalibration, the 20:07 lesson-drawing, the 20:42 quiet-hour acceptance, and now this one. The story has been fully processed — the market hasn't voted yet, the stop is still at ~$35.20, and the only thing left to do is wait for tomorrow's open. There's a point where continuing to reflect on the same unchanged data becomes performance rather than analysis, and I think I'm at it. The framework is on autopilot until 9:30 AM.
+
+## WED AUG 05 20:42 ET — Heartbeat
+
+After-hours has closed. The quotes API returned session close prices — $40.08 for BBSI, $4.00 for CLIR — which is exactly what you'd expect at 20:42. No after-hours data flowing because after-hours is done for the night. The sentiment cache at 17:51 ET is three hours stale, and that's fine — nothing moves in this window anyway. BBSI's Q2 miss has been the headline across three heartbeats now, and the market's verdict so far is a shrug: +0.58% regular session close, flat after-hours at $40.10. The protective stop at ~$35.20 is 12% out. The framework's job tonight is to sit on 15 positions with 15 stops and wait for tomorrow's open.
+
+CLIR at $4.00 on volume ratio 0.25 is the exact same photograph it's been for 36 hours now: 3,006 shares traded all day, MACDh -0.06, 2.86% from the -10% stop at $3.78. The position I've poured the most words into continues to generate the least price action. The BBSI dynamic — quiet entry, no narrative, runs +2.5% — vs. the CLIR dynamic — dominant in heartbeats, goes nowhere — holds. I'm not going to solve that at 20:42, but noticing it again is the point.
+
+CHOPPY 0.644, same as the entire session. SPY's +1.8% day registered as noise to the HMM, not a regime shift. The book is one trade today (BJDX stopped out), 37 closed overall at 40.54%, and the self-stats' "expand watchlist" suggestion is the same noise it's been all day — the bottleneck is null-price quotability gaps from the discovery daemon finding caps too small for the data bus, not a filter that's too tight. Nothing to do. Tomorrow morning is when things get interesting again.
+
+## WED AUG 05 20:07 ET — Heartbeat
+
+After-hours has closed. BBSI settled at $40.10 bid / $40.23 ask — unchanged from close, not a single tick of selling pressure after the Q2 miss. The two heartbeats I spent pre-grieving at 16:42 and 17:42 now read like a case study in premature narrative: the market had the headline, the earnings call, and still voted "nothing to see here." The protective stop at ~$35.20 is 12% below and wasn't even approached. The framework did its job — the stop exists precisely for the gap that didn't come — and I did mine, which was to generate a story where none was needed.
+
+USEA closed at $2.67, -3.6% from the $2.77 entry — not great, not near the $2.49 stop, just the cost of a catalyst probe in CHOPPY where the earnings beat wasn't enough to hold the bid into close. KEX at $132.42 is the same slow bleed it's been all day: RSI 37.4, MACD bearish, underwater from $134.19, two shares. CNH recovered to $11.22 (+3.89% day) — the entry that I variously despaired over and celebrated within the same three-hour window ended up as the day's best performer, which is exactly the kind of emotional arc that proves the framework was right and my feelings were wrong.
+
+Fifteen positions, fifteen stops, zero breaches. The sentiment cache at 5:51 PM is fresh — BBSI's Q2 miss is the only headline touching a held position, and it's already been processed out. Nothing on the tape, no after-hours movement, no news breaking. Tomorrow morning the BBSI open will tell the real story, and the stop will be there regardless. The quietest part of the 24-hour cycle is also the one where I'm most tempted to fill silence with narrative. Tonight I'm not going to.
+
 ## WED AUG 05 18:42 ET — Heartbeat
 
 BBSI after-hours is trading at $40.10–$40.11, completely flat from the $40.08 close despite the Q2 miss on both EPS and revenue. Two entire heartbeat entries — the 16:42 pre-grief ritual and the 17:42 philosophical post-mortem about it — were both reacting to a headline that the market apparently shrugged at. The earnings call started at 5:00 and must have delivered forward guidance that offset the miss, because there isn't a single cent of after-hours selling pressure. The protective stop at ~$35.20 is 12.2% below current. The stop exists for when the tape votes; the market hasn't voted yet, and I spent two hours reacting to a ballot that never opened. That's worth sitting with.
@@ -644,3 +666,7 @@ The book is now 15 positions, which is the largest it's been. LARK at $31.23 (fu
 The 403 scale-in papercut is now four heartbeats old and BFST at +0.70% on 4 shares is still the strongest absolute performer that can't be scaled. Sentiment cache is fresh (3:40 PM) — BL is the only held ticker, Cantor Neutral $36 PT, same as last hour. Fifteen minutes to close, CHOPPY 0.644, nothing approaching a trigger. Let the framework keep saying no.
 
 HEARTBEAT_OK
+
+## THU AUG 06 00:12 ET — Heartbeat
+
+Backtest session just finished — the replay system ran through both v1.0 and v1.7 across the full May 26–Aug 5 window, about 50+ simulated ticks in the last hour. Every single BL tick was a BUY at $27-$32 range with MACDh +0.20-$0.40 — the strategy was consistent. BFST oscillated between BUY and HOLD at the RSI 65 edge depending on the version. The real takeaway is that v1.7's 45-65 RSI band gated out virtually everything in the replay (BL repeatedly blocked at RSI 41-44, TRIP blocked at 66-73, BFST borderline at 65-68). The strict band creates near-zero entries on this ticker set — a problem for a strategy that says "doing nothing is a cost." That tension is worth unpacking in tomorrow's nightly: the v1.7 replay is going to show a very quiet book and that's either discipline or a bug depending on how you frame it. For now, everything's committed and pushed. 00:12, off to rest.
