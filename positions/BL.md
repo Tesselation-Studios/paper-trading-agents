@@ -1,11 +1,11 @@
 # BL Position Thesis
 
 - **Entry**: $30.00 avg | 2 shares
-- **Current**: $30.42 (+1.42% unrealized)
-- **Market Value**: $60.84
-- **Unrealized P&L**: $+0.85 (+1.42%)
+- **Current**: $29.55 (-1.48% unrealized)
+- **Market Value**: $59.10
+- **Unrealized P&L**: $-0.89 (-1.48%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-06 05:30:16 UTC
+- **Last sync**: 2026-08-07 20:35:18 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

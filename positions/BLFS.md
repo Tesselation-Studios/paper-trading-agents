@@ -1,11 +1,11 @@
 # BLFS Position Thesis
 
 - **Entry**: $33.40 avg | 1 shares
-- **Current**: $33.80 (+1.20% unrealized)
-- **Market Value**: $33.80
-- **Unrealized P&L**: $+0.40 (+1.20%)
+- **Current**: $34.66 (+3.77% unrealized)
+- **Market Value**: $34.66
+- **Unrealized P&L**: $+1.26 (+3.77%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-06 05:30:16 UTC
+- **Last sync**: 2026-08-07 20:35:18 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
