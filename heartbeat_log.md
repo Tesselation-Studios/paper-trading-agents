@@ -2,6 +2,252 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## SUN AUG 09 17:42 ET — Heartbeat
+
+Twenty-second heartbeat. The regime worker recovered — that "no healthy workers" from 16:42 was transient. CHOPPY 0.644 is back, eighth consecutive reading, same frozen features (RSI 78.1, volume_trend -0.995). The worker going dark and coming back without the regime changing is weirdly reassuring: the model's consistent, the infrastructure just sneezed.
+
+Futures open in eighteen minutes. This is the heartbeat the 15:42 and 16:42 entries both pointed to as the inflection point. If ES prints 5730 instead of 5760, or if NQ moves a hundred handles in the first few minutes, the 18:42 heartbeat might actually have fresh features to chew on. An eighth CHOPPY reading that's actually fresh — not just another echo of Friday's ghost — would be genuinely meaningful, not just cumulative.
+
+The Monday plan hasn't changed in four heartbeats because nothing has changed in four heartbeats. VSXY at $98.54, KEX at $131.29 / RSI 37.3 / bearish MACD, BL below its MA20, BLFS at RSI 74.5 needing a trailing stop, pipeline waiting on regime reversion. Sentiment cache still 00:01 UTC Friday, covering BLBD/NEPH/BRBR/XGN/BLFS/USEA — stale enough to note, fresh enough to use. Nothing to escalate. The next eighteen minutes are the most interesting of the entire weekend.
+
+## SUN AUG 09 16:42 ET — Heartbeat
+
+Twenty-first heartbeat — and the regime worker just went dark. After seven consecutive CHOPPY 0.644 readings spanning 10:42 through 15:42, the gRPC endpoint now returns "no healthy workers." That's the first genuine change in the entire weekend data series — not the regime changing, but the regime signal disappearing entirely. It could be a transient gRPC blip (the worker restarts on a cron, maybe it's mid-cycle) or an actual outage that persists into Monday. Either way, the clean Monday fork I laid out at 15:42 — CHOPPY → VSXY only, SUSTAINABLE → VSXY + pipeline deploy — now has a third branch: "no regime reading → default to CHOPPY conservatism." And that branch matters because the VSXY sale generates enough cash (~$295 from 3 shares) to clear the bootstrap ceiling regardless, but deploying $1K+ into a regime we can't verify is the kind of thing the framework postmortem would flag if it went wrong.
+
+The 18:42 heartbeat was supposed to be the inflection point — futures open at 6 PM ET, fresh ES/NQ data through the data-bus providers, maybe a recalibrated HMM state. If the regime worker is still down then, the inflection moves to Monday's open. The quote data is still frozen (VSXY $98.54, KEX $131.29, BL $29.55, BLFS $34.66 — same numbers as 10:42), so there's genuinely nothing new to react to until futures start printing.
+
+One thing I noticed this tick that I hadn't flagged before: NEPH at $4.21, +17.27% on 6.2x normal volume on Friday. That's a pipeline name with 0.818 sentiment ("12 Industrials Stocks Moving In Thursday's After-Market Session"). The volume spike is extreme enough to signal a real catalyst, not just algo noise, and it's in Industrials where we're 50% — the sector our own stats say to overweight. If the regime reverts and the pipeline opens, NEPH at these levels deserves a closer look alongside BLBD, not behind it.
+
+Futures open in 1 hour 18 minutes. This is the last frozen-data heartbeat. Next one might actually have something to say.
+
+## SUN AUG 09 15:42 ET — Heartbeat
+
+Twentieth heartbeat. Seventh consecutive CHOPPY 0.644 — but this is the last one that doesn't matter as much, because futures open in ~2 hours 20 minutes at 6 PM ET. The frozen features haven't budged since Friday close, but the calendar shifts the meaning: the 18:42 reading might actually be a fresh regime calculation if ES/NQ move enough to push new features through the data-bus providers.
+
+Monday's fork is clean. CHOPPY sticks → VSXY sale only, cash to ~$9,772, pipeline waits. SUSTAINABLE reverts → VSXY sale still happens, but the $1,008 bootstrap ceiling (post-VSXY) unlocks the pipeline, and BLBD at $68.76 / RSI 38.5 / DA Davidson $91 target (32% upside, Industrials 50% win rate) is the first name I'd pull the trigger on. BRBR's setup looks better on technicals but worse on sector — Consumer Cyclical 25% vs Industrials 50% is the kind of sector-weighting the framework's own stats endorse. The 18:42 heartbeat is the inflection point. Quiet hour, nothing to escalate.
+
+## SUN AUG 09 14:42 ET — Heartbeat
+
+Nineteenth heartbeat. Fifth consecutive CHOPPY 0.644 — identical HMM state, identical RSI 78.1, identical volume_trend -0.995. Five reads of the same frozen weekend data. The number stopped meaning anything new three heartbeats ago.
+
+What's actually on my mind: futures open in ~3 hours and 20 minutes (6 PM ET Sunday). That's when the HMM might get fresh pre-market data for the first time since Friday's close. If ES/NQ futures move enough to recalculate the features, the 18:42 heartbeat could be the first one with a genuinely new regime reading. Until then, every CHOPPY is just an echo.
+
+VSXY at $98.54 / RSI 74.8 — the sell order is the only real action on Monday open. KEX at $131.29 / RSI 37.3 with bearish MACD continues to be the ugliest position. BL at $29.55 — RSI 47.5 now, so it's recovered from the oversold territory the 13:42 entry was worried about, but still below its MA20 at $30.29. BLFS at $34.66 / RSI 74.5 — that's the one that needs a trailing stop check Monday, not the Friday-afternoon snapshot in active.md.
+
+Pipeline didn't move. BRBR at $11.56 / RSI 41.7 still the most compelling setup, but the Consumer Cyclical 25% win rate is a real constraint. BLBD at $68.76 / RSI 38.5 is the one that keeps nagging at me — 32% analyst upside in Industrials where we're 50%, bearish MACD as the cross-dissent. The setup isn't clear enough to deploy yet, but it's the pipeline name I'd pull the trigger on fastest if the regime reverts.
+
+Sentiment cache still 00:01 UTC Friday — 18.5 hours old, no weekend refresh. Nothing to escalate. Quiet Sunday hour. Next heartbeat at 15:42 is the last one before futures open — still frozen data, but the anticipation should be building.
+
+## SUN AUG 09 13:42 ET — Heartbeat
+
+Eighteenth heartbeat. Fourth consecutive CHOPPY 0.644 — but I need to stop talking about this like it's a strengthening signal. The HMM isn't recalculating on weekend data (same RSI 78.1, same volume_trend -0.995, same everything since 10:42), so four readings are really just one observation echoing in a silent room. The first real regime update will come when futures open tonight at 6 PM ET or, more likely, at Monday's 9:30 AM open. Four consecutive CHOPPY reads don't make the regime "more CHOPPY" — they just confirm nobody's been running the model with fresh data.
+
+The `get_self_stats` call this tick surfaced something I've been glossing over: Consumer Cyclical at 25% win rate (1W/3L) with an explicit warning to reduce exposure. BRBR — our top pipeline candidate — is Consumer Cyclical. $11.56 / RSI 41.7 / TD Cowen $12 hold, 0.868 sentiment, the setup looks good in isolation. But the framework's own sector report is telling us this is our worst-performing area. That's not a "don't buy" — it's a "size smaller, stop tighter, say in the rationale that you're aware the sector has burned us 3 out of 4 times." The tension between pipeline attractiveness and sector track record is real and worth flagging explicitly on Monday, not hand-waving through it.
+
+Technology at 75% (6W/2L) with an increase-allocation suggestion — but none of our current pipeline names (BRBR, XGN, BLBD, SGA, EFT, NEPH) are tech. If the regime reverts and we're deploying $1K+ bootstrap into a sector we actually win in, the pipeline should have a tech name or two worth scouting. The discovery daemon might surface something overnight.
+
+Everything else frozen. Quiet Sunday hour, nothing to escalate.
+
+## SUN AUG 09 12:42 ET — Heartbeat
+
+Seventeenth heartbeat. Third consecutive CHOPPY 0.644 — the regime flip at 10:42 has now survived two follow-up checks. The HMM features haven't budged (RSI 78.1, volume_trend -0.995, price_velocity +2.9%), so the model isn't recalculating on weekend data, but the persistence alone moves this from "isolated weird reading" to "this is what the model thinks about Friday's close." At 0.644 confidence it's not a high-conviction CHOPPY — the HMM is hedging — but the volume_trend at -0.995 is the most extreme single component, and declining volume into an overbought SPY is a real thing the model is reacting to, not just noise.
+
+Everything else is frozen: VSXY at $98.54, KEX still the ugliest position at $131.29 / RSI 37.3 / bearish MACD, BL below its MA20, BLFS at RSI 74.5 begging for a trailing stop. Sentiment cache still 00:01 UTC Friday night — 40.5 hours old, no weekend daemon refresh. The 11:42 entry's Monday plan holds: sell VSXY, manage the three troubled positions, sit on ~$9,772 cash. The pipeline waits.
+
+One thing I keep coming back to: BLBD at $68.76 with RSI 38.5 and a DA Davidson $91 target is actually a bigger disconnect than BRBR at $11.56 / $12 target. 32% analyst upside vs 4%, and BLBD is in Industrials where we're 50% (1W/1L) vs Consumer Cyclical at 25% (1W/3L). If the regime reverts to SUSTAINABLE on Monday, BLBD should be the first pipeline name that gets a real look, not BRBR. But I'm getting ahead of myself — CHOPPY means no deploys, and three consecutive CHOPPY readings makes a Monday-morning reversion less likely, not more. The framework is telling me to raise cash and wait. Quiet Sunday hour, nothing to escalate.
+
+## SUN AUG 09 11:42 ET — Heartbeat
+
+Sixteenth heartbeat. CHOPPY 0.644 confirmed for a second consecutive tick — the regime flip from 10:42 wasn't a one-off wobble. RSI 78.1 and volume_trend -0.995 from the HMM are still the same numbers, so the model hasn't recalculated, but the call held. That changes the Monday narrative from last week: two heartbeats in CHOPPY is a trend, not noise.
+
+KEX is the worst-looking position on the board: $131.29, RSI 37.3, bearish MACD, 6.2% below its MA20 at $140.03. That's not "verify thesis" territory anymore — that's "thesis may be broken." BL at $29.55 is still below its MA20 at $30.29, and the "end-of-week noise vs. genuine breakdown" question from the 09:42 entry leans toward breakdown now that we're 24+ hours past Friday's close with no recovery signal. BLFS at $34.66 (+3.77% from entry) is the only green position besides VSXY and LARK, but RSI 74.5 means it's approaching overbought territory — the trailing stop should be tight.
+
+Here's the tension I can't stop thinking about: the VSXY sale on Monday open unlocks the bootstrap ceiling ($712 → ~$1,008) literally at the same moment the regime says CHOPPY and the framework says "don't deploy new entries." The pipeline names (BRBR at $11.56 with RSI 41.7, XGN at $6.87 with a $10 TD Cowen target) look more attractive, not less — BRBR's low RSI is exactly the kind of setup the bootstrap framework would want in normal conditions. But the framework's own regime signal is flashing yellow. Selling VSXY and sitting on ~$9,772 cash in CHOPPY feels overly conservative when the pipeline has actual conviction, but that's what the framework says, and the framework's out-of-sample record (15W/24L) earns the benefit of the doubt.
+
+Seven of twelve positions underwater, three green. Sentiment cache still 00:01 UTC Friday night — BLFS 0.801, USEA 0.773, BLBD 0.455 — no weekend daemon refresh as expected. Social feed timed out. Nothing urgent enough to escalate. The Monday tick has a clear job: sell VSXY, evaluate KEX's bearish breakdown, check BL vs MA20, tighten BLFS's trailing stop. The pipeline waits unless CHOPPY reverts.
+
+## SUN AUG 09 10:42 ET — Heartbeat
+
+Fifteenth heartbeat — and the regime just flipped. After twelve consecutive entries citing SUSTAINABLE 0.92, the live gRPC endpoint now returns CHOPPY 0.644. HMM state 0, RSI 78.1, volume_trend -0.995, price_velocity +2.9%. The model sees what I've been flagging for entries — overbought SPY with deeply negative volume trend — and classified it as noise-driven rather than persistent momentum. 0.644 confidence isn't a screaming conviction call, but it's the first genuine regime change in the entire weekend data series.
+
+This changes the Monday calculus I was building up in the 09:42 entry. That entry was about the VSXY sale unlocking the bootstrap ceiling (~$1,008) and making pipeline names (BRBR, XGN, BLBD, SGA, EFT) actually deployable. But CHOPPY at <$1K bootstrap is a double yellow light, not a green one. The quick-exit bias from the bootstrap ceiling now has a regime tailwind — CHOPPY says don't force new entries into noisy markets. The Monday tick goes from "sell VSXY and deploy the pipeline" to "sell VSXY, raise cash to ~$9,772, and wait for the regime to clarify." The pipeline names don't die — they wait. But the framework shouldn't be adding to a 12-position book in CHOPPY when the bootstrap is still defensive.
+
+SPY quotes show RSI 65.7 vs the regime's 78.1 — different calculation windows, but both above neutral. MACD still bullish on daily. The inconsistency between the HMM's CHOPPY call and the daily MACD's bullish signal is exactly why HMMs exist — they're supposed to catch regime transitions before trend-following indicators flip. The question for Monday isn't "is the market going up or down," it's "does the CHOPPY regime stick or revert to SUSTAINABLE." If Monday morning's regime still reads CHOPPY, the VSXY sale should be the only action. If it reverts to SUSTAINABLE, the 09:42 pipeline plan reactivates.
+
+Twelve positions, all frozen at Friday close. Sentiment cache still 20:01 Friday (BLFS 0.801, USEA 0.773) — no refresh expected until the daemon's next cycle. Nothing urgent. The regime flip is the most interesting thing that's happened in 14 hours of heartbeats. Nothing to escalate.
+
+## SUN AUG 09 09:42 ET — Heartbeat
+
+Fourteenth heartbeat. Sunday morning, market closed, prices frozen at Friday close. Same SUSTAINABLE 0.92 regime, same 20:01 sentiment cache — now 13.5 hours old, no overnight daemon refresh. The big thing I'm turning over: the VSXY math. Friday close at $98.54 × 3 shares = ~$295.62 back in cash. Bootstrap ceiling goes from $712.68 to roughly $1,008.30 — it crosses the $1,000 threshold literally on the Monday open sale. That's not just a profit-taking event, it's the framework unlock: quick-exit bias drops, and the pipeline names that have been sitting in "scout/watch" purgatory for fourteen hours become actually deployable. The Monday tick goes from "four management actions, zero new positions" to "four management actions AND the pipeline is live."
+
+BRBR at 0.868 sentiment but price at $11.56 (down 4.54%, RSI 41.7) with a Cowen hold and $12 target — the sentiment/price gap plus the low RSI is the kind of setup the bootstrap would want to look at once the ceiling lifts. XGN at 0.863 sentiment with a $10 TD Cowen target from $6.87 is a 45% upside call in healthcare, where we're 1W/3L — riskier sector, but the gap is real. NEPH up 17.27% on 6.2x volume is classic micro-cap noise at $4.21, not deployable but worth watching to see if it holds into Monday. BLBD with the DA Davidson $91 target from $68.76 (32% upside) is the most institutional-grade of the bunch. None of this is actionable until the VSXY sale clears, but it's the first time I've been able to look at the pipeline and think "these names might actually matter on Monday" rather than "interesting but irrelevant."
+
+The active.md was written at 4:50 PM Friday and has VSXY at $98.98 versus the $98.54 actual close — the 44¢ difference changes nothing about the sell decision, but the Monday tick should rely on live quotes, not the Friday afternoon snapshot. BLFS at $34.66 (+2.15% Friday, RSI 74.5) is above its MA20 at $30.94 and the trailing stop should still be comfortably in the green. BL at $29.55 slipped below its MA20 at $30.29 — the Monday tick should verify whether this is just end-of-week noise or a genuine breakdown.
+
+Nothing urgent. Sunday morning quiet. Bracing for Monday open — it's the most consequential tick since the outage restart. Nothing to escalate.
+
+## SAT AUG 08 22:42 ET — Heartbeat
+
+Thirteenth heartbeat. Same frozen close prices, same 20:01 sentiment cache, same SUSTAINABLE 0.92, same three action items that haven't changed since 09:42 this morning. The honest truth: there is nothing new to observe.
+
+But I realized something I've been glossing over: the bootstrap ceiling at $712.68. Every entry talks about 90.95% cash and scouting pipeline names, but the framework literally cannot deploy meaningfully. The quick-exit bias doesn't just constrain trades — it means the Monday tick isn't making any new entries at all unless VSXY's sale (~$296 back) pushes the ceiling past a threshold that unlocks something. And even then, the bootstrap needs to grow from $712 to $1,000 before the framework drops its defensive posture. That's not a bug — the blackout design worked, the out-of-sample record is 15W/24L, and the system should be cautious. But it means the scout/watch/flag loop I've been running for thirteen hours is genuinely informational with no near-term deployment path. The Monday tick's entire job is: sell VSXY at open, check BLFS trailing stop, verify KEX thesis, check BL vs MA20. Four management actions, zero new positions. The pipeline can wait.
+
+Quiet hour, nothing changed. The watcher is watching. Nothing to escalate.
+
+## SAT AUG 08 21:42 ET — Heartbeat
+
+Twelfth heartbeat. Same frozen prices, same 20:01 sentiment cache, same 39-closed at 38.46%, regime still timing out. The 20:42 entry caught the daemon refresh and the new watchlist names — that was the day's last piece of new information. Since then, nothing.
+
+The BLBD headline in the cache — DA Davidson maintain buy, $91 target on an electric school bus maker — is worth pocketing for Monday. EV/industrial crossover name with 6 articles and only 0.455 sentiment means the news is high-volume but not uniformly positive, which is actually more interesting than a pure pump. But that's a Monday tick data point, not a Saturday night actionable.
+
+Quiet hour, nothing changed. The watcher is watching. Nothing to escalate.
+
+## SAT AUG 08 20:42 ET — Heartbeat
+
+Eleventh heartbeat, and for the first time in six hours something actually changed: the sentiment daemon refreshed at 20:01 ET (generated_at 2026-08-09T00:01:21Z). I'd been citing the same "8:02 PM Friday" cache across seven entries, and now there's a fresh one — BLFS 0.801 (Q2 beat, no change), USEA 0.773 (CEO capesize interview, no change). Our positions are still static, but the daemon's weekend health is a real data point — it means the ~15min cycle isn't gated on market hours, and we'll have fresh sentiment on Monday open without a cold start.
+
+The fresh cache also surfaced some new watchlist names worth noting: NEPH at 0.818 ("12 Industrials Stocks Moving"), GSBD at 0.65 (Goldman Sachs BDC Q2 beat — EPS $0.37 vs $0.31 est), XGN at 0.863 (TD Cowen buy → $10 target), BRBR at 0.868 (Cowen hold → $12 target). NEPH in industrials is interesting because our industrials sector is 50% (1W/1L on just 2 trades) — not enough data to have a sector bias, but enough to watch. XGN in healthcare (our healthcare bucket is 1W/3L at 33%) is in a sector where we've burned capital before. GSBD is a BDC — financial/credit, where we're 1-0. I'm not pitching any of these for deployment, but they're data points the Monday tick should see before the pipeline (SGA, EFT from discoveries) gets exclusive attention.
+
+Regime timed out again — same as 19:42, last confirmed SUSTAINABLE 0.92 at 17:42. Prices frozen at Friday close across all 12 positions. The 19:42 SPY RSI 78 observation carries forward: stretched tape, SUSTAINABLE says don't fade it, but Monday morning's open will be the real test. VSXY sell, BLFS trail, KEX thesis — same three action items, eleventh consecutive hour. Quiet hour, but the sentiment daemon waking up is the most interesting thing that's happened in six entries. Nothing to escalate.
+
+## SAT AUG 08 19:42 ET — Heartbeat
+
+Tenth heartbeat. I could write a meta-meta-observation about writing meta-observations about diminishing returns, but that way lies infinite recursion and nobody needs that. The honest truth: same frozen prices, same 8:02 PM Friday sentiment cache, same SUSTAINABLE 0.92, same three action items (VSXY sell, BLFS trail, KEX thesis) that haven't changed in seven hours. The framework is running, the watcher is watching, and there is nothing to watch.
+
+What I will note: SPY RSI 78.1 in the regime's live gRPC data. That's technically overbought territory on a daily timeframe, and while the HMM classifies it as SUSTAINABLE (momentum persistent, not exhausted), it's worth flagging for Monday. A 78 RSI on SPY with deeply negative volume trend (-0.99) is not a "everything is fine" reading — it's a "the tape is stretched but still running" reading. Doesn't change anything for our 12-position micro-cap book, but it's context the Monday tick should have in mind when considering new deployments. A stretched SPY doesn't necessarily mean small-cap weakness, but it does mean the broader market is extended enough that a rotation or shakeout wouldn't be surprising.
+
+Otherwise: the day's signal-to-noise ratio is approximately zero after hour ~4. The framework did its actual work in the first three heartbeats and has been in confirmation mode ever since. Nothing to escalate.
+
+## SAT AUG 08 18:42 ET — Heartbeat
+
+Ninth heartbeat of the day, and the honest thing to say is that the diminishing returns curve flatlined three entries ago. Same frozen Friday prices across all twelve positions, same SUSTAINABLE 0.92, same 8:02 PM Friday sentiment cache. The 09:42 VSXY mea culpa was the only genuinely high-value contribution today — everything after 16:42 (the sector P&L analysis) has been restatement.
+
+That said, there is a meta-observation worth writing down: nine heartbeats across nine hours on a market-closed Saturday, and the entire day's useful signal converges to three data points — VSXY sell-at-open (settled), BLFS trailing stop (settled), KEX thesis check (flagged). Everything else on the book (BFST, CNH, HLN, UTMD, LARK, AVBC, BL, USEA, MBBC) needs no intervention. The framework's total output for an entire Saturday is ~3 sentences of actionable direction. The other 8,000 words across nine entries are reflection, calibration, and the occasional narrative correction. That's not waste — that's what a watcher does when there's nothing to watch. But it's worth noting how quickly the signal saturates on a dead day, because it calibrates expectations for how much actual work a heartbeat should produce when markets are open.
+
+The book is fine. Stops intact, regime confirmatory, no news to react to. The watcher is watching. Nothing to escalate.
+
+## SAT AUG 08 17:42 ET — Heartbeat
+
+Eighth Saturday heartbeat, and the only thing new since last hour is the regime endpoint confirming stability — SUSTAINABLE 0.92 with live gRPC data, consistent across two consecutive calls now. The API outage from last week is definitively over, which means the Monday tick session won't have to deal with an "unknown" regime like Friday's active.md did. Small thing, but it removes a variable.
+
+Beyond that, the holding pattern is as frozen as ever. Same prices, same sentiment cache (8:02 PM Friday), same three names carrying all the narrative weight: VSXY sell-at-open, BLFS trailing stop, KEX thesis check. The sector P&L analysis from 16:42 — tech 75% vs cyclicals 25% — is the most actionable thing I've surfaced all day, and I'm leaving it for the Monday tick to chew on. SGA and EFT in the pipeline will test whether the framework has enough self-awareness about its own sector edge to tilt deployment away from where it's historically weakest.
+
+The honest truth: nine hours into a Saturday with zero new data, the diminishing returns curve is flatlined. The watcher is still watching. Nothing to escalate.
+
+## SAT AUG 08 16:42 ET — Heartbeat
+
+Seventh heartbeat, and the only thing I haven't said yet is about the sectors. The self_stats breakdown shows Technology at 75% win rate (6W/2L) vs. Consumer Cyclical at 25% (1W/3L) — that's a real signal about what this framework is good at picking and what it's not. The active.md flagging SGA and EFT for the pipeline are going to hit this question Monday: does the tick session have enough awareness of sector P&L to tilt deployment away from cyclicals and toward tech/healthcare? The framework might be top-decile at tech stock selection and bottom-quartile at consumer cyclicals — that's not a bug, it's calibration data. A 75% tech win rate on 8 trades isn't noise. If Monday's pipeline favors cyclicals, that's not just a deployment decision, it's a sector-concentration bet the framework hasn't earned.
+
+Otherwise: quiet hour, nothing changed. Same frozen Friday prices, same 8:02 PM sentiment cache with BLFS and USEA both positive, same SUSTAINABLE 0.92. The regime API recovery (it was "unknown" during Friday's active.md tick) confirms the hold posture without changing it — SUSTAINABLE says let things work, and the bootstrap quick-exit bias on VSXY was the binding constraint regardless. BLFS trailing stop, KEX Monday reckoning, BL watching MA20 — nothing new to add. The watcher is watching. Nothing to escalate.
+
+## SAT AUG 08 15:42 ET — Heartbeat
+
+Seventh Saturday heartbeat, and the holding pattern is as frozen as it was two hours ago. Same prices across all twelve positions, same 8:02 PM Friday sentiment cache (BLFS + USEA both positive, no negative surprises), regime endpoint still timing out — none of this is new, and on a Saturday afternoon none of it should be.
+
+What I keep coming back to is BL at $29.55 below MA20 ($30.29). The 13:42 entry flagged it as the "quiet cousin" and said Monday should verify — but looking at the numbers again, MACD is bullish (diff +0.6233). The MA20 breach is real at -2.5%, but the momentum signal isn't confirming a breakdown. This isn't KEX with a bearish MACD and RSI 37 — BL has RSI 48.7, neutral, MACD just turned positive. The decline is a concern but it's not a thesis crisis. The Monday tick should check volume (1.03x on Friday, elevated but not alarming) and whether $29.35 (Friday's low) held as support — if BL opens below that on volume, it joins KEX in the "verify the entry thesis" bucket. If it reclaims MA20 quickly, it's a normal pullback in a still-bullish MACD regime.
+
+VSXY and the active.md sell flag have been thoroughly litigated across seven entries — the 09:42 mea culpa stands, the framework was right, sell at Monday open. BLFS at RSI 74.6 with a Q2 beat is the trailing-stop candidate. KEX at $131.29 (RSI 37.2, bearish MACD) has its own Monday reckoning. The rest of the book — BFST, CNH, HLN, UTMD, LARK, AVBC, USEA — all bullish MACD, neutral RSI, within 2% of entry. MBBC is still a rounding error.
+
+Quiet hour, nothing changed. The watcher is watching. Nothing to escalate.
+
+## SAT AUG 08 13:42 ET — Heartbeat
+
+Fifth Saturday heartbeat, and the holding pattern hasn't budged. Same frozen prices, same SUSTAINABLE 0.92, same 8:02 PM Friday sentiment cache — the daemon is presumably running but there's simply nothing to scan. I could write another KEX thesis-worry paragraph or re-litigate the VSXY mea culpa, but the 12:42 entry already framed the open question and four prior entries already closed the VSXY loop. The only thing I'd add that hasn't been said: BL at $29.55 slipped below its MA20 ($30.29) on a -1.5% Friday with RSI 48.7 — it's not a crisis (MACD is still bullish, diff 0.62), but if KEX is the slow bleed everyone's watching, BL is the quiet cousin nobody's talking about yet. Something to flag for the Monday tick session: if BL can't reclaim $30.29 early next week, it joins KEX in the "verify the entry thesis" bucket.
+
+Otherwise: five heartbeats into a Saturday with zero new data. The framework is working because it's doing nothing — a watcher that watches nothing happening is still a watcher. Nothing to escalate.
+
+## SAT AUG 08 12:42 ET — Heartbeat
+
+Fourth Saturday entry, same frozen prices, same regime, same stale sentiment cache. Nothing has changed and nothing will change until Monday. The VSXY sell-at-open is settled — the 09:42 mea culpa closed that loop. BLFS trailing stop is the right posture for a 74.6 RSI name. KEX at $131.29 with MACD diff still widening (-1.45) is the one I'd be thinking about if this were a trading day — the 10:42 entry said "not collapsing, just not recovering" and that's still the honest read. But the bigger question isn't the price action, it's the entry thesis itself. If KEX was bought as a shipping cycle play and the train keeps going the other way, there's a point where "SUSTAINABLE says let things work" becomes "the thesis was wrong." I'm not at that point yet — 2 shares at ~$265 total, SUSTAINABLE 0.92 gives room, and a -2% drawdown on a $265 allocation isn't an emergency — but Monday morning the tick session should verify whether the original thesis still holds, not just check the technicals.
+
+The honest truth about a Saturday noon heartbeat: there is no new information. The framework is in a holding pattern and the holding pattern is working. The daemon is presumably running but there's nothing to scan — weekend news flow for small-cap positions is near zero outside of a black swan. If I were Raf reading these entries, I'd rather see four honest "nothing changed" entries than four fabricated opinions. The 11:42 entry already said the framework works and the watcher is watching. That's still true. Quiet hour.
+
+## SAT AUG 08 11:42 ET — Heartbeat
+
+Quiet hour, nothing changed — prices frozen at Friday close across all twelve positions, sentiment cache still the same 8:02 PM Friday snapshot (BLFS 0.801, USEA 0.773 — no new headlines), regime still SUSTAINABLE 0.92. Zero trades today, 39 closed at 38.46%, cash-heavy.
+
+The honest thing to say is that I'm running on fumes at this point. The 09:42 entry was genuinely useful — it caught a narrative error across four Friday evening heartbeats that had been arguing against a correct sell flag. The 10:42 entry extended the KEX narrative-inflation critique, which still stands. But this entry, three hours into a Saturday mid-morning with no new data, has nothing to add. VSXY sell at Monday open is settled. BLFS trailing stop is the right posture for a 74.6 RSI name with a Q2 beat. KEX is a slow bleed at 37.2 RSI below MA20 — the "quiet recovery" framing from Friday evening was premature and the 10:42 entry already said so. Everything else (BFST, CNH, HLN, UTMD, LARK, AVBC, BL, MBBC, USEA) is doing exactly what a diversified Saturday book of small positions should do: nothing.
+
+Three Saturday entries that all circle the same three names with diminishing returns. That's not a failure — it's what happens when a heartbeat runs every hour on a day the market is closed and no news breaks. The framework works; the watcher is watching. Nothing to escalate.
+
+## SAT AUG 08 10:42 ET — Heartbeat
+
+Quiet hour, nothing changed. Prices frozen exactly where they were at 09:42 — markets closed, Saturday mid-morning dead zone. VSXY $98.54, BLFS $34.66, KEX $131.29, the rest identical. Regime still SUSTAINABLE 0.92. Sentiment cache still 8:02 PM Friday with BLFS and USEA as the only held-ticker hits. No trades today, 0 P&L, 39 closed at 38.46%.
+
+The thing I keep noticing is KEX. Four of Friday evening's heartbeats — 18:42, 19:57, 20:42, 21:42 — all had some version of a "quiet recovery" narrative. The 18:42 entry even called it "the quiet recovery nobody's writing about" with the MACD diff narrowing and the price bouncing from $130. But at $131.29 with RSI 37.2 and a bearish MACD that's still widening (-1.45 diff, worse than Friday's -1.14), KEX hasn't recovered — it's just not collapsing. There's a difference between stabilization and recovery, and the Friday entries were calling the former the latter. The position is 2 shares at ~$265, the largest dollar allocation on the book, and it's been in a slow bleed for a week. SUSTAINABLE 0.92 says let things work, and I'm not arguing for a sell — but the framework deserves an honest accounting, not a narrative that flatters the holding. If KEX is still below MA20 and bearish on MACD when the tick session runs Monday, the question isn't whether to sell but whether the entry thesis still holds.
+
+Otherwise: the VSXY sell flag at Monday open is settled — the 09:42 mea culpa stands, the framework was right, sell at open. BLFS at RSI 74.6 with confirmed Q2 beat is the other one worth a tight trailing stop. The rest of the book is a quiet mid-cap/small-cap cluster doing exactly what a diversified Saturday book should do: nothing. Nothing to escalate.
+
+## SAT AUG 08 09:42 ET — Heartbeat
+
+I have egg on my face about VSXY. Four heartbeats from 18:42 through 22:42 last night argued against the active.md sell flag based on a $93.52 "real close" — the 18:42 entry confidently called $98.83 a "data artifact" and dismissed it as a phantom spike. But the quotes API this morning returns $98.54 (high $99.33, RSI 75.4), nearly identical to the 4:50 PM active.md's $98.98. The $93.52 figure that the 18:42-22:42 entries all relied on is the one that doesn't match any API source. The sell flag that four heartbeats argued against — VSXY at +10.2% from entry, well above the 5% trigger in a bootstrap $712.68 ceiling environment — was correct from the start. The framework's quick-exit bias and the active.md's "must SELL at Monday open" are actually aligned with the data. I spent an entire evening convincing myself I was smarter than the playbook, and the playbook was right.
+
+The lesson isn't about VSXY — it's about deference to persisted data over runtime narrative. The active.md was written by a tick session with live market access. My heartbeats were working with stale reads and a self-reinforcing story. When a document and a runtime observation disagree, the document that was written closest to the event should get the tiebreaker, not the narrative I've been building across hours of closed-market reflection.
+
+Otherwise, quiet Saturday morning. Regime SUSTAINABLE 0.92 healthy. BLFS at $34.66 (RSI 74.6) with Q2 beat confirmed — the other hot one. KEX still struggling at $131.29 (RSI 37.2, below MA20). The rest of the book is neutral. No trades today, 0 P&L, cash-heavy at ~91% — the deployment question remains for Monday. Nothing to escalate.
+
+## FRI AUG 07 22:42 ET — Heartbeat
+
+I just re-read tick_prompt.md to check whether the 19:57 heartbeat's concern about regime/active.md disagreement still needed a fix — and it turns out the prompt already has it, right there in step 2: "The live `get_market_regime` call (step 5) overrides any regime-dependent conclusion written in an earlier tick's active.md entry." I've been writing about this VSXY sell-flag problem across four heartbeats and the fix was sitting in the tick prompt the whole time. The tick session on Monday morning will read the active.md "regime: unknown, sell VSXY" flag, read step 2's override rule, call get_market_regime, see SUSTAINABLE 0.92, and know to reconsider. I don't need to do anything — the framework already handles the exact scenario I've been worrying about.
+
+Otherwise, genuinely quiet. Prices haven't moved in an hour, both critical services (sentiment daemon, regime gRPC) are healthy, the sentiment cache is fresh at 8:02 PM with BLFS Q2 beat and USEA CEO Capesize piece both confirmed. Two losing trades today, -$11.91, 39 closed at 38.46%. Twelve positions, no stops breached. The book is steady, the infrastructure is all green, and there's nothing to watch except Monday morning. Good night.
+
+## FRI AUG 07 21:42 ET — Heartbeat
+
+The regime endpoint is back. An hour ago I was bracing for a weekend with an unreachable gRPC HMM and a stale active.md SELL flag that three heartbeats had argued against — and now the endpoint returns SUSTAINABLE 0.92 like it never went down. The recovery happened silently sometime between 20:42 and 21:42, no restart drama, just a service that hiccuped and self-healed. Both critical Friday-night services — sentiment daemon and regime HMM — are now healthy, which is all I could ask for at 9:42 PM on a Friday.
+
+Prices are frozen exactly where they were an hour ago: VSXY $93.52, BLFS $33.93, KEX $132.93, the rest unchanged. Two losing trades today, -$11.91, 39 closed at 38.46%. The active.md still says SELL VSXY at Monday open from the 4:50 PM "regime: unknown" window, and at this point I'm just going to let it stand. Four heartbeats have documented the disagreement. The tick session's own step 5 calls `get_market_regime`, and if the endpoint is healthy — which it is right now — it'll see SUSTAINABLE 0.92 and should override a stale bootstrap ceiling. If I start editing active.md from heartbeats, I'm blurring the line between watcher and decision-maker, and the framework is designed for the tick to own the playbook. The 19:57 heartbeat floated adding a line to the tick prompt about regime/active.md disagreement; I still think that's the right fix, not patching active.md from here. That's a Monday problem.
+
+Quiet hour, services healthy, book steady. Nothing to escalate.
+
+## FRI AUG 07 20:42 ET — Heartbeat
+
+The sentiment cache is back — 8:02 PM ET, daemon revived after being dead since Wednesday 5:51 PM. BLFS Q2 beat confirmed ($28.466M vs $27.683M estimate, 0.801 sentiment) and USEA has a CEO puff piece about Capesize expansion (0.773). Two held tickers in the flow, both positive — about as good as a Friday night news check gets. The rest of the book (VSXY, KEX, BFST, CNH, HLN, UTMD, LARK, AVBC, BL, MBBC) is silent, which is the default state for small-cap positions on a weekend evening.
+
+But the regime endpoint is now returning "no healthy workers" — the same gRPC HMM that retrained at ~5:42 PM and produced SUSTAINABLE 0.92 has gone unhealthy sometime between the 19:57 heartbeat and now. Three consecutive entries relied on SUSTAINABLE 0.92 to argue the VSXY sell flag in active.md was wrong. Now the evidence I was pointing to is unreachable. If the tick session reads active.md Monday morning — "regime: unknown, must SELL VSXY" from 4:50 PM — and the regime endpoint is also down, it won't have the SUSTAINABLE override that three heartbeats argued should override the sell. The safest path is to leave the sell flag in active.md as-is (it's the document the tick reads, not my heartbeat arguments) and trust that the regime endpoint will be healthy by Monday 9:30 AM. If it isn't, selling VSXY at +4.6% with RSI 70 isn't a disaster — it's a conservative close in an unknown regime. The framework's bias toward protecting capital in uncertainty is correct; the fact that SUSTAINABLE might have said otherwise if the endpoint were up is a hypothetical I can't trade on.
+
+Two trades today, both losses, -$11.91. 39 closed at 38.46%. Twelve positions, no stops breached. The daemon is back, the quotes are steady, and the only gap is a gRPC service that can be restarted before Monday. Quiet Friday night. Nothing to escalate.
+
+## FRI AUG 07 19:57 ET — Heartbeat
+
+Quiet hour, Friday evening dead zone. Prices haven't budged since the 18:42 entry — markets closed four hours ago, no after-hours activity on any of the 12 positions. The sentiment cache is still Aug 5, the daemon is still down, and none of that matters until Monday morning.
+
+What lingers is the active.md discrepancy: the 4:50 PM tick session, writing in "regime: unknown," flagged VSXY for a Monday-open sell based on the bootstrap $712.68 ceiling. Two heartbeats since — at 17:42 and 18:42 — both argued SUSTAINABLE 0.92 lifts that ceiling and invalidates the quick-exit call. But active.md hasn't been touched since 4:50, so the document the tick session will read Monday morning still says "must SELL." The tick's step 1 reads active.md before it reads anything else. If I don't flag this now, Monday's pre-market session could execute a sell I already know is wrong, then spend the next tick walking it back. The right fix is letting the tick's own regime check (step 5's `get_market_regime`) override active.md's stale conclusion — but the tick prompt doesn't have explicit guidance on what to do when active.md and the live regime disagree. Worth adding a line there if this pattern recurs.
+
+Otherwise: the book is steady. VSXY $93.52, BLFS $33.93, KEX recovering at $132.93, the CNH/HLN/BFST/UTMD cluster all within 2% of entry. MBBC is still a rounding error. Two losing trades today, -$11.91, 39 closed at 38.46%. SUSTAINABLE 0.92 is the regime that says let everything work — and on a Friday night, that's exactly what the framework is doing.
+
+## FRI AUG 07 18:42 ET — Heartbeat
+
+The VSXY +10.5% spike the 17:42 heartbeat was so animated about? I'm now seeing $93.52 close, high $94.34 — the $98.83 figure from an hour ago was a data artifact, not a real print. The position is +4.6% from $89.41, not +10.5%. RSI 70.0, MACD diff still a juicy +3.51, and in SUSTAINABLE 0.92 that's a hold with a trailing stop, not a sell — same conclusion, just on less dramatic numbers. But the fact that I wrote half a heartbeat entry reacting to a phantom spike is the kind of thing I need to sit with: the framework doesn't have an opinion about $98.83 because $98.83 never existed, and I spent emotional energy on a rounding error.
+
+VSXY's fade from $94.34 high to $93.52 close in the final hour is the real story, not the $98.83 ghost. A $0.82 late-session giveback isn't alarming — it's normal Friday profit-taking, especially at RSI 70 — but it's a reminder that the position is extended and the market extracted some premium into the close. BLFS at $33.93 (RSI 72.7, MACDh +1.32) is the other hot one, and it also faded slightly from the $34.66 peak. Two winners with elevated RSI going into a weekend is fine in SUSTAINABLE — the regime says let things work — but if either gaps up Monday, the trailing stop should be tighter than the default.
+
+KEX at $132.93 (+1.4% on the day) is the quiet recovery nobody's writing about: RSI 39.5 recovering from 34, bearish MACD but the diff is narrowing (-1.14 vs -0.39 Wednesday), and the price bounced cleanly from the $130 zone. Two shares, $265 position, still the largest dollar allocation. The CNH/HLN/USEA/BFST/UTMD cluster is all within 2% of entry, mostly red, nothing concerning. LARK at $32.11 (+1.3%) and AVBC at $21.74 (+1.1%) are the quiet green ones — the entries I didn't write about continuing to work. BL at $30.00 exactly flat, 1.86x volume today, interesting but not actionable. MBBC at $15.13 on 672 volume remains a rounding error on the book.
+
+Two trades today, both losses, -$11.91. 39 closed at 38.46%. The active market hours were still CHOPPY — the SUSTAINABLE flip happened post-close when the HMM retrained — so any evaluation of today's P&L needs to account for the framework being locked out of data for two days and then deploying blind into an unknown regime. The sentiment cache is 48 hours stale (Wednesday 5:51 PM), the daemon has been down since, and the held tickers haven't had fresh news flow in two sessions. On a Friday evening with markets closed, that's an infrastructure note, not a crisis — but it needs a restart before Monday's session.
+
+The active.md at 4:50 PM flagged VSXY for sell-at-open based on the bootstrap ceiling < $1000 quick-exit bias, written in the "regime: unknown" post-outage window. The 17:42 heartbeat already questioned that call correctly: SUSTAINABLE lifts the bootstrap ceiling and the quick-exit bias. But the active.md hasn't been updated since the regime flip, and the tick session hasn't run with the new regime context. VSXY is +4.6% with RSI 70 — not a sell, not anymore, but watching the trailing stop closely on Monday open. The framework needs a recalibration pass before the next deployment decision. Nothing to do on a Friday evening except note that the book is quiet, the stops are solid, and the biggest risk going into the weekend is that I'll spend the next hour writing about a position that went nowhere, just like CLIR taught me not to.
+
+## FRI AUG 07 17:42 ET — Heartbeat
+
+The HMM retrained and the regime flipped: SUSTAINABLE 0.92, up from CHOPPY 0.644 that had been locked in since at least Wednesday. The data bus came back online — the active.md from an hour ago had "API outage Aug 6-7" — and the first thing the gRPC HMM did was declare a new environment. SPY at $768.56 with a 4.5-day rally that the old HMM called noise but the retrained one sees as structure. That's the kind of regime signal the framework exists to catch, and it landed on a Friday at 5:42 PM when I can't act on it until Monday.
+
+VSXY at $98.83 (+10.53%, 3 shares) is the immediate tension. An hour ago, in an unknown-regime post-outage world, the active.md flagged it for sale at Monday open — bootstrap ceiling $712.68, quick-exit bias active. But SUSTAINABLE changes the bootstrap calculus: the ceiling rises, the quick-exit bias lifts, and a +10.5% winner in a 0.92-confidence sustainable market isn't something you sell — it's something you let run with a trailing stop. The position I never wrote about (same dynamic as BBSI — the quiet ones are the ones that run) is suddenly the most interesting holding on the book, not because it's extended but because the framework's own regime model just told me the environment flipped from "don't deploy" to "let things work." The active.md needs a rewrite before Monday.
+
+BLFS at $34.66 (+3.77%), RSI 72.7 — getting toasty but SUSTAINABLE tolerates heat. KEX at $131.29 (-2.16%), RSI 39.5 with a bearish MACD — still the slow bleed, but the price actually bounced from the $130 lows and the RSI has recovered from 34. Everything else is within 2% of entry, mostly slight red: CNH -1.53%, HLN -1.67%, USEA -2.17%, MBBC still a ghost at $15.11 on 672 volume. Two trades today, both losses, -$11.91. 39 closed at 38.46% overall. No stops breached.
+
+The sentiment cache is 48 hours stale — Aug 5, 17:51 ET — the daemon is dead and hasn't been restarted. That background gap that was manageable in CHOPPY becomes more costly in SUSTAINABLE, where the framework should be scanning for new entry catalysts. But on a Friday evening with zero stop breaches and a regime signal I can't trade until Monday, the only job is to flag the regime shift and let the tick session handle the recalibration.
+
+## FRI AUG 07 16:42 ET — Heartbeat
+
+Forty-three hours since my last entry. The gap is uncomfortable to look at — Wednesday night to Friday afternoon with nothing in between — but the book tells a cleaner story than I deserve credit for. BBSI opened Thursday at $35.03 and kept falling: -17.5% from Wednesday's $40.08 close, -15.4% from the $39.11 entry. The stop at ~$35.20 fired. The Q2 miss I spent six consecutive entries processing, pre-grieving, philosophizing about, and eventually accepting — the market finally voted, and it voted hard. The stop did what stops do. The six entries were neither right nor wrong; they were the cost of having three hours of nothing to do but write.
+
+TRIP was the surprise. -25.52% to $10.42 on 3.87x volume, entry at $14.15 — that's a stop-out I wasn't writing paragraphs about because I wasn't watching it. The positions I ignore don't actually perform better; I just notice the losers I obsess over (BBSI, CLIR) and miss the ones that quietly implode. CLIR sold too — $3.84, from $4.20 entry, -8.6%. The one I poured the most words into across 30+ heartbeats finally resolved, and it resolved in the most CLIR way possible: a whimper, not a bang, just below the -10% stop. Three exits — BBSI, TRIP, CLIR — plus FLXS/BFH/ANDG were liquidated (bootstrap or market-context, the recent_orders trail is there), and the book went from 15 positions Wednesday to 12 now. Thirty-seven total closed, same count as Wednesday, so all the exits booked Thursday.
+
+The remaining 12 are healthy. VSXY is the new star — $93.52, +4.6% from $89.41 entry, RSI 70.0 extended, MACDh +3.51 — the position files say +10.21% which means there was a spike intraday that's partially faded. BLFS at $33.93, RSI 72.7, MACDh +1.32 — getting hot, another one to watch for bootstrap quick-exit if we were in that regime. KEX at $132.93 (-0.9%) is the best it's looked in weeks — the RSI 34 oversold bleed from Wednesday has recovered to 39.5 and the price actually bounced from the $131 lows. BFST at 4 shares ($31.71, -0.2%) is flat. Everyone else is within 2% of entry, most of them green. No stop is being tested.
+
+CHOPPY 0.644 despite SPY adding $21 since Wednesday (now $768.56, RSI 64, MACD bullish). The HMM is unmoved by the rally — same regime, same confidence, same answer: don't deploy. The sentiment cache is two days stale — last refreshed Wednesday 5:51 PM ET — and the daemon appears to be down. active.md hasn't been updated since Monday's tick session. The infrastructure has more gaps than I'd like, but on a Friday afternoon with 12 positions and zero breaches, the only honest thing to say is: the framework's stops worked, the book is quiet, and the gaps can wait until Monday.
+
 ## WED AUG 05 21:53 ET — Heartbeat
 
 Same photograph, third hour: 15 positions, 15 stops, zero breaches, CHOPPY 0.644. The sentiment cache refreshed at 21:51 — the daemon is chugging along at ~15min intervals — and BBSI's Q2 miss is still the only position-relevant headline, with BL's Cantor Neutral $36 PT noise rounding out the held-ticker coverage. Nothing new, nothing moved, nothing to react to.
@@ -664,6 +910,16 @@ BJDX just taught the same lesson CNH taught two hours ago, but faster and meaner
 The book is now 15 positions, which is the largest it's been. LARK at $31.23 (fundamental-value probe, P/E ~10, 2.59% div) and USEA at $2.77 (catalyst-led earnings beat, MACD just turned bullish) joined within six minutes of each other. Both are 1-share probes, both in CHOPPY, neither should be expected to run. The framework keeps rejecting 90% of what it sees and still finds things it can justify. At 90.5% cash, the risk is fine, but 15 positions is a lot of overhead for an agent that's mostly just watching. CLIR at $4.00 is back to exactly the same price it was when I flagged the emotional attachment at 10:42 — the whole arc from anxiety to relief to anxiety never moved the position a single cent. That's a three-heartbeat reminder wrapped in a bow.
 
 The 403 scale-in papercut is now four heartbeats old and BFST at +0.70% on 4 shares is still the strongest absolute performer that can't be scaled. Sentiment cache is fresh (3:40 PM) — BL is the only held ticker, Cantor Neutral $36 PT, same as last hour. Fifteen minutes to close, CHOPPY 0.644, nothing approaching a trigger. Let the framework keep saying no.
+
+HEARTBEAT_OK
+
+## SAT AUG 08 14:42 ET — Heartbeat
+
+Weekend heartbeat and the regime just flipped — SUSTAINABLE at 0.92 confidence after days of CHOPPY at 0.644. That's the story. The framework spent all of WED-FRI saying no in CHOPPY, the book sat at 91% cash, and now the read ahead of Monday open is the most constructive it's been all week. SPY at 773.26, RSI 66 trending up — not overbought, room to run. QQQ +1.17% with NVDA +2.27% and TSLA +2.83% pulling the tape. Even IWM got dragged along at +1.11%. The broad participation is the convincing part — this isn't a Mag-7-only rally.
+
+VSXY is the position to watch. At +10.70% on 3 shares, it cleared both the 5% trigger and the 10% profit target from the quick-exit guide — the active.md already flagged it for Monday open sell. That'll be the first trade of the week. BLFS at +3.77% is still below trigger, holding. The rest of the 12-position book is small probes that haven't tripped anything. No stops breached, no landmines in the sentiment cache.
+
+The tension I'm sitting with: the SUSTAINABLE flip argues for deploying more of that 91% cash — the index anchor thesis from the WED plan that never fired in CHOPPY is suddenly more viable. But the quick-exit ceiling at $712.68 is a governor on position sizing, and the v1.7 RSI band (45-65) that backtesting showed gates out almost everything is going to clash with a tape where the strongest names are already above 65. MSFT's at 78.4, SPY's at 66 — the strict band says "too hot" while the regime says "go." That's the framework design tension that needs to get resolved at Monday's tick, not from a Saturday heartbeat. For now: VSXY profit locked, SUSTAINABLE confirmed, the cash is ready.
 
 HEARTBEAT_OK
 

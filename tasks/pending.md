@@ -10,27 +10,44 @@ This file exists so a proposal made in one reflection session (nightly-maintenan
 
 Format: `- [ ] YYYY-MM-DD (source): description`
 
+---
+
+## 🔴 MONDAY PRE-FLIGHT (Aug 11, 2026)
+
+Read and execute these before the first tick:
+
+- [ ] Position DB reconciliation: `sqlite3 state/trader.db "SELECT * FROM positions WHERE symbol IN ('CLIR','MBBC');"` + Alpaca cross-ref. CLIR marked closed in DB but open in active.md at -7.14%. MBBC missing from DB entirely. 4 days stale.
+- [ ] CLIR open price check: was $4.00 (entry $4.20), hard stop at $3.95 (-6%). If below $3.95, Alpaca stop already triggered — verify on Alpaca.
+- [ ] Sell VSXY at Monday open: +10.70% (3sh, entry ~$89.39, now $98.98). Above 5% bootstrap trigger AND 10% profit target. Must execute.
+- [ ] Discovery daemon health: `systemctl status stonks-discovery-daemon` — did it run during Aug 6-7 outage?
+- [ ] Index-anchor deployment: if CHOPPY persists and cash >85%, execute SPY/QQQ/IWM per v1.19. 5+ sessions of 90% idle cash. No longer a tracking item — execute.
+
+---
+
 ## Open
 
-- [ ] 2026-08-07 (nightly-learning → updated nightly-maintenance): 2-day total API outage Aug 6-7 confirmed. Connectivity restored by 4:30 PM ET Friday (this session is running). ~100 sessions across all cron jobs produced zero substantive responses. Two full trading days lost. Positions mechanically survived (Alpaca-side stops independent of OpenClaw connectivity). Escalate to Raf only if outage recurs Monday Aug 10. Check Monday open for gap-downs on CLIR (was -7.14%, 2.86% from -6% hard stop).
-- [ ] 2026-08-03 (nightly-maintenance): Track watchlist-to-entry conversion rate by regime. Add a counter or field to `active.md`'s daily template — CHOPPY converted at ~2% Aug 3, 0% Aug 4, 6 entries from 7 priced on Aug 5 (high conversion among priced, pipeline feeding 77% unquotable). Still need SUSTAINABLE comparison data (no SUSTAINABLE sessions in lookback). ⚠️ No data Aug 6-7 (total API outage).
-- [ ] 2026-08-03 (tick-replay): CHOPPY index ≠ every name chops — evaluate whether the "CHOPPY suppresses all entries" rule should be softened to "CHOPPY suppresses broad sweep but individual names with independent confirmed setups can still enter." Needs more data across different CHOPPY days. Pipeline hasn't produced a live counterexample yet (Aug 3-5 all clean CHOPPY gates).
-- [ ] 2026-08-02 (weekly-review): Peak entry timing rule — track RDDT as occurrence #1 of first-30-min entry failure. If a second comparable loss happens from early-session momentum-spike entries, harden into strategy.md as "no new entries first 30 min or higher bar (limit orders, wider stop)."
-- [ ] 2026-08-02 (weekly-review): Exit discipline rule candidate — track occurrences of +3%+ intraday gains fading to negative/stop. AMD replay, RDDT, BJDX (Aug 5: +6.1% peak → -5.6% realized on $1.44 micro-cap). BJDX +6.1% peak may have been phantom position-stream data — NOT counting as a clean occurrence. Still need 1 more real (non-phantom) occurrence before hardening.
-- [ ] 2026-08-02 (weekly-review): v1.7-gentle scale-in cap proposal — Raf review required. Split-window Sharpe 2.407 vs v1.7 1.918. Filed under `proposals/`.
+- [ ] 2026-08-03 (nightly-maintenance): Track watchlist-to-entry conversion rate by regime. CHOPPY converted at ~2% Aug 3, 0% Aug 4, 6 entries from 7 priced on Aug 5. Need SUSTAINABLE comparison data. ⚠️ No data Aug 6-7 (outage).
+- [ ] 2026-08-03 (tick-replay): CHOPPY index ≠ every name chops — evaluate softening "CHOPPY suppresses all entries" to "CHOPPY suppresses broad sweep but individual names with independent confirmed setups can still enter." Needs more data.
+- [ ] 2026-08-02 (weekly-review): Peak entry timing rule — track RDDT as occurrence #1. If a second comparable loss from early-session momentum-spike entries, harden into strategy.md.
+- [ ] 2026-08-02 (weekly-review): Exit discipline rule — track +3%+ intraday gains fading to negative/stop. AMD, RDDT. BJDX (+6.1% phantom) NOT counted. Still need 1 more real occurrence before hardening.
 - [ ] 2026-08-02 (weekly-review): Small-cap vs large-cap universe evidence — accumulating from overnight optimization (3 rounds). Weekend discussion item for Raf. Not actionable unilaterally.
-- [x] 2026-08-07 (nightly-learning): MACDh fallback investigation → FORMALLY DROPPED. 5+ weeks of MACDh data bus reliability with zero outages. The 2-day total API outage (Aug 6-7) confirmed this decision — a MACDh-specific fallback is useless in a total connectivity failure. Not worth the investigation effort. Resolved.
-- [ ] 2026-08-03 (nightly-maintenance): MBBC liquidity gate — implement pre-entry daily dollar volume check in `record_decision.py` for catalyst-led entries on sub-$500M names. < $50K/day avg = skip. Rule in strategy.md v1.18, not enforced in code. 2 sessions stale, no new catalyst-led sub-$500M entries to trigger it. Still open.
-- [ ] 2026-08-05 (nightly-learning): Pipeline null-price rot — 23/30 watchlist entries were null-price (no data bus quotes) across multiple ticks Aug 5. Discovery daemon is finding caps too small for data bus quotability. Only 7 priced candidates, all already evaluated and rejected. Not a decision-quality issue (framework correctly rejected everything) but a pipeline-quality issue — if the daemon consistently fills with unquotable micro-caps, the watchlist becomes noise. Track whether this is a one-day quirk or a systemic discovery-daemon configuration problem. ⚠️ No data Aug 6-7 (total API outage).
-- [ ] 2026-08-03 (claude-code-session): Test-isolation gap in tests/test_executor_audit.py — `isolated_db_and_env` fixture doesn't patch `executor.ORDER_LOCK_DIR`. Low-priority one-line fix.
-- [ ] 2026-08-03 (claude-code-session): `trader_write.py position-update-thesis --verdict` doesn't accept a `--timestamp`/simulated-date override. One-line fix, replay-only impact.
-- [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — CLIR re-entry at $4.00 survived full CHOPPY session Aug 5 without incident (oscillated around $4.00, never touched stop). Still tracking for second occurrence before hardening. Re-entry thesis (mechanical stop, not thesis break) validated for this instance.
-- [ ] 2026-08-05 (raf-direction): Avoid new micro-cap entries until Alpaca websocket connectivity exists for faster execution. BJDX's +6.1%→-5.6% whipsaw in 6 minutes (see micro-cap data quality item above) is a liquidity/speed problem, not a data-quality one on its own — the current polling-cadence tick loop can't react fast enough to exit windows that close in seconds on sub-$3/micro-cap names. Not hardened into strategy.md yet — needs a concrete threshold (price? market cap?) and real backtest/live evidence before becoming a rule, per Raf.
-- [ ] 2026-08-04 (claude-code-session): SCALE_IN_MAX_MULTIPLE sweep — 1.0x beats 1.5x on split-window Sharpe (both halves) and drawdown, but 1.5x beats on aggregate return. Worth a proper split-window evidence-gathering pass (like the original proposal did) before deciding whether to go further to 1.0. Not acted on tonight. Raw sweep numbers in claude-code session.
-- [ ] 2026-08-05 (nightly-maintenance → 🔴 MONDAY PRIORITY as of Aug 7): Positions DB vs active.md reconciliation gap — CLIR marked "closed" in positions table but tracked as open at -7.14% in active.md all day Aug 5. MBBC completely missing from positions table despite active.md listing it at -1.11%. Now 2 trading days stale. Resolve before Monday's first tick: sqlite3 state/trader.db check, active.md check, manual reconcile. The book doesn't agree with itself on 2 of 15 positions (13% error rate). Add end-of-day reconcile step or automated check.
-- [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — position-stream data for sub-$3 micro-caps may show phantom spikes (BJDX +6.1% peak was suspect). Track whether phantom spikes recur on other sub-$3 holdings. If recurring, consider raising effective min_price or adding a data-quality gate for sub-$3 entries.
-- [ ] 2026-08-05 (nightly-maintenance): Discovery daemon quotability gate — promote_candidates.py should skip candidates that can't be priced by the data bus. If a ticker returns null from data-bus quotes on first evaluation, don't waste a watchlist slot. This is an infrastructure fix (daemon/promote configuration), not a strategy change. Track null-price rate Monday — if >50% again, escalate as systemic. ⚠️ No data Aug 6-7 (API outage).
-- [ ] 2026-08-07 (nightly-maintenance): Index-anchor execution gap — v1.19 index-anchor thesis (92% cash in +1.4% SPY = failure mode) is correct and still un-executed. Aug 5 session attempted but never fired SPY/QQQ/IWM. Monday morning: if CHOPPY persists and cash >85%, deploy 2-3 conviction slots to broad-market index ETFs per v1.19 rules. The execution path exists (record_decision.py reconcile with cross-index technicals) but has not been exercised.
-- [ ] 2026-08-07 (nightly-maintenance): CLIR -7.14% stop proximity — CLIR was at $4.00 (entry $4.20, was re-entered at $4.00 after Aug 4 stop-out) with MACDh -0.08 bearish at Aug 5 close. 2.86% from the -6% hard stop at $3.95. Check Monday open immediately — two days of unmonitored drift could have tripped the mechanical stop. If CLIR is already sold by Alpaca, active.md and positions DB need immediate reconciliation.
-- [ ] 2026-08-07 (nightly-maintenance): Discovery daemon health check — did the daemon (systemd service, not OpenClaw cron) continue running during the Aug 6-7 API outage? Check Monday pre-market: `systemctl status stonks-discovery-daemon` and inspect `state/discovery_pool.db` for fresh timestamps. If it ran, Monday's watchlist may have fresh (but 2-day-stale) candidates.
-- [x] 2026-08-07 (nightly-maintenance): Scale-into-winners strategy.md note → RESOLVED. v1.20 already removed scale-into-winners both functionally and in strategy.md text (What I'm Learning note documents the reversion). No stale text to clean up. The Alpaca paper-env 403 same-side block is a separate constraint that's documented in the heartbeat and journal, not a strategy.md item.
+- [ ] 2026-08-03 (nightly-maintenance): MBBC liquidity gate — implement pre-entry daily dollar volume check in code for catalyst-led entries on sub-$500M names. < $50K/day avg = skip. Rule in strategy.md v1.18, not enforced in code.
+- [ ] 2026-08-05 (nightly-learning): Pipeline null-price rot — 23/30 (77%) unquotable Aug 5. Track Monday rate — one-day quirk or systemic daemon configuration problem?
+- [ ] 2026-08-03 (claude-code-session): Test-isolation gap in tests/test_executor_audit.py. Low-priority one-line fix.
+- [ ] 2026-08-03 (claude-code-session): `trader_write.py position-update-thesis --verdict` timestamp override. One-line fix, replay-only impact.
+- [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — survived full CHOPPY Aug 5. Track second occurrence before hardening.
+- [ ] 2026-08-05 (raf-direction): Avoid new micro-cap entries until Alpaca websocket connectivity. Needs concrete threshold (price? market cap?) per Raf.
+- [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — phantom position-stream spikes on sub-$3 names. Track recurrence.
+- [ ] 2026-08-05 (nightly-maintenance): Discovery daemon quotability gate — skip candidates that can't be priced by data bus. Track null-price rate Monday.
+- [ ] 2026-08-09 (weekly-review): End-of-day position reconciliation — add automated check or explicit manual step to cross-reference active.md vs positions DB vs Alpaca account at close. Current gap (CLIR/MBBC) could recur.
+- [ ] 2026-08-09 (weekly-review): Momentum re-screen — Aug 7 tick-replay surfaced process gap: names flagged as "interesting but not entering" aren't re-screened at subsequent intervals. VOYG +7.44% missed. Add re-screen step to tick workflow.
+
+---
+
+## Resolved This Week (Aug 9 weekly review)
+
+- [x] 2026-08-07 (nightly-learning): MACDh fallback investigation → DROPPED. 5+ weeks reliable, total outage confirmed uselessness.
+- [x] 2026-08-07 (nightly-maintenance): Scale-into-winners strategy.md note → RESOLVED. v1.20 already removed it.
+- [x] 2026-08-02 (weekly-review): v1.7-gentle scale-in cap proposal → WITHDRAWN. v1.20 reverted scale-in entirely. Moot.
+- [x] 2026-08-04 (claude-code-session): SCALE_IN_MAX_MULTIPLE sweep → WITHDRAWN. v1.20 reverted scale-in entirely. Moot.
+- [x] 2026-08-07 (nightly-learning): API outage escalation → CONDITION CLEARED. Connectivity restored, no recurrence.

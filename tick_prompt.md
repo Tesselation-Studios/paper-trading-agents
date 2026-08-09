@@ -10,7 +10,7 @@
 
    Also call `memory_search("<today's regime> <top watchlist/position tickers>")` once — feeds the recall store dreaming promotes from. Skip only on tool error, never block the tick.
 
-2. **Read active.md** → `read strategies/active.md` — decisions, watchlist state, regime notes from last tick. **Position data (prices, P&L, share counts) is NOT in active.md** — query it on demand: `get_self_stats` for account-level P&L and `get_quotes` for live prices. Active.md is for what you did and why, not stale snapshots of what things cost.
+2. **Read active.md** → `read strategies/active.md` — decisions, watchlist state, regime notes from last tick. **Position data (prices, P&L, share counts) is NOT in active.md** — query it on demand: `get_self_stats` for account-level P&L and `get_quotes` for live prices. Active.md is for what you did and why, not stale snapshots of what things cost. **Active.md is a log, not an authoritative data source** — if it records a decision that was explicitly conditioned on a stale regime/ceiling/signal, reconsider it with today's fresh data from steps 4-5 before executing it blind. The live `get_market_regime` call (step 5) overrides any regime-dependent conclusion written in an earlier tick's active.md entry.
 
 3. **Read watchlist** → `python3 scripts/trader_query.py watchlist` — your growing/shrinking list of small-cap candidates. This is your discovery mechanism for this MVP (no ML, no news-source aggregation yet — just this).
 
