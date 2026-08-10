@@ -88,7 +88,7 @@ def cmd_news(args, conn) -> None:
     if not args.ticker:
         _print({"error": "--ticker is required for news"})
         return
-    _print(trader_db.recent_watchlist_articles(conn, [args.ticker.upper()], hours=args.hours))
+    _print(trader_db.recent_watchlist_articles(conn, [args.ticker.upper()], hours=args.hours, now=args.now))
 
 
 def cmd_audit_log(args, conn) -> None:
@@ -129,6 +129,7 @@ def main() -> int:
     p = sub.add_parser("news", help="Recent cached articles for a ticker")
     p.add_argument("--ticker", default=None)
     p.add_argument("--hours", type=int, default=24)
+    p.add_argument("--now", default=None, help="Override current time (ISO8601) -- for tests, defaults to real now")
 
     p = sub.add_parser("audit-log", help="Recent Alpaca API audit rows")
     p.add_argument("--limit", type=int, default=20)

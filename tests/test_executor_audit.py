@@ -941,8 +941,8 @@ class TestProtectiveStopCliFlow:
         stop_posts = [c for c in calls if c[0] == "POST" and c[1] == "stop"]
         assert len(stop_posts) == 1
         assert stop_posts[0][2] == "sell"
-        # params.json risk.stop_loss_pct (-10%) below the $10.00 entry.
-        assert float(stop_posts[0][3]) == pytest.approx(9.0)
+        # params.json risk.stop_loss_pct (-6%, v1.20) below the $10.00 entry.
+        assert float(stop_posts[0][3]) == pytest.approx(9.39)
 
     def test_sell_cancels_resting_stop_before_submitting(self, monkeypatch, capsys):
         calls = []

@@ -17,11 +17,9 @@ import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
-
 import replay_check  # noqa: E402
 import trader_db  # noqa: E402
-from src.replay import Tick, Portfolio, Position  # noqa: E402
+from replay_harness import Tick, Portfolio, Position  # noqa: E402
 
 TS = datetime(2026, 6, 1, 9, 30, 0)
 
@@ -144,9 +142,10 @@ class TestScaleIntoWinners:
     def test_size_multiple_caps_at_scale_in_max_multiple(self):
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5)
         trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True)
-        # +11% pnl — still under the 12% profit-target exit, but far beyond
-        # what SCALE_IN_MAX_MULTIPLE should let the size multiple grow past.
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=11.1)
+        # +7% pnl — still under the 10% profit-target exit (v1.20), but far
+        # beyond what SCALE_IN_MAX_MULTIPLE (saturates at 4.5%) should let
+        # the size multiple grow past.
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.7)
         decision = trader(tick, portfolio)
         assert decision.decision == "BUY"
         expected_max_shares = int(
@@ -167,7 +166,7 @@ class TestScaleIntoWinners:
                                                   scale_in_max_multiple=3.0)
         gentle_trader = replay_check.make_trader(frames, "v1.1", scale_into_winners=True,
                                                    scale_in_max_multiple=1.5)
-        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=11.1)  # +11%, saturates both caps
+        tick, portfolio = self._held_tick_portfolio(entry_price=10.0, close_price=10.7)  # +7%, saturates both caps, still under the 10% profit-target exit
 
         loose_decision = loose_trader(tick, portfolio)
         gentle_decision = gentle_trader(tick, portfolio)
@@ -284,8 +283,8 @@ class TestTrailingStop:
         trader = replay_check.make_trader(frames, "v1.0", trailing_stop_pct=5.0)
         tick1, portfolio = self._held_tick_portfolio(close_price=10.5)
         tick2, _ = self._held_tick_portfolio(close_price=10.3)  # pullback, above 10.5*0.95=9.975
-        tick3, _ = self._held_tick_portfolio(close_price=11.0)  # new peak
-        tick4, _ = self._held_tick_portfolio(close_price=10.5)  # above 11.0*0.95=10.45, but WOULD
+        tick3, _ = self._held_tick_portfolio(close_price=10.9)  # new peak, +9% -- stays under the 10% profit-target exit (v1.20)
+        tick4, _ = self._held_tick_portfolio(close_price=10.5)  # above 10.9*0.95=10.355, but WOULD
                                                                   # breach if trail were still anchored to 10.3
         assert trader(tick1, portfolio).decision == "HOLD"
         assert trader(tick2, portfolio).decision == "HOLD"
@@ -344,13 +343,17 @@ class TestVolScaledTrailingStop:
         """An absurdly high vol_20d must not push the trail past TRAIL_MAX_PCT
         (18% as of 2026-08-01, was 12%) -- the exact unbounded-widening
         failure mode stop_patience.py already demonstrated is a bad idea.
-        entry_price=90 keeps peak pnl at 11.1% (under the 12% profit_target
-        guide) AND keeps both boundary prices within the -10% hard stop
-        (stop_loss_pct), so only the trail clamp is under test -- at the
-        wider 18% max, the old entry_price=95 put the 82/81.5 boundary
-        below the -10%-from-entry hard-stop floor, firing that instead."""
+        Explicitly pins stop_loss_pct/profit_target_pct to -10%/12% (rather
+        than the live params.json defaults, currently -6%/10% as of v1.20)
+        because at an 18% trail max, no entry/peak combo can simultaneously
+        keep peak pnl under a 10% profit target AND keep the trail-clamp
+        boundary above a -6% hard-stop floor -- 0.82*peak > 0.94*entry
+        requires peak/entry > 1.146, but pnl<10% requires peak/entry < 1.10.
+        Isolating this test's stop/target from live drift is the fix, not
+        chasing new boundary numbers each time params.json changes."""
         frames = make_frames("XYZ", rsi=55.0, macd_hist=0.5, vol_20d=1.0)
-        trader = replay_check.make_trader(frames, "v1.0", vol_scaled_trail=True)
+        trader = replay_check.make_trader(frames, "v1.0", vol_scaled_trail=True,
+                                           stop_loss_pct=-10.0, profit_target_pct=12.0)
         tick1, portfolio = self._held_tick_portfolio(close_price=100.0, entry_price=90.0)
         trader(tick1, portfolio)
         # 18% trail from peak 100 -> stop at 82.0

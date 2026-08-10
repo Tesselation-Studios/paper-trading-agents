@@ -167,7 +167,10 @@ class TestNews:
              "collected_at": "2026-07-28T11:00:00Z", "tickers": '["AAA"]', "sentiment_score": 0.5},
         ])
         conn.close()
-        result = _run(monkeypatch, capsys, db_path, ["news", "--ticker", "AAA", "--hours", "24"])
+        # Frozen --now (not real wall-clock) so this doesn't silently drift
+        # out of the --hours window as sim-date moves forward.
+        result = _run(monkeypatch, capsys, db_path,
+                       ["news", "--ticker", "AAA", "--hours", "24", "--now", "2026-07-28T12:00:00Z"])
         assert len(result) == 1
 
 
