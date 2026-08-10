@@ -2,11 +2,13 @@
 
 Load-bearing tool reference for the tick loop. `executor.py` is the only source of truth for cash/positions/P&L — never the data bus (see `skills/data-bus-fallback.md`).
 
+**Single-quote every free-text argument that might contain a literal `$`** — `--rationale`/`--thesis`/`--thesis-claim`/`--thesis-invalidation`/`--close-reason`/`--note`/`--prediction-reason`/`--sector`. Double quotes do NOT stop shell `$` expansion — `"EPS $0.88"` in a real double-quoted shell string expands `$0` to the shell's own name and `$1`-`$9` to empty positional params, so it silently becomes `"EPS /bin/bash.88"` or `"EPS .88"` with the digit before the decimal just gone. Confirmed live 2026-08-10: this corrupted several `decisions.rationale`/`positions.thesis` rows with real dollar figures (EPS numbers, stop prices) — permanent, silent damage to the audit trail every time rationale text happens to include a price. Single quotes (`'...'`) are immune to this; use them by default for any of the fields above, not just when you notice a `$` in what you're about to write.
+
 ## Alpaca Executor
 
 ```bash
 python3 scripts/executor.py --account stonks --action status
-python3 scripts/executor.py --account stonks --action BUY --ticker SOFI --qty 2 --price 4.58 --conviction 0.6 --sector "Consumer Tech"
+python3 scripts/executor.py --account stonks --action BUY --ticker SOFI --qty 2 --price 4.58 --conviction 0.6 --sector 'Consumer Tech'
 python3 scripts/executor.py --account stonks --action SELL --ticker SOFI --qty 2 --price 4.58
 python3 scripts/executor.py --account stonks --action check-stops
 ```
@@ -24,8 +26,8 @@ Keys: `ALPACA_STONKS_KEY` / `ALPACA_STONKS_SECRET`.
 | `hours` | market open 09:30–16:00 ET Mon–Fri | — |
 | `conviction` | ≥ `risk.conviction_floor` | `--conviction` |
 | `bankroll` | cost ≤ current ceiling (`python3 bankroll.py`, backed by `state/trader.db`) | `--price` |
-| `long_play` | (BUY, `--play-type long` only) size ≤ `risk.long_play.position_size_pct`; concurrent long plays < `risk.long_play.max_concurrent_long_plays` | `--play-type long --predicted-by-date YYYY-MM-DD --prediction-reason "..." --thesis-invalidation "..."` (all four required together) |
-| `conviction_play` | (BUY, `--play-type conviction` only) size ≤ `risk.conviction_play.position_size_pct`; concurrent conviction plays < `risk.conviction_play.max_concurrent_conviction_plays` | `--play-type conviction --prediction-reason "..." --thesis-invalidation "..."` (all three required together) |
+| `long_play` | (BUY, `--play-type long` only) size ≤ `risk.long_play.position_size_pct`; concurrent long plays < `risk.long_play.max_concurrent_long_plays` | `--play-type long --predicted-by-date YYYY-MM-DD --prediction-reason '...' --thesis-invalidation '...'` (all four required together) |
+| `conviction_play` | (BUY, `--play-type conviction` only) size ≤ `risk.conviction_play.position_size_pct`; concurrent conviction plays < `risk.conviction_play.max_concurrent_conviction_plays` | `--play-type conviction --prediction-reason '...' --thesis-invalidation '...'` (all three required together) |
 
 Missing field → gate skips (fail-open), never blocks on missing data. Always pass `--price` on SELL — it's what lets the bankroll ceiling adapt.
 
@@ -52,6 +54,6 @@ python3 scripts/record_decision.py reconcile \
 
 ```bash
 python3 scripts/record_decision.py decision --ticker SOFI --action BUY --conviction 0.6 \
-  --rationale "..." --regime momentum_bull --features '{...}'
+  --rationale '...' --regime momentum_bull --features '{...}'
 python3 scripts/record_decision.py close --ticker SOFI --pnl 12.50 --return-pct 4.2
 ```

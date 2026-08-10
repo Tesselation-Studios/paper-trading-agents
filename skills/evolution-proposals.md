@@ -8,7 +8,7 @@ Structured version of what nightly Evolve already does informally. Two tiers, de
 ```bash
 python3 scripts/evolution_proposal.py create \
   --title "Add earnings-day gate" \
-  --rationale "..." \
+  --rationale '...' \
   --files scripts/executor.py \
   --evidence "5 journal entries this month show losses clustering around earnings dates"
 ```
