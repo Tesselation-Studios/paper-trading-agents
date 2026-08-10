@@ -1,9 +1,9 @@
-# AORT Position Thesis
+# SPY Position Thesis
 
-- **Entry**: $27.10 avg | 1 shares
-- **Current**: $26.45 (-2.38% unrealized)
-- **Market Value**: $26.45
-- **Unrealized P&L**: $-0.65 (-2.38%)
+- **Entry**: $773.09 avg | 1 shares
+- **Current**: $773.14 (+0.01% unrealized)
+- **Market Value**: $773.14
+- **Unrealized P&L**: $+0.05 (+0.01%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-10 17:21:09 UTC
 

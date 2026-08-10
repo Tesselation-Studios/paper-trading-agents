@@ -1,11 +1,11 @@
-# CNH Position Thesis
+# VVX Position Thesis
 
-- **Entry**: $11.08 avg | 1 shares
-- **Current**: $10.44 (-5.78% unrealized)
-- **Market Value**: $10.44
-- **Unrealized P&L**: $-0.64 (-5.78%)
+- **Entry**: $84.26 avg | 1 shares
+- **Current**: $84.08 (-0.21% unrealized)
+- **Market Value**: $84.08
+- **Unrealized P&L**: $-0.18 (-0.21%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-10 17:16:34 UTC
+- **Last sync**: 2026-08-10 17:21:09 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
