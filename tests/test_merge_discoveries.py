@@ -92,7 +92,9 @@ class TestExtractCandidates:
             "## PLTR — $132.34\n- Sector: Tech\n\n"
             "## IOVA — $5.48\n- Sector: Healthcare\n"
         )
-        assert merge_discoveries.extract_candidates(text) == ["PLTR", "IOVA"]
+        assert merge_discoveries.extract_candidates(text) == [
+            {"ticker": "PLTR", "price": 132.34}, {"ticker": "IOVA", "price": 5.48},
+        ]
 
     def test_ignores_non_ticker_headers(self):
         text = (
@@ -100,7 +102,7 @@ class TestExtractCandidates:
             "Some prose about balance, no ticker here.\n\n"
             "## PLTR — $132.34\n- Sector: Tech\n"
         )
-        assert merge_discoveries.extract_candidates(text) == ["PLTR"]
+        assert merge_discoveries.extract_candidates(text) == [{"ticker": "PLTR", "price": 132.34}]
 
     def test_no_headers_returns_empty(self):
         text = "# Probe Discovery\n\nNo picks worth flagging today.\n"
@@ -201,6 +203,18 @@ class TestMerge:
         assert "ZZZ" in candidates
         assert candidates["ZZZ"]["source"] == "2026-07-22.md"
         assert candidates["ZZZ"]["idle_ticks"] == 0
+
+    def test_price_from_discoveries_file_lands_in_db(self, merge_env):
+        """Regression test for the 2026-08-10 bug: TICKER_HEADER_RE had no
+        capture group for price, so every discoveries/*.md candidate landed
+        with price=NULL and was silently rejected downstream (68-81% of the
+        watchlist). Real, live-quotable tickers were being thrown out even
+        though their price was sitting right there in the file."""
+        make_discoveries_file(merge_env["discoveries_dir"], "2026-07-22", [("AORT", "27.15"), ("GAIN", "16.62")])
+        merge_discoveries.merge()
+        candidates = _candidates(merge_env["db_path"])
+        assert candidates["AORT"]["price"] == 27.15
+        assert candidates["GAIN"]["price"] == 16.62
 
 
 # ─────────────────────────────────────────────────────────────────────────────

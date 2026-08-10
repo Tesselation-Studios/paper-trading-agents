@@ -110,7 +110,7 @@ def write_discoveries_file(candidates, min_price, max_price, path=None):
 
     existing_tickers = set()
     if path.exists():
-        existing_tickers = set(merge_discoveries.extract_candidates(path.read_text()))
+        existing_tickers = {d["ticker"] for d in merge_discoveries.extract_candidates(path.read_text())}
     else:
         header = [
             f"# Probe Discovery — {today}",

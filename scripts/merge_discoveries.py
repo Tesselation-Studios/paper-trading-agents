@@ -29,7 +29,7 @@ WORKSPACE_DIR = Path(__file__).resolve().parent.parent
 DISCOVERIES_DIR = WORKSPACE_DIR / "discoveries"
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 
-TICKER_HEADER_RE = re.compile(r"^## ([A-Z]{1,5}) — \$", re.MULTILINE)
+TICKER_HEADER_RE = re.compile(r"^## ([A-Z]{1,5}) — \$([0-9.]+)", re.MULTILINE)
 
 # Signal columns carried straight through from a discovery-pool candidate
 # dict onto the watchlist row. Keys are identical on both sides (the pool's
@@ -46,16 +46,24 @@ def latest_discoveries_file(date: str = None) -> Path | None:
     return files[-1] if files else None
 
 
-def extract_candidates(text: str) -> list[str]:
-    return TICKER_HEADER_RE.findall(text)
+def extract_candidates(text: str) -> list[dict]:
+    """Parse ## TICKER — $PRICE headers out of a discoveries/*.md file.
+    Was ticker-only until 2026-08-10 -- the regex had no capture group for
+    the price sitting right next to the ticker, so every discoveries/*.md
+    candidate landed in watchlist_candidates with price=NULL and got
+    silently rejected downstream (68-81% of the watchlist, confirmed live
+    against real Alpaca quotes -- not a data-quotability gap, the price
+    was right there in the file and just never parsed out)."""
+    return [{"ticker": ticker, "price": float(price)}
+            for ticker, price in TICKER_HEADER_RE.findall(text)]
 
 
 def _split_candidate(entry) -> tuple[str, dict]:
-    """Accept either a bare ticker string (discoveries/*.md path, which has
-    no structured signals to carry) or a full candidate dict from the
-    discovery pool, and return (TICKER, signals-to-write). Only non-None
-    signals are returned, so a partially-populated pool row doesn't write
-    NULLs over anything."""
+    """Accept either a bare ticker string or a full candidate dict (from
+    discoveries/*.md via extract_candidates(), or from the discovery pool),
+    and return (TICKER, signals-to-write). Only non-None signals are
+    returned, so a partially-populated row doesn't write NULLs over
+    anything."""
     if isinstance(entry, str):
         return entry.upper(), {}
     return entry["ticker"].upper(), {

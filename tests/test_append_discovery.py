@@ -40,7 +40,7 @@ class TestAppendDiscoveryMain:
         assert "## XYZ — $12.34" in text
         assert "DoD contract" in text
         assert "Source: freeform" in text
-        assert merge_discoveries.extract_candidates(text) == ["XYZ"]
+        assert merge_discoveries.extract_candidates(text) == [{"ticker": "XYZ", "price": 12.34}]
 
     def test_price_outside_universe_band_rejected(self, monkeypatch, capsys):
         monkeypatch.setattr(discovery_scan, "get_universe_price_band", lambda: (1.0, 50.0))
