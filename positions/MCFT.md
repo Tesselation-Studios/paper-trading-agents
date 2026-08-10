@@ -1,11 +1,11 @@
-# SPY Position Thesis
+# MCFT Position Thesis
 
-- **Entry**: $773.09 avg | 1 shares
-- **Current**: $773.14 (+0.01% unrealized)
-- **Market Value**: $773.14
-- **Unrealized P&L**: $+0.05 (+0.01%)
+- **Entry**: $24.17 avg | 1 shares
+- **Current**: $24.14 (-0.12% unrealized)
+- **Market Value**: $24.14
+- **Unrealized P&L**: $-0.03 (-0.12%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-10 17:21:09 UTC
+- **Last sync**: 2026-08-10 19:55:28 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

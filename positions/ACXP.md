@@ -1,9 +1,9 @@
-# USEA Position Thesis
+# ACXP Position Thesis
 
-- **Entry**: $2.77 avg | 1 shares
-- **Current**: $2.67 (-3.61% unrealized)
-- **Market Value**: $2.67
-- **Unrealized P&L**: $-0.10 (-3.61%)
+- **Entry**: $1.53 avg | 1 shares
+- **Current**: $1.53 (+0.00% unrealized)
+- **Market Value**: $1.53
+- **Unrealized P&L**: $+0.00 (+0.00%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-10 19:55:28 UTC
 
