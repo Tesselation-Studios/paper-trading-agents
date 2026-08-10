@@ -5,3 +5,4 @@ alpaca-py
 grpcio
 python-dotenv
 pyarrow
+protobuf
