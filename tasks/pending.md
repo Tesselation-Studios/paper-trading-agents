@@ -32,13 +32,11 @@ Read and execute these before the first tick:
 - [ ] 2026-08-02 (weekly-review): Exit discipline rule — track +3%+ intraday gains fading to negative/stop. AMD, RDDT. BJDX (+6.1% phantom) NOT counted. Still need 1 more real occurrence before hardening.
 - [ ] 2026-08-02 (weekly-review): Small-cap vs large-cap universe evidence — accumulating from overnight optimization (3 rounds). Weekend discussion item for Raf. Not actionable unilaterally.
 - [ ] 2026-08-03 (nightly-maintenance): MBBC liquidity gate — implement pre-entry daily dollar volume check in code for catalyst-led entries on sub-$500M names. < $50K/day avg = skip. Rule in strategy.md v1.18, not enforced in code.
-- [ ] 2026-08-05 (nightly-learning): Pipeline null-price rot — 23/30 (77%) unquotable Aug 5. Track Monday rate — one-day quirk or systemic daemon configuration problem?
 - [ ] 2026-08-03 (claude-code-session): Test-isolation gap in tests/test_executor_audit.py. Low-priority one-line fix.
 - [ ] 2026-08-03 (claude-code-session): `trader_write.py position-update-thesis --verdict` timestamp override. One-line fix, replay-only impact.
 - [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — survived full CHOPPY Aug 5. Track second occurrence before hardening.
 - [ ] 2026-08-05 (raf-direction): Avoid new micro-cap entries until Alpaca websocket connectivity. Needs concrete threshold (price? market cap?) per Raf.
 - [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — phantom position-stream spikes on sub-$3 names. Track recurrence.
-- [ ] 2026-08-05 (nightly-maintenance): Discovery daemon quotability gate — skip candidates that can't be priced by data bus. Track null-price rate Monday.
 - [ ] 2026-08-09 (weekly-review): End-of-day position reconciliation — add automated check or explicit manual step to cross-reference active.md vs positions DB vs Alpaca account at close. Current gap (CLIR/MBBC) could recur.
 - [ ] 2026-08-09 (weekly-review): Momentum re-screen — Aug 7 tick-replay surfaced process gap: names flagged as "interesting but not entering" aren't re-screened at subsequent intervals. VOYG +7.44% missed. Add re-screen step to tick workflow.
 
@@ -46,6 +44,7 @@ Read and execute these before the first tick:
 
 ## Resolved This Week (Aug 9 weekly review)
 
+- [x] 2026-08-10 (claude-code-session): Pipeline null-price rot → ROOT CAUSE FOUND AND FIXED. Not a data-quotability gap (the earlier "add a quotability gate" proposal, now removed, would have wrongly suppressed real tickers) — `scripts/merge_discoveries.py`'s TICKER_HEADER_RE had no capture group for price, so every discoveries/*.md candidate landed in watchlist_candidates with price=NULL (confirmed 68-81% of the watchlist, verified against live Alpaca quotes: AORT/GAIN/CGBD/EPC/BWMN etc. were all real, liquid, quotable). Fixed the regex + extract_candidates(), backfilled today's 15 null rows, added a regression test.
 - [x] 2026-08-07 (nightly-learning): MACDh fallback investigation → DROPPED. 5+ weeks reliable, total outage confirmed uselessness.
 - [x] 2026-08-07 (nightly-maintenance): Scale-into-winners strategy.md note → RESOLVED. v1.20 already removed it.
 - [x] 2026-08-02 (weekly-review): v1.7-gentle scale-in cap proposal → WITHDRAWN. v1.20 reverted scale-in entirely. Moot.
