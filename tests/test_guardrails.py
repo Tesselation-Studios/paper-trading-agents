@@ -1473,6 +1473,56 @@ class TestCheckStops:
         assert stop_types.get("NVDA") == "oversized"
         assert stop_types.get("GME") == "hard"
 
+    # ── Conviction plays get their own (larger) oversized cap ──────────────
+    # 2026-08-10: this check used to compare every position against the flat
+    # max_position_pct regardless of play_type, so a conviction play
+    # correctly sized above 6% (per risk.conviction_play's own, larger cap)
+    # got immediately force-trimmed as "oversized" -- confirmed live, the
+    # SPY index-anchor was closed 3.5 minutes after entry citing the 6% cap
+    # even though it was well under conviction_play's 10%.
+
+    def _mock_conviction_play(self, monkeypatch, ticker):
+        class _FakeConn:
+            def close(self):
+                pass
+        monkeypatch.setattr(executor.trader_db, "get_conn", lambda: _FakeConn())
+        monkeypatch.setattr(
+            executor.trader_db, "get_open_positions",
+            lambda conn: [{"ticker": ticker, "play_type": "conviction"}],
+        )
+
+    def test_conviction_play_within_its_own_cap_not_flagged_oversized(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
+                           "conviction_play": {"position_size_pct": 10.0}}
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        self._mock_conviction_play(monkeypatch, "SPY")
+        # $740 of $10,000 = 7.4% -- over the flat 6% cap, under conviction's 10%.
+        monkeypatch.setattr(
+            executor, "get_positions",
+            lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=1, market_value=740.0)],
+        )
+        breaches = executor.check_stops("stonks")
+        assert breaches == []
+
+    def test_conviction_play_still_flagged_past_its_own_cap(self, params, monkeypatch, tmp_path):
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
+                           "conviction_play": {"position_size_pct": 10.0}}
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        self._mock_conviction_play(monkeypatch, "SPY")
+        # $1200 of $10,000 = 12% -- over conviction's own 10% cap too.
+        monkeypatch.setattr(
+            executor, "get_positions",
+            lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=1, market_value=1200.0)],
+        )
+        breaches = executor.check_stops("stonks")
+        oversized = [b for b in breaches if b["stop_type"] == "oversized"]
+        assert len(oversized) == 1
+        assert "10%" in oversized[0]["reason"]
+
     # ── Long plays (2026-07-30, risk.long_play) ───────────────────────────
     # A long play is exempt from the trailing-stop schedule only while its
     # predicted_by_date hasn't arrived; the hard stop always applies

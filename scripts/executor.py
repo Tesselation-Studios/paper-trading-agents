@@ -1757,13 +1757,27 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
 
         if portfolio_value and portfolio_value > 0 and current_price > 0:
             current_pct = market_value / portfolio_value * 100
-            if current_pct > max_position_pct:
-                target_value = portfolio_value * max_position_pct / 100
+            # 2026-08-10: conviction plays are sized to risk.conviction_play's
+            # own (larger) cap by gate_position_size/_size_cap_pct_for at
+            # entry -- this trim check was still comparing every position
+            # against the flat max_position_pct regardless, so a conviction
+            # play correctly sized above the flat 6% but under its own 10%
+            # got force-trimmed minutes after entry as "oversized." Same bug
+            # shape gate_position_size itself had until 2026-08-01 (see that
+            # function's docstring), just never propagated to this sibling
+            # check. Confirmed live: SPY index-anchor bought at 7.4%, trimmed
+            # (closed, 1 share) 3.5 minutes later citing the 6% cap.
+            oversized_cap = (
+                _size_cap_pct_for(risk, "conviction")[0] if ticker in conviction_play_tickers
+                else max_position_pct
+            )
+            if current_pct > oversized_cap:
+                target_value = portfolio_value * oversized_cap / 100
                 excess_value = market_value - target_value
                 shares_to_sell = min(qty_held, max(1, math.ceil(excess_value / current_price)))
                 breaches.append({
                     "ticker": ticker, "stop_type": "oversized",
-                    "reason": f"{ticker}: {current_pct:.1f}% of portfolio exceeds {max_position_pct:.0f}% cap "
+                    "reason": f"{ticker}: {current_pct:.1f}% of portfolio exceeds {oversized_cap:.0f}% cap "
                               f"(${market_value:,.2f} of ${portfolio_value:,.2f}) — trim {shares_to_sell} share(s)",
                     "loss_pct": (current_price - entry_price) / entry_price * 100 if entry_price else 0.0,
                     "shares_to_sell": shares_to_sell,
