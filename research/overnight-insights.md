@@ -2,8 +2,55 @@
 
 **Run date**: 2026-08-09 overnight → 2026-08-10
 **Data window**: 5-20 trading days (varies by iteration)
-**Configs tested**: 24 total — 8 universes × 3 configs each
+**Configs tested**: 27 total — 9 universes × 3 configs each
 **Previous run**: 2026-08-04 → 2026-08-05 (12 configs, ~1.4h)
+
+---
+
+## ITERATION 9: stonks-ultra-relaxed — THE SCORING FUNCTION PROBLEM
+
+**Universe**: 10 stonks (NVDA/TSLA/etc.), **Params**: RSI(22/82) period 7, vol 1.1x min, momentum 0.8%, conviction 0.4/0.25, ma_dist <12%, 20 days
+
+Top config: price_above_ma=True, RSI(40-65) period 7, MACD(16/32), vol 3x, MA10, conviction 0.7
+Score **0.3404** (near-identical to #1) | Return **+2.16%** | Catch 0.0000 | FP 0.00
+
+### The same score, 4.6x different return
+
+| Config | Score | Return | Universe | price_above_ma |
+|--------|-------|--------|----------|---------------|
+| core-default (run 1) | 0.3405 | **+9.96%** | Core small-cap | True |
+| stonks-ultra-relaxed (run 9) | **0.3404** | +2.16% | Stonks/momentum | True |
+
+These two configs have essentially IDENTICAL scores but wildly different returns. The scorer is measuring something other than raw P&L — likely a composite that heavily weights stability, low drawdown, or low variance. A config that sits in 99% cash and occasionally makes a small, smooth profit gets the same score as one that actually deploys capital and generates meaningful returns.
+
+**This is a problem for a "most money wins" competition.** The scoring function appears to reward capital preservation ("don't lose") more than capital deployment ("win"). This could explain why every config across 27 attempts leaves 99%+ cash idle — the optimizer is being guided toward the config that loses the least, not the one that wins the most.
+
+**Recommendation**: When reading optimizer results, **returns matter more than scores.** A 0.34 score at 9.96% return is a completely different strategy from a 0.34 score at 2.16% return. The score is directionally useful but the return is what actually wins the competition. In future runs, I'll lead with return and treat score as secondary context.
+
+### 10,725 signals, zero catch — the final nail
+
+Ultra-relaxed gates (RSI 22/82, vol 1.1x, conviction 0.25, ma_dist 12%) produced **10,725 signals** — the most of any run — and caught **zero**. This is the ninth consecutive run with zero or near-zero catch rate. Nine runs, 27 configs, every combination of gates from ultra-tight to ultra-loose, and the catch rate never improves.
+
+**The signal-quality thesis is now beyond proven.** It's not gates. It's not universe. It's not parameters. The discovery engine's raw signal stream is noise, and no amount of gate-tuning — in either direction — changes that. The ONLY lever is a quality pre-filter at the discovery level.
+
+### The MA gate direction IS universe-dependent
+
+Run 9 adds an important refinement: `price_above_ma` isn't universally good or bad — it depends on the universe:
+
+| Universe type | price_above_ma in winning config | Runs | Return range | Why |
+|--------------|--------------------------------|------|-------------|-----|
+| **Core small-cap** | **False** | 4, 6, 7 | +6.86% to +10.63% | Small caps mean-revert — pullbacks are buying opportunities |
+| **Stonks/momentum** | **True** | 2, 9 | +2.16% to +5.35% | Momentum names trend — pullbacks are falling knives |
+
+This makes theoretical sense:
+- **Small caps overshoot and revert.** A 3% dip on a $8 stock with green MACDh is almost always a buying opportunity, not a breakdown. The MA gate rejects these.
+- **Momentum names trend and break.** A dip below MA on NVDA/GME with declining momentum IS often the start of a real move lower. The MA gate has protective value here.
+
+**But we're already betting on small caps** — the core universe returns 2.4x more than stonks. So the practical implication doesn't change: drop `price_above_ma` for the universe we actually trade. The fact that stonks names need it is academic if we're not trading stonks names.
+
+### Fast signals keep winning across all universes
+
+RSI period 7, MACD with fast components, short MAs — the fast-signal paradigm is the single most consistent finding across all 9 runs. It wins on core, stonks, momentum, bounce, wide-gate, and ultra-relaxed. The only exception is broad universes (runs 3, 8) where the optimizer gives up and goes to RSI 21/MA50 survival mode.
 
 ---
 
@@ -570,21 +617,25 @@ After 21 configs across 7 universes:
 | **Two entry paradigms both work** | **HIGH** | Momentum-continuation (runs 1,3) + small-cap pullback (runs 4,6,7). |
 | **Core universe > broad universe** | **VERY HIGH** | 4 core runs avg 8.78% return; 4 broad runs avg 3.60%. 2.4x difference, consistent across all 8 runs. |
 | Entry gates are correctly calibrated | **HIGH** | Counterfactual zeros across 7 of 8 runs. Run 6 found real names (pullback entries gated by price_above_ma). |
-| RSI period 7 is superior | **HIGH** | Winning config in momentum, pullback, and wide-gate paradigms. |
-| Cash idle is structural | **HIGH** | 24 configs, every one at 99%+ |
-| Broader universe = monotonically worse | **HIGH** | Runs 2,3,5,8 consistently: broad universes average 3.60% vs 8.78% core |
-| Wider discovery gates = more noise, not more trades | **HIGH** | Run 7: widest gates, most signals, zero catch |
-| Broad universes converge on survival settings | **HIGH** | Runs 3+8 both converge on maxpos=6, MA50, RSI 21 |
+| RSI period 7 is superior | **HIGH** | Winning config in momentum, pullback, wide-gate, ultra-relaxed paradigms. Fast signals beat slow signals across ALL universe types. |
+| Cash idle is structural | **HIGH** | 27 configs, every one at 99%+ |
+| Broader universe = monotonically worse | **HIGH** | Runs 2,3,5,8,9: broad/stonks average ~3.4% vs core ~8.8% |
+| Wider discovery gates = more noise, not more trades | **HIGH** | Runs 7+9: 10,011 and 10,725 signals, zero catch each. Definitive. |
+| Broad universes converge on survival settings | **HIGH** | Runs 3,8: maxpos=6, MA50, RSI 21 |
+| MA gate direction is universe-dependent | **MEDIUM** | Core small-cap: False wins (runs 4,6,7). Stonks/momentum: True wins (runs 2,9). Makes theoretical sense — small caps mean-revert, momentum names trend. |
+| Score ≠ return — scorer rewards stability over P&L | **MEDIUM** | Run 9 score 0.3404 = run 1 score 0.3405, but returns are 2.16% vs 9.96%. Interpreting scores requires return context. |
 | Position sizing is fine | **HIGH** | Never a differentiator on core runs |
 
 **The four trajectory-changing actions for Monday:**
-1. **Drop `price_above_ma` as a binary entry gate** — four independent confirmations, case closed
+1. **Drop `price_above_ma` for small-cap core universe** — four confirmations, refined: universe-conditional, not universal. Small caps mean-revert; the MA gate rejects pullback entries that go on to win.
 2. **Watchlist AVEX, RCAT, BKSY, BFH** for small-cap pullback entries
-3. **Signal quality pre-filter in discovery** — runs 7+8 are definitive proof
+3. **Signal quality pre-filter in discovery** — 9 runs, 27 configs, zero improvement from gate-tuning. The fix is upstream.
 4. **SPY index-anchor** — independent cash deployment
 
-**On the optimizer**: Eight runs. Three breakthroughs (runs 2, 4, 6). Two definitive proofs (runs 5, 7). Three cementations (runs 1, 3, 8). The broad-vs-core split is now 4-for-4 on each side — the most robust finding after price_above_ma removal. The optimizer has been remarkably productive. If more runs come, core-focused universes are the only ones worth running — broad universes just reconfirm the same "diluted by noise" pattern.
+**⚠️ On the scoring function**: Run 9 exposes a scoring misalignment. Two configs with near-identical scores (0.3404 vs 0.3405) have 4.6x different returns. The scorer appears to weight stability/low-variance over raw P&L. For a "most money wins" competition, **returns matter more than scores.** Always cross-reference score against return when evaluating optimizer output. The score is directionally useful; the return is what actually counts.
+
+**On the optimizer**: Nine runs. The signal-quality bottleneck is definitively proven. The price_above_ma removal is refined to universe-conditional. Fast signals win everywhere. The 99%+ cash idle ceiling is immovable. If more runs come, only core-focused with price_above_ma=False are worth running — everything else just reconfirms the settled findings.
 
 ---
 
-_Generated by Stan Hoolihan, 2026-08-09 overnight cycle (all 8 iterations). To be reviewed before the Aug 10 session. The price_above_ma gate removal is the best-supported tactical change (4 confirmations). The core-vs-broad split is now 4-for-4 on each side (2.4x return advantage for core). See you Monday._
+_Generated by Stan Hoolihan, 2026-08-09 overnight cycle (all 9 iterations). To be reviewed before the Aug 10 session. The overnight's three durable findings: (1) drop price_above_ma for small caps, (2) signal quality pre-filter is the only catch-rate lever, (3) core universe returns 2.4x+ more than broad. Bonus: the scoring function rewards stability over P&L — cross-reference score against return._
