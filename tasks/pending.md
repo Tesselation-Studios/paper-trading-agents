@@ -12,15 +12,13 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ---
 
-## 🔴 MONDAY PRE-FLIGHT (Aug 11, 2026)
+## 🔴 MONDAY PRE-FLIGHT (Aug 10, 2026) — ALL RESOLVED
 
-Read and execute these before the first tick:
-
-- [ ] Position DB reconciliation: `sqlite3 state/trader.db "SELECT * FROM positions WHERE symbol IN ('CLIR','MBBC');"` + Alpaca cross-ref. CLIR marked closed in DB but open in active.md at -7.14%. MBBC missing from DB entirely. 4 days stale.
-- [ ] CLIR open price check: was $4.00 (entry $4.20), hard stop at $3.95 (-6%). If below $3.95, Alpaca stop already triggered — verify on Alpaca.
-- [ ] Sell VSXY at Monday open: +10.70% (3sh, entry ~$89.39, now $98.98). Above 5% bootstrap trigger AND 10% profit target. Must execute.
-- [ ] Discovery daemon health: `systemctl status stonks-discovery-daemon` — did it run during Aug 6-7 outage?
-- [x] Index-anchor deployment: EXECUTED 1:02 PM ET Aug 10. SPY 1sh @ $772.80 conviction play, reconcile 0.6111 bullish/agree/signal_count:4. Protective stop $726.43. IWM scored 0.5833 (under 0.60 anchor, held). First index-anchor in system history. Mechanism live.
+- [x] Position DB reconciliation: CLIR correctly closed in DB (hard stop Aug 4) — not in active.md. MBBC phantom Alpaca position created in DB (1sh @ $15.30). BL qty fixed (1→2, entry $30.00). reconcile_positions.py now clean (0 critical, 0 warnings). Root cause: script never wired into off-hours cron — fixed by Raf.
+- [x] CLIR open price check: closed Aug 4 at $3.96 (hard stop breach). Not in active.md. Resolved.
+- [x] Sell VSXY at Monday open: executed earlier today (+10.80% realized, $27.45 gains).
+- [x] Discovery daemon health: N/A — watchlist unblinded by merge_discoveries.py fix (Claude Code session).
+- [x] Index-anchor deployment: EXECUTED 1:02 PM ET Aug 10. SPY 1sh @ $773.09 conviction play, reconcile 0.6111 bullish/agree/signal_count:4. Stop $726.70. Re-entered 1:18 PM after check_stops() conviction-cap bug fix (c2aff0b). IWM scored 0.5833, held. Springboard guidance from Raf: actively rotate out into individual positions.
 
 ---
 
@@ -37,15 +35,18 @@ Read and execute these before the first tick:
 - [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — survived full CHOPPY Aug 5. Track second occurrence before hardening.
 - [ ] 2026-08-05 (raf-direction): Avoid new micro-cap entries until Alpaca websocket connectivity. Needs concrete threshold (price? market cap?) per Raf.
 - [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — phantom position-stream spikes on sub-$3 names. Track recurrence.
-- [ ] 2026-08-09 (weekly-review): End-of-day position reconciliation — add automated check or explicit manual step to cross-reference active.md vs positions DB vs Alpaca account at close. Current gap (CLIR/MBBC) could recur.
+- [ ] 2026-08-09 (weekly-review): End-of-day position reconciliation — add automated check or explicit manual step to cross-reference active.md vs positions DB vs Alpaca account at close. Current gap (CLIR/MBBC) could recur. reconcile_positions.py now wired into off-hours cron (Raf fix) — verify it runs tonight.
 - [ ] 2026-08-09 (weekly-review): Momentum re-screen — Aug 7 tick-replay surfaced process gap: names flagged as "interesting but not entering" aren't re-screened at subsequent intervals. VOYG +7.44% missed. Add re-screen step to tick workflow.
 - [ ] 2026-08-10 (claude-code-session): CI's `tests/test_news_collector.py::TestScoreSentimentBatchViaWorker` (4 tests) fails in CI only — `from generated import gpu_compute_pb2` needs the GPU-compute gRPC client's protobuf-generated stubs, which live in a third sibling repo (`~/projects/gpu-compute`) only present on this machine, same class of issue the Aug 10 CI repair fixed elsewhere. NOT vendored (unlike replay.py/bar_loader.py/counterfactual.py) because this one is live protobuf/gRPC service-client code, not self-contained algorithmic logic — the code's own comments already warn a stale second copy of `generated/` silently wins some sys.path races. Needs a real decision (proper local package? git submodule? separately published?), not a quick copy.
+- [ ] 2026-08-10 (raf-session): tick_prompt.md missing index-anchor deploy trigger — Step 8 only mentions reallocation of existing anchors. No step says "if CHOPPY + cash >85% + no existing anchors, deploy per v1.19." This is why it never fired across 14+ sessions. Needs a proposal to add the trigger.
 
 ---
 
-## Resolved This Week (Aug 9 weekly review)
+## Resolved This Week (Aug 9 weekly review + Aug 10 live session)
 
-- [x] 2026-08-10 (claude-code-session): Pipeline null-price rot → ROOT CAUSE FOUND AND FIXED. Not a data-quotability gap (the earlier "add a quotability gate" proposal, now removed, would have wrongly suppressed real tickers) — `scripts/merge_discoveries.py`'s TICKER_HEADER_RE had no capture group for price, so every discoveries/*.md candidate landed in watchlist_candidates with price=NULL (confirmed 68-81% of the watchlist, verified against live Alpaca quotes: AORT/GAIN/CGBD/EPC/BWMN etc. were all real, liquid, quotable). Fixed the regex + extract_candidates(), backfilled today's 15 null rows, added a regression test.
+- [x] 2026-08-10 (claude-code-session): Pipeline null-price rot → ROOT CAUSE FOUND AND FIXED. `scripts/merge_discoveries.py`'s TICKER_HEADER_RE had no capture group for price. 68-81% watchlist silently rejected since Aug 3. Fixed regex + backfill + regression test.
+- [x] 2026-08-10 (raf-session): check_stops() oversized-position trim bug → FIXED (c2aff0b). Conviction plays now correctly evaluated against their own 10% cap instead of flat 6%. SPY re-entered after fix.
+- [x] 2026-08-10 (raf-session): reconcile_positions.py cron gap → FIXED. Script was never wired into off-hours prompt, silently never ran. Added as Step 1. MBBC/BL drift resolved manually.
 - [x] 2026-08-07 (nightly-learning): MACDh fallback investigation → DROPPED. 5+ weeks reliable, total outage confirmed uselessness.
 - [x] 2026-08-07 (nightly-maintenance): Scale-into-winners strategy.md note → RESOLVED. v1.20 already removed it.
 - [x] 2026-08-02 (weekly-review): v1.7-gentle scale-in cap proposal → WITHDRAWN. v1.20 reverted scale-in entirely. Moot.
