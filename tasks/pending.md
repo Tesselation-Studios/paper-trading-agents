@@ -20,7 +20,7 @@ Read and execute these before the first tick:
 - [ ] CLIR open price check: was $4.00 (entry $4.20), hard stop at $3.95 (-6%). If below $3.95, Alpaca stop already triggered — verify on Alpaca.
 - [ ] Sell VSXY at Monday open: +10.70% (3sh, entry ~$89.39, now $98.98). Above 5% bootstrap trigger AND 10% profit target. Must execute.
 - [ ] Discovery daemon health: `systemctl status stonks-discovery-daemon` — did it run during Aug 6-7 outage?
-- [ ] Index-anchor deployment: if CHOPPY persists and cash >85%, execute SPY/QQQ/IWM per v1.19. 5+ sessions of 90% idle cash. No longer a tracking item — execute.
+- [x] Index-anchor deployment: EXECUTED 1:02 PM ET Aug 10. SPY 1sh @ $772.80 conviction play, reconcile 0.6111 bullish/agree/signal_count:4. Protective stop $726.43. IWM scored 0.5833 (under 0.60 anchor, held). First index-anchor in system history. Mechanism live.
 
 ---
 
