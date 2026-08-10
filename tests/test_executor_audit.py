@@ -578,6 +578,38 @@ class TestSellExitPriceFallback:
             return _FakeResponse({})
         return fake_urlopen
 
+    def test_sell_uses_a_longer_timeout_than_the_buy_path_default(self, monkeypatch, capsys):
+        """2026-08-10: a $0.00 realized_pnl here doesn't just mean a stale
+        training-example feature (the BUY path's concern) -- it silently
+        and permanently corrupts the trade's record, with no after-the-fact
+        reconciliation for closed trades. Confirmed live: VSXY's real
+        +10.80% exit recorded $0.00/0.00% this way, plausibly because
+        wait_for_fill()'s shared 1.0s default didn't give the paper fill
+        enough time to register. Locks in that the SELL path now asks for
+        more time instead of silently reproducing that gap."""
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        calls = []
+        real_wait_for_fill = executor.wait_for_fill
+
+        def spy_wait_for_fill(account, order_id, *args, **kwargs):
+            calls.append(kwargs.get("timeout", args[0] if args else None))
+            return real_wait_for_fill(account, order_id, *args, **kwargs)
+        monkeypatch.setattr(executor, "wait_for_fill", spy_wait_for_fill)
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order33"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "22.74"}],
+            fill_response={"id": "order33", "status": "filled", "filled_avg_price": "11.37"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--close-reason", "bootstrap quick-exit", "--skip-guardrails",
+        ])
+        assert calls == [5.0]
+
     def test_sell_without_price_uses_real_fill_price(self, monkeypatch, capsys):
         conn = trader_db.get_conn()
         trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")

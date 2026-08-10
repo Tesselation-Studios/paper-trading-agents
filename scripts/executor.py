@@ -2317,9 +2317,21 @@ def main():
         # bootstrap quick-exits on 2026-08-03). Now mirrors the BUY path's
         # wait_for_fill() real-fill lookup when --price wasn't supplied, and
         # only truly falls back to entry_price (loudly) if that also fails.
+        #
+        # 2026-08-10: that fix has a gap -- wait_for_fill()'s 1.0s default
+        # timeout (2-3 polls) is fine for the BUY path, where a slow fill
+        # just means slightly-stale training-example features, but here a
+        # miss doesn't just lose a feature, it silently corrupts the
+        # permanent realized_pnl/realized_return_pct record with no
+        # after-the-fact reconciliation for closed trades (unlike open
+        # positions, which reconcile_positions.py now actually catches).
+        # Confirmed live: VSXY's real +10.80% profit-target exit recorded
+        # $0.00/0.00% this way. A few extra seconds here is trivial against
+        # a 300s tick interval; use a longer, dedicated timeout instead of
+        # the shared BUY-path default.
         sell_fill_price = None
         if args.price is None and order.get("id"):
-            filled_sell_order = wait_for_fill(args.account, order.get("id"))
+            filled_sell_order = wait_for_fill(args.account, order.get("id"), timeout=5.0)
             if filled_sell_order and filled_sell_order.get("filled_avg_price"):
                 try:
                     sell_fill_price = float(filled_sell_order["filled_avg_price"])
