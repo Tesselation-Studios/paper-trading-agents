@@ -1,11 +1,11 @@
 # GAIN Position Thesis
 
 - **Entry**: $16.28 avg | 1 shares
-- **Current**: $16.30 (+0.15% unrealized)
-- **Market Value**: $16.30
-- **Unrealized P&L**: $+0.02 (+0.15%)
+- **Current**: $16.32 (+0.25% unrealized)
+- **Market Value**: $16.32
+- **Unrealized P&L**: $+0.04 (+0.25%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-10 16:11:01 UTC
+- **Last sync**: 2026-08-10 16:16:00 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
