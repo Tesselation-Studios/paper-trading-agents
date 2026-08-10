@@ -24,6 +24,9 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ## Open
 
+- [ ] 2026-08-10 (nightly-learning): P&L zero-bug monitoring — 3 closed positions (VSXY/FLXS/CLIR) had 0.00 realized P&L that went undetected across multiple sessions. The SELL exit-price timeout fix (1s→5s, 65c44bc) addresses the cause, but not the detection gap. Add an automated check: after every close, verify realized_pnl != 0.00. If 0, flag and re-fetch from Alpaca. Low priority — only fires on a timeout recurrence.
+- [ ] 2026-08-10 (nightly-learning): SPY index-anchor sizing constraint — at ~$10.4K portfolio, 1 SPY share = 7.4% (>6% cap). Can't hold SPY conviction until portfolio > $12.9K or SPY price drops below ~$625. Use IWM/QQQ/DIA for index-anchor deployment in the meantime (IWM at $301 fits). Not a bug to fix, just a constraint to document in the index-anchor playbook.
+
 - [ ] 2026-08-03 (nightly-maintenance): Track watchlist-to-entry conversion rate by regime. CHOPPY converted at ~2% Aug 3, 0% Aug 4, 6 entries from 7 priced on Aug 5. Need SUSTAINABLE comparison data. ⚠️ No data Aug 6-7 (outage).
 - [ ] 2026-08-03 (tick-replay): CHOPPY index ≠ every name chops — evaluate softening "CHOPPY suppresses all entries" to "CHOPPY suppresses broad sweep but individual names with independent confirmed setups can still enter." Needs more data.
 - [ ] 2026-08-02 (weekly-review): Peak entry timing rule — track RDDT as occurrence #1. If a second comparable loss from early-session momentum-spike entries, harden into strategy.md.
@@ -34,9 +37,9 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 - [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — survived full CHOPPY Aug 5. Track second occurrence before hardening.
 - [ ] 2026-08-05 (raf-direction): Avoid new micro-cap entries until Alpaca websocket connectivity. Needs concrete threshold (price? market cap?) per Raf.
 - [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — phantom position-stream spikes on sub-$3 names. Track recurrence.
-- [ ] 2026-08-09 (weekly-review): End-of-day position reconciliation — add automated check or explicit manual step to cross-reference active.md vs positions DB vs Alpaca account at close. Current gap (CLIR/MBBC) could recur. reconcile_positions.py now wired into off-hours cron (Raf fix) — verify it runs tonight.
+- [x] 2026-08-09 (weekly-review): End-of-day position reconciliation → RESOLVED. reconcile_positions.py ran clean tonight (0 critical, 0 warnings). Now wired into off-hours cron. Daily runs will catch drift.
 - [ ] 2026-08-09 (weekly-review): Momentum re-screen — Aug 7 tick-replay surfaced process gap: names flagged as "interesting but not entering" aren't re-screened at subsequent intervals. VOYG +7.44% missed. Add re-screen step to tick workflow.
-- [ ] 2026-08-10 (raf-session): tick_prompt.md missing index-anchor deploy trigger — Step 8 only mentions reallocation of existing anchors. No step says "if CHOPPY + cash >85% + no existing anchors, deploy per v1.19." This is why it never fired across 14+ sessions. Needs a proposal to add the trigger. Partially addressed by decision_heuristics.md's index_anchor_entry_v1 node (fast-path check in step 8) — re-evaluate whether that alone is sufficient or a harder cash-threshold trigger is still needed after a few more sessions' evidence.
+- [ ] 2026-08-10 (raf-session): tick_prompt.md missing index-anchor deploy trigger — Aug 10 EVIDENCE: IWM and SPY both deployed today via decision_heuristics.md's index_anchor_entry_v1 fast-path. The mechanism IS firing from the tree node, even without a dedicated step-8 trigger. The question is now: does the tree node alone provide sufficient coverage, or was today's deployment unique because a Claude Code session (Raf) explicitly primed the system? Monitor next 2-3 CHOPPY sessions — if index-anchor deploys autonomously from the tree node without human priming, close this item.
 
 ---
 

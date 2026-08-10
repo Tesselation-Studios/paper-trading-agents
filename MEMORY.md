@@ -1,5 +1,5 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-08-09 — weekly review*
+*Updated: 2026-08-10 — nightly learning*
 
 Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix, an escalation, something worth doing but not done yet) live in `tasks/pending.md` — check it at the start of every reflection session.
 
@@ -47,16 +47,27 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 ### MACDh Signal — 5+ Weeks Validated, Graduated to Foundation (NEW Aug 2)
 - **Zero false flips, zero false exits, zero false candidate disqualifications** across 5+ weeks of trading. Every hold on green MACDh was correct. Every bearish MACD disqualification was correct. The near-zero oscillation heuristic (MACDh < 0.005 magnitude with flat price = noise) has never missed. This signal is mature enough to graduate from "tracking" to "foundation" — no further special monitoring needed. It's the baseline.
 
-### Experience Counter — 86 Trades, 19W/29L (Aug 7)
-- **`experience.json`**: 86 total trades, 19 wins, 29 losses, 0 consecutive wins, 3 consecutive losses. Aug 5-7 added 2 trades (likely Alpaca-side stop-outs during the outage window). Win rate: 19/48 closed = 39.6%, down from 41.3% (Aug 5). The bootstrap win streak (8 consecutive from Aug 3-4) ended with BJDX loss. Three consecutive losses is the longest losing streak on record — not alarming given tiny position sizes, but worth watching.
+### Experience Counter — 20W/23L Bankroll, 103 Trades (Aug 10)
+- **`experience.json`**: 103 total trades (executor-tracked), 1 consecutive win, 0 consecutive losses.
+- **`bankroll.py`**: 20 wins, 23 losses, net P&L +$49.01, ceiling $746.26. Corrected Aug 10 from erroneous 13W/19L after 3 zero-P&L positions (VSXY/FLXS/CLIR) were backfilled with real Alpaca fill data. Bankroll is the canonical record; experience.json tracks a different (executor-event) counter.
+- Win rate (bankroll): 20/43 closed = 46.5%. Bootstrap ceiling: ~14-20 more wins to $1,000 threshold.
+- CNH stop-out at -7.22% (Aug 10): broker-side fill slipped past -6% target on gap-down. One data point — not alarming yet but small-cap stop slippage is a reality.
 
-### Position DB Reconciliation Gap — 🔴 Monday Priority (NEW Aug 9)
+### Index-Anchor Mechanism — First Deployment (NEW Aug 10)
+- **IWM index-anchor deployed Aug 10**: reconcile 0.6111 (≥0.60 anchor), MACDh +0.654, RSI 60.1. Conviction play, 1 of 2 earmarked index-anchor slots. The mechanism is now live, not theoretical.
+- **SPY oversized constraint**: 1 SPY share = 7.4% of ~$10.4K portfolio — inherently over 6% cap. Can't hold SPY conviction until portfolio > $12.9K. Math problem, not a strategy bug. IWM at $301 fits.
+- **Raf directive**: index-anchors are springboards — actively rotate out into individual positions with real conviction as they qualify. Normal stop discipline applies.
+
+### P&L Zero-Bug — Systemic Monitoring Gap (NEW Aug 10)
+- **3 closed positions (VSXY, FLXS, CLIR) had 0.00/0.00 realized P&L** — the SELL exit-price fetch in executor.py was timing out silently (1s timeout on Alpaca order-status poll). Fixed to 5s (commit 65c44bc). Went undetected across multiple sessions — a monitoring gap. Bankroll was understated by ~$41 (VSXY +$25.76, FLXS +$2.22, CLIR -$0.44 incorrectly recorded as $0.00 each). Corrected from real Alpaca fills Aug 10.
+
+### Position DB Reconciliation Gap — RESOLVED Aug 10
 - **2 of 15 positions (13% error rate)**: CLIR marked "closed" in positions table but tracked open at -7.14% in active.md. MBBC completely missing from positions table. Flagged Aug 5 nightly synthesis, escalated to Monday priority Aug 7, now 4 days stale. Must be resolved before Monday's first tick — `sqlite3 state/trader.db` check + Alpaca cross-ref. Root cause unknown (write-path bug, timing issue, or manual-entry error). The Aug 2 rule (stop snapshotting position data into active.md) addressed the active.md staleness class but the DB mismatch is a separate class.
 - **Resolved (Aug 5)**: STVN/KEX/DXCM phantom P&L from stale active.md snapshots. BJDX Aug 5 confirmed the pattern: active.md showed +3.47% while live quotes showed $1.00 (entry $1.59). Root cause: writing position data (prices, P&L, share counts) into active.md is inherently stale the moment it's written.
 - **Rule (UPDATED Aug 5 — Raf directive)**: **Stop snapshotting position data into active.md.** Query it on demand: use `get_self_stats` for agent-level P&L and `get_quotes` for live prices. Active.md is for decisions, watchlist state, regime notes — not position data. This eliminates the entire reconciliation gap class.
 
-### Evolve→Execute Pipeline Leak (NEW Jul 26)
-- **Action items from nightly syntheses don't survive overnight**: The next session's tick agent starts fresh from strategy.md + active.md — it never reads the prior day's synthesis. Action items (NVDA trim took 5 days/3 cycles, weekend homework from Jul 17 never resolved) accumulate because there's no carry-forward mechanism. This is a process design gap, not an execution failure. Consider a `tasks/pending.md` or carry-forward section in active.md to bridge the overnight gap.
+### Evolve→Execute Pipeline Leak — RESOLVED (tasks/pending.md)
+- **FIXED via tasks/pending.md**: The carry-forward mechanism now exists. Nightly maintenance/learning reads tasks/pending.md at the start of each run. Items flagged in nightly syntheses now survive into the next reflection session. The original Jul 26 gap is closed.
 
 ### Process & Tooling
 - **Strategy propagation must be verified across all layers (NEW Jul 22)**: v1.3 reverted the CHOPPY/FEAR entry gate, but the tick agent continued applying it for ~2 hours (09:30–11:20 ET). Strategy changes to `strategy.md` need explicit verification: (a) `params.json` reflects the change, (b) `executor.py` code aligns, (c) the agent prompt doesn't carry stale rules forward. Post-revision checklist item.
