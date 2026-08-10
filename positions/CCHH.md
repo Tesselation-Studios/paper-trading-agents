@@ -1,9 +1,9 @@
-# AORT Position Thesis
+# CCHH Position Thesis
 
-- **Entry**: $27.10 avg | 1 shares
-- **Current**: $26.38 (-2.66% unrealized)
-- **Market Value**: $26.38
-- **Unrealized P&L**: $-0.72 (-2.66%)
+- **Entry**: $1.26 avg | 1 shares
+- **Current**: $1.25 (-0.79% unrealized)
+- **Market Value**: $1.25
+- **Unrealized P&L**: $-0.01 (-0.79%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-10 17:16:34 UTC
 

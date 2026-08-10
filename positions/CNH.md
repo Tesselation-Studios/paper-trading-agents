@@ -1,11 +1,11 @@
 # CNH Position Thesis
 
 - **Entry**: $11.08 avg | 1 shares
-- **Current**: $10.60 (-4.33% unrealized)
-- **Market Value**: $10.60
-- **Unrealized P&L**: $-0.48 (-4.33%)
+- **Current**: $10.44 (-5.78% unrealized)
+- **Market Value**: $10.44
+- **Unrealized P&L**: $-0.64 (-5.78%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-10 16:16:00 UTC
+- **Last sync**: 2026-08-10 17:16:34 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

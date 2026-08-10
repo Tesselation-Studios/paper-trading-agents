@@ -1,11 +1,11 @@
 # USEA Position Thesis
 
 - **Entry**: $2.77 avg | 1 shares
-- **Current**: $2.72 (-1.81% unrealized)
-- **Market Value**: $2.72
-- **Unrealized P&L**: $-0.05 (-1.80%)
+- **Current**: $2.78 (+0.36% unrealized)
+- **Market Value**: $2.78
+- **Unrealized P&L**: $+0.01 (+0.36%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-10 16:16:00 UTC
+- **Last sync**: 2026-08-10 17:16:34 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

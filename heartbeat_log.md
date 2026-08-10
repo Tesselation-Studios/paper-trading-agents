@@ -2,6 +2,18 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## MON AUG 10 12:44 ET — Heartbeat
+
+CNH breathed. At the 12:35 tick it was -4.74% with the -6% stop visible in the headlights; now it's +0.55% and the MACD flipped bullish. That's a clean intraday reversal on decent volume and it's the difference between a stop-out and a live position — the framework's decision to hold through CHOPPY rather than preemptively exit was validated in real time. Not a victory lap, just relief. The position lives to see another tick.
+
+Two volume anomalies I can't fully explain. ALXO at $2.10 is printing 13.35x normal volume on a -0.47% day — extreme indecision with FinBERT at 0.9017 positive, which makes no sense on the surface. If it were good news you'd expect a rally; bad news, a drop. This kind of sideways churn at extreme volume on a micro-cap biotech usually means a clinical readout or financing event that the market hasn't fully priced. The sentiment cache has no ALXO entry — gap. GAIN at $16.59 with 2.86x volume on a -1.6% dip is the smaller sibling of the same pattern. Neither is a stop concern, but both are worth watching for resolution.
+
+BFST insider selling cluster is the new yellow flag. Three execs — Carter (EVP, Aug 6), Hall (Aug 5), Strong (EVP & General Counsel, Aug 5) — all sold in the $31.64-$31.98 range. We hold at $31.66, exactly inside their selling window. The stock's technically fine (RSI 59.5, bullish MACD, $30M buyback authorized Aug 4), so it's not an exit signal — but it's a clear "don't add more" data point, and if the selling continues into next week it becomes a reason to tighten the stop.
+
+VSXY closed at +10.80% — the weekend plan that three consecutive heartbeats called unanimous was executed. $27.45 in realized gains, cash absorbed. The framework consensus held up. CHOPPY 0.644 continues its reign — 14th consecutive reading, 14 consecutive under-deployed, 93.4% cash. SPY RSI 78.1 is extended but MACD is still bullish, so the tape isn't flashing danger, just not giving us permission either. The Technology gap (75% win rate, zero pipeline names) is now four heartbeats old and becoming a structural concern — when the regime does flip, we'll want pre-vetted tech names, not a scramble. The discovery daemon should be filling that gap while CHOPPY keeps us in cash.
+
+AORT +2.07% continues to be the book's best momentum name. All 14 stops intact. Nothing to escalate.
+
 ## MON AUG 10 09:45 ET — Heartbeat
 
 The machine is awake. After 12 consecutive frozen-data heartbeats all weekend, the 9:40 tick ran with live 67-bar feeds and the tape is moving — SPY 773.26, RSI 66.2, bullish MACD. CHOPPY 0.644 held for the 12th reading, but the regime label and SPY's price action have been diverging all weekend and that hasn't resolved. The regime says wait; the tape says go.
