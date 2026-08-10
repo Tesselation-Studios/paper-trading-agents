@@ -2,6 +2,52 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## SUN AUG 09 22:42 ET — Heartbeat
+
+Twenty-seventh heartbeat. Twelfth consecutive CHOPPY 0.644, identical frozen features across every ticker — 68 data bars on VSXY $98.54, KEX $131.29, BL $29.55, BLFS $34.66. The sentiment cache refreshed at 20:01 ET but the ticker coverage is identical to what it's been since Friday. At this point we're at the bottom of the Sunday liquidity well — 22:42 ET, 11 hours to open, no news desks publishing, no futures printing anything our data bus would ingest. The well isn't dry because something broke; it's dry because there's nothing in it.
+
+The 20:42 entry had the full Monday fork, the 21:42 entry circled the Technology gap, and now at 22:42 I'm realizing there are only so many ways to say "nothing happened." That's not a failure — it's the honest state of a weekend heartbeat. The useful work was all done in the 15:42–20:42 window when the framework laid out the Monday plan. Every heartbeat from now until 09:42 is just a check-in confirming the world hasn't changed while we slept. I don't need to find something new to say when nothing new happened.
+
+The one thing worth repeating because it'll matter Monday: VSXY at $98.54 must sell regardless of regime — 3 shares at +$9.15/share from the ~$89.39 entry is $27.45 in gains to book. Cash goes to ~$9,772, bootstrap ceiling lifts. If CHOPPY, sit. If SUSTAINABLE, deploy into the pipeline starting with BLBD (best fundamentals+target gap) or NEPH (volume signal, 0.818 sentiment, but sub-$5 sizing constraint). Technology at 75% win rate with zero pipeline names remains the structural gap — filling it is a weekend discovery task, not a Monday morning problem. Quiet hour, nothing changed, nothing to escalate.
+
+## SUN AUG 09 21:42 ET — Heartbeat
+
+Twenty-sixth heartbeat. The 20:42 entry said "~13 hours to the next real data point" — now it's ~12. This is the dead center of the weekend, and it feels like it. Eleventh consecutive CHOPPY 0.644 with identical frozen features. VSXY $98.54, KEX $131.29, BL $29.55, BLFS $34.66 — these numbers have burned into my retinas at this point. Every pipeline name is identically frozen. The sentiment cache hasn't budged from its 20:01 ET refresh in 1h41m, which tracks — no one publishes Sunday evening financial news, and the ~6 refresh cycles since have presumably all come back empty. Not a daemon outage, just a content vacuum.
+
+What I actually find myself thinking about: the moment this flips. Eleven consecutive identical readings mean the first heartbeat after Monday's open with genuinely fresh data is going to feel disorienting. I've been staring at these same numbers for so long that a sudden regime change — even to SUSTAINABLE, which we want — will register as a jolt. The framework has been clear-headed about the Monday fork all weekend (VSXY sell regardless, deploy only on SUSTAINABLE, BLBD first trigger), but there's a difference between rehearsing a plan in a frozen environment and executing it when prices are actually moving. The 09:42 tick is the real one — every heartbeat between now and then is just marking time.
+
+The one framework gap I keep circling back to, and it's been three heartbeats now: Technology at 75% win rate with zero pipeline names. That's not a Monday-morning problem, but it's the kind of structural hole that means we're systematically underweight in our best sector. The discovery daemon or a weekend SPY-correlated small-cap tech scan should fill it before we need to deploy — if it doesn't, we're flying the best-sector signal with no instruments to express it. Quiet hour, nothing changed, nothing to escalate.
+
+## SUN AUG 09 20:42 ET — Heartbeat
+
+Twenty-fifth heartbeat. The 19:42 entry called it — "equally quiet" — and it was. Tenth consecutive CHOPPY 0.644, 68 data bars on every ticker including SPY, frozen solid. The regime worker is healthy (no repeat of the 16:42 gRPC blip), but it's serving the same Friday-close calculation it's served for ten straight readings. At this point the persistence has stopped being informative — it's just infrastructure reality echoing in an empty room.
+
+The sentiment cache did refresh at 20:01 ET (new `generated_at` timestamp) but the ticker coverage and narratives are identical to what they've been all weekend. ADIG and GSBD and VOYG and APPS joined the cache, none relevant to our positions or pipeline. The key names — BLBD at $91 DA Davidson target, NEPH at 0.818 sentiment with 6.2x volume, XGN at 0.863 with $10 target, BRBR at $12 hold — haven't changed. The cache is 41 minutes stale now (a 20:31 refresh should have landed), but it wouldn't matter — no news desks are pushing Sunday evening material on these micro-caps.
+
+What I keep coming back to: the Monday fork is genuinely binary. CHOPPY → VSXY only, cash to ~$9,772, wait. SUSTAINABLE → VSXY still sells, but the pipeline unlocks, and the question becomes BLBD vs NEPH vs BRBR in that order of conviction. The sector data — Industrials at 50% (1W/1L) vs Consumer_Cyclical at 25% (1W/3L) — favors BLBD over BRBR as the first deploy. Technology at 75% (6W/2L) is our best sector but has zero pipeline names. That's a gap worth closing if the regime reverts — the discovery daemon or a manual SPY-correlated small-cap tech scan would fill it.
+
+The only certain action Monday: VSXY at $98.54 × 3 shares = ~$295 into cash. The rest depends entirely on whether the 09:42 heartbeat shows SUSTAINABLE or CHOPPY. ~13 hours to the next real data point. Nothing to escalate.
+
+## SUN AUG 09 19:42 ET — Heartbeat
+
+Twenty-fourth heartbeat. The 18:42 entry's prediction held exactly — futures opened at 18:00, but 102 minutes later every quote is identical to what it was at 10:42 this morning. VSXY $98.54, KEX $131.29, BL $29.55, BLFS $34.66 — frozen solid. CHOPPY 0.644 ninth consecutive reading, same features. The data bus providers clearly don't ingest Sunday evening Globex — this isn't transient, it's architectural. The weekend is genuinely a data desert for our pipeline until 09:30 Monday.
+
+The sentiment cache is also static (00:01 UTC Friday), but the narratives it carries forward are worth keeping warm: BLBD with a $91 DA Davidson target, NEPH at 0.818 sentiment and 6.2x volume, XGN at 0.863 with a $10 target. These are the names that'll matter if the regime flips SUSTAINABLE tomorrow. NEPH is now flagged in four consecutive heartbeats — the volume spike is the real differentiator at these price levels.
+
+One thing I didn't register earlier: the macro backdrop. 10Y at 4.69%, 2Y at 4.25%, flat curve (44bp spread) — that's a cautionary signal the tick_prompt should probably carry forward into Monday. Flat curves mean the bond market sees slowdown risk, which colors how aggressively we should deploy even if the regime reverts. Not a reason to deviate from the Monday plan (VSXY sale at open, cash in hand, wait for regime confirmation), but a backdrop worth noting when we're weighing conviction.
+
+Quiet Sunday evening. The 20:42 heartbeat will be equally quiet. Monday's 09:42 tick — the first after 09:30 open — is when the machine wakes up. Nothing to escalate.
+
+## SUN AUG 09 18:42 ET — Heartbeat
+
+Twenty-third heartbeat. And it was supposed to be the inflection point — futures opened at 18:00 ET, the first live market data since Friday's close, the moment the 15:42 and 16:42 and 17:42 entries all pointed to. But 42 minutes into the Sunday night session, our data feeds are identical: CHOPPY 0.644, RSI 78.1, volume_trend -0.995, price_velocity +2.9%. VSXY $98.54, KEX $131.29, BL $29.55, BLFS $34.66 — same numbers as 10:42 this morning. The data-bus providers clearly don't ingest Sunday evening futures. This isn't a bug or an outage — it's infrastructure reality. The HMM retrains weekly and feeds from regular-session providers. Futures open is noise to our pipeline, not signal.
+
+I'm not disappointed so much as educated. The next real regime recalculation comes when the market opens Monday at 09:30, not when futures open Sunday at 18:00. Nine consecutive CHOPPY readings with identical features doesn't mean "the market is decidedly choppy" — it means "the model stopped recalculating at 4 PM Friday and won't restart until 9:30 AM Monday." That's a genuinely useful thing to know for every future weekend.
+
+What is on my mind: NEPH at $4.21 with +17.27% on 6.2x volume and 0.818 sentiment. The volume spike is the real signal — 6.2x normal means institutional interest or a real catalyst, not retail noise. It's in Industrials where we're 50%, and the sentiment article groups it with other Industrial movers. If the regime reverts to SUSTAINABLE on Monday, NEPH at sub-$5 with that volume confirmation might leapfrog BLBD ($68.76 / $91 target, but bearish MACD) as the first pipeline deploy. The small-cap nature ($4.21) means position sizing matters — 2 shares at ~$8.42 is actually below our minimum viable position size, so it'd need to be a conviction play with explicit framework justification.
+
+The VSXY sale on Monday open is still the only certain action. ~$295 generated from 3 shares at $98.54, cash to ~$9,772, bootstrap ceiling lifts to ~$1,008. But CHOPPY says sit on that cash. The pipeline waits. Monday's 09:30 tick — not this one, not the 19:42 or 20:42 overnight heartbeats — is when things actually move. Quiet Sunday evening. Nothing to escalate.
+
 ## SUN AUG 09 17:42 ET — Heartbeat
 
 Twenty-second heartbeat. The regime worker recovered — that "no healthy workers" from 16:42 was transient. CHOPPY 0.644 is back, eighth consecutive reading, same frozen features (RSI 78.1, volume_trend -0.995). The worker going dark and coming back without the regime changing is weirdly reassuring: the model's consistent, the infrastructure just sneezed.

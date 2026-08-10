@@ -1,11 +1,11 @@
 # MBBC Position Thesis
 
 - **Entry**: $15.30 avg | 1 shares
-- **Current**: $15.10 (-1.31% unrealized)
-- **Market Value**: $15.10
-- **Unrealized P&L**: $-0.20 (-1.31%)
+- **Current**: $15.11 (-1.24% unrealized)
+- **Market Value**: $15.11
+- **Unrealized P&L**: $-0.19 (-1.24%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-09 22:00:39 UTC
+- **Last sync**: 2026-08-10 13:05:45 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
