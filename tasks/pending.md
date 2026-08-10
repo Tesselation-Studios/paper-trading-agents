@@ -39,6 +39,7 @@ Read and execute these before the first tick:
 - [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — phantom position-stream spikes on sub-$3 names. Track recurrence.
 - [ ] 2026-08-09 (weekly-review): End-of-day position reconciliation — add automated check or explicit manual step to cross-reference active.md vs positions DB vs Alpaca account at close. Current gap (CLIR/MBBC) could recur.
 - [ ] 2026-08-09 (weekly-review): Momentum re-screen — Aug 7 tick-replay surfaced process gap: names flagged as "interesting but not entering" aren't re-screened at subsequent intervals. VOYG +7.44% missed. Add re-screen step to tick workflow.
+- [ ] 2026-08-10 (claude-code-session): CI's `tests/test_news_collector.py::TestScoreSentimentBatchViaWorker` (4 tests) fails in CI only — `from generated import gpu_compute_pb2` needs the GPU-compute gRPC client's protobuf-generated stubs, which live in a third sibling repo (`~/projects/gpu-compute`) only present on this machine, same class of issue the Aug 10 CI repair fixed elsewhere. NOT vendored (unlike replay.py/bar_loader.py/counterfactual.py) because this one is live protobuf/gRPC service-client code, not self-contained algorithmic logic — the code's own comments already warn a stale second copy of `generated/` silently wins some sys.path races. Needs a real decision (proper local package? git submodule? separately published?), not a quick copy.
 
 ---
 

@@ -4,3 +4,4 @@ pandas-ta
 alpaca-py
 grpcio
 python-dotenv
+pyarrow
