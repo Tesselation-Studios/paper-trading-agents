@@ -1,9 +1,9 @@
-# HLN Position Thesis
+# ALXO Position Thesis
 
-- **Entry**: $10.20 avg | 1 shares
-- **Current**: $9.91 (-2.79% unrealized)
-- **Market Value**: $9.91
-- **Unrealized P&L**: $-0.28 (-2.79%)
+- **Entry**: $2.12 avg | 1 shares
+- **Current**: $2.10 (-0.94% unrealized)
+- **Market Value**: $2.10
+- **Unrealized P&L**: $-0.02 (-0.94%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-10 16:11:01 UTC
 
