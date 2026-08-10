@@ -36,6 +36,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROPOSALS_DIR = REPO_ROOT / "proposals"
 
 AUTO_TIER_FILES = {"strategy.md", "params.json"}
+# 2026-08-10: decision_heuristics.md is DELIBERATELY not in this set, even
+# though its node content is largely a restatement of strategy.md rules.
+# It's brand-new infrastructure with no track record that now directly
+# controls capital-sizing decisions (via conviction tier) -- a materially
+# higher-stakes edit than a strategy.md prose tweak. Revisit after ~90 days
+# or 5-10 review_required cycles that are pure rubber-stamps with no
+# substantive edits at review time (see skills/decision-tree.md).
 FORBIDDEN_FILES = {"openclaw.json"}
 
 

@@ -323,11 +323,12 @@ def load_params() -> Dict[str, Any]:
 PROTECTIVE_STOP_ORDER_TYPES = ("stop", "stop_limit", "trailing_stop")
 
 # 2026-08-10 (Raf's direction): index-anchor positions are exempt from the
-# oversized-position trim on the upside -- see strategy.md's Index-anchor
-# section, "Sizing exception." Mirrors strategy.md's own eligible-instrument
-# whitelist (broad, mega-cap-liquid, non-leveraged index ETFs only) rather
-# than a new DB column, since that whitelist is already the canonical
-# definition of "is this ticker an index anchor" used everywhere else.
+# oversized-position trim on the upside -- see decision_heuristics.md's
+# index_anchor_entry_v1 node, "Sizing guidance." Mirrors that node's own
+# eligible-instrument whitelist (broad, mega-cap-liquid, non-leveraged index
+# ETFs only) rather than a new DB column, since that whitelist is already
+# the canonical definition of "is this ticker an index anchor" used
+# everywhere else.
 INDEX_ANCHOR_TICKERS = frozenset({"SPY", "QQQ", "DIA", "IWM"})
 
 

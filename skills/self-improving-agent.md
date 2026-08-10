@@ -25,3 +25,13 @@ The pre-trade `reconcile` call above (recommendation, confidence, per-signal det
 **Signals with fewer than 10 labeled examples are marked `insufficient_data`, not given a hit rate.** Below that threshold, `reconcile_signals()`'s output is identical to the fixed-weight baseline for that signal — don't read anything into it. Check `state/signal_scorecard.json` periodically (off-hours is a good time) to see when a signal crosses the threshold — that's when its `scorecard_multiplier` starts moving off 1.0 and its weight in the reconciled read starts actually shifting based on whether it's been right.
 
 This is deliberately not a learned ML model. It's the simplest thing that's honest about small-sample sizes — see `scripts/signals.py`'s module docstring for why.
+
+## Decision-tree node tags — a separate `--features` namespace, not a signal
+
+`decision_heuristics.md` (fast-path heuristics, `skills/decision-tree.md`) uses the same `--features` JSON blob but a different key shape — a tree-node match isn't a directional read the way a signal is, it's "this proven pattern fired." When `tick_prompt.md` step 6 or 8's fast-path check applies, add:
+
+```json
+{"tree_node": "<node-id>", "tree_action_taken": "followed"|"overridden"}
+```
+
+Also cite `[tree:<node-id>]` in `active.md`/`--rationale`. `scripts/tree_scorecard.py` (sibling to `signal_scorecard.py`, same `min_samples`/`insufficient_data` contract) reads this tag to compute each node's real hit rate, which is what earns a node promotion to `high-conviction` sizing tier (`params.json: decision_tree.tier_promotion`). Don't fold `tree_node`/`tree_action_taken` into the signal-scoring keys above — `signal_scorecard.py`'s `score_signals()` expects a `{"direction": ..., "confidence": ...}` shape per key, and a tree tag isn't that.

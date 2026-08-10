@@ -24,3 +24,7 @@ Run during nightly Step 3 (Evolve). Every guardrail added this week (NVDA trim, 
 ## Why escalate instead of self-mechanize
 
 Every mechanical fix built this week required real engineering judgment beyond a single tick's budget — reading the exact call site, writing tests, verifying against live data before trusting it near real trades. That's Claude Code / a dedicated session's job, not a 30-minute nightly maintenance window. This skill's job is *noticing* reliably, not *building*.
+
+## Also: `decision_heuristics.md` drift check
+
+Each `Active`-tier node in `decision_heuristics.md` (see `skills/decision-tree.md` for the full lifecycle) cites an `Origin` — usually a specific `strategy.md` rule/version it restates. As part of this same nightly sweep, check whether that cited rule still reads the way the node's `Trigger`/`Recommended action` fields assume. If `strategy.md` changed (a version bump, a reworded rule) without the corresponding node being updated in the same edit, that's drift — write it into this cycle's journal Evolve section (which node, what changed in strategy.md, what the node still says) and escalate the same way as a ⚠️ mechanize candidate. Do not silently edit `decision_heuristics.md` yourself — like any other change to that file, a fix goes through `evolution_proposal.py` (`review_required`, see `skills/decision-tree.md`), not a direct nightly edit.
