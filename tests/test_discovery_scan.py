@@ -179,7 +179,9 @@ class TestWriteDiscoveriesFile:
                         "news_headline": None, "sentiment": None}]
         path = tmp_path / "2026-07-23.md"
         discovery_scan.write_discoveries_file(candidates, 1.0, 50.0, path=path)
-        assert merge_discoveries.extract_candidates(path.read_text()) == [{"ticker": "AAA", "price": 12.34}]
+        assert merge_discoveries.extract_candidates(path.read_text()) == [
+            {"ticker": "AAA", "price": 12.34, "rsi": 55.0, "volume_ratio": 1.5},
+        ]
 
     def test_second_write_same_day_appends_not_overwrites(self, tmp_path):
         """2026-07-24 bug fix: a second write on the same day (e.g.
@@ -196,7 +198,10 @@ class TestWriteDiscoveriesFile:
             [{"ticker": "BBB", "price": 8.0, "rsi": 60.0, "volume_ratio": 1.2,
               "news_headline": None, "sentiment": None}], 1.0, 50.0, path=path)
         tickers = merge_discoveries.extract_candidates(path.read_text())
-        assert tickers == [{"ticker": "AAA", "price": 12.34}, {"ticker": "BBB", "price": 8.0}]
+        assert tickers == [
+            {"ticker": "AAA", "price": 12.34, "rsi": 55.0, "volume_ratio": 1.5},
+            {"ticker": "BBB", "price": 8.0, "rsi": 60.0, "volume_ratio": 1.2},
+        ]
 
     def test_duplicate_ticker_same_day_not_appended_twice(self, tmp_path):
         sys.path.insert(0, str(SCRIPTS_DIR))
@@ -207,7 +212,7 @@ class TestWriteDiscoveriesFile:
         discovery_scan.write_discoveries_file([candidate], 1.0, 50.0, path=path)
         discovery_scan.write_discoveries_file([candidate], 1.0, 50.0, path=path)
         tickers = merge_discoveries.extract_candidates(path.read_text())
-        assert tickers == [{"ticker": "AAA", "price": 12.34}]
+        assert tickers == [{"ticker": "AAA", "price": 12.34, "rsi": 55.0, "volume_ratio": 1.5}]
 
     def test_freeform_candidate_without_rsi_writes_source_and_note(self, tmp_path):
         """Freeform-discovery candidates don't have a technical-screen

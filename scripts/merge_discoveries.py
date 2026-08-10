@@ -30,6 +30,8 @@ DISCOVERIES_DIR = WORKSPACE_DIR / "discoveries"
 PARAMS_PATH = WORKSPACE_DIR / "params.json"
 
 TICKER_HEADER_RE = re.compile(r"^## ([A-Z]{1,5}) — \$([0-9.]+)", re.MULTILINE)
+RSI_LINE_RE = re.compile(r"^- RSI\(14\): ([0-9.]+)(?:, volume ([0-9.]+)x 20d avg)?", re.MULTILINE)
+NEWS_LINE_RE = re.compile(r'^- News: "(.+?)" \(sentiment ([+-]?[0-9.]+|n/a)\)', re.MULTILINE)
 
 # Signal columns carried straight through from a discovery-pool candidate
 # dict onto the watchlist row. Keys are identical on both sides (the pool's
@@ -47,15 +49,45 @@ def latest_discoveries_file(date: str = None) -> Path | None:
 
 
 def extract_candidates(text: str) -> list[dict]:
-    """Parse ## TICKER — $PRICE headers out of a discoveries/*.md file.
-    Was ticker-only until 2026-08-10 -- the regex had no capture group for
-    the price sitting right next to the ticker, so every discoveries/*.md
-    candidate landed in watchlist_candidates with price=NULL and got
-    silently rejected downstream (68-81% of the watchlist, confirmed live
-    against real Alpaca quotes -- not a data-quotability gap, the price
-    was right there in the file and just never parsed out)."""
-    return [{"ticker": ticker, "price": float(price)}
-            for ticker, price in TICKER_HEADER_RE.findall(text)]
+    """Parse ## TICKER — $PRICE headers (plus the RSI/volume/sentiment lines
+    written right under each one by discovery_scan.write_discoveries_file)
+    out of a discoveries/*.md file.
+
+    Was ticker-only until 2026-08-10 -- the header regex had no capture
+    group for the price sitting right next to the ticker, so every
+    discoveries/*.md candidate landed in watchlist_candidates with
+    price=NULL and got silently rejected downstream (68-81% of the
+    watchlist, confirmed live against real Alpaca quotes -- not a
+    data-quotability gap, the price was right there in the file and just
+    never parsed out). Same day, same fix needed for the sibling fields:
+    RSI/volume_ratio/sentiment/news_headline were sitting right below the
+    header too and were being thrown away the same way -- 45% of the
+    watchlist entering decisions with real, already-computed technicals
+    silently replaced with nothing.
+
+    macd_hist is NOT parsed here because write_discoveries_file() never
+    writes it in the first place for this candidate source -- nothing is
+    being dropped at this layer, it was never captured upstream. Only
+    discovery_pool.db-sourced candidates (the other ingestion path, see
+    _split_candidate's dict branch) carry macd_hist."""
+    candidates = []
+    headers = list(TICKER_HEADER_RE.finditer(text))
+    for i, m in enumerate(headers):
+        block_end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        block = text[m.end():block_end]
+        candidate = {"ticker": m.group(1), "price": float(m.group(2))}
+        rsi_m = RSI_LINE_RE.search(block)
+        if rsi_m:
+            candidate["rsi"] = float(rsi_m.group(1))
+            if rsi_m.group(2):
+                candidate["volume_ratio"] = float(rsi_m.group(2))
+        news_m = NEWS_LINE_RE.search(block)
+        if news_m:
+            candidate["news_headline"] = news_m.group(1)
+            if news_m.group(2) != "n/a":
+                candidate["sentiment"] = float(news_m.group(2))
+        candidates.append(candidate)
+    return candidates
 
 
 def _split_candidate(entry) -> tuple[str, dict]:

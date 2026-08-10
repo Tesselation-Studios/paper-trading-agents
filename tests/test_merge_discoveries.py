@@ -104,6 +104,37 @@ class TestExtractCandidates:
         )
         assert merge_discoveries.extract_candidates(text) == [{"ticker": "PLTR", "price": 132.34}]
 
+    def test_parses_rsi_volume_and_sentiment_lines(self):
+        """Regression test for the 2026-08-10 sibling bug: RSI/volume/
+        sentiment were sitting right under the header the same way price
+        was, and got thrown away the same way -- 45% of the watchlist
+        entering decisions with real, already-computed technicals silently
+        replaced with nothing."""
+        text = (
+            "## PLTR — $132.34\n"
+            "- RSI(14): 62.3, volume 1.42x 20d avg\n"
+            "- Source: freeform\n"
+            '- News: "Reuters: PLTR wins DoD contract" (sentiment +0.30)\n\n'
+            "## IOVA — $5.48\n"
+            "- RSI(14): 48.0\n"
+            "- News: none found — technical signal only\n"
+        )
+        assert merge_discoveries.extract_candidates(text) == [
+            {"ticker": "PLTR", "price": 132.34, "rsi": 62.3, "volume_ratio": 1.42,
+             "news_headline": "Reuters: PLTR wins DoD contract", "sentiment": 0.30},
+            {"ticker": "IOVA", "price": 5.48, "rsi": 48.0},
+        ]
+
+    def test_sentiment_na_is_not_parsed_as_a_number(self):
+        text = (
+            "## ZZZ — $7.50\n"
+            "- RSI(14): 55.0\n"
+            '- News: "ZZZ halted for volatility" (sentiment n/a)\n'
+        )
+        candidates = merge_discoveries.extract_candidates(text)
+        assert candidates[0]["news_headline"] == "ZZZ halted for volatility"
+        assert "sentiment" not in candidates[0]
+
     def test_no_headers_returns_empty(self):
         text = "# Probe Discovery\n\nNo picks worth flagging today.\n"
         assert merge_discoveries.extract_candidates(text) == []
@@ -215,6 +246,25 @@ class TestMerge:
         candidates = _candidates(merge_env["db_path"])
         assert candidates["AORT"]["price"] == 27.15
         assert candidates["GAIN"]["price"] == 16.62
+
+    def test_rsi_volume_sentiment_from_discoveries_file_lands_in_db(self, merge_env):
+        """Sibling regression test: same bug shape, for the fields sitting
+        below the price on the same header line (RSI/volume/sentiment) --
+        also thrown away before today's fix, also confirmed live (45% of
+        the watchlist)."""
+        path = merge_env["discoveries_dir"] / "2026-07-22.md"
+        path.write_text(
+            "# Probe Discovery — 2026-07-22\n\n"
+            "## AORT — $27.15\n"
+            "- RSI(14): 62.3, volume 1.42x 20d avg\n"
+            '- News: "AORT wins DoD contract" (sentiment +0.30)\n'
+        )
+        merge_discoveries.merge()
+        row = _candidates(merge_env["db_path"])["AORT"]
+        assert row["rsi"] == 62.3
+        assert row["volume_ratio"] == 1.42
+        assert row["news_headline"] == "AORT wins DoD contract"
+        assert row["sentiment"] == 0.30
 
 
 # ─────────────────────────────────────────────────────────────────────────────
