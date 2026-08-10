@@ -320,19 +320,34 @@ class TestScoreSentimentBatchViaWorker:
 
         scores = news_collector._score_sentiment_batch_via_worker(["a", "b"])
         assert scores == pytest.approx([0.9, -0.8])
+        # 2026-08-10: LAST_WORKER_CALL_OK is the real success/failure signal
+        # discovery_daemon.py's health tracking depends on -- confirmed
+        # missing before (the field that WAS updated, last_finbert_
+        # confirmation_at, updated on every attempt regardless of outcome).
+        assert news_collector.LAST_WORKER_CALL_OK is True
 
     def test_submit_returning_none_falls_back(self, monkeypatch):
         self._install_fake_worker_pool(monkeypatch, submit_returns=None)
         assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+        assert news_collector.LAST_WORKER_CALL_OK is False
 
     def test_job_not_completed_falls_back(self, monkeypatch):
         from generated import gpu_compute_pb2 as pb
         self._install_fake_worker_pool(monkeypatch, phase=pb.JobPhase.FAILED)
         assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+        assert news_collector.LAST_WORKER_CALL_OK is False
 
     def test_wait_for_job_timeout_returns_none_falls_back(self, monkeypatch):
         self._install_fake_worker_pool(monkeypatch, job_id=None)
         assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+        assert news_collector.LAST_WORKER_CALL_OK is False
+
+    def test_gpu_client_import_error_sets_worker_not_ok(self, monkeypatch):
+        """The other failure path -- generated/orchestrator.gpu_client
+        itself unimportable -- never reaches WorkerPool at all."""
+        monkeypatch.setitem(sys.modules, "orchestrator.gpu_client", None)
+        assert news_collector._score_sentiment_batch_via_worker(["a"]) is None
+        assert news_collector.LAST_WORKER_CALL_OK is False
 
     def test_import_error_falls_back_without_raising(self, monkeypatch):
         # Simulates gpu-compute not being importable at all (e.g. GPU_COMPUTE_ROOT

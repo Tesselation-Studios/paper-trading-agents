@@ -261,6 +261,52 @@ class TestMaybeConfirmNews:
         # should not raise
         new_state = discovery_daemon.maybe_confirm_news(conn, cursor_state, config, now="2026-07-27T12:00:00+00:00")
         assert new_state["last_finbert_confirmation_at"] == "2026-07-27T12:00:00+00:00"
+        assert new_state["last_finbert_failure_at"] == "2026-07-27T12:00:00+00:00"
+
+    # ── Real success/failure tracking (2026-08-10) ─────────────────────────
+    # last_finbert_confirmation_at updates on every attempt regardless of
+    # outcome (it's the cadence gate) -- confirmed live this looked freshly
+    # "healthy" the whole week the real worker was unreachable ~90-98% of
+    # the time, because score_sentiment()/score_sentiment_batch() fall back
+    # to the keyword scorer silently, no exception ever reaches
+    # maybe_confirm_news's try/except. news_collector.LAST_WORKER_CALL_OK is
+    # the real signal, set on every worker round-trip regardless of whether
+    # the caller ends up using the result or the fallback.
+
+    def test_records_success_when_worker_actually_responded(self, conn, monkeypatch):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "volume_ratio": 1.5, "in_band": True}],
+            universe_generation=1, screened_at="2026-07-27T12:00:00+00:00",
+        )
+
+        def fake_confirm(candidates, top_n=6):
+            discovery_daemon.discovery_scan.news_collector.LAST_WORKER_CALL_OK = True
+            return [dict(c, sentiment=0.4, news_headline="AAA news") for c in candidates]
+        monkeypatch.setattr(discovery_daemon.discovery_scan, "confirm_with_news", fake_confirm)
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        new_state = discovery_daemon.maybe_confirm_news(conn, cursor_state, config, now="2026-07-27T12:00:00+00:00")
+        assert new_state["last_finbert_success_at"] == "2026-07-27T12:00:00+00:00"
+        assert new_state["last_finbert_failure_at"] is None
+
+    def test_records_failure_when_worker_silently_fell_back(self, conn, monkeypatch):
+        """The dangerous case: confirm_with_news() returns cleanly (no
+        exception -- fallback scores look like valid data), but the worker
+        itself never actually responded."""
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "volume_ratio": 1.5, "in_band": True}],
+            universe_generation=1, screened_at="2026-07-27T12:00:00+00:00",
+        )
+
+        def fake_confirm(candidates, top_n=6):
+            discovery_daemon.discovery_scan.news_collector.LAST_WORKER_CALL_OK = False
+            return [dict(c, sentiment=0.4, news_headline="AAA news") for c in candidates]  # keyword fallback
+        monkeypatch.setattr(discovery_daemon.discovery_scan, "confirm_with_news", fake_confirm)
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        new_state = discovery_daemon.maybe_confirm_news(conn, cursor_state, config, now="2026-07-27T12:00:00+00:00")
+        assert new_state["last_finbert_failure_at"] == "2026-07-27T12:00:00+00:00"
+        assert new_state["last_finbert_success_at"] is None
 
 
 class TestDaemonHealth:
@@ -289,6 +335,46 @@ class TestDaemonHealth:
             max_staleness_seconds=60, now="2026-07-27T12:05:00+00:00", cursor_state_path=path,
         )
         assert result["healthy"] is False
+
+    # ── sentiment_worker_ok (2026-08-10) — separate from the loop's own
+    # `healthy` flag on purpose: a degraded sentiment worker doesn't mean
+    # the discovery loop itself is broken. ──────────────────────────────
+
+    def test_sentiment_worker_ok_none_when_never_recorded(self, tmp_path):
+        path = tmp_path / "state.json"
+        state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        state["last_cycle_completed_at"] = "2026-07-27T12:00:00+00:00"
+        discovery_daemon.save_cursor_state(state, path=path)
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now="2026-07-27T12:05:00+00:00", cursor_state_path=path,
+        )
+        assert result["sentiment_worker_ok"] is None
+
+    def test_sentiment_worker_ok_true_when_success_is_most_recent(self, tmp_path):
+        path = tmp_path / "state.json"
+        state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        state["last_cycle_completed_at"] = "2026-07-27T12:00:00+00:00"
+        state["last_finbert_failure_at"] = "2026-07-27T10:00:00+00:00"
+        state["last_finbert_success_at"] = "2026-07-27T11:00:00+00:00"
+        discovery_daemon.save_cursor_state(state, path=path)
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now="2026-07-27T12:05:00+00:00", cursor_state_path=path,
+        )
+        assert result["sentiment_worker_ok"] is True
+
+    def test_sentiment_worker_ok_false_when_failure_is_most_recent(self, tmp_path):
+        """The exact confirmed-live scenario: worker's been down for a
+        week, last real success is stale, most recent attempt failed."""
+        path = tmp_path / "state.json"
+        state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        state["last_cycle_completed_at"] = "2026-08-10T12:00:00+00:00"
+        state["last_finbert_success_at"] = "2026-08-03T09:00:00+00:00"
+        state["last_finbert_failure_at"] = "2026-08-10T11:55:00+00:00"
+        discovery_daemon.save_cursor_state(state, path=path)
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now="2026-08-10T12:05:00+00:00", cursor_state_path=path,
+        )
+        assert result["sentiment_worker_ok"] is False
 
 
 class TestCheckHealthCLI:

@@ -73,6 +73,17 @@ GPU_COMPUTE_ROOT = os.environ.get("GPU_COMPUTE_ROOT", str(Path.home() / "project
 sys.path.insert(0, GPU_COMPUTE_ROOT)
 SENTIMENT_JOB_TIMEOUT = int(os.environ.get("SENTIMENT_JOB_TIMEOUT", "30"))
 
+# 2026-08-10: score_sentiment_batch()/score_sentiment() fall back to the
+# keyword scorer silently -- correct fail-open behavior for a live tick,
+# but it meant nothing outside this module could tell "real FinBERT" apart
+# from "worker's been unreachable for days" (confirmed live: ~90-98% of
+# news_cache.sentiment_score since the 2026-08-03 gpu-compute migration are
+# keyword-scorer output, not FinBERT). LAST_WORKER_CALL_OK is set on every
+# _score_sentiment_batch_via_worker() call so callers (discovery_daemon.py's
+# maybe_confirm_news) can persist real success/failure instead of just
+# "we attempted it," which is all the previous health field tracked.
+LAST_WORKER_CALL_OK: Optional[bool] = None
+
 ALPACA_NEWS_URL = "https://data.alpaca.markets/v1beta1/news"
 
 # ── RSS Feed Sources ──────────────────────────────────────────────────────────
@@ -246,11 +257,13 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
     if GPU_COMPUTE_ROOT in sys.path:
         sys.path.remove(GPU_COMPUTE_ROOT)
     sys.path.insert(0, GPU_COMPUTE_ROOT)
+    global LAST_WORKER_CALL_OK
     try:
         from generated import gpu_compute_pb2 as pb
         from orchestrator.gpu_client import WorkerPool
     except ImportError as e:
         log.warning("gpu_client unavailable (%s), falling back to keyword sentiment", e)
+        LAST_WORKER_CALL_OK = False
         return None
 
     async def _run() -> Optional[List[float]]:
@@ -268,7 +281,7 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
             await pool.close()
 
     try:
-        return asyncio.run(_run())
+        result = asyncio.run(_run())
     except Exception as e:
         try:
             import generated as _gen_diag
@@ -284,7 +297,14 @@ def _score_sentiment_batch_via_worker(texts: List[str]) -> Optional[List[float]]
         except Exception as diag_e:
             diag = f"diag failed: {diag_e}"
         log.warning("Sentiment worker call failed (%s), falling back to keyword sentiment [%s]", e, diag)
+        LAST_WORKER_CALL_OK = False
         return None
+
+    LAST_WORKER_CALL_OK = result is not None
+    if result is None:
+        log.warning("Sentiment worker returned no result (job failed/timed out/bad response), "
+                    "falling back to keyword sentiment")
+    return result
 
 
 def score_sentiment_batch(texts: List[str]) -> List[float]:

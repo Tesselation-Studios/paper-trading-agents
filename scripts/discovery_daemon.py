@@ -39,6 +39,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import discovery_db  # noqa: E402
@@ -105,6 +106,14 @@ DEFAULT_CURSOR_STATE = {
     "last_cycle_completed_at": None,
     "last_cycle_status": None,
     "last_finbert_confirmation_at": None,
+    # 2026-08-10: last_finbert_confirmation_at updates on every attempt
+    # regardless of outcome (it's a cadence gate, not a health signal) --
+    # confirmed live, it looked freshly "healthy" the whole week the real
+    # FinBERT worker was unreachable ~90-98% of the time and every score
+    # was silently the keyword-scorer fallback instead. These track the
+    # real outcome, from news_collector.LAST_WORKER_CALL_OK.
+    "last_finbert_success_at": None,
+    "last_finbert_failure_at": None,
     "cycles_completed_lifetime": 0,
 }
 
@@ -266,11 +275,39 @@ def maybe_confirm_news(conn, cursor_state: dict, config: dict, now: str = None) 
             discovery_db.record_news_confirmation(
                 conn, c["ticker"], c.get("sentiment"), c.get("news_headline"), now,
             )
+        # score_sentiment()/score_sentiment_batch() fall back to the keyword
+        # scorer silently -- no exception reaches here even when the worker
+        # never responded, which is exactly how this went unnoticed for a
+        # week. LAST_WORKER_CALL_OK reflects the real outcome of the last
+        # worker round-trip made inside confirm_with_news() above.
+        worker_ok = discovery_scan.news_collector.LAST_WORKER_CALL_OK
+        if worker_ok is True:
+            cursor_state["last_finbert_success_at"] = now
+        elif worker_ok is False:
+            cursor_state["last_finbert_failure_at"] = now
     except Exception:
-        pass  # best-effort -- never block/kill the cheap loop over a flaky news/FinBERT call
+        cursor_state["last_finbert_failure_at"] = now  # best-effort -- never block/kill the cheap loop over a flaky news/FinBERT call
 
     cursor_state["last_finbert_confirmation_at"] = now
     return cursor_state
+
+
+def _sentiment_worker_ok(state: dict) -> Optional[bool]:
+    """2026-08-10: separate from the loop's own `healthy` flag on purpose --
+    a degraded sentiment worker doesn't mean the discovery loop itself is
+    broken, but it was invisible either way since last_finbert_confirmation_at
+    updates on every attempt regardless of outcome. True/False once either
+    outcome has been recorded at least once; None if neither has (fresh
+    daemon, or a version before this field existed)."""
+    success_at = state.get("last_finbert_success_at")
+    failure_at = state.get("last_finbert_failure_at")
+    if success_at is None and failure_at is None:
+        return None
+    if failure_at is None:
+        return True
+    if success_at is None:
+        return False
+    return datetime.fromisoformat(success_at) >= datetime.fromisoformat(failure_at)
 
 
 def daemon_health(max_staleness_seconds: int = None, now: str = None, cursor_state_path: Path = None) -> dict:
@@ -283,7 +320,8 @@ def daemon_health(max_staleness_seconds: int = None, now: str = None, cursor_sta
     last_completed = state.get("last_cycle_completed_at")
 
     if last_completed is None:
-        return {"healthy": False, "last_cycle_completed_at": None, "last_cycle_status": state.get("last_cycle_status")}
+        return {"healthy": False, "last_cycle_completed_at": None, "last_cycle_status": state.get("last_cycle_status"),
+                "sentiment_worker_ok": _sentiment_worker_ok(state)}
 
     if max_staleness_seconds is None:
         config = load_config()
@@ -297,6 +335,7 @@ def daemon_health(max_staleness_seconds: int = None, now: str = None, cursor_sta
         "healthy": healthy,
         "last_cycle_completed_at": last_completed,
         "last_cycle_status": state.get("last_cycle_status"),
+        "sentiment_worker_ok": _sentiment_worker_ok(state),
     }
 
 
