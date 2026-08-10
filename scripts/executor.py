@@ -322,6 +322,14 @@ def load_params() -> Dict[str, Any]:
 
 PROTECTIVE_STOP_ORDER_TYPES = ("stop", "stop_limit", "trailing_stop")
 
+# 2026-08-10 (Raf's direction): index-anchor positions are exempt from the
+# oversized-position trim on the upside -- see strategy.md's Index-anchor
+# section, "Sizing exception." Mirrors strategy.md's own eligible-instrument
+# whitelist (broad, mega-cap-liquid, non-leveraged index ETFs only) rather
+# than a new DB column, since that whitelist is already the canonical
+# definition of "is this ticker an index anchor" used everywhere else.
+INDEX_ANCHOR_TICKERS = frozenset({"SPY", "QQQ", "DIA", "IWM"})
+
 
 def _order_type_of(order: Dict[str, Any]) -> str:
     return str(order.get("type") or order.get("order_type") or "").lower()
@@ -1767,11 +1775,20 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
             # function's docstring), just never propagated to this sibling
             # check. Confirmed live: SPY index-anchor bought at 7.4%, trimmed
             # (closed, 1 share) 3.5 minutes later citing the 6% cap.
+            #
+            # 2026-08-10: index-anchor tickers (INDEX_ANCHOR_TICKERS) are a
+            # further, deliberate exception on top of that -- exempt from
+            # the oversized check entirely on the upside, not just capped at
+            # conviction_play's (now 20%) cap. Current policy is "don't
+            # actively buy more into it, sell it down for cash instead" (see
+            # strategy.md), not "force-trim it back down" if it organically
+            # grows past the standard conviction cap.
+            is_index_anchor = ticker in conviction_play_tickers and ticker in INDEX_ANCHOR_TICKERS
             oversized_cap = (
                 _size_cap_pct_for(risk, "conviction")[0] if ticker in conviction_play_tickers
                 else max_position_pct
             )
-            if current_pct > oversized_cap:
+            if not is_index_anchor and current_pct > oversized_cap:
                 target_value = portfolio_value * oversized_cap / 100
                 excess_value = market_value - target_value
                 shares_to_sell = min(qty_held, max(1, math.ceil(excess_value / current_price)))

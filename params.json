@@ -44,10 +44,10 @@
     },
     "conviction_play": {
       "enabled": true,
-      "position_size_pct": 10.0,
+      "position_size_pct": 20.0,
       "max_concurrent_conviction_plays": 5,
       "trail_multiplier": 1.5,
-      "_source": "The conviction bucket -- well-known/liquid names Stan has actually researched (fundamentals + congress trades + wiki narrative + cross-sectional momentum, see tick_prompt.md step 8) and written a real thesis for, held until the thesis plays out or breaks rather than a mechanical exit. Sized larger than standard (position_size_pct vs max_position_pct) since these are the higher-conviction bets, not the wide/opportunistic sweep. trail_multiplier widens the normal volatility-scaled trailing stop (more room for a short-term dip that doesn't break the thesis) -- not exempted from it entirely, and the hard stop_loss_pct always applies. Deliberately not given the reverted stop_patience.py's unbounded calendar-time patience -- a wider stop, not an absent one."
+      "_source": "The conviction bucket -- well-known/liquid names Stan has actually researched (fundamentals + congress trades + wiki narrative + cross-sectional momentum, see tick_prompt.md step 8) and written a real thesis for, held until the thesis plays out or breaks rather than a mechanical exit. Sized larger than standard (position_size_pct vs max_position_pct) since these are the higher-conviction bets, not the wide/opportunistic sweep. trail_multiplier widens the normal volatility-scaled trailing stop (more room for a short-term dip that doesn't break the thesis) -- not exempted from it entirely, and the hard stop_loss_pct always applies. Deliberately not given the reverted stop_patience.py's unbounded calendar-time patience -- a wider stop, not an absent one. 2026-08-10: raised 10.0 -> 20.0 (Raf's direction) so real conviction picks can actually be sized meaningfully, not just probed -- this is the cap the decision-tree's high-conviction tier (decision_heuristics.md) sizes toward. Index-anchor positions (SPY/QQQ/DIA/IWM) are a deliberate, explicit exception to this cap on the upside -- see strategy.md's Index-anchor section -- not a reason to raise this number further; this value governs individual-name conviction plays."
     }
   },
   "risk_guards": {

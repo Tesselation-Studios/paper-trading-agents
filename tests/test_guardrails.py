@@ -1497,11 +1497,11 @@ class TestCheckStops:
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 10.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
-        self._mock_conviction_play(monkeypatch, "SPY")
+        self._mock_conviction_play(monkeypatch, "NVDA")
         # $740 of $10,000 = 7.4% -- over the flat 6% cap, under conviction's 10%.
         monkeypatch.setattr(
             executor, "get_positions",
-            lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=1, market_value=740.0)],
+            lambda a: [self._position("NVDA", entry=185.0, current=185.0, qty=4, market_value=740.0)],
         )
         breaches = executor.check_stops("stonks")
         assert breaches == []
@@ -1512,16 +1512,39 @@ class TestCheckStops:
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 10.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
-        self._mock_conviction_play(monkeypatch, "SPY")
+        self._mock_conviction_play(monkeypatch, "NVDA")
         # $1200 of $10,000 = 12% -- over conviction's own 10% cap too.
         monkeypatch.setattr(
             executor, "get_positions",
-            lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=1, market_value=1200.0)],
+            lambda a: [self._position("NVDA", entry=185.0, current=185.0, qty=6, market_value=1200.0)],
         )
         breaches = executor.check_stops("stonks")
         oversized = [b for b in breaches if b["stop_type"] == "oversized"]
         assert len(oversized) == 1
         assert "10%" in oversized[0]["reason"]
+
+    def test_index_anchor_ticker_exempt_from_oversized_entirely(self, params, monkeypatch, tmp_path):
+        """2026-08-10 (Raf's direction): index-anchor tickers (SPY/QQQ/DIA/
+        IWM) are exempt from the oversized trim entirely on the upside, not
+        just capped at conviction_play's own (now 20%) cap -- current policy
+        is 'don't buy more, sell it down for cash' rather than force-trim.
+        A non-anchor conviction ticker at the same % is still flagged (see
+        test_conviction_play_still_flagged_past_its_own_cap above), so this
+        isolates the exemption to the whitelist, not conviction plays broadly."""
+        monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
+                           "conviction_play": {"position_size_pct": 20.0}}
+        monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        self._mock_conviction_play(monkeypatch, "SPY")
+        # $5000 of $10,000 = 50% -- way past even the 20% conviction cap.
+        monkeypatch.setattr(
+            executor, "get_positions",
+            lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=6, market_value=5000.0)],
+        )
+        breaches = executor.check_stops("stonks")
+        oversized = [b for b in breaches if b["stop_type"] == "oversized"]
+        assert oversized == []
 
     # ── Long plays (2026-07-30, risk.long_play) ───────────────────────────
     # A long play is exempt from the trailing-stop schedule only while its
