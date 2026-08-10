@@ -37,11 +37,11 @@ Same judgment process, but real writes: at each tick, decide BUY/SELL/HOLD per t
 ```
 python3 scripts/replay_order.py --session-id <session_id> --action BUY --ticker TICKER \
     --qty N --price <tick's close> --timestamp <tick's time, that DATE, ISO8601 tz-aware, e.g. 2026-06-01T10:30:00-04:00> \
-    --conviction <combined_confidence> --sector "..." --thesis "..." [--play-type standard|long|conviction] \
+    --conviction <combined_confidence> --sector '...' --thesis '...' [--play-type standard|long|conviction] \
     [--features '{"technical": {"direction": "bullish", "confidence": 0.7}, ...}']
 
 python3 scripts/replay_order.py --session-id <session_id> --action SELL --ticker TICKER \
-    --qty N --price <tick's close> --timestamp <same format> --close-reason "..."
+    --qty N --price <tick's close> --timestamp <same format> --close-reason '...'
 ```
 
 Use the tick's own timestamp, not today's real date — this is what lets `gate_hours` judge the order against the simulated moment instead of the real wall clock. A HOLD needs no call at all. A rejection returns the same `{"error": "guardrail: ...", "gates": [...]}` shape live `executor.py` does — that's real gate feedback about this decision, not a friendlier simulated version of it; treat a block the same way you would live (reconsider, don't route around it).
