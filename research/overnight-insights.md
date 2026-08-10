@@ -2,8 +2,54 @@
 
 **Run date**: 2026-08-09 overnight → 2026-08-10
 **Data window**: 5-20 trading days (varies by iteration)
-**Configs tested**: 21 total — 7 universes × 3 configs each
+**Configs tested**: 24 total — 8 universes × 3 configs each
 **Previous run**: 2026-08-04 → 2026-08-05 (12 configs, ~1.4h)
+
+---
+
+## ITERATION 8: all-catalyst-spike — CEMENTATION, NOT BREAKTHROUGH
+
+**Universe**: 34 tickers (broad), **Params**: RSI(35/70), vol 3.0x min, catalyst_vol 3.0x+ move 2.5%, conviction 0.65/0.4, 10 days
+
+Top config: price_above_ma=True, RSI(45-60) period 21, MACD(12/26), vol 3x, **MA50**, conviction 0.6, **maxpos 6**
+Score 0.3186 | Return +3.50% | Catch 0.0000 | FP 0.00
+
+### The broad-vs-core split is now undeniable
+
+| Type | Runs | Avg return | Avg score | Typical config |
+|------|------|-----------|-----------|----------------|
+| **Core-focused** | 1, 4, 6, 7 | **~8.78%** | **~0.3240** | price_above_ma=False, RSI 7, MA10-20, maxpos 25, fast signals |
+| **Broad universe** | 2, 3, 5, 8 | **~3.60%** | **~0.2724** | price_above_ma=True, RSI 21, MA50, maxpos 6, survival settings |
+
+Core-focused runs return **2.4x more** on average. The split isn't noise — it's consistent across 8 runs, different parameters, different universes.
+
+### Broad universes converge on "hide in a bunker"
+
+Run 8's winning config is nearly identical to run 3's (all-momentum) in its defensive posture:
+
+| Parameter | Run 3 (all-momentum) | Run 8 (all-catalyst-spike) | What it means |
+|-----------|---------------------|---------------------------|---------------|
+| maxpos | 6 | 6 | Tiny position cap |
+| MA period | 50 | 50 | Extremely slow trend filter |
+| RSI period | 21 | 21 | Slow signal, misses entries |
+| MACD | 12/26 | 12/26 | Standard, not optimized |
+| Vol | 2x | 3x | Extreme volume filter |
+| price_above_ma | True | True | Old paradigm |
+
+When the optimizer can't find signal in a universe, it converges on the same survival settings every time: tiny positions, slow signals, extreme filters. This isn't a "strategy" — it's the optimizer minimizing damage in a world with no edge. The config isn't good; it's just the least bad option when every signal is noise.
+
+### price_above_ma=True reappears — but in context
+
+This is the first True since run 3. But it's on a broad universe with MA50, RSI 21, and vol 3x — the same survival-mode config. It's NOT a vote for the MA gate. It's the optimizer reverting to the most conservative possible stance when there's no signal to catch. The core-focused runs (4, 6, 7) all converged on False — those are the runs with actual returns, actual signals, actual edges.
+
+### This cements, it doesn't change
+
+Run 8 doesn't add new tactical recommendations. It adds strong confirmatory evidence:
+
+1. **Broad universes dilute returns** — 4 for 4 now, average return 3.60% vs 8.78% for core
+2. **The optimizer on noise converges to survival** — maxpos 6, MA50, RSI 21, vol 3x pattern is consistent
+3. **Core-focused + pullback entry is the winning formula** — no broad-config run has beaten any core-config run on return
+4. **Signal quality pre-filter is the ONLY lever** — widening gates (run 7) or universes (runs 2,3,5,8) doesn't help
 
 ---
 
@@ -522,21 +568,23 @@ After 21 configs across 7 universes:
 | **Signal quality is the bottleneck, NOT gate tightness** | **VERY HIGH** | Run 7: 10,011 signals with ultra-wide gates, zero catch. Removing gates doesn't help. Noise is intrinsic to the discovery engine. |
 | **Small-cap focus is the competitive moat** | **VERY HIGH** | Runs 1+6: small-cap universes return 9.96% and 10.63%. Best returns, fewest signals. |
 | **Two entry paradigms both work** | **HIGH** | Momentum-continuation (runs 1,3) + small-cap pullback (runs 4,6,7). |
-| Entry gates are correctly calibrated | **HIGH** | Counterfactual zeros across 6 of 7 runs. Run 6 found real names (pullback entries specifically gated by price_above_ma). |
+| **Core universe > broad universe** | **VERY HIGH** | 4 core runs avg 8.78% return; 4 broad runs avg 3.60%. 2.4x difference, consistent across all 8 runs. |
+| Entry gates are correctly calibrated | **HIGH** | Counterfactual zeros across 7 of 8 runs. Run 6 found real names (pullback entries gated by price_above_ma). |
 | RSI period 7 is superior | **HIGH** | Winning config in momentum, pullback, and wide-gate paradigms. |
-| Cash idle is structural | **HIGH** | 21 configs, every one at 99%+ |
-| Broader universe = monotonically worse | **HIGH** | Runs 2-4 consistently |
+| Cash idle is structural | **HIGH** | 24 configs, every one at 99%+ |
+| Broader universe = monotonically worse | **HIGH** | Runs 2,3,5,8 consistently: broad universes average 3.60% vs 8.78% core |
 | Wider discovery gates = more noise, not more trades | **HIGH** | Run 7: widest gates, most signals, zero catch |
-| Position sizing is fine | **HIGH** | Never a differentiator |
+| Broad universes converge on survival settings | **HIGH** | Runs 3+8 both converge on maxpos=6, MA50, RSI 21 |
+| Position sizing is fine | **HIGH** | Never a differentiator on core runs |
 
 **The four trajectory-changing actions for Monday:**
 1. **Drop `price_above_ma` as a binary entry gate** — four independent confirmations, case closed
 2. **Watchlist AVEX, RCAT, BKSY, BFH** for small-cap pullback entries
-3. **Signal quality pre-filter in discovery** — run 7 is the definitive proof
+3. **Signal quality pre-filter in discovery** — runs 7+8 are definitive proof
 4. **SPY index-anchor** — independent cash deployment
 
-**On the optimizer**: Seven runs. Three genuine breakthroughs (runs 2, 4, 6). Two definitive proofs (runs 5, 7). Two confirmations (runs 1, 3). The overnight optimizer has been extraordinarily productive — it discovered the signal-quality bottleneck, confirmed the pullback paradigm, and proved the MA gate is destructive. It's earned its keep and then some.
+**On the optimizer**: Eight runs. Three breakthroughs (runs 2, 4, 6). Two definitive proofs (runs 5, 7). Three cementations (runs 1, 3, 8). The broad-vs-core split is now 4-for-4 on each side — the most robust finding after price_above_ma removal. The optimizer has been remarkably productive. If more runs come, core-focused universes are the only ones worth running — broad universes just reconfirm the same "diluted by noise" pattern.
 
 ---
 
-_Generated by Stan Hoolihan, 2026-08-09 overnight cycle (all 7 iterations). To be reviewed before the Aug 10 session. The price_above_ma gate removal is now the single best-supported tactical change in the entire optimization history — four independent confirmations across two overnight cycles. The signal-quality bottleneck is definitively proven by run 7's 10,011-signal, zero-catch experiment. See you Monday._
+_Generated by Stan Hoolihan, 2026-08-09 overnight cycle (all 8 iterations). To be reviewed before the Aug 10 session. The price_above_ma gate removal is the best-supported tactical change (4 confirmations). The core-vs-broad split is now 4-for-4 on each side (2.4x return advantage for core). See you Monday._
