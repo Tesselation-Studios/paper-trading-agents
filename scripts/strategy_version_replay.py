@@ -48,8 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import replay_check  # noqa: E402
 import llm_replay  # noqa: E402
 
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
-from src.replay import replay_trader  # noqa: E402
+from replay_harness import replay_trader  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

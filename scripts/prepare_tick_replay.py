@@ -46,12 +46,11 @@ import pandas as pd
 WORKSPACE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(WORKSPACE / "scripts"))
 sys.path.insert(0, str(WORKSPACE))
-sys.path.insert(0, "/home/openclaw/paper-trading-rebuild")
 from sync_historical_bars import current_universe  # noqa: E402
 import market_hours  # noqa: E402
 import backtest_session  # noqa: E402
 import trader_db  # noqa: E402
-from src.counterfactual import UniverseSampler  # noqa: E402
+from counterfactual import UniverseSampler  # noqa: E402
 
 CACHE_DIR = Path("/home/openclaw/paper-trading-rebuild/shared/cache/bars")
 PROGRESS_PATH = WORKSPACE / "state" / "tick_replay_progress.json"

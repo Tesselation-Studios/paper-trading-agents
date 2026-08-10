@@ -44,8 +44,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import replay_check  # noqa: E402
 
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
-from src.replay import Tick, TraderDecision, replay_trader  # noqa: E402
+from replay_harness import Tick, TraderDecision, replay_trader  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STRATEGY_PATH = REPO_ROOT / "strategy.md"

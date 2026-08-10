@@ -38,8 +38,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import replay_check  # noqa: E402
 
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
-from src.replay import replay_trader  # noqa: E402
+from replay_harness import replay_trader  # noqa: E402
 
 from alpaca.trading.client import TradingClient  # noqa: E402
 from alpaca.trading.requests import GetAssetsRequest  # noqa: E402

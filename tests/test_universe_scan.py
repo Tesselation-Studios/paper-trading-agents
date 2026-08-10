@@ -17,8 +17,6 @@ import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
-
 import universe_scan  # noqa: E402
 
 

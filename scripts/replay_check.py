@@ -6,8 +6,9 @@ base entry strategy through the historical replay harness across three
 variants (v1.0 / v1.1 / v1.2), isolating exactly what each rule change did,
 instead of trusting the promotion on narrative confidence alone.
 
-Uses paper-trading-rebuild's src/replay.py ReplayHarness (imported
-directly — no repo-specific deps in that module). Historical daily bars
+Uses scripts/replay_harness.py's ReplayHarness (vendored 2026-08-10 from
+paper-trading-rebuild/src/replay.py — that sibling repo only exists on
+this machine, which broke test collection in CI entirely). Historical daily bars
 come straight from Alpaca (market_data.bars_1d only has real history for
 NVDA among Stonks's holdings — everything else is empty there), same
 approach as the Trading Terminal's indicators.py.
@@ -59,11 +60,9 @@ from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from alpaca.data.enums import DataFeed
 
-sys.path.insert(0, "/home/openclaw/paper-trading-rebuild")
-from src.replay import Tick, TraderDecision, replay_trader  # noqa: E402
-
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trader_db  # noqa: E402
+from replay_harness import Tick, TraderDecision, replay_trader  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PARAMS_PATH = REPO_ROOT / "params.json"

@@ -15,10 +15,8 @@ import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
-sys.path.insert(0, "/home/openclaw/projects/paper-trading-rebuild")
-
 import llm_replay  # noqa: E402
-from src.replay import TraderDecision  # noqa: E402
+from replay_harness import TraderDecision  # noqa: E402
 
 
 class TestBuildReplayPrompt:
