@@ -29,7 +29,6 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 - [ ] 2026-08-02 (weekly-review): Peak entry timing rule — track RDDT as occurrence #1. If a second comparable loss from early-session momentum-spike entries, harden into strategy.md.
 - [ ] 2026-08-02 (weekly-review): Exit discipline rule — track +3%+ intraday gains fading to negative/stop. AMD, RDDT. BJDX (+6.1% phantom) NOT counted. Still need 1 more real occurrence before hardening.
 - [ ] 2026-08-02 (weekly-review): Small-cap vs large-cap universe evidence — accumulating from overnight optimization (3 rounds). Weekend discussion item for Raf. Not actionable unilaterally.
-- [ ] 2026-08-03 (nightly-maintenance): MBBC liquidity gate — implement pre-entry daily dollar volume check in code for catalyst-led entries on sub-$500M names. < $50K/day avg = skip. Rule in strategy.md v1.18, not enforced in code.
 - [ ] 2026-08-03 (claude-code-session): Test-isolation gap in tests/test_executor_audit.py. Low-priority one-line fix.
 - [ ] 2026-08-03 (claude-code-session): `trader_write.py position-update-thesis --verdict` timestamp override. One-line fix, replay-only impact.
 - [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — survived full CHOPPY Aug 5. Track second occurrence before hardening.
@@ -43,6 +42,7 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ## Resolved This Week (Aug 9 weekly review + Aug 10 live session)
 
+- [x] 2026-08-10 (claude-code-session): MBBC liquidity gate item was stale — `gate_catalyst_liquidity` has actually been fully mechanized (GATES dict + tests) since 2026-08-05, this Aug 3 item just never got removed after. Confirmed no real gap. Note: this gate only blocks *new* illiquid catalyst entries — MBBC itself (already held, 1sh since Aug 5) stays stuck regardless; exiting an already-illiquid position is a different, currently-unsolved problem, not something this gate addresses.
 - [x] 2026-08-10 (claude-code-session): CI's `TestScoreSentimentBatchViaWorker` (4 tests) → FIXED. Every CI run since the pipefail fix was red for this. Turned out the tests (and the real news_collector.py code path) only ever import `generated.gpu_compute_pb2` — pure protoc-generated message definitions (90 lines, depends only on `google.protobuf`), never the actual live gRPC client (`orchestrator/gpu_client.py`, which the tests mock out entirely). Vendored just the message file (`generated/gpu_compute_pb2.py`) + added `protobuf` to requirements.txt — the live-client staleness/drift risk this item originally flagged doesn't apply, since that code was never what these tests needed.
 - [x] 2026-08-10 (claude-code-session): Pipeline null-price rot → ROOT CAUSE FOUND AND FIXED. `scripts/merge_discoveries.py`'s TICKER_HEADER_RE had no capture group for price. 68-81% watchlist silently rejected since Aug 3. Fixed regex + backfill + regression test.
 - [x] 2026-08-10 (raf-session): check_stops() oversized-position trim bug → FIXED (c2aff0b). Conviction plays now correctly evaluated against their own 10% cap instead of flat 6%. SPY re-entered after fix.
