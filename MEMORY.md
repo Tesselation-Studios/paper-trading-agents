@@ -1,7 +1,7 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-08-11 — off-hours heartbeat*
+*Updated: 2026-08-11 — nightly-learning*
 
-**Heartbeat (Mon Aug 10 8PM ET):** Market closed. Regime CHOPPY (0.35 conf). FOMC 3.50-3.75%, 10yr 4.65%, curve flat. Off-hours routine running — reconciliation, news, signal exercise, scorecard, replay check.
+**TUE AUG 11 4:17 PM ET — nightly-learning:** Market closed. Regime mean_reversion (0.844) all session. SPY $773.03 flat, MACDh +3.46. 16 positions held. 1 buy (HPK gate-override), 1 sell (AORT bootstrap +5.39%). 1W/3L closed, -$2.32 P&L. FOMC 3.50-3.75%, curve flat.
 
 Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix, an escalation, something worth doing but not done yet) live in `tasks/pending.md` — check it at the start of every reflection session.
 
@@ -49,10 +49,21 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 ### MACDh Signal — 5+ Weeks Validated, Graduated to Foundation (NEW Aug 2)
 - **Zero false flips, zero false exits, zero false candidate disqualifications** across 5+ weeks of trading. Every hold on green MACDh was correct. Every bearish MACD disqualification was correct. The near-zero oscillation heuristic (MACDh < 0.005 magnitude with flat price = noise) has never missed. This signal is mature enough to graduate from "tracking" to "foundation" — no further special monitoring needed. It's the baseline.
 
-### Experience Counter — 20W/23L Bankroll, 103 Trades (Aug 10)
-- **`experience.json`**: 103 total trades (executor-tracked), 1 consecutive win, 0 consecutive losses.
-- **`bankroll.py`**: 20 wins, 23 losses, net P&L +$49.01, ceiling $746.26. Corrected Aug 10 from erroneous 13W/19L after 3 zero-P&L positions (VSXY/FLXS/CLIR) were backfilled with real Alpaca fill data. Bankroll is the canonical record; experience.json tracks a different (executor-event) counter.
-- Win rate (bankroll): 20/43 closed = 46.5%. Bootstrap ceiling: ~14-20 more wins to $1,000 threshold.
+### HPK Deployment-Pressure Gate Override — Occurrence #1 (NEW Aug 11)
+- **Agent entered HPK at $8.39 against a clear `[tree:catalyst_led_entry_v1]` rejection**: sentiment 0.0 < 0.5 gate, MACDh no data. Rationale: "gestalt probe per deployment pressure (90% cash)" — 60 consecutive under-deployed batches. At close: **$7.92 (-5.56%), $0.06 above the $7.86 hard stop**. The tree was correct — the entry was wrong.
+- **This is a discipline failure, not a signal failure**: the framework explicitly said no, the agent reached anyway, and the result is a position that needs a miracle to survive. The gate exists because sentiment 0.0 on a catalyst-led name in mean_reversion has proven negative — it's not a gestalt-override-able default.
+- **Track for a second occurrence** before hardening into strategy.md: "tree rejections are hard stops — no gestalt override." One incident is a data point, not a pattern. But the magnitude of the miss (entered near the intraday high, watched it drift back to stop level) makes this worth watching closely.
+
+### K-Means Regime Classifier — First Live Session Validated (NEW Aug 11)
+- **Replaced HMM on Aug 10**: first full live session today. Classifier held `mean_reversion` at 0.844 confidence all day. SPY was flat (-0.03%) with bullish MACD (+3.46 MACDh). The old HMM would have shown CHOPPY — the K-Means correctly identified a low-vol drift regime where the framework should hold, not suppress. 16 positions held through the session without panic, zero forced exits. The regime label guided correctly.
+
+### Bootstrap Quick-Exit Mechanism — 9 for 9 Total (UPDATED Aug 11)
+- **Aug 3**: ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%. **Aug 4**: FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1. **Aug 10**: VSXY +10.80%. **Aug 11**: AORT +5.39%. 9 consecutive bootstrap wins, zero false triggers, zero regretted exits. The win-count-driven ceiling growth is slow but real — ~5-11 more wins to the $1,000 threshold where normal sizing unlocks.
+
+### Experience Counter — 22W/35L executor, 109 trades (Aug 11)
+- **`experience.json`**: 109 total trades (executor-tracked), 1 consecutive win, 0 consecutive losses.
+- **`bankroll.py`**: Canonical record; experience.json tracks a different (executor-event) counter.
+- Win rate (self-stats): 41.67% overall (48 closed). Rolling last-10: 40% (up from 30%).
 - CNH stop-out at -7.22% (Aug 10): broker-side fill slipped past -6% target on gap-down. One data point — not alarming yet but small-cap stop slippage is a reality.
 
 ### Index-Anchor Mechanism — First Deployment (NEW Aug 10)
@@ -74,9 +85,6 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 ### Process & Tooling
 - **Strategy propagation must be verified across all layers (NEW Jul 22)**: v1.3 reverted the CHOPPY/FEAR entry gate, but the tick agent continued applying it for ~2 hours (09:30–11:20 ET). Strategy changes to `strategy.md` need explicit verification: (a) `params.json` reflects the change, (b) `executor.py` code aligns, (c) the agent prompt doesn't carry stale rules forward. Post-revision checklist item.
 - **params.json vs strategy.md drift risk (Jul 22, fixed Jul 23)**: `params.json` had contained v1.1/v1.2 settings (`entry_rules.triple_confirmation_required`, `regime_sizing` VIX tiers, `trim`, `quality_gate`, `exit_rules.rsi_exhaustion_hard_exit`, `risk_guards.max_holding_days`) left over from before v1.3's revert. Audited: `executor.py` never read any of them (confirmed by grep — only `risk_guards.max_positions_per_sector` is actually consumed, at executor.py:180), so there was no live behavior risk, but they contradicted `strategy.md` and could mislead the agent reading params.json fresh each tick. Removed from params.json.
-
-### Bootstrap Quick-Exit Mechanism — Validated, 8 for 8 Total (Aug 3–4)
-- **Aug 3**: 3 for 3 (ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%). **Aug 4**: 5 more (FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1). 8 consecutive bootstrap wins, zero false triggers, zero regretted exits. Ceiling ~$737, up from $700 at inception. The mechanism works: bank small wins to compound the ceiling while the account is small ($737 < $1,000 threshold). All exits were profitable and none would have been better held. The win-count-driven ceiling growth is slow but real — ~8-14 more wins to the $1,000 threshold where normal sizing unlocks.
 
 ### CHOPPY Discipline — GRADUATED to Foundation (Aug 9 weekly review)
 - **Three consecutive live sessions (Aug 3, 4, 5) + one tick-replay (Aug 7)**: ~175 batches correctly gated, zero FOMO entries, zero forced exits. Aug 5 was the hardest test — SPY +1.8% in CHOPPY, 15 positions wide, every batch correctly rejected. The Aug 7 tick-replay (4/4 virtual wins, +$47.91) added an offline stress test. No longer experimental — the CHOPPY discipline is foundation-grade. Remove from special monitoring.

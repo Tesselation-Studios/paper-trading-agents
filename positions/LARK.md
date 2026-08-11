@@ -1,11 +1,11 @@
 # LARK Position Thesis
 
 - **Entry**: $31.71 avg | 1 shares
-- **Current**: $32.15 (+1.39% unrealized)
-- **Market Value**: $32.15
-- **Unrealized P&L**: $+0.44 (+1.39%)
+- **Current**: $32.11 (+1.26% unrealized)
+- **Market Value**: $32.11
+- **Unrealized P&L**: $+0.40 (+1.26%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 19:01:20 UTC
+- **Last sync**: 2026-08-11 20:20:15 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

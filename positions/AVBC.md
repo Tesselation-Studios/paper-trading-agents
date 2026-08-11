@@ -1,11 +1,11 @@
 # AVBC Position Thesis
 
 - **Entry**: $21.51 avg | 1 shares
-- **Current**: $21.62 (+0.53% unrealized)
-- **Market Value**: $21.62
-- **Unrealized P&L**: $+0.12 (+0.53%)
+- **Current**: $21.45 (-0.28% unrealized)
+- **Market Value**: $21.45
+- **Unrealized P&L**: $-0.06 (-0.28%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 19:01:20 UTC
+- **Last sync**: 2026-08-11 20:20:15 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

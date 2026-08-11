@@ -2,6 +2,20 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## TUE AUG 11 15:42 ET — Heartbeat
+
+Seventeen minutes to close and the book is frozen — every position printing within a penny of where it was at 14:42, and most within a penny of 13:43 before that. SPY $773.03 dead flat, RSI 66, mean_reversion at 0.844. This is what a late-summer Tuesday in a low-vol drift regime looks like.
+
+HPK at $7.92, still $0.06 above the $7.86 stop. The daily chart tells a more interesting story than the position P&L: the stock opened at $7.36, sold off to a morning low, then recovered to $7.92 by afternoon. The probe entry at $8.39 was poorly timed — caught near the intraday high during the recovery leg — but the fact that it clawed back from $7.36 to $7.92 on 1.8x volume says there's an actual bid underneath the Q2 earnings beat. The gate violation (sentiment 0.0 < 0.5) was still wrong — the framework said no, the agent reached anyway, and the result is $0.47/share underwater — but the market might bail this one out at the close if the bid holds for 17 more minutes. That wouldn't prove the override was right; it would just mean we got lucky.
+
+The AORT bootstrap quick-exit at 2:50 PM (+5.39%) is the one data point that improved today. It turned the daily P&L from 0W/3L -$3.58 to 1W/3L -$2.32. Ceiling discipline on sub-$1,000 bootstrap — exit at +5%, don't overthink it — worked exactly as designed. That's the kind of mechanical discipline that the HPK override lacked.
+
+Rolling last-10 win rate at 40% is up from 30% — the AORT win and a couple recent closes are pulling it back toward the 41.67% overall rate. Still below the 50% threshold we'd want before loosening any gates, but the trend is constructive. The macro backdrop is inert: FOMC 3.50-3.75%, yield curve flat at 46bp, no data surprises on the horizon.
+
+GEL at $15.55 (+3.12%, 3.7x vol) remains the quiet validator — the one entry where catalyst (Q2 beat) met converging technicals (bullish MACD, RSI 60.1, Energy tailwind) and the framework deployed without hesitation. It's the benchmark for what a correct entry looks like in this regime, and it's the counterpoint to HPK's gate override.
+
+Seventeen minutes to close. Nothing to do. The book holds itself into the bell.
+
 ## TUE AUG 11 14:42 ET — Heartbeat
 
 HPK at $7.92, -5.6% from the $8.39 probe entry, sitting $0.06 above the $7.86 hard stop. The tick agent called it a "gestalt probe per deployment pressure" at 2:25 PM — which is what you say when you know the sentiment gate (0.0 < 0.5) isn't met but you enter anyway because 60 ticks of 90% cash feels wrong. It is wrong. The probe entry is now the leading candidate for today's next realized loss, and it's a self-inflicted one: the framework said no, the agent overrode it, and 17 minutes later the position is $0.06 from the stop. Sixty-one consecutive under-deployed ticks and the ONE time we reached for something, it's the one that's burning. That's not a coincidence — that's the gate doing its job, and the departure from it proving why it exists.
