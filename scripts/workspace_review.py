@@ -267,6 +267,43 @@ def check_position_reconciliation() -> List[Finding]:
     return findings
 
 
+def check_zero_pnl_closes() -> List[Finding]:
+    """2026-08-11: state/trader.db's positions table having a closed row
+    with realized_pnl == 0.0 exactly is a near-impossible-by-chance signal
+    that exit_price silently defaulted to entry_price -- the same bug
+    shape fixed twice already (ZBRA/DXCM/OOMA 2026-08-03, VSXY/FLXS/CLIR
+    2026-08-10, both corrected via one-off backfill scripts that also
+    updated this same realized_pnl column, so a fixed historical row
+    won't false-positive here). Warning-tier, never critical -- matches
+    this repo's fail-open philosophy; a labeling bug shouldn't block
+    trading, only get flagged for a human/agent to investigate and
+    backfill the same way the prior two incidents were."""
+    db_path = REPO_ROOT / "state" / "trader.db"
+    if not db_path.exists():
+        return []
+
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=2)
+        try:
+            rows = conn.execute(
+                "SELECT ticker, closed_at, close_reason FROM positions "
+                "WHERE status = 'closed' AND realized_pnl = 0.0"
+            ).fetchall()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return []  # same fail-open as check_local_db_health -- a query
+                   # failure here shouldn't itself become a finding
+
+    return [
+        ("warning", f"zero_pnl_anomaly: {ticker} closed {closed_at} with realized_pnl == $0.00 "
+                    f"exactly (close_reason: {close_reason!r}) -- check for exit_price silently "
+                    f"defaulting to entry_price")
+        for ticker, closed_at, close_reason in rows
+    ]
+
+
 def run_all_checks() -> Dict[str, Any]:
     params_raw = _load_params_raw()
     strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
@@ -281,6 +318,7 @@ def run_all_checks() -> Dict[str, Any]:
     findings += check_dead_params(params)
     findings += check_local_db_health()
     findings += check_position_reconciliation()
+    findings += check_zero_pnl_closes()
 
     critical = [msg for sev, msg in findings if sev == "critical"]
     warnings = [msg for sev, msg in findings if sev == "warning"]

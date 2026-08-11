@@ -685,7 +685,8 @@ def reconcile_stopped_out_positions(account: str,
                              "exit_price": exit_price, "qty": qty,
                              "pnl": round(outcome["pnl"], 2),
                              "return_pct": round(outcome["return_pct"], 2),
-                             "outcome_label_warning": outcome["outcome_label_warning"]})
+                             "outcome_label_warning": outcome["outcome_label_warning"],
+                             "zero_pnl_anomaly": outcome["zero_pnl_anomaly"]})
         except Exception as e:
             results.append({"ticker": ticker, "status": "error", "error": str(e)})
     return results
@@ -1907,6 +1908,14 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     """
     pnl = (exit_price - entry_price) * qty
     return_pct = (exit_price - entry_price) / entry_price * 100 if entry_price else 0.0
+    # An exact $0.00 close is a near-impossible-by-chance signal that
+    # exit_price silently defaulted to entry_price again (the same bug
+    # shape as the 2026-08-03/2026-08-10 ZBRA/DXCM/OOMA/VSXY incidents,
+    # see the SELL CLI path's own comments) -- flagged generally here
+    # rather than only at the one already-known trigger site, since
+    # close_trade_outcome() is the single choke point for every real
+    # close regardless of caller or reason.
+    zero_pnl_anomaly = (pnl == 0.0)
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     import bankroll
@@ -1928,7 +1937,8 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     except Exception as e:
         outcome_label_warning = f"could not label trade outcome: {e}"
 
-    return {"pnl": pnl, "return_pct": return_pct, "outcome_label_warning": outcome_label_warning}
+    return {"pnl": pnl, "return_pct": return_pct, "outcome_label_warning": outcome_label_warning,
+             "zero_pnl_anomaly": zero_pnl_anomaly}
 
 
 def _record_decision_row(action: str, ticker: str, conviction, rationale: str,
@@ -2388,6 +2398,12 @@ def main():
                                        position_entry_time=position_entry_time)
         if outcome["outcome_label_warning"]:
             print(json.dumps({"outcome_label_warning": outcome["outcome_label_warning"]}), file=sys.stderr)
+        if outcome["zero_pnl_anomaly"]:
+            print(json.dumps({
+                "ZERO_PNL_ANOMALY": f"{args.ticker.upper()} closed with realized_pnl == $0.00 exactly "
+                                     f"(entry={entry_price}, exit={exit_price}) -- near-impossible by "
+                                     f"chance, check for exit_price silently defaulting to entry_price",
+            }), file=sys.stderr)
 
         # Note: decisions.record_decision() also inserts a fresh "exit"-type
         # training_examples row here (example_type != ENTRY, so it can't

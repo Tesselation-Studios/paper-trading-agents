@@ -2152,7 +2152,8 @@ class TestReconcileStoppedOutPositions:
         ])
         monkeypatch.setattr(executor, "close_trade_outcome",
                              lambda *a, **k: outcomes.append((a, k)) or
-                             {"pnl": -10.0, "return_pct": -10.0, "outcome_label_warning": None})
+                             {"pnl": -10.0, "return_pct": -10.0, "outcome_label_warning": None,
+                              "zero_pnl_anomaly": False})
         monkeypatch.setattr(executor, "record_order_submitted", lambda *a, **k: None)
 
         results = executor.reconcile_stopped_out_positions("stonks")

@@ -681,6 +681,7 @@ class TestSellExitPriceFallback:
 
         err = capsys.readouterr().err
         assert "exit_price unavailable for SELL AAA" in err
+        assert "ZERO_PNL_ANOMALY" in err
 
         conn = trader_db.get_conn()
         try:
@@ -688,6 +689,23 @@ class TestSellExitPriceFallback:
         finally:
             conn.close()
         assert row["realized_pnl"] == pytest.approx(0.0)
+
+    def test_sell_with_real_pnl_does_not_warn_zero_pnl_anomaly(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order34"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "22.74"}],
+            fill_response={"id": "order34", "status": "filled", "filled_avg_price": "11.37"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--close-reason", "bootstrap quick-exit", "--skip-guardrails",
+        ])
+
+        assert "ZERO_PNL_ANOMALY" not in capsys.readouterr().err
 
 
 class TestLongPlayCli:

@@ -251,6 +251,55 @@ class TestCheckLocalDbHealth:
         assert findings[0][0] == "warning"
 
 
+class TestCheckZeroPnlCloses:
+    def test_missing_db_file_no_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        assert workspace_review.check_zero_pnl_closes() == []
+
+    def test_closed_position_with_nonzero_pnl_no_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        conn = trader_db.get_conn(state_dir / "trader.db")
+        trader_db.upsert_position(conn, ticker="ABC", shares=1, entry_price=10.0, entry_time="2026-08-01T00:00:00Z")
+        trader_db.close_position(conn, ticker="ABC", closed_at="2026-08-02T00:00:00Z",
+                                  close_reason="hard stop", realized_pnl=-1.23, realized_return_pct=-12.3)
+        conn.close()
+        assert workspace_review.check_zero_pnl_closes() == []
+
+    def test_closed_position_with_zero_pnl_flagged_warning(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        conn = trader_db.get_conn(state_dir / "trader.db")
+        trader_db.upsert_position(conn, ticker="ACXP", shares=1, entry_price=1.54, entry_time="2026-08-10T17:37:47Z")
+        trader_db.close_position(conn, ticker="ACXP", closed_at="2026-08-11T15:42:29Z",
+                                  close_reason="trailing stop breached", realized_pnl=0.0, realized_return_pct=0.0)
+        conn.close()
+        findings = workspace_review.check_zero_pnl_closes()
+        assert len(findings) == 1
+        assert findings[0][0] == "warning"
+        assert "ACXP" in findings[0][1]
+
+    def test_open_position_not_flagged(self, tmp_path, monkeypatch):
+        # An open position has no realized_pnl at all (NULL, not 0.0) --
+        # must not be mistaken for a closed zero-pnl anomaly.
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        conn = trader_db.get_conn(state_dir / "trader.db")
+        trader_db.upsert_position(conn, ticker="XYZ", shares=1, entry_price=5.0, entry_time="2026-08-11T00:00:00Z")
+        conn.close()
+        assert workspace_review.check_zero_pnl_closes() == []
+
+    def test_corrupt_db_fails_open(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "trader.db").write_bytes(b"not a real sqlite file")
+        assert workspace_review.check_zero_pnl_closes() == []
+
+
 class TestRunAllChecksAndExitCodes:
     def _write_workspace(self, tmp_path, params=VALID_PARAMS, strategy=VALID_STRATEGY, executor=MINIMAL_EXECUTOR):
         (tmp_path / "params.json").write_text(json.dumps(params))
