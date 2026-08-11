@@ -1,11 +1,11 @@
 # AORT Position Thesis
 
 - **Entry**: $27.10 avg | 1 shares
-- **Current**: $27.62 (+1.94% unrealized)
-- **Market Value**: $27.62
-- **Unrealized P&L**: $+0.53 (+1.94%)
+- **Current**: $27.74 (+2.36% unrealized)
+- **Market Value**: $27.74
+- **Unrealized P&L**: $+0.64 (+2.36%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 18:16:32 UTC
+- **Last sync**: 2026-08-11 18:36:01 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

@@ -1,9 +1,9 @@
-# GEL Position Thesis
+# HPK Position Thesis
 
-- **Entry**: $15.59 avg | 1 shares
-- **Current**: $15.79 (+1.28% unrealized)
-- **Market Value**: $15.79
-- **Unrealized P&L**: $+0.20 (+1.28%)
+- **Entry**: $8.37 avg | 17 shares
+- **Current**: $8.33 (-0.48% unrealized)
+- **Market Value**: $141.61
+- **Unrealized P&L**: $-0.68 (-0.48%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-11 18:36:01 UTC
 
