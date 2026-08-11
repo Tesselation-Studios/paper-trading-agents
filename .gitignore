@@ -47,6 +47,12 @@ state/bars_universe_history.json
 state/backups/
 state/backtest/
 research/tick_replay_latest.json
+tmp_status.json
+.executor_status_cache.json
+openclaw-workspace-state.json
+state/order_locks/*.lock
+state/reconciliation_status.json
+state/status_output.json
 
 # Secrets — never commit these
 .secrets/
