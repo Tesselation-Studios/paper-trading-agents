@@ -300,6 +300,39 @@ class TestCheckZeroPnlCloses:
         assert workspace_review.check_zero_pnl_closes() == []
 
 
+class TestCheckExperienceBankrollSync:
+    def _write_bankroll_state(self, db_path, wins, losses):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_bankroll_state(
+            conn, ceiling=100.0, growth_rate=0.02, decay_rate=0.01, target_profit_pct=0.5,
+            lifetime_trades=wins + losses, lifetime_wins=wins, lifetime_losses=losses,
+        )
+        conn.close()
+
+    def test_missing_db_or_experience_file_no_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        assert workspace_review.check_experience_bankroll_sync() == []
+
+    def test_matching_totals_no_findings(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        self._write_bankroll_state(state_dir / "trader.db", wins=25, losses=35)
+        (tmp_path / "experience.json").write_text(json.dumps({"total_wins": 25, "total_losses": 35}))
+        assert workspace_review.check_experience_bankroll_sync() == []
+
+    def test_diverged_totals_flagged_warning(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(workspace_review, "REPO_ROOT", tmp_path)
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        self._write_bankroll_state(state_dir / "trader.db", wins=25, losses=35)
+        (tmp_path / "experience.json").write_text(json.dumps({"total_wins": 22, "total_losses": 35}))
+        findings = workspace_review.check_experience_bankroll_sync()
+        assert len(findings) == 1
+        assert findings[0][0] == "warning"
+        assert "60" in findings[0][1] and "57" in findings[0][1]
+
+
 class TestRunAllChecksAndExitCodes:
     def _write_workspace(self, tmp_path, params=VALID_PARAMS, strategy=VALID_STRATEGY, executor=MINIMAL_EXECUTOR):
         (tmp_path / "params.json").write_text(json.dumps(params))

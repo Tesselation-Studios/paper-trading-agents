@@ -304,6 +304,55 @@ def check_zero_pnl_closes() -> List[Finding]:
     ]
 
 
+def check_experience_bankroll_sync() -> List[Finding]:
+    """2026-08-11: bankroll_state.lifetime_wins+lifetime_losses (state/
+    trader.db) and experience.json's total_wins+total_losses are meant to
+    stay in lockstep -- both updated from the same close_trade_outcome()
+    trigger point (bankroll.recalc_ceiling() and record_experience_outcome()
+    are called back to back, see executor.py). Found diverged by 3 closed
+    trades (60 vs 57) while investigating a suspected "backfill script
+    forgot to touch experience.json" root cause -- that hypothesis didn't
+    actually reconcile against the live numbers (a clean win/loss
+    reclassification would leave the total unchanged, not create a count
+    gap), so the real cause is still open. experience.json's writes go
+    through _save_experience() with no file lock (unlike executor.py's own
+    _order_lock() for exactly this class of problem), which is one
+    plausible source of a lost concurrent-write race -- not confirmed.
+    Warning-tier, never critical -- a bookkeeping drift, not a trading
+    risk. See tasks/pending.md for the open investigation."""
+    db_path = REPO_ROOT / "state" / "trader.db"
+    experience_path = REPO_ROOT / "experience.json"
+    if not db_path.exists() or not experience_path.exists():
+        return []
+
+    try:
+        experience = json.loads(experience_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return []
+
+    import sqlite3
+    try:
+        conn = sqlite3.connect(str(db_path), timeout=2)
+        try:
+            row = conn.execute(
+                "SELECT lifetime_wins, lifetime_losses FROM bankroll_state WHERE id = 1"
+            ).fetchone()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return []
+    if row is None:
+        return []
+
+    bankroll_total = row[0] + row[1]
+    experience_total = int(experience.get("total_wins", 0)) + int(experience.get("total_losses", 0))
+    if bankroll_total != experience_total:
+        return [("warning", f"bankroll_state lifetime closed trades ({bankroll_total}) and "
+                             f"experience.json total_wins+total_losses ({experience_total}) have "
+                             f"diverged -- see tasks/pending.md")]
+    return []
+
+
 def run_all_checks() -> Dict[str, Any]:
     params_raw = _load_params_raw()
     strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
@@ -319,6 +368,7 @@ def run_all_checks() -> Dict[str, Any]:
     findings += check_local_db_health()
     findings += check_position_reconciliation()
     findings += check_zero_pnl_closes()
+    findings += check_experience_bankroll_sync()
 
     critical = [msg for sev, msg in findings if sev == "critical"]
     warnings = [msg for sev, msg in findings if sev == "warning"]

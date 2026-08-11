@@ -160,11 +160,21 @@ def effective_ceiling(state: dict, current_equity: float, today: date = None) ->
 
 def read_bankroll(db_path: Path = None) -> dict:
     """Reads from trader_db.py's bankroll_state (singleton row) +
-    bankroll_history (last 50 rows). Migrated 2026-07-28 from a
+    bankroll_history (last 50 rows -- older entries are NOT retained, so
+    lifetime_trades can exceed len(history)). Migrated 2026-07-28 from a
     regex-parsed bankroll.md -- history is reconstructed as the same
     formatted-string list (f"{ts} {label} ${pnl:+.2f} -> ${ceiling:.2f}")
     recalc_ceiling()/expectancy_trend() already expect, so neither of
-    those needed to change, only the I/O boundary."""
+    those needed to change, only the I/O boundary.
+
+    lifetime_wins/lifetime_losses here and experience.json's
+    total_wins/total_losses are meant to be the same all-time SELL-outcome
+    count, updated from the same close_trade_outcome() call in executor.py
+    -- they're allowed to disagree with the *session* counters (closed_trades/
+    wins/losses here, scoped to the current run) but should always agree
+    with each other. Found diverged 2026-08-11 (60 vs 57) by a cause not
+    yet root-caused -- workspace_review.py's check_experience_bankroll_sync()
+    flags it going forward; see tasks/pending.md."""
     state = {
         "ceiling": STARTING_CEILING,
         "growth_rate": GROWTH_RATE,

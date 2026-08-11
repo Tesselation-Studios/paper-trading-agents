@@ -1898,6 +1898,12 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
     experience.json bookkeeping is likewise fail-open internally (see
     record_experience_outcome).
 
+    Any one-off script correcting a historical realized_pnl (see
+    scripts/backfill_*.py) must update bankroll_state AND experience.json
+    together, not just positions.realized_pnl — see
+    check_experience_bankroll_sync() in workspace_review.py, which flags
+    the two drifting apart.
+
     2026-08-01: position_entry_time (positions.entry_time of the position
     being closed) is passed straight through to record_trade_close as the
     correlation key for WHICH training_examples row gets the label. Without
