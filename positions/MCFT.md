@@ -1,11 +1,11 @@
 # MCFT Position Thesis
 
 - **Entry**: $24.17 avg | 1 shares
-- **Current**: $24.45 (+1.16% unrealized)
-- **Market Value**: $24.45
-- **Unrealized P&L**: $+0.28 (+1.16%)
+- **Current**: $24.05 (-0.50% unrealized)
+- **Market Value**: $24.05
+- **Unrealized P&L**: $-0.12 (-0.50%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 14:50:50 UTC
+- **Last sync**: 2026-08-11 15:31:13 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
