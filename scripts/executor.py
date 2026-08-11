@@ -41,6 +41,13 @@ EXPERIENCE_PATH = WORKSPACE_DIR / "experience.json"
 
 _DEFAULT_ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
 
+# Last-resort fallback if params.json loads fine but risk.stop_loss_pct is
+# missing (bad merge, manual edit, future refactor -- not "file absent",
+# load_params() already raises on that). Intentionally mirrors the current
+# live params.json value, not some other historical value: a wrong-but-tight
+# stop still protects capital, a wrong-but-loose one doesn't.
+DEFAULT_STOP_LOSS_PCT = -6.0
+
 
 def _get_alpaca_base_url() -> str:
     """Reads params.json.alpaca.base_url fresh, falling back to the paper
@@ -363,7 +370,7 @@ def protective_stop_price(entry_price: float, params: Optional[Dict[str, Any]] =
     check_stops() compares against, so the resting order and the in-tick
     scan can't disagree about where the stop is."""
     params = params if params is not None else load_params()
-    stop_loss_pct = abs(float(params.get("risk", {}).get("stop_loss_pct", -10.0)))
+    stop_loss_pct = abs(float(params.get("risk", {}).get("stop_loss_pct", DEFAULT_STOP_LOSS_PCT)))
     return _round_stop_price(entry_price * (1 - stop_loss_pct / 100.0))
 
 
@@ -909,7 +916,7 @@ def gate_max_portfolio_risk(context: Dict[str, Any], action: Dict[str, Any]) -> 
         return True, "non-BUY, skipped"
     params = load_params()
     max_risk_pct = float(params.get("risk", {}).get("max_portfolio_risk_pct", 8.0))
-    stop_loss_frac = abs(float(params.get("risk", {}).get("stop_loss_pct", -10.0))) / 100.0
+    stop_loss_frac = abs(float(params.get("risk", {}).get("stop_loss_pct", DEFAULT_STOP_LOSS_PCT))) / 100.0
     price = float(action.get("price", 0) or 0)
     qty = float(action.get("quantity", 0))
     proposed_value = qty * price
@@ -1660,7 +1667,7 @@ def check_stops(account: str) -> List[Dict[str, Any]]:
     params = load_params()
     toggles = params.get("guardrail_gates", {})
     risk = params.get("risk", {})
-    hard_stop_pct = abs(float(risk.get("stop_loss_pct", -10.0)))
+    hard_stop_pct = abs(float(risk.get("stop_loss_pct", DEFAULT_STOP_LOSS_PCT)))
     trailing_pct = float(risk.get("trailing_stop_pct", 5.0))
     max_position_pct = float(risk.get("max_position_pct", 6.0))
     trailing_stop_mode = risk.get("trailing_stop_mode", "flat")

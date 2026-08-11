@@ -1950,6 +1950,14 @@ class TestProtectiveStopPricing:
         params["risk"]["stop_loss_pct"] = -7.5
         assert executor.protective_stop_price(20.0) == pytest.approx(18.5)
 
+    def test_stop_price_falls_back_when_key_missing(self, params):
+        # risk.stop_loss_pct absent from an otherwise-valid params.json
+        # (bad merge, manual edit) -- must fall back to
+        # DEFAULT_STOP_LOSS_PCT, not silently use a stale/looser value.
+        del params["risk"]["stop_loss_pct"]
+        expected = executor._round_stop_price(10.0 * (1 - abs(executor.DEFAULT_STOP_LOSS_PCT) / 100.0))
+        assert executor.protective_stop_price(10.0) == pytest.approx(expected)
+
     def test_rounds_down_to_penny_at_or_above_one_dollar(self):
         # Rounding must never tighten a stop into a price it wasn't meant
         # to trigger at.

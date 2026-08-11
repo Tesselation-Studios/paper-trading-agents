@@ -38,7 +38,7 @@ def _interp(base: float, outer: float, progress: float) -> float:
 
 
 def effective_hard_stop_pct(entry_date: date, today: date = None,
-                             base_pct: float = -10.0, max_pct: float = -20.0) -> float:
+                             base_pct: float = -6.0, max_pct: float = -20.0) -> float:
     """base_pct/max_pct are negative (loss) percentages -- pass params.json's
     risk.stop_loss_pct/stop_loss_pct_max values directly, already negative.
     Returns a negative percentage; callers abs() once at the call site

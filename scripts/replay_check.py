@@ -62,6 +62,7 @@ from alpaca.data.enums import DataFeed
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trader_db  # noqa: E402
+from executor import DEFAULT_STOP_LOSS_PCT  # noqa: E402
 from replay_harness import Tick, TraderDecision, replay_trader  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -94,7 +95,7 @@ def _load_live_risk_params() -> Dict[str, float]:
     except (OSError, json.JSONDecodeError):
         risk = {}
     return {
-        "stop_loss_pct": float(risk.get("stop_loss_pct", -10.0)),
+        "stop_loss_pct": float(risk.get("stop_loss_pct", DEFAULT_STOP_LOSS_PCT)),
         "profit_target_pct": float(risk.get("profit_target_pct", 12.0)),
         "trailing_stop_pct": float(risk.get("trailing_stop_pct", 5.0)),
         "trail_k": float(risk.get("trail_k", 40.0)),
