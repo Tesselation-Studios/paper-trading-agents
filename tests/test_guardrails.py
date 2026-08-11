@@ -24,6 +24,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 import alpaca_client  # noqa: E402
 import executor  # noqa: E402
 import guardrail_gates  # noqa: E402
+import trade_bookkeeping  # noqa: E402
 
 # A fixed Wednesday 12:00 ET during market hours, for gates that don't care
 # about hours but would otherwise flake depending on when tests run.
@@ -2089,6 +2090,7 @@ class TestEnsureProtectiveStop:
         monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [])
         monkeypatch.setattr(executor, "place_stop_order",
                              lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-1"})
+        monkeypatch.setattr(alpaca_client, "place_stop_order", lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-1"})
         result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
         assert result["status"] == "placed"
         assert placed == [("SOFI", 10, pytest.approx(9.0))]
@@ -2106,7 +2108,9 @@ class TestEnsureProtectiveStop:
              "stop_price": "9.00", "qty": "10"},
         ])
         monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not re-place"))
+        monkeypatch.setattr(alpaca_client, "place_stop_order", lambda *a, **k: pytest.fail("must not re-place"))
         monkeypatch.setattr(executor, "cancel_order", lambda *a, **k: pytest.fail("must not cancel"))
+        monkeypatch.setattr(alpaca_client, "cancel_order", lambda *a, **k: pytest.fail("must not cancel"))
         result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
         assert result["status"] == "already_set"
 
@@ -2123,8 +2127,10 @@ class TestEnsureProtectiveStop:
              "stop_price": "9.00", "qty": "25"},
         ] if not cancelled else [])
         monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(alpaca_client, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
         monkeypatch.setattr(executor, "place_stop_order",
                              lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
+        monkeypatch.setattr(alpaca_client, "place_stop_order", lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
         result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
         assert result["status"] == "placed"
         assert cancelled == ["stop-old"]
@@ -2143,6 +2149,7 @@ class TestEnsureProtectiveStop:
              "stop_price": "9.00", "qty": "10"},
         ])
         monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(alpaca_client, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
         result = executor.ensure_protective_stop("stonks", "SOFI")
         assert result["status"] == "no_position"
         assert cancelled == ["stop-orphan"]
@@ -2154,6 +2161,7 @@ class TestEnsureProtectiveStop:
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
         monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [])
         monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
+        monkeypatch.setattr(alpaca_client, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
         result = executor.ensure_protective_stop(
             "stonks", "SOFI", position=self._position(current="8.50"))
         assert result["status"] == "below_stop_already"
@@ -2161,6 +2169,7 @@ class TestEnsureProtectiveStop:
     def test_disabled_via_params_toggle(self, params, monkeypatch):
         params["guardrail_gates"]["broker_stop_order"] = False
         monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
+        monkeypatch.setattr(alpaca_client, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
         result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
         assert result["status"] == "disabled"
 
@@ -2172,6 +2181,7 @@ class TestEnsureProtectiveStop:
         def boom(*a, **k):
             raise RuntimeError("alpaca 500")
         monkeypatch.setattr(executor, "place_stop_order", boom)
+        monkeypatch.setattr(alpaca_client, "place_stop_order", boom)
         result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
         assert result["status"] == "error"
 
@@ -2200,8 +2210,10 @@ class TestReconcileProtectiveStops:
         monkeypatch.setattr(executor, "get_open_orders", fake_open_orders)
         monkeypatch.setattr(alpaca_client, "get_open_orders", fake_open_orders)
         monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(alpaca_client, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
         monkeypatch.setattr(executor, "place_stop_order",
                              lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
+        monkeypatch.setattr(alpaca_client, "place_stop_order", lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
 
         results = executor.reconcile_protective_stops("stonks")
         statuses = {r.get("ticker"): r["status"] for r in results}
@@ -2233,6 +2245,7 @@ class TestCancelProtectiveStops:
             {"id": "buy-1", "symbol": "SOFI", "side": "buy", "type": "stop"},
         ])
         monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
+        monkeypatch.setattr(alpaca_client, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
         monkeypatch.setattr(executor, "_wait_orders_cleared", lambda *a, **k: True)
         assert executor.cancel_protective_stops("stonks", "SOFI") == ["stop-1"]
         assert cancelled == ["stop-1"]
@@ -2250,6 +2263,7 @@ class TestCancelProtectiveStops:
         def boom(a, oid):
             raise RuntimeError("422 order not cancelable")
         monkeypatch.setattr(executor, "cancel_order", boom)
+        monkeypatch.setattr(alpaca_client, "cancel_order", boom)
         assert executor.cancel_protective_stops("stonks", "SOFI") == []
 
 
@@ -2283,11 +2297,19 @@ class TestReconcileStoppedOutPositions:
             {"id": "stop-1", "side": "sell", "status": "filled",
              "filled_avg_price": "9.00", "filled_qty": "10"},
         ])
+        monkeypatch.setattr(alpaca_client, "get_closed_orders", lambda a, t, limit=10: [
+            {"id": "stop-1", "side": "sell", "status": "filled",
+             "filled_avg_price": "9.00", "filled_qty": "10"},
+        ])
         monkeypatch.setattr(executor, "close_trade_outcome",
                              lambda *a, **k: outcomes.append((a, k)) or
                              {"pnl": -10.0, "return_pct": -10.0, "outcome_label_warning": None,
                               "zero_pnl_anomaly": False})
+        monkeypatch.setattr(trade_bookkeeping, "close_trade_outcome", lambda *a, **k: outcomes.append((a, k)) or
+                             {"pnl": -10.0, "return_pct": -10.0, "outcome_label_warning": None,
+                              "zero_pnl_anomaly": False})
         monkeypatch.setattr(executor, "record_order_submitted", lambda *a, **k: None)
+        monkeypatch.setattr(guardrail_gates, "record_order_submitted", lambda *a, **k: None)
 
         results = executor.reconcile_stopped_out_positions("stonks")
         assert results[0]["status"] == "closed_from_broker_fill"
@@ -2306,6 +2328,7 @@ class TestReconcileStoppedOutPositions:
         ], closed)
         monkeypatch.setattr(executor, "get_closed_orders",
                              lambda *a, **k: pytest.fail("must not look up a held position"))
+        monkeypatch.setattr(alpaca_client, "get_closed_orders", lambda *a, **k: pytest.fail("must not look up a held position"))
         assert executor.reconcile_stopped_out_positions("stonks") == []
         assert closed == []
 
@@ -2319,8 +2342,10 @@ class TestReconcileStoppedOutPositions:
             {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
         ], closed)
         monkeypatch.setattr(executor, "get_closed_orders", lambda a, t, limit=10: [])
+        monkeypatch.setattr(alpaca_client, "get_closed_orders", lambda a, t, limit=10: [])
         monkeypatch.setattr(executor, "close_trade_outcome",
                              lambda *a, **k: pytest.fail("must not price an unknown exit"))
+        monkeypatch.setattr(trade_bookkeeping, "close_trade_outcome", lambda *a, **k: pytest.fail("must not price an unknown exit"))
         results = executor.reconcile_stopped_out_positions("stonks")
         assert results[0]["status"] == "unresolved"
         assert closed == []
