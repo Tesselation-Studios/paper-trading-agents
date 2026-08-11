@@ -112,7 +112,7 @@ Write to `journal/YYYY-MM-DD.md`. A **diary entry**, not a dashboard:
 
 ### Step 2: Synthesize (10 min)
 Read the last N journal entries (`params.json > synthesis > lookback_n_entries`, default 10) + current strategy.md + today's active.md. Extract signal:
-- Errors made (be specific: "bought META at RSI 62 in low-conviction CHOPPY")
+- Errors made (be specific: "bought META at RSI 62 in low-conviction mean_reversion")
 - Patterns noticed across N entries (what keeps recurring?)
 - Things of genuine interest
 - What would I do differently?

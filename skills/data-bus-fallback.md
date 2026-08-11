@@ -12,7 +12,7 @@ Sentiment moved off this endpoint 2026-07-23 — see `skills/sentiment-cache.md`
 
 Regime, risk, macro, technical scan, options flow, insider filings, and fundamentals are real MCP tools (`get_market_regime`, `get_risk`, `get_macro`, `get_technical_scan`, `get_flow`, `get_insiders`, `get_fundamentals` — see `skills/fundamentals.md`), not just REST curl targets — call the tool directly rather than curling `/macro` or `/risk`. `get_flow`/`get_insiders`/`get_technical_scan`/`get_fundamentals` are entry-time checks (see `tick_prompt.md` step 8), not every-tick calls.
 
-`get_market_regime` (real, 2026-07-24) is a real HMM trained on the Mac GPU worker, retrained weekly (`stonks-regime-retrain` cron) — not a placeholder. SPY bars feeding it refresh daily; if it errors, the model/worker is down, not stale data.
+`get_market_regime` (real, 2026-07-24; switched from an HMM to a local K-Means classifier 2026-08-10 — stronger offline-validated edge) returns one of `momentum_bull`/`momentum_bear`/`mean_reversion`/`volatility_spike`/`low_vol_drift` + a confidence, retrained daily on SPY daily bars (`stonks-regime-kmeans-retrain` cron) — not a placeholder. Unlike the old HMM, this is a **daily** signal: it only changes once a new SPY daily bar lands, not intraday. If it errors, the model/data refresh is down, not stale data.
 
 LoneStarOracle (real, connected 2026-07-24) backs several of these. Its free tier only covers `options_flow`/`insider_trading`/most of `macro_indicators` — `portfolio_risk` (`get_risk`) and `multi_timeframe_scan` (`get_technical_scan`) are paywalled (x402/USDC) and report a clean "unavailable" by design. Not a bug, not worth re-checking each tick — Raf's call: free-tier only for now.
 

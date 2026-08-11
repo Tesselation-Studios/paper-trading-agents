@@ -41,7 +41,7 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Pre-market quotes are dealer indications, not price discovery — don't adjust conviction on them.
 - Promotion bar is split-window Sharpe (both halves positive independently), not raw aggregate return.
 - Watchlist must be fed — 2-3 new names/session minimum. Mechanically enforced end to end: `scripts/discovery_scan.py` generates candidates, `scripts/merge_discoveries.py` feeds them into the watchlist every tick, `scripts/discovery_urgency_check.py` forces an immediate scan whenever the candidate pipeline goes empty (checked every tick), plus a 45-min cron whenever cash sits mostly idle with a thin pipeline.
-- Low-confidence/CHOPPY: don't trust MACD divergence without price confirmation — it's a trap.
+- Low-confidence regime read (or `mean_reversion`/`volatility_spike`): don't trust MACD divergence without price confirmation — it's a trap.
 - Near-zero MACDh oscillation (±0.003 range on a flat price) is noise, not a signal — don't exit. Real flips are 4-5 bar declining trends with price confirmation.
 - Pre-session account audit: audit against journal records symbol-by-symbol before first tick.
 - Strategy changes must be verified end-to-end: after revising `strategy.md`, check `params.json`, `executor.py`, `tick_prompt.md`, and `decision_heuristics.md` for stale rules.
