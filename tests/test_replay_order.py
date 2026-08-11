@@ -32,6 +32,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import backtest_session as bs  # noqa: E402
+import alpaca_client  # noqa: E402
 import executor  # noqa: E402
 import replay_order  # noqa: E402
 import trader_db  # noqa: E402
@@ -72,6 +73,7 @@ def session_env(tmp_path, monkeypatch):
 
     params = json.loads(json.dumps(DEFAULT_PARAMS))
     monkeypatch.setattr(executor, "load_params", lambda: params)
+    monkeypatch.setattr(alpaca_client, "load_params", lambda: params)
 
     live_state_paths = {
         "RECENT_ORDERS_PATH": tmp_path / "live_recent_orders.json",

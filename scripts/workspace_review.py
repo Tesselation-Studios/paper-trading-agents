@@ -56,6 +56,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PARAMS_PATH = REPO_ROOT / "params.json"
 STRATEGY_PATH = REPO_ROOT / "strategy.md"
 EXECUTOR_PATH = REPO_ROOT / "scripts" / "executor.py"
+GUARDRAIL_GATES_PATH = REPO_ROOT / "scripts" / "guardrail_gates.py"
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 STATE_DIR = REPO_ROOT / "state"
 SENTINEL_PATH = STATE_DIR / ".workspace_blocked"
@@ -119,10 +120,16 @@ def _extract_guardrail_gate_names(guardrail_gates: Dict[str, Any]) -> set:
 
 
 def _extract_executor_gate_references(executor_text: str) -> set:
-    """Every guardrail_gates.<name> this file actually consumes — both the
-    GATES dict (order-time gates) and toggles.get("name") calls elsewhere
-    (check_stops's hard_stop/trailing_stop/position_size_trim aren't in
-    GATES at all, they're read directly).
+    """Every guardrail_gates.<name> actually consumed -- both the GATES
+    dict (order-time gates, now in guardrail_gates.py) and
+    toggles.get("name") calls elsewhere (check_stops's hard_stop/
+    trailing_stop/position_size_trim aren't in GATES at all, they're read
+    directly; still in executor.py as of this module split).
+
+    2026-08-11: executor.py was split up, GATES/most toggles.get() calls
+    moved to scripts/guardrail_gates.py -- the caller now passes in both
+    files' text concatenated so this keeps working across the split,
+    rather than this function needing to know which file to read.
     """
     gates_dict_keys = set(re.findall(r'^\s*"([a-z_]+)":\s*gate_\w+', executor_text, re.MULTILINE))
     toggle_keys = set(re.findall(r'toggles\.get\(\s*"([a-z_]+)"', executor_text))
@@ -357,13 +364,14 @@ def run_all_checks() -> Dict[str, Any]:
     params_raw = _load_params_raw()
     strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
     executor_text = EXECUTOR_PATH.read_text() if EXECUTOR_PATH.exists() else ""
+    gates_text = executor_text + (GUARDRAIL_GATES_PATH.read_text() if GUARDRAIL_GATES_PATH.exists() else "")
 
     findings: List[Finding] = []
     params_findings, params = check_params_json_valid(params_raw)
     findings += params_findings
     findings += check_strategy_md_structure(strategy_text)
     findings += check_version_sync(params, strategy_text)
-    findings += check_guardrail_gates_drift(params, executor_text)
+    findings += check_guardrail_gates_drift(params, gates_text)
     findings += check_dead_params(params)
     findings += check_local_db_health()
     findings += check_position_reconciliation()

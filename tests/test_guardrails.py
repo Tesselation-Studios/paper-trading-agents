@@ -21,7 +21,9 @@ import pytest
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+import alpaca_client  # noqa: E402
 import executor  # noqa: E402
+import guardrail_gates  # noqa: E402
 
 # A fixed Wednesday 12:00 ET during market hours, for gates that don't care
 # about hours but would otherwise flake depending on when tests run.
@@ -59,6 +61,7 @@ def params(monkeypatch):
     depend on the real file (or each other) and are order-independent."""
     data = json.loads(json.dumps(DEFAULT_PARAMS))  # deep copy
     monkeypatch.setattr(executor, "load_params", lambda: data)
+    monkeypatch.setattr(alpaca_client, "load_params", lambda: data)
     return data
 
 
@@ -487,8 +490,11 @@ class TestGateMaxPositions:
         disabled via the standard toggle mechanism, not a code change."""
         params["guardrail_gates"]["max_positions"] = False
         monkeypatch.setattr(executor, "GATES", {"max_positions": executor.gate_max_positions})
+        monkeypatch.setattr(guardrail_gates, "GATES", {"max_positions": executor.gate_max_positions})
         monkeypatch.setattr(executor, "get_account", lambda account: {"cash": "100000", "equity": "100000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda account: {"cash": "100000", "equity": "100000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [{"symbol": s, "market_value": "100"} for s in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda account: [{"symbol": s, "market_value": "100"} for s in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"])
         granted, reason, results = executor.check_order(
             "stonks", "BUY", "AA", 1, price=10.0, conviction=0.9, sector="Tech")
         assert granted is True
@@ -510,6 +516,7 @@ class TestGateSectorConcentration:
 
     def test_sector_passed_explicitly_within_cap(self, params, monkeypatch):
         monkeypatch.setattr(executor, "_sector_of", lambda t: None)
+        monkeypatch.setattr(guardrail_gates, "_sector_of", lambda t: None)
         context = {"positions": []}
         action = {"action": "BUY", "ticker": "XYZ", "sector": "Tech"}
         granted, reason = executor.gate_sector_concentration(context, action)
@@ -519,6 +526,7 @@ class TestGateSectorConcentration:
     def test_sector_at_cap_blocks(self, params, monkeypatch):
         # Two existing positions both in "Tech" per _sector_of, cap is 2
         monkeypatch.setattr(executor, "_sector_of", lambda t: "Tech" if t in ("AAA", "BBB") else None)
+        monkeypatch.setattr(guardrail_gates, "_sector_of", lambda t: "Tech" if t in ("AAA", "BBB") else None)
         context = {"positions": [{"symbol": "AAA"}, {"symbol": "BBB"}]}
         action = {"action": "BUY", "ticker": "CCC", "sector": "Tech"}
         granted, reason = executor.gate_sector_concentration(context, action)
@@ -771,8 +779,11 @@ class TestConvictionPlayReachesItsOwnGate:
 
     def test_conviction_sized_buy_passes_full_chain(self, params, monkeypatch):
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000", "cash": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000", "cash": "10000"})
         monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [])
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [])
 
         class _FakeConn:
             def close(self):
@@ -810,6 +821,7 @@ class TestGateDuplicateOrder:
     @pytest.fixture(autouse=True)
     def isolated_state(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(alpaca_client, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
         # record_order_submitted() also bumps the daily-order-count file —
         # DAILY_ORDER_COUNT_PATH must be patched explicitly too, not implied
         # by patching STATE_DIR below (it was already bound to the real
@@ -818,12 +830,15 @@ class TestGateDuplicateOrder:
         # confirmed 2026-07-23 — Stan hadn't placed a single real order that
         # day, yet the file showed count=15 purely from repeated pytest runs.
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         # record_order_submitted() also bumps experience.json's total_trades
         # (2026-07-27) — same leak risk as the daily-order-count file above
         # if left unpatched (real workspace-root experience.json, not under
         # STATE_DIR, so patching STATE_DIR alone doesn't cover it).
         monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
+        monkeypatch.setattr(alpaca_client, "EXPERIENCE_PATH", tmp_path / "experience.json")
 
     def test_no_prior_order_passes(self, params):
         granted, reason = executor.gate_duplicate_order({}, {"action": "BUY", "ticker": "DVN"})
@@ -892,6 +907,7 @@ class TestGateOrderIdempotency:
 
     def test_buy_no_open_orders_passes(self, params, monkeypatch):
         monkeypatch.setattr(executor, "get_open_orders", lambda account, ticker=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [])
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is True
@@ -902,6 +918,7 @@ class TestGateOrderIdempotency:
             executor, "get_open_orders",
             lambda account, ticker=None: [self._order("KRC", side="buy", order_id="ord-42")],
         )
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [self._order("KRC", side="buy", order_id="ord-42")])
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is False
@@ -915,6 +932,7 @@ class TestGateOrderIdempotency:
             executor, "get_open_orders",
             lambda account, ticker=None: [self._order("KRC", side="sell")],
         )
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [self._order("KRC", side="sell")])
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is True
@@ -926,6 +944,7 @@ class TestGateOrderIdempotency:
             executor, "get_open_orders",
             lambda account, ticker=None: [self._order("SOFI", side="buy")],
         )
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [self._order("SOFI", side="buy")])
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is True
@@ -934,6 +953,7 @@ class TestGateOrderIdempotency:
         def fail_if_called(account, ticker=None):
             raise AssertionError("gate_order_idempotency must not call Alpaca for a SELL")
         monkeypatch.setattr(executor, "get_open_orders", fail_if_called)
+        monkeypatch.setattr(alpaca_client, "get_open_orders", fail_if_called)
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "SELL", "ticker": "KRC"})
         assert granted is True
@@ -941,6 +961,7 @@ class TestGateOrderIdempotency:
 
     def test_missing_ticker_fails_open(self, params, monkeypatch):
         monkeypatch.setattr(executor, "get_open_orders", lambda account, ticker=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [])
         granted, reason = executor.gate_order_idempotency({"account": "stonks"}, {"action": "BUY"})
         assert granted is True
         assert "no ticker" in reason
@@ -949,6 +970,7 @@ class TestGateOrderIdempotency:
         def fail_if_called(account, ticker=None):
             raise AssertionError("must not call Alpaca without an account")
         monkeypatch.setattr(executor, "get_open_orders", fail_if_called)
+        monkeypatch.setattr(alpaca_client, "get_open_orders", fail_if_called)
         granted, reason = executor.gate_order_idempotency({}, {"action": "BUY", "ticker": "KRC"})
         assert granted is True
         assert "fail-open" in reason
@@ -957,6 +979,7 @@ class TestGateOrderIdempotency:
         def raise_error(account, ticker=None):
             raise RuntimeError("HTTP 429 rate limited")
         monkeypatch.setattr(executor, "get_open_orders", raise_error)
+        monkeypatch.setattr(alpaca_client, "get_open_orders", raise_error)
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is True
@@ -971,6 +994,10 @@ class TestGateOrderIdempotency:
                 self._order("KRC", side="buy", order_id="b"),
             ],
         )
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [
+                self._order("KRC", side="buy", order_id="a"),
+                self._order("KRC", side="buy", order_id="b"),
+            ])
         granted, reason = executor.gate_order_idempotency(
             {"account": "stonks"}, {"action": "BUY", "ticker": "KRC"})
         assert granted is False
@@ -990,6 +1017,7 @@ class TestOrderLock:
 
     def test_same_ticker_serializes(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "ORDER_LOCK_DIR", tmp_path / "order_locks")
+        monkeypatch.setattr(guardrail_gates, "ORDER_LOCK_DIR", tmp_path / "order_locks")
         timestamps = {}
         hold_seconds = 0.3
 
@@ -1014,6 +1042,7 @@ class TestOrderLock:
 
     def test_different_tickers_do_not_contend(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "ORDER_LOCK_DIR", tmp_path / "order_locks")
+        monkeypatch.setattr(guardrail_gates, "ORDER_LOCK_DIR", tmp_path / "order_locks")
         # Must not deadlock: different tickers use different lock files.
         with executor._order_lock("KRC"):
             with executor._order_lock("BFST"):
@@ -1032,10 +1061,13 @@ class TestGateDailyOrderCount:
     @pytest.fixture(autouse=True)
     def isolated_state(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         # See TestGateDuplicateOrder.isolated_state — record_order_submitted()
         # also bumps experience.json's total_trades.
         monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
+        monkeypatch.setattr(alpaca_client, "EXPERIENCE_PATH", tmp_path / "experience.json")
 
     def test_zero_orders_today_passes(self, params):
         granted, reason = executor.gate_daily_order_count({}, {"action": "BUY", "ticker": "DVN"})
@@ -1095,8 +1127,11 @@ class TestGateDailyOrderCount:
         for _ in range(10):
             executor.record_order_submitted("DVN", "BUY", today=self.TODAY)
         monkeypatch.setattr(executor, "GATES", {"order_count_audit": executor.gate_daily_order_count})
+        monkeypatch.setattr(guardrail_gates, "GATES", {"order_count_audit": executor.gate_daily_order_count})
         monkeypatch.setattr(executor, "get_account", lambda account: {"cash": "100000", "portfolio_value": "100000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda account: {"cash": "100000", "portfolio_value": "100000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda account: [])
         granted, reason, results = executor.check_order(
             "stonks", "BUY", "WSC", 1, price=10.0,
             conviction=0.9, sector="Tech")
@@ -1113,7 +1148,9 @@ class TestGateDrawdownCircuitBreaker:
     @pytest.fixture(autouse=True)
     def isolated_state(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", tmp_path / "peak_equity.json")
+        monkeypatch.setattr(alpaca_client, "PEAK_EQUITY_PATH", tmp_path / "peak_equity.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
 
     def test_no_portfolio_value_fails_open(self, params):
         granted, reason = executor.gate_drawdown_circuit_breaker({}, {"action": "BUY"})
@@ -1173,8 +1210,11 @@ class TestGateDrawdownCircuitBreaker:
     def test_disabled_via_toggle_skips_in_check_order_chain(self, params, monkeypatch):
         params["guardrail_gates"]["drawdown_circuit_breaker"] = False
         monkeypatch.setattr(executor, "GATES", {"drawdown_circuit_breaker": executor.gate_drawdown_circuit_breaker})
+        monkeypatch.setattr(guardrail_gates, "GATES", {"drawdown_circuit_breaker": executor.gate_drawdown_circuit_breaker})
         monkeypatch.setattr(executor, "get_account", lambda account: {"cash": "100000", "equity": "5000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda account: {"cash": "100000", "equity": "5000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda account: [])
         granted, reason, results = executor.check_order(
             "stonks", "BUY", "WSC", 1, price=10.0, conviction=0.9, sector="Tech")
         assert granted is True
@@ -1190,18 +1230,24 @@ class TestCheckOrderChain:
     @pytest.fixture
     def mock_account(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "get_account", lambda account: {"equity": "10000", "cash": "8000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda account: {"equity": "10000", "cash": "8000"})
         monkeypatch.setattr(executor, "get_positions", lambda account: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda account: [])
         # gate_order_idempotency (2026-07-27) calls Alpaca directly — must be
         # patched too or these tests would attempt a real network call.
         monkeypatch.setattr(executor, "get_open_orders", lambda account, ticker=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [])
         # Isolate from any real state/*.json so gate_duplicate_order and
         # gate_daily_order_count don't depend on filesystem state left over
         # from real trading (confirmed 2026-07-23: Stan had genuinely
         # placed 10 real orders today, tripping gate_daily_order_count for
         # real against these tests' un-isolated state).
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(alpaca_client, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", tmp_path / "peak_equity.json")
+        monkeypatch.setattr(alpaca_client, "PEAK_EQUITY_PATH", tmp_path / "peak_equity.json")
 
     def test_all_gates_pass(self, params, mock_account, monkeypatch):
         monkeypatch.setitem(executor.GATES, "hours", lambda c, a: (True, "market open"))
@@ -1280,6 +1326,7 @@ class TestCheckOrderChain:
             executor, "get_open_orders",
             lambda account, ticker=None: [{"id": "ord-9", "symbol": "SOFI", "side": "buy"}],
         )
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda account, ticker=None: [{"id": "ord-9", "symbol": "SOFI", "side": "buy"}])
         granted, reason, results = executor.check_order(
             "stonks", "BUY", "SOFI", 5, price=4.0, conviction=0.9,
         )
@@ -1374,6 +1421,7 @@ class TestCheckStops:
 
     def test_no_breach(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["position_size_trim"] = False  # not under test here
@@ -1381,15 +1429,18 @@ class TestCheckStops:
         # must stay clear of the 5% trailing-stop boundary (9.5 exactly
         # breaches via <=) to genuinely exercise the no-breach path.
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.6)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.6)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
     def test_hard_stop_breach(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
         breaches = executor.check_stops("stonks")
         assert len(breaches) == 1
         assert breaches[0]["ticker"] == "SOFI"
@@ -1397,38 +1448,45 @@ class TestCheckStops:
 
     def test_trailing_stop_breach_after_peak(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 5.0}  # wide hard stop, won't trigger
         params["guardrail_gates"]["position_size_trim"] = False
         # Tick 1: price runs up to 15 (new peak), tick 2: drops to 14.2 (>5% off peak 15 -> breach)
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 15.0)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", 10.0, 15.0)])
         breaches = executor.check_stops("stonks")
         assert breaches == []  # first observation, no drop yet
 
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 14.2)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", 10.0, 14.2)])
         breaches = executor.check_stops("stonks")
         assert len(breaches) == 1
         assert breaches[0]["stop_type"] == "trailing"
 
     def test_disabled_gates_produce_no_breaches(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["hard_stop"] = False
         params["guardrail_gates"]["trailing_stop"] = False
         params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 5.0)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", 10.0, 5.0)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
     def test_state_cleaned_up_for_closed_positions(self, params, monkeypatch, tmp_path):
         state_path = tmp_path / "guardrail_stops.json"
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
         state_path.write_text(json.dumps({"CLOSED": {"peak_price": 10.0, "entry_price": 9.0}}))
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.5)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", 10.0, 9.5)])
         executor.check_stops("stonks")
         saved = json.loads(state_path.read_text())
         assert "CLOSED" not in saved
@@ -1441,14 +1499,17 @@ class TestCheckStops:
 
     def test_oversized_position_flagged_with_trim_amount(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
         # 5 shares @ $211.76 = $1058.80 = 10.6% of $10,000 portfolio, cap is 6% ($600)
         monkeypatch.setattr(
             executor, "get_positions",
             lambda a: [self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80)],
         )
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80)])
         breaches = executor.check_stops("stonks")
         oversized = [b for b in breaches if b["stop_type"] == "oversized"]
         assert len(oversized) == 1
@@ -1462,19 +1523,23 @@ class TestCheckStops:
 
     def test_within_cap_not_flagged(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
         # $500 of $10,000 = 5%, within the 6% cap
         monkeypatch.setattr(
             executor, "get_positions",
             lambda a: [self._position("SOFI", entry=10.0, current=10.0, qty=50, market_value=500.0)],
         )
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SOFI", entry=10.0, current=10.0, qty=50, market_value=500.0)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
     def test_disabling_position_size_trim_skips_the_check(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         params["guardrail_gates"]["position_size_trim"] = False
@@ -1482,10 +1547,12 @@ class TestCheckStops:
         def fail_if_called(a):
             raise AssertionError("get_account should not be called when position_size_trim is disabled")
         monkeypatch.setattr(executor, "get_account", fail_if_called)
+        monkeypatch.setattr(alpaca_client, "get_account", fail_if_called)
         monkeypatch.setattr(
             executor, "get_positions",
             lambda a: [self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80)],
         )
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
@@ -1494,10 +1561,16 @@ class TestCheckStops:
         loop the way a hard-stop breach does (continue), so other tickers'
         checks still run in the same pass."""
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
         monkeypatch.setattr(executor, "get_positions", lambda a: [
+            self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80),  # oversized
+            self._position("GME", entry=22.0, current=19.0, qty=10, market_value=190.0),          # hard stop (-13.6%)
+        ])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [
             self._position("NVDA", entry=207.63, current=211.76, qty=5, market_value=1058.80),  # oversized
             self._position("GME", entry=22.0, current=19.0, qty=10, market_value=190.0),          # hard stop (-13.6%)
         ])
@@ -1526,31 +1599,37 @@ class TestCheckStops:
 
     def test_conviction_play_within_its_own_cap_not_flagged_oversized(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 10.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
         self._mock_conviction_play(monkeypatch, "NVDA")
         # $740 of $10,000 = 7.4% -- over the flat 6% cap, under conviction's 10%.
         monkeypatch.setattr(
             executor, "get_positions",
             lambda a: [self._position("NVDA", entry=185.0, current=185.0, qty=4, market_value=740.0)],
         )
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("NVDA", entry=185.0, current=185.0, qty=4, market_value=740.0)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
     def test_conviction_play_still_flagged_past_its_own_cap(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 10.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
         self._mock_conviction_play(monkeypatch, "NVDA")
         # $1200 of $10,000 = 12% -- over conviction's own 10% cap too.
         monkeypatch.setattr(
             executor, "get_positions",
             lambda a: [self._position("NVDA", entry=185.0, current=185.0, qty=6, market_value=1200.0)],
         )
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("NVDA", entry=185.0, current=185.0, qty=6, market_value=1200.0)])
         breaches = executor.check_stops("stonks")
         oversized = [b for b in breaches if b["stop_type"] == "oversized"]
         assert len(oversized) == 1
@@ -1565,16 +1644,19 @@ class TestCheckStops:
         test_conviction_play_still_flagged_past_its_own_cap above), so this
         isolates the exemption to the whitelist, not conviction plays broadly."""
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 20.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
+        monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
         self._mock_conviction_play(monkeypatch, "SPY")
         # $5000 of $10,000 = 50% -- way past even the 20% conviction cap.
         monkeypatch.setattr(
             executor, "get_positions",
             lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=6, market_value=5000.0)],
         )
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("SPY", entry=773.26, current=773.26, qty=6, market_value=5000.0)])
         breaches = executor.check_stops("stonks")
         oversized = [b for b in breaches if b["stop_type"] == "oversized"]
         assert oversized == []
@@ -1616,6 +1698,7 @@ class TestCheckStops:
 
     def test_active_long_play_skips_trailing_stop(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0  # wide, won't trigger
         params["risk"]["trailing_stop_pct"] = 5.0
@@ -1624,13 +1707,16 @@ class TestCheckStops:
         self._mock_long_play(monkeypatch, "BVS", future)
         # peak 15 -> drop to 14.2 would normally breach the 5% trailing stop
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 15.0)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("BVS", 10.0, 15.0)])
         executor.check_stops("stonks")
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 14.2)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("BVS", 10.0, 14.2)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
     def test_active_long_play_hard_stop_still_applies(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -10.0
         params["risk"]["trailing_stop_pct"] = 5.0
@@ -1638,12 +1724,14 @@ class TestCheckStops:
         future = self._relative_date(7)
         self._mock_long_play(monkeypatch, "BVS", future)
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 8.5)])  # -15%
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("BVS", 10.0, 8.5)])
         breaches = executor.check_stops("stonks")
         assert len(breaches) == 1
         assert breaches[0]["stop_type"] == "hard"
 
     def test_long_play_resolves_at_deadline(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0
         params["risk"]["trailing_stop_pct"] = 50.0
@@ -1652,6 +1740,7 @@ class TestCheckStops:
         resolve_calls, label_calls = [], []
         self._mock_long_play(monkeypatch, "BVS", past, resolve_calls=resolve_calls, label_calls=label_calls)
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 11.0)])  # +10%, "hit"
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("BVS", 10.0, 11.0)])
         breaches = executor.check_stops("stonks")
         assert len(breaches) == 1
         assert breaches[0]["stop_type"] == "long_play_resolved"
@@ -1667,6 +1756,7 @@ class TestCheckStops:
 
     def test_long_play_resolution_records_miss_when_down(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0
         params["risk"]["trailing_stop_pct"] = 50.0
@@ -1675,12 +1765,14 @@ class TestCheckStops:
         resolve_calls, label_calls = [], []
         self._mock_long_play(monkeypatch, "BVS", past, resolve_calls=resolve_calls, label_calls=label_calls)
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 9.0)])  # -10%, "miss"
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("BVS", 10.0, 9.0)])
         breaches = executor.check_stops("stonks")
         assert breaches[0]["long_play_hit"] is False
         assert label_calls[0][1] == 0  # label_win
 
     def test_long_play_toggle_disabled_skips_trader_db(self, params, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0
         params["risk"]["trailing_stop_pct"] = 50.0
@@ -1691,6 +1783,7 @@ class TestCheckStops:
             raise AssertionError("must not query trader_db when guardrail_gates.long_play is False")
         monkeypatch.setattr(executor.trader_db, "get_conn", fail_if_called)
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("BVS", 10.0, 10.5)])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [self._position("BVS", 10.0, 10.5)])
         breaches = executor.check_stops("stonks")
         assert breaches == []
 
@@ -1733,6 +1826,7 @@ class TestCloseTradeOutcome:
         # must be patched explicitly here or these tests would write into
         # the real production experience.json on every run.
         monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
+        monkeypatch.setattr(alpaca_client, "EXPERIENCE_PATH", tmp_path / "experience.json")
         return calls
 
     def test_win_updates_bankroll_and_labels_outcome(self, fake_bankroll_module, monkeypatch):
@@ -1824,6 +1918,7 @@ class TestExperienceTracking:
     @pytest.fixture(autouse=True)
     def isolated_experience(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
+        monkeypatch.setattr(alpaca_client, "EXPERIENCE_PATH", tmp_path / "experience.json")
 
     def test_load_missing_file_returns_zeroed_defaults(self):
         state = executor._load_experience()
@@ -1906,13 +2001,17 @@ class TestExperienceTracking:
         def broken_save(state):
             raise OSError("disk full")
         monkeypatch.setattr(executor, "_save_experience", broken_save)
+        monkeypatch.setattr(guardrail_gates, "_save_experience", broken_save)
         executor.record_experience_trade()  # must not raise
         executor.record_experience_outcome(is_win=True)  # must not raise
 
     def test_record_order_submitted_bumps_total_trades(self, monkeypatch, tmp_path):
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(alpaca_client, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         executor.record_order_submitted("KRC", "BUY", today="2026-07-27")
         state = json.loads(executor.EXPERIENCE_PATH.read_text())
         assert state["total_trades"] == 1
@@ -1922,8 +2021,11 @@ class TestExperienceTracking:
         # git history: every executed order (BUY or SELL) bumped
         # total_trades, not just closes.
         monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
+        monkeypatch.setattr(alpaca_client, "RECENT_ORDERS_PATH", tmp_path / "recent_orders.json")
         monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
+        monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", tmp_path / "daily_order_count.json")
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
+        monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         executor.record_order_submitted("KRC", "BUY", today="2026-07-27")
         executor.record_order_submitted("KRC", "SELL", today="2026-07-27")
         state = json.loads(executor.EXPERIENCE_PATH.read_text())
@@ -1984,6 +2086,7 @@ class TestEnsureProtectiveStop:
         params["risk"]["stop_loss_pct"] = -10.0
         placed = []
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [])
         monkeypatch.setattr(executor, "place_stop_order",
                              lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-1"})
         result = executor.ensure_protective_stop("stonks", "SOFI", position=self._position())
@@ -1995,6 +2098,10 @@ class TestEnsureProtectiveStop:
         cancelled and re-placed, that's pure order churn."""
         params["risk"]["stop_loss_pct"] = -10.0
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop",
+             "stop_price": "9.00", "qty": "10"},
+        ])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [
             {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop",
              "stop_price": "9.00", "qty": "10"},
         ])
@@ -2011,6 +2118,10 @@ class TestEnsureProtectiveStop:
             {"id": "stop-old", "symbol": "SOFI", "side": "sell", "type": "stop",
              "stop_price": "9.00", "qty": "25"},
         ] if not cancelled else [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-old", "symbol": "SOFI", "side": "sell", "type": "stop",
+             "stop_price": "9.00", "qty": "25"},
+        ] if not cancelled else [])
         monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
         monkeypatch.setattr(executor, "place_stop_order",
                              lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
@@ -2022,7 +2133,12 @@ class TestEnsureProtectiveStop:
     def test_no_position_cancels_orphan_stop(self, params, monkeypatch):
         cancelled = []
         monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [])
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-orphan", "symbol": "SOFI", "side": "sell", "type": "stop",
+             "stop_price": "9.00", "qty": "10"},
+        ])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [
             {"id": "stop-orphan", "symbol": "SOFI", "side": "sell", "type": "stop",
              "stop_price": "9.00", "qty": "10"},
         ])
@@ -2036,6 +2152,7 @@ class TestEnsureProtectiveStop:
         position needs a market exit now — check_stops() reports it."""
         params["risk"]["stop_loss_pct"] = -10.0
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [])
         monkeypatch.setattr(executor, "place_stop_order", lambda *a, **k: pytest.fail("must not submit"))
         result = executor.ensure_protective_stop(
             "stonks", "SOFI", position=self._position(current="8.50"))
@@ -2050,6 +2167,7 @@ class TestEnsureProtectiveStop:
     def test_api_error_never_raises(self, params, monkeypatch):
         params["risk"]["stop_loss_pct"] = -10.0
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [])
 
         def boom(*a, **k):
             raise RuntimeError("alpaca 500")
@@ -2070,12 +2188,17 @@ class TestReconcileProtectiveStops:
             {"symbol": "SOFI", "qty": "10", "avg_entry_price": "10.00",
              "current_price": "10.50", "market_value": "105.00"},
         ])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [
+            {"symbol": "SOFI", "qty": "10", "avg_entry_price": "10.00",
+             "current_price": "10.50", "market_value": "105.00"},
+        ])
 
         def fake_open_orders(account, ticker=None):
             if ticker is None:
                 return list(orders)
             return [o for o in orders if o["symbol"] == ticker]
         monkeypatch.setattr(executor, "get_open_orders", fake_open_orders)
+        monkeypatch.setattr(alpaca_client, "get_open_orders", fake_open_orders)
         monkeypatch.setattr(executor, "cancel_order", lambda a, oid: cancelled.append(oid) or True)
         monkeypatch.setattr(executor, "place_stop_order",
                              lambda a, t, q, p: placed.append((t, q, p)) or {"id": "stop-new"})
@@ -2091,6 +2214,7 @@ class TestReconcileProtectiveStops:
         def boom(account):
             raise RuntimeError("alpaca down")
         monkeypatch.setattr(executor, "get_positions", boom)
+        monkeypatch.setattr(alpaca_client, "get_positions", boom)
         results = executor.reconcile_protective_stops("stonks")
         assert results[0]["status"] == "error"
 
@@ -2099,6 +2223,11 @@ class TestCancelProtectiveStops:
     def test_cancels_only_sell_stops(self, params, monkeypatch):
         cancelled = []
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop"},
+            {"id": "limit-1", "symbol": "SOFI", "side": "sell", "type": "limit"},
+            {"id": "buy-1", "symbol": "SOFI", "side": "buy", "type": "stop"},
+        ])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [
             {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop"},
             {"id": "limit-1", "symbol": "SOFI", "side": "sell", "type": "limit"},
             {"id": "buy-1", "symbol": "SOFI", "side": "buy", "type": "stop"},
@@ -2112,6 +2241,9 @@ class TestCancelProtectiveStops:
         """A 422 means the order is already gone; the SELL that follows is
         where a genuine problem would surface loudly."""
         monkeypatch.setattr(executor, "get_open_orders", lambda a, t=None: [
+            {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop"},
+        ])
+        monkeypatch.setattr(alpaca_client, "get_open_orders", lambda a, t=None: [
             {"id": "stop-1", "symbol": "SOFI", "side": "sell", "type": "stop"},
         ])
 
@@ -2143,6 +2275,7 @@ class TestReconcileStoppedOutPositions:
     def test_closes_books_from_the_broker_fill(self, params, monkeypatch, tmp_path):
         closed, outcomes = [], []
         monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [])
         self._mock_db(monkeypatch, [
             {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
         ], closed)
@@ -2167,6 +2300,7 @@ class TestReconcileStoppedOutPositions:
     def test_still_held_positions_untouched(self, params, monkeypatch):
         closed = []
         monkeypatch.setattr(executor, "get_positions", lambda a: [{"symbol": "SOFI"}])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [{"symbol": "SOFI"}])
         self._mock_db(monkeypatch, [
             {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
         ], closed)
@@ -2180,6 +2314,7 @@ class TestReconcileStoppedOutPositions:
         win/loss label are downstream of this number."""
         closed = []
         monkeypatch.setattr(executor, "get_positions", lambda a: [])
+        monkeypatch.setattr(alpaca_client, "get_positions", lambda a: [])
         self._mock_db(monkeypatch, [
             {"ticker": "SOFI", "shares": 10.0, "entry_price": 10.0, "entry_time": "t1"},
         ], closed)
@@ -2194,4 +2329,5 @@ class TestReconcileStoppedOutPositions:
         def boom(account):
             raise RuntimeError("alpaca down")
         monkeypatch.setattr(executor, "get_positions", boom)
+        monkeypatch.setattr(alpaca_client, "get_positions", boom)
         assert executor.reconcile_stopped_out_positions("stonks")[0]["status"] == "error"

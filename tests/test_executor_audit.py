@@ -26,6 +26,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import db_writer  # noqa: E402
+import alpaca_client  # noqa: E402
 import executor  # noqa: E402
 import trader_db  # noqa: E402
 
@@ -45,11 +46,16 @@ def isolated_db_and_env(monkeypatch, tmp_path):
     # can never pollute Stan's real daily order count or recent-orders log.
     state_dir = tmp_path / "state"
     monkeypatch.setattr(executor, "STATE_DIR", state_dir)
+    monkeypatch.setattr(alpaca_client, "STATE_DIR", state_dir)
     monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_dir / "guardrail_stops.json")
     monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", state_dir / "recent_orders.json")
+    monkeypatch.setattr(alpaca_client, "RECENT_ORDERS_PATH", state_dir / "recent_orders.json")
     monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", state_dir / "daily_order_count.json")
+    monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", state_dir / "daily_order_count.json")
     monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", state_dir / "peak_equity.json")
+    monkeypatch.setattr(alpaca_client, "PEAK_EQUITY_PATH", state_dir / "peak_equity.json")
     monkeypatch.setattr(executor, "EXPERIENCE_PATH", tmp_path / "experience.json")
+    monkeypatch.setattr(alpaca_client, "EXPERIENCE_PATH", tmp_path / "experience.json")
     monkeypatch.setattr(deployment_pressure, "STATE_FILE", state_dir / "deployment_pressure.json")
     yield
     db_writer._buffer.clear()

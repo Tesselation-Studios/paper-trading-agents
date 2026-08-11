@@ -21,6 +21,7 @@ import pytest
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
+import alpaca_client  # noqa: E402
 import executor  # noqa: E402
 import trader_db  # noqa: E402
 
@@ -44,8 +45,11 @@ def isolated_env(monkeypatch, tmp_path):
     monkeypatch.setenv("ALPACA_STONKS_SECRET", "test-secret")
     state_dir = tmp_path / "state"
     monkeypatch.setattr(executor, "STATE_DIR", state_dir)
+    monkeypatch.setattr(alpaca_client, "STATE_DIR", state_dir)
     monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", state_dir / "daily_order_count.json")
+    monkeypatch.setattr(alpaca_client, "DAILY_ORDER_COUNT_PATH", state_dir / "daily_order_count.json")
     monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", state_dir / "peak_equity.json")
+    monkeypatch.setattr(alpaca_client, "PEAK_EQUITY_PATH", state_dir / "peak_equity.json")
     monkeypatch.setattr(deployment_pressure, "STATE_FILE", state_dir / "deployment_pressure.json")
     yield
 
@@ -54,6 +58,7 @@ def isolated_env(monkeypatch, tmp_path):
 def params(monkeypatch):
     data = json.loads(json.dumps(DEFAULT_PARAMS))  # deep copy, per-test mutation safe
     monkeypatch.setattr(executor, "load_params", lambda: data)
+    monkeypatch.setattr(alpaca_client, "load_params", lambda: data)
     return data
 
 
