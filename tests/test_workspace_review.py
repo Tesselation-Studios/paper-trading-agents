@@ -349,6 +349,8 @@ class TestRunAllChecksAndExitCodes:
         monkeypatch.setattr(workspace_review, "PARAMS_PATH", tmp_path / "params.json")
         monkeypatch.setattr(workspace_review, "STRATEGY_PATH", tmp_path / "strategy.md")
         monkeypatch.setattr(workspace_review, "EXECUTOR_PATH", scripts_dir / "executor.py")
+        monkeypatch.setattr(workspace_review, "GUARDRAIL_GATES_PATH", scripts_dir / "guardrail_gates.py")
+        monkeypatch.setattr(workspace_review, "STOP_SCANNER_PATH", scripts_dir / "stop_scanner.py")
         monkeypatch.setattr(workspace_review, "SCRIPTS_DIR", scripts_dir)
         monkeypatch.setattr(workspace_review, "STATE_DIR", tmp_path / "state")
         monkeypatch.setattr(workspace_review, "SENTINEL_PATH", tmp_path / "state" / ".workspace_blocked")
