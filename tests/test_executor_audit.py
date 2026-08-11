@@ -48,6 +48,7 @@ def isolated_db_and_env(monkeypatch, tmp_path):
     monkeypatch.setattr(executor, "STATE_DIR", state_dir)
     monkeypatch.setattr(alpaca_client, "STATE_DIR", state_dir)
     monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_dir / "guardrail_stops.json")
+    monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", state_dir / "guardrail_stops.json")
     monkeypatch.setattr(executor, "RECENT_ORDERS_PATH", state_dir / "recent_orders.json")
     monkeypatch.setattr(alpaca_client, "RECENT_ORDERS_PATH", state_dir / "recent_orders.json")
     monkeypatch.setattr(executor, "DAILY_ORDER_COUNT_PATH", state_dir / "daily_order_count.json")

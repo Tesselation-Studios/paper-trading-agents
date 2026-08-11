@@ -1424,6 +1424,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["position_size_trim"] = False  # not under test here
         # -4% on first observation: peak inits to entry_price (10.0), so this
@@ -1438,6 +1439,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["position_size_trim"] = False
         monkeypatch.setattr(executor, "get_positions", lambda a: [self._position("SOFI", 10.0, 8.5)])
@@ -1451,6 +1453,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 5.0}  # wide hard stop, won't trigger
         params["guardrail_gates"]["position_size_trim"] = False
         # Tick 1: price runs up to 15 (new peak), tick 2: drops to 14.2 (>5% off peak 15 -> breach)
@@ -1469,6 +1472,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["hard_stop"] = False
         params["guardrail_gates"]["trailing_stop"] = False
@@ -1483,6 +1487,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", state_path)
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", state_path)
         state_path.write_text(json.dumps({"CLOSED": {"peak_price": 10.0, "entry_price": 9.0}}))
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 5.0}
         params["guardrail_gates"]["position_size_trim"] = False
@@ -1502,6 +1507,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
         monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
@@ -1526,6 +1532,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
         monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
@@ -1542,6 +1549,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         params["guardrail_gates"]["position_size_trim"] = False
 
@@ -1564,6 +1572,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -10.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
         monkeypatch.setattr(alpaca_client, "get_account", lambda a: {"equity": "10000"})
@@ -1602,6 +1611,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 10.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
@@ -1620,6 +1630,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 10.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
@@ -1647,6 +1658,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"] = {"stop_loss_pct": -50.0, "trailing_stop_pct": 50.0, "max_position_pct": 6.0,
                            "conviction_play": {"position_size_pct": 20.0}}
         monkeypatch.setattr(executor, "get_account", lambda a: {"equity": "10000"})
@@ -1701,6 +1713,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0  # wide, won't trigger
         params["risk"]["trailing_stop_pct"] = 5.0
         params["guardrail_gates"]["position_size_trim"] = False
@@ -1719,6 +1732,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -10.0
         params["risk"]["trailing_stop_pct"] = 5.0
         params["guardrail_gates"]["position_size_trim"] = False
@@ -1734,6 +1748,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0
         params["risk"]["trailing_stop_pct"] = 50.0
         params["guardrail_gates"]["position_size_trim"] = False
@@ -1759,6 +1774,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0
         params["risk"]["trailing_stop_pct"] = 50.0
         params["guardrail_gates"]["position_size_trim"] = False
@@ -1775,6 +1791,7 @@ class TestCheckStops:
         monkeypatch.setattr(executor, "STATE_DIR", tmp_path)
         monkeypatch.setattr(alpaca_client, "STATE_DIR", tmp_path)
         monkeypatch.setattr(executor, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
+        monkeypatch.setattr(alpaca_client, "STOPS_STATE_PATH", tmp_path / "guardrail_stops.json")
         params["risk"]["stop_loss_pct"] = -50.0
         params["risk"]["trailing_stop_pct"] = 50.0
         params["guardrail_gates"]["position_size_trim"] = False

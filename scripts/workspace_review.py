@@ -57,6 +57,7 @@ PARAMS_PATH = REPO_ROOT / "params.json"
 STRATEGY_PATH = REPO_ROOT / "strategy.md"
 EXECUTOR_PATH = REPO_ROOT / "scripts" / "executor.py"
 GUARDRAIL_GATES_PATH = REPO_ROOT / "scripts" / "guardrail_gates.py"
+STOP_SCANNER_PATH = REPO_ROOT / "scripts" / "stop_scanner.py"
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 STATE_DIR = REPO_ROOT / "state"
 SENTINEL_PATH = STATE_DIR / ".workspace_blocked"
@@ -126,10 +127,12 @@ def _extract_executor_gate_references(executor_text: str) -> set:
     trailing_stop/position_size_trim aren't in GATES at all, they're read
     directly; still in executor.py as of this module split).
 
-    2026-08-11: executor.py was split up, GATES/most toggles.get() calls
-    moved to scripts/guardrail_gates.py -- the caller now passes in both
-    files' text concatenated so this keeps working across the split,
-    rather than this function needing to know which file to read.
+    2026-08-11: executor.py was split up -- GATES/most toggles.get() calls
+    moved to scripts/guardrail_gates.py, check_stops()'s hard_stop/
+    trailing_stop/position_size_trim toggles moved to scripts/stop_scanner.py.
+    The caller now passes in all three files' text concatenated so this
+    keeps working across the split, rather than this function needing to
+    know which file to read.
     """
     gates_dict_keys = set(re.findall(r'^\s*"([a-z_]+)":\s*gate_\w+', executor_text, re.MULTILINE))
     toggle_keys = set(re.findall(r'toggles\.get\(\s*"([a-z_]+)"', executor_text))
@@ -364,7 +367,9 @@ def run_all_checks() -> Dict[str, Any]:
     params_raw = _load_params_raw()
     strategy_text = STRATEGY_PATH.read_text() if STRATEGY_PATH.exists() else ""
     executor_text = EXECUTOR_PATH.read_text() if EXECUTOR_PATH.exists() else ""
-    gates_text = executor_text + (GUARDRAIL_GATES_PATH.read_text() if GUARDRAIL_GATES_PATH.exists() else "")
+    gates_text = executor_text
+    gates_text += GUARDRAIL_GATES_PATH.read_text() if GUARDRAIL_GATES_PATH.exists() else ""
+    gates_text += STOP_SCANNER_PATH.read_text() if STOP_SCANNER_PATH.exists() else ""
 
     findings: List[Finding] = []
     params_findings, params = check_params_json_valid(params_raw)
