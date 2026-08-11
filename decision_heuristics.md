@@ -96,7 +96,7 @@ No in-file changelog — same convention as `strategy.md`: `git log decision_heu
 **Origin**: split from `strategy.md` into this file 2026-08-10 (previously strategy.md's conviction-play eligibility anchor prose, 2026-08-03).
 **Trigger**: `record_decision.py reconcile` output shows `agreement: true` AND `signal_count >= 3` directional signals AND `combined_confidence >= 0.60`, on a candidate where a real researched thesis exists (fundamentals/congress/wiki/momentum — not technicals alone).
 **Recommended action**: BUY, `--play-type conviction`. `--thesis-claim`/`--thesis-invalidation` are hard-required regardless of this node.
-**Conviction tier**: high-conviction (entry sense)
+**Conviction tier**: standard (starts here; earns high-conviction via own tracked hit-rate, see skills/decision-tree.md)
 **Sizing guidance**: target 60-100% of `risk.conviction_play.position_size_pct` (read live from params.json), gated by `gate_position_size`/`gate_bankroll`/`gate_conviction_play` exactly as today — this node grants no new sizing authority, it's an anchor for judgment, not a formula.
 **Evidence**: this IS the existing strategy.md anchor. Hit definition: eventual `label_win` on decisions tagged `play_type: conviction` AND this node id.
 **Confidence (tracked)**: insufficient_data (n=0 tagged with this node id as of ship). Starts at `standard` tier, NOT bootstrap-seeded high-conviction — unlike the restraint/exit nodes above, this node's historical occurrences weren't cleanly tallied against false positives the same way. Starts conservative; earns high-conviction tier via its own tracked number.
