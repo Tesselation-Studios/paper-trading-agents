@@ -823,9 +823,13 @@ def gate_long_play(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[boo
             f"already {len(open_long_plays)} open long play(s) ({tickers}), "
             f"at max_concurrent_long_plays cap of {max_concurrent}"
         )
+    undersized_note = (
+        f" ⚠️ under 50% of long-play target range ({size_pct:.1f}%) — consider scripts/position_sizing.py"
+        if total_pct < 0.5 * size_pct else ""
+    )
     return True, (
         f"{ticker} long play at {total_pct:.1f}% of portfolio (cap {size_pct:.1f}%), "
-        f"{len(open_long_plays)}/{max_concurrent} concurrent long plays"
+        f"{len(open_long_plays)}/{max_concurrent} concurrent long plays{undersized_note}"
     )
 
 
@@ -884,9 +888,13 @@ def gate_conviction_play(context: Dict[str, Any], action: Dict[str, Any]) -> Tup
             f"already {len(open_conviction_plays)} open conviction play(s) ({tickers}), "
             f"at max_concurrent_conviction_plays cap of {max_concurrent}"
         )
+    undersized_note = (
+        f" ⚠️ under 50% of conviction-play target range ({size_pct:.1f}%) — consider scripts/position_sizing.py"
+        if total_pct < 0.5 * size_pct else ""
+    )
     return True, (
         f"{ticker} conviction play at {total_pct:.1f}% of portfolio (cap {size_pct:.1f}%), "
-        f"{len(open_conviction_plays)}/{max_concurrent} concurrent conviction plays"
+        f"{len(open_conviction_plays)}/{max_concurrent} concurrent conviction plays{undersized_note}"
     )
 
 

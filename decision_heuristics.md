@@ -8,7 +8,7 @@ Two sections: **Active** (real leaf + sizing authority) and **Watch** (named, tr
 
 No in-file changelog — same convention as `strategy.md`: `git log decision_heuristics.md` plus the corresponding `proposals/*.md` entry is the audit trail for every status/tier/content change.
 
-**Conviction tiers** (see `params.json: decision_tree.tier_promotion` for the numeric promotion bar): `probe` (today's 1-3sh default, `risk.max_position_pct`), `standard` (more of the *same* cap — no new gate), `high-conviction` (reach for `--play-type conviction`, `risk.conviction_play.position_size_pct` — read live, don't hardcode the number here). For `risk/restraint` and `risk/exit` node types, tier is inverted: high tier means strongly trust the HOLD/SELL leaf, not size up a BUY — see each node's `Sizing guidance`.
+**Conviction tiers** (see `params.json: decision_tree.tier_promotion` for the numeric promotion bar): `probe` (smallest of `risk.probe_position_pct`% of portfolio or `risk.probe_max_dollars`, floor 1 share — redefined 2026-08-11 from a flat 1-3sh default, which was price-independent and landing the same "1 share" on a $1.50 stock and a $300 stock), `standard` (`risk.max_position_pct`), `high-conviction` (reach for `--play-type conviction`, `risk.conviction_play.position_size_pct` — read live, don't hardcode the number here). Use `python3 scripts/position_sizing.py --tier <tier> --price <price>` to convert any tier's % target into a suggested `--qty` — an optional calculator for the judgment call below, not a formula it replaces. For `risk/restraint` and `risk/exit` node types, tier is inverted: high tier means strongly trust the HOLD/SELL leaf, not size up a BUY — see each node's `Sizing guidance`.
 
 ---
 
@@ -212,10 +212,10 @@ No in-file changelog — same convention as `strategy.md`: `git log decision_heu
 
 **Status**: watch
 **Type**: context/regime
-**Trigger (tentative)**: index-level regime reads CHOPPY AND an individual candidate shows an independently confirmed setup (its own clean technical + catalyst/fundamental signal) not explained by the index read.
-**Recommended action**: n/a (not a leaf). A match is a cue to apply extra scrutiny — don't auto-skip solely because the index regime is CHOPPY, but also don't treat this as license to override CHOPPY gating without real name-specific evidence.
+**Trigger (tentative)**: index-level regime reads `mean_reversion` or `volatility_spike` (direction-ambiguous, the K-Means analog of the old HMM's CHOPPY — see `get_market_regime`) AND an individual candidate shows an independently confirmed setup (its own clean technical + catalyst/fundamental signal) not explained by the index read.
+**Recommended action**: n/a (not a leaf). A match is a cue to apply extra scrutiny — don't auto-skip solely because the index regime is direction-ambiguous, but also don't treat this as license to override that gating without real name-specific evidence.
 **Conviction tier**: probe (forced)
 **Sizing guidance**: n/a
-**Evidence**: recurring across 4+ tick-replay sessions (SOFI/RDDT/MARA Aug 3, BLFS/LINE/DXCM/BLBD Aug 7), explicitly flagged in `tasks/pending.md` (2026-08-03) as "needs more data," not yet strong enough for a live rule change. See also the separate, ongoing investigation into whether the regime classifier itself is well-calibrated (0.644/0.92 confidence-formula issue, 5-min-bar feature timeframe) — tracked separately, not folded into this node.
+**Evidence**: recurring across 4+ tick-replay sessions (SOFI/RDDT/MARA Aug 3, BLFS/LINE/DXCM/BLBD Aug 7, all under the old HMM's CHOPPY label), explicitly flagged in `tasks/pending.md` (2026-08-03) as "needs more data," not yet strong enough for a live rule change. 2026-08-11: `get_market_regime` switched from the HMM (SUSTAINABLE/EXHAUSTED/CHOPPY) to a local K-Means classifier (momentum_bull/momentum_bear/mean_reversion/volatility_spike/low_vol_drift) — the confidence-formula calibration issue this line used to flag as "separate, ongoing" was fixed for the HMM and is now moot (that model is retired from the live path); re-accumulate evidence under the new labels before trusting the occurrence count above as still current.
 **Confidence (tracked)**: n/a.
 **Override note**: n/a.

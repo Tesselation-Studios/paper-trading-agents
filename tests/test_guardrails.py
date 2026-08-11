@@ -31,6 +31,7 @@ MARKET_OPEN_TS = datetime.datetime(2026, 7, 22, 12, 0, tzinfo=ZoneInfo("America/
 DEFAULT_PARAMS = {
     "risk": {"max_position_pct": 6.0, "max_positions": 25, "conviction_floor": 0.5,
               "conviction_floor_min": 0.35,
+              "probe_position_pct": 1.5, "probe_max_dollars": 150.0,
               "duplicate_order_cooldown_seconds": 60, "stop_loss_pct": -10.0,
               "trailing_stop_pct": 5.0,
               "max_portfolio_risk_pct": 8.0,
@@ -290,6 +291,16 @@ class TestGateLongPlay:
         assert granted is True
         assert "fail-open" in reason
 
+    def test_well_under_target_passes_with_undersized_note(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [])
+        # cap is 3.0% of 10000 = $300; this buy is $50 (0.5%), well under 1.5% (half the cap)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "BVS", "quantity": 5, "price": 10.0, "play_type": "long"}
+        granted, reason = executor.gate_long_play(context, action)
+        assert granted is True
+        assert "under 50% of long-play target range" in reason
+        assert "position_sizing.py" in reason
+
 
 class TestGateConvictionPlay:
     """params.json risk.conviction_play -- the researched, held-on-thesis
@@ -371,6 +382,28 @@ class TestGateConvictionPlay:
         granted, reason = executor.gate_conviction_play(context, action)
         assert granted is True
         assert "fail-open" in reason
+
+    def test_well_under_target_passes_with_undersized_note(self, params, monkeypatch):
+        """2026-08-11: under half a conviction play's target range still
+        passes (this isn't a new gate) but now surfaces a visible note
+        instead of silently passing like every other gate check."""
+        self._mock_open_positions(monkeypatch, [])
+        # cap is 10.0% of 10000 = $1000; this buy is $200 (2%), well under 5% (half the cap)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "IWM", "quantity": 2, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is True
+        assert "under 50% of conviction-play target range" in reason
+        assert "position_sizing.py" in reason
+
+    def test_at_or_above_half_target_no_undersized_note(self, params, monkeypatch):
+        self._mock_open_positions(monkeypatch, [])
+        # cap is 10.0%; this buy is exactly 5.0% (the boundary, not under it)
+        context = {"portfolio_value": 10000, "positions": []}
+        action = {"action": "BUY", "ticker": "AAPL", "quantity": 5, "price": 100.0, "play_type": "conviction"}
+        granted, reason = executor.gate_conviction_play(context, action)
+        assert granted is True
+        assert "under 50%" not in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────
