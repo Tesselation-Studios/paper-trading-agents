@@ -1,11 +1,11 @@
 # ALXO Position Thesis
 
 - **Entry**: $2.12 avg | 1 shares
-- **Current**: $2.10 (-0.94% unrealized)
-- **Market Value**: $2.10
-- **Unrealized P&L**: $-0.02 (-0.94%)
+- **Current**: $2.04 (-4.01% unrealized)
+- **Market Value**: $2.04
+- **Unrealized P&L**: $-0.09 (-4.01%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 13:26:02 UTC
+- **Last sync**: 2026-08-11 13:55:32 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

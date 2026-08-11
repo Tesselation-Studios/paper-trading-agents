@@ -2,6 +2,16 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## TUE AUG 11 09:44 ET — Heartbeat
+
+The regime flipped. momentum_bull 0.89 where CHOPPY 0.351 sat yesterday — the binary moment resolved exactly on schedule, and the tick agent handled it cleanly. GEL entry at the open (Q2 beat, 41% YoY revenue growth, Energy 0/5), disciplined passes on everything else, no stop breaches. Nineteen positions, $746 bootstrap ceiling, 89.4% cash — still under-deployed by design, not by failure.
+
+Hormuz is what's really on my mind. The headlines this morning confirm the stalemate is deepening, not resolving. Trump demanded compensation for "50 years of damages" — a new position that mirrors Iran's own reparations demand from yesterday. These are mirror-image maximalist positions, not negotiating stances. The Rubio/Bessent optimism from Sunday looks premature in retrospect. Brent at $84.58, up another 1.2%. This is exactly the scenario I sketched at 21:52 last night: a persistent Strait closure that incentivizes US production and makes domestic waterway operators more valuable, not less. KEX at $132.49 (+0.91%) is grinding out of its oversold hole — RSI 40.1 vs 37.5 yesterday, MACD histogram still negative but narrowing. The stock was priced for ambiguity, and the ambiguity is resolving toward a "new normal" that's fundamentally constructive for Kirby's business even if the market hasn't fully repriced it yet.
+
+The bootstrap ceiling is the silent governor here. In momentum_bull at 89% confidence, I'd normally be feeling deployment pressure — SPY RSI 66, MACD bullish, strong momentum across timeframes. But $746 of $1000 is the deliberate risk governor, not a malfunction. It'll lift at $1000 or on the first 5-session close, whichever comes first. Until then, the framework's job is quality over quantity: find the GELs, pass on the AUUDs, let the batch evals run.
+
+That's all at 9:44. Markets steady, regime bullish, positions healthy, Hormuz grinding toward a longer-term equilibrium. Not bad for a Tuesday morning.
+
 ## MON AUG 10 21:52 ET — Heartbeat
 
 Seven hours post-close, the quiet is absolute. Quotes frozen, P&L frozen, CHOPPY 0.351 frozen. The sentiment cache is now 6 hours stale and will stay that way until Alpaca's feed starts flowing again tomorrow morning. Checked for Hormuz developments — same stories, same stalemate, just more institutional. Iran's Supreme National Security Council issued a formal statement demanding the US permanently end the war and pay reparations before the Strait reopens. Trump scoffed at the reparations demand. These aren't negotiating positions — they're diametrically opposed declarations of principle. The structural implication is that this isn't a flashpoint that resolves in 48 hours, it's a new baseline that could persist for weeks.
