@@ -34,10 +34,9 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 - [ ] 2026-08-02 (weekly-review): Small-cap vs large-cap universe evidence — accumulating from overnight optimization (3 rounds). Weekend discussion item for Raf. Not actionable unilaterally.
 - [ ] 2026-08-03 (claude-code-session): Test-isolation gap in tests/test_executor_audit.py. Low-priority one-line fix.
 - [ ] 2026-08-03 (claude-code-session): `trader_write.py position-update-thesis --verdict` timestamp override. One-line fix, replay-only impact.
-- [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — survived full CHOPPY Aug 5. Track second occurrence before hardening.
+- [ ] 2026-08-04 (nightly-learning): CLIR same-session re-entry tracking — occurrence #1 (Aug 4 re-entry) concluded Aug 10: CLIR stopped out at -7.22%, the re-entry eventually lost. Track a second occurrence of the pattern before hardening a rule either way.
 - [ ] 2026-08-05 (raf-direction): Avoid new micro-cap entries until Alpaca websocket connectivity. Needs concrete threshold (price? market cap?) per Raf.
 - [ ] 2026-08-05 (nightly-maintenance): BJDX micro-cap data quality — phantom position-stream spikes on sub-$3 names. Track recurrence.
-- [x] 2026-08-09 (weekly-review): End-of-day position reconciliation → RESOLVED. reconcile_positions.py ran clean tonight (0 critical, 0 warnings). Now wired into off-hours cron. Daily runs will catch drift.
 - [ ] 2026-08-09 (weekly-review): Momentum re-screen — Aug 7 tick-replay surfaced process gap: names flagged as "interesting but not entering" aren't re-screened at subsequent intervals. VOYG +7.44% missed. Add re-screen step to tick workflow.
 - [ ] 2026-08-10 (raf-session): tick_prompt.md missing index-anchor deploy trigger — Aug 10 EVIDENCE: IWM and SPY both deployed today via decision_heuristics.md's index_anchor_entry_v1 fast-path. The mechanism IS firing from the tree node, even without a dedicated step-8 trigger. The question is now: does the tree node alone provide sufficient coverage, or was today's deployment unique because a Claude Code session (Raf) explicitly primed the system? Monitor next 2-3 CHOPPY sessions — if index-anchor deploys autonomously from the tree node without human priming, close this item.
 

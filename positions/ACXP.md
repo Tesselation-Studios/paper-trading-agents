@@ -1,11 +1,11 @@
 # ACXP Position Thesis
 
 - **Entry**: $1.53 avg | 1 shares
-- **Current**: $1.55 (+1.24% unrealized)
+- **Current**: $1.55 (+1.31% unrealized)
 - **Market Value**: $1.55
-- **Unrealized P&L**: $+0.02 (+1.24%)
+- **Unrealized P&L**: $+0.02 (+1.31%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-10 20:30:39 UTC
+- **Last sync**: 2026-08-11 13:26:02 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
