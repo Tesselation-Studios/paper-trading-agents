@@ -2,6 +2,24 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## TUE AUG 11 10:42 ET — Heartbeat
+
+BWMN is going to sting for a while. Bowman Consulting got acquired by Bernhard Capital Partners for $43.00/share in cash — announced Sunday evening, 58% above Friday's $27.41 close — and it ripped to $42.42 (+56%) this morning on 19.66x volume. The batch gate at 10:40 hit it with "RSI 49 MACDh None, sentiment 0.3, generic headline" and correctly killed the probe — the sentiment cache had nothing but a crude oil headline, and there was no catalyst visible. But the catalyst was real: a $1B all-cash PE takeout that was public since Sunday. It didn't show up in Alpaca's news feed. That's not a gate failure, it's a data coverage gap — the sentiment cache is only as good as the headlines it ingests, and it missed a 58% acquisition. If this were a $500 position at entry, it'd be a $290 winner right now. Instead it's a note in the heartbeat log.
+
+What makes it worse is that this is exactly the kind of edge small-cap investing is supposed to capture: under-covered names with asymmetric catalysts that the market doesn't fully price overnight. The framework correctly identified the stock, the gate correctly identified there was no visible catalyst, and the framework doesn't have a mechanism to say "but what if there's a catalyst the sentiment cache missed?" — because that's an unanswerable question without better data coverage. The fix isn't to lower the gate threshold, it's to widen the data sources.
+
+GEL at $15.55 (+3.12%, 3.7x volume ratio) is printing. The Q2 beat entry at open is working exactly as designed — Energy 0/5 is a sector that benefits from elevated oil, and GEL's pipeline infrastructure is a direct beneficiary of the Hormuz-induced production incentives. RSI 60.1, bullish MACD — this is the cleanest catalyst-led entry in the book right now.
+
+KEX at $132.49 (+0.91%) continues the slow grind out of the oversold hole. RSI 40.1 vs 37.5 yesterday, MACDh -1.696 still negative but the price action is constructive — it's not falling. Hormuz headlines this morning confirm the stalemate: Iran issued more demands, CNN covered it, both sides feeling economic pain. Rubio/Bessent's Sunday optimism looks hollow. The "new normal" thesis — persistent Strait closure incentivizes US petroleum production and makes domestic waterway operators more valuable — is holding up, even if the market hasn't fully repriced it yet.
+
+Two losses closed overnight, -$3.58 on the day. Win rate 0% today but it's two small closes from yesterday's book. 46 total closed, 41.3% win rate overall. Industrials still a problem at 25% — the suggestion to reduce exposure is the right call, but VVX at $82.92 (-1.77% from $84.41 entry) is a catalyst-led position (DoD contract), not a sector bet, so it gets a different leash.
+
+Under-deployed at 17 positions, ~90% cash, ceiling $736. Fifteen consecutive ticks without a probe entry. The batch candidates keep showing up and getting gated — that's the right outcome in momentum_bull if the gates are correctly filtering, but 15 ticks is a lot of filtering. Either the watchlist needs widening or momentum_bull generates enough conviction plays (GEL, index-anchor) that batch rotation becomes secondary.
+
+Hormuz is still the macro backdrop. No deal, no escalation, just sustained pressure. Brent at $84+. The flat yield curve (2y/10y at 46bp spread) and FOMC at 3.50-3.75% are steady. SPY at $773.03 flat on the day, RSI 66. IWM faded back below $300 (-0.52%) — the index-anchor thesis is down $1.58 from $301.56 entry, which is noise-level but worth watching if small-caps start diverging from large-caps.
+
+That's 10:42. GEL is the bright spot, BWMN is the one that got away, and the framework is doing disciplined filtering in a regime that rewards patience.
+
 ## TUE AUG 11 09:44 ET — Heartbeat
 
 The regime flipped. momentum_bull 0.89 where CHOPPY 0.351 sat yesterday — the binary moment resolved exactly on schedule, and the tick agent handled it cleanly. GEL entry at the open (Q2 beat, 41% YoY revenue growth, Energy 0/5), disciplined passes on everything else, no stop breaches. Nineteen positions, $746 bootstrap ceiling, 89.4% cash — still under-deployed by design, not by failure.

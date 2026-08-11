@@ -1,11 +1,11 @@
 # CCHH Position Thesis
 
 - **Entry**: $1.26 avg | 1 shares
-- **Current**: $1.28 (+1.98% unrealized)
-- **Market Value**: $1.28
-- **Unrealized P&L**: $+0.03 (+1.98%)
+- **Current**: $1.30 (+3.17% unrealized)
+- **Market Value**: $1.30
+- **Unrealized P&L**: $+0.04 (+3.17%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 13:55:32 UTC
+- **Last sync**: 2026-08-11 14:46:51 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
