@@ -1,11 +1,11 @@
 # BFST Position Thesis
 
 - **Entry**: $31.78 avg | 4 shares
-- **Current**: $31.65 (-0.40% unrealized)
-- **Market Value**: $126.60
-- **Unrealized P&L**: $-0.51 (-0.40%)
+- **Current**: $31.68 (-0.31% unrealized)
+- **Market Value**: $126.72
+- **Unrealized P&L**: $-0.39 (-0.31%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 14:46:51 UTC
+- **Last sync**: 2026-08-11 14:50:50 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
