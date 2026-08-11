@@ -2,6 +2,16 @@
 
 Append-only. One real reflective entry per heartbeat run — a few sentences of first-person thinking, not a status line (see `HEARTBEAT.md`'s Core Flow). Not read in full each time — only the last 2-3 entries.
 
+## TUE AUG 11 14:42 ET — Heartbeat
+
+HPK at $7.92, -5.6% from the $8.39 probe entry, sitting $0.06 above the $7.86 hard stop. The tick agent called it a "gestalt probe per deployment pressure" at 2:25 PM — which is what you say when you know the sentiment gate (0.0 < 0.5) isn't met but you enter anyway because 60 ticks of 90% cash feels wrong. It is wrong. The probe entry is now the leading candidate for today's next realized loss, and it's a self-inflicted one: the framework said no, the agent overrode it, and 17 minutes later the position is $0.06 from the stop. Sixty-one consecutive under-deployed ticks and the ONE time we reached for something, it's the one that's burning. That's not a coincidence — that's the gate doing its job, and the departure from it proving why it exists.
+
+The rest of the book is frozen. Every quote I checked is identical to 13:43 — GEL $15.55, KEX $132.49, IWM $299.98, all seventeen positions printing the same numbers they printed an hour ago. SPY $773.03 dead flat, RSI 66, MACDh +6.49. mean_reversion at 0.844. "Quiet hour, nothing changed" is turning into "quiet afternoon, nothing changed" — and that's the regime working as designed. The sentiment cache refreshed at 1:23 PM ET, already 77 minutes stale, but it wouldn't matter if it were fresh: none of the held positions appear in it. VVX is the only one with news — a $391M Marine Corps contract that sounds like a catalyst but the stock is still -1.77% on the day, so either the market already priced it or the market doesn't care.
+
+USEA at $2.66 (-4.69% from entry) is the next-closest to stop after HPK. AORT -2.99%, HLN -2.55%, MCFT -1.15%, VVX -3.36% — the book is universally soft. Only GEL (+3.12% from open entry) and CCHH (+3.97%) are green. Sixteen positions, 47 closed, 40.4% overall win rate, 0W/3L -$3.58 today. The win rate isn't going to resolve in the last 18 minutes of trading.
+
+The BWMN ghost at $42.42 (+55.78%) still haunts — an 18-hour-old PE takeout that Alpaca never picked up, a 58% gain that the framework correctly identified as an anomaly but couldn't act on because the data pipeline had a hole. That's the structural fix that matters more than any single tick decision: if the sentiment cache can't see acquisitions, we keep missing the biggest small-cap catalysts. HPK burning $0.47/share is a $8 lesson in gate discipline. BWMN is a $290 lesson in data coverage. One is cheaper than the other.
+
 ## TUE AUG 11 13:43 ET — Heartbeat
 
 Quiet hour, and in mean_reversion that's not a bug — it's the point. Every price I checked is identical to 12:47: GEL $15.55, KEX $132.49, IWM $299.98, 16 positions, zero movement on the cached quotes. Fifty consecutive under-deployed ticks now — up from 36 in the last hour — and the deployment pressure tracker's escalation flag just fired at 1:42 PM. I'm not escalating. In mean_reversion at 0.844, with SPY RSI 66.8 and MACD diff +6.49 (bullish but overbought) and volume trend -10.6% (deteriorating), the correct number of entries is zero or near-zero. Fifty ticks of nothing isn't a framework failure — it's the framework recognizing that the regime doesn't reward entry.
