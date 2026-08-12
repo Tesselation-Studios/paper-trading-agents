@@ -1,5 +1,29 @@
 # Heartbeat Log
 
+## WED AUG 12 12:52 ET — Heartbeat
+
+An hour to FOMC minutes. The book is positioned exactly the way you want it positioned ahead of a binary catalyst: 82.8% cash, all 16 stops intact, no quick-exit triggers. VVX at $80.54 (-2.87% on the day) is the closest to its stop at 54% of the way to -10%, and the MACD is still bullish — it's vol-driven, not a thesis break. VSXY at $94.16 -5.81% is the wound that won't close, but the MACD +4.09 is still bull and the RSI has dropped from 76.7 to 62.3 — the selling pressure flagged at 9:44 materialized exactly as warned, but the stop is holding. CVU at +4.57% is the silent overachiever — the best performer in the book and barely mentioned all day.
+
+The tick agent has been textbook for hours now: 38 consecutive under-deployed ticks at last count, correctly gating on quality every batch. The watchlist is thin on actionable catalysts — the sentiment cache at 12:35 PM (VBIO with a legit biotech catalyst, FENC with a PT raise) is the same pattern of roundup headlines and generic movers. Nothing wrong with sitting in cash when the pipeline says "nothing worth deploying on" — that's the discipline momentum_bull was supposed to unlock, and it's working.
+
+What I'm actually thinking about is the vol_trend -10.6% inside momentum_bull 0.892. I've flagged this in every heartbeat since yesterday afternoon — it's a configuration that breaks on real news, and the FOMC minutes at 2pm are exactly the kind of catalyst that snaps it. If the language reads dovish, the grind continues and the bull confidence is validated. If it reads hawkish, the declining-volume skeleton underneath the uptrend gets exposed, and the regime could flip back to mean_reversion intraday. The book is ready for either outcome — cash is high, stops are mechanical, and no position is large enough to force a reaction. That's as good as it gets an hour before the landmine.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 10:42 ET — Heartbeat
+
+HPK is at $8.26 and it still stings. Stopped out at $7.75 on a mechanical trailing stop, and the stock has since rallied to a $9.13 high — that's a $0.51-per-share gap that traces directly back to the sentiment cache arriving at 15:53 yesterday instead of 9:30. The trailing stop was mathematically correct, the entry price was the defect, and the entry price was determined by when the catalyst data became visible. The pipeline latency isn't an abstract problem — it's $8.67 in realized loss that should have been a gain.
+
+VSXY at $94.16, -5.81% is the other open wound. RSI dropped from 76.7 to 62.3 — the selling pressure I flagged at 9:44 materialized exactly as warned. The stop is still intact, and the MACD is still bullish (+4.09 diff), but a -5.81% move in a single morning on a momentum_bull regime day is the kind of divergence that makes you question whether the bull confidence is real or just a trailing computation that hasn't caught up to the tape. FOMC minutes at 2pm could accelerate this or reverse it — no way to know, but the vol_trend -10.6% says the market is already nervous.
+
+UPB at $7.09, -4.7% is the humbling data point. Last night I called it "the cleanest setup for tomorrow" — Q2 beat confirmed before the open, sentiment 0.3, not extended. The market opened it at $7.48 and immediately sold it to $7.01. This is the third earnings beat → sell-off pattern I've seen in two days (HPK yesterday afternoon was the first, though HPK recovered). In small caps, a single institution can overwhelm the entire retail bid — the catalyst is real, but the liquidity profile means "real" doesn't guarantee follow-through. This doesn't invalidate catalyst-led entry as a framework, but it sharpens the edge: if the stock can't hold the opening print despite a confirmed beat, the market is saying the beat was priced or the institution wants out more than the catalyst matters.
+
+The tick agent has been flawless in its discipline — 15 consecutive under-deployed ticks since the busy open, gating on quality, not forcing entries. CPSH at +1.61% and MNKD at -2.29% are both settling post-entry, within stops, no drama. MNKD's three oversized trims this morning suggest the position sizing is borderline for what a $3.84 stock can absorb without triggering the 6% constraint — worth a parameter review tonight but not an emergency. The agent's behavior is exactly what momentum_bull was supposed to unlock: deploy on real information, let mechanical stops handle exits, don't reach when the pipeline is thin.
+
+What I'm watching for the next few ticks: VSXY stop distance (if it slips further, the mechanical exit should fire without hesitation), any fresh catalyst headlines that break the post-10am quiet, and whether SPY's RSI 63.6 starts to crack ahead of the 2pm FOMC. The book is clean, the discipline is holding, and the biggest risk today doesn't arrive for another three hours.
+
+HEARTBEAT_OK.
+
 ## WED AUG 12 09:44 ET — Heartbeat
 
 First heartbeat of the trading day and the tick agent has already been busier in 14 minutes than most of last week combined. Seven ticks from 9:05 to 9:40 — dual catalyst-led entries at the open (CPSH and MNKD), a mechanical trailing-stop exit on HPK, and a full watchlist rotation. This is what momentum_bull at 0.892 is supposed to look like: the gate loosens, the agent deploys on information, and the mechanical rules handle the rest.
@@ -1265,3 +1289,21 @@ Today's closed P&L: -$4.39 on 3 trades. VATE -$5.65 (catastrophic stop fill), BL
 
 The real question for the 12:00 heartbeat: does SPY hold $773 or start to fade into the lunch hour? If it fades, the CHOPPY regime suddenly looks prescient. If it keeps grinding to $775+, the divergence between label and tape becomes the story of the day. No stops breached, no exits triggered, nothing to escalate.
 
+
+## WED AUG 12 11:48 ET — Heartbeat (gateway restart recovery)
+
+Back online after a gateway restart knocked me offline at 11:48. The tick agent's active.md logs show it was executing flawlessly right up to the interruption — 23 consecutive under-deployed ticks gating correctly on thin pipeline quality. The momentum_bull regime at 0.892 has been running untouched all morning. If this is the agent's baseline execution now, it's a different animal than the CHOPPY-grind Stan of early August.
+
+Quick position scan: VVX at $80.54, -2.87% day — still the closest to stop, but MACD bullish (+1.59 diff) says this is vol compression, not a thesis break. The -5.8% drawdown I was flagging at 10:42 has actually improved — it was wider then, now at -2.87% day suggests some recovery. KEX at $132.65, +0.12%, still carrying that bearish MACD cross (-1.90 diff) but flat-to-green on the session — the market isn't punishing it, just not confirming the bull thesis either.
+
+CLIR at $4.17, +6.79% is the standout — I need to verify whether this is a live position or a phantom. It showed up in the quotes query but I haven't seen it in any tick entry's position list today. If it's actually held and real, that's a nice unrealized gain sitting in the book.
+
+CPSH ($4.42, +1.61%) and MNKD ($3.84, -2.29%) are both settling exactly at their entry prices from the 9:30 open — two hours of price discovery and no damage. That's the anti-HPK: catalyst-led entries where the data was available at the open, the entry price was fair, and the mechanical stops have room to work. MNKD's two oversized trims this morning reduced the position fraction without forcing an exit — that's the trim mechanism working as designed.
+
+The watchlist quality problem is the quiet story of the day. The agent has correctly gated every batch through 20+ consecutive ticks — no reaching, no deployment-pressure overrides, no HPK-style gestalt entries. But the pipeline is thin: the same 30 candidates cycling with the same generic roundup headlines ("12 Consumer Discretionary Stocks Moving...") that don't clear catalyst_led_entry_v1's specific-headline bar. The sentiment cache has fresh items (VBIO 0.773 with a real NIAID contract catalyst, DYAI -0.967 on missed earnings) but they're either sub-$1 or getting rejected for thin liquidity.
+
+FOMC minutes at 2pm — two hours out. The vol_trend at -10.6% says the market is already bracing. The tick agent's discipline through the morning doldrums sets up well for the afternoon: clean book, mechanical stops, no forced positions, cash dry powder. If FOMC triggers a sell-off, the stops will fire mechanically — no panic needed. If it triggers a rally, the framework is already scanning for qualified entries.
+
+The gateway restart itself is a non-event for the book — the positions sat for maybe 5-10 minutes uncovered, which in a flat-SPY morning with no stops breached is fine. The bigger question is whether the tick agent was mid-evaluation when the restart hit. I'll know on the next tick whether anything got orphaned.
+
+HEARTBEAT_OK.

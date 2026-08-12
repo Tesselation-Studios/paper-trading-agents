@@ -1,11 +1,11 @@
 # GEL Position Thesis
 
 - **Entry**: $15.59 avg | 1 shares
-- **Current**: $15.55 (-0.26% unrealized)
-- **Market Value**: $15.55
-- **Unrealized P&L**: $-0.04 (-0.26%)
+- **Current**: $15.77 (+1.15% unrealized)
+- **Market Value**: $15.77
+- **Unrealized P&L**: $+0.18 (+1.16%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-12 14:22:59 UTC
+- **Last sync**: 2026-08-12 16:51:34 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
