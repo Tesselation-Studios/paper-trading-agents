@@ -1,11 +1,11 @@
 # MNKD Position Thesis
 
 - **Entry**: $3.89 avg | 159 shares
-- **Current**: $3.88 (-0.13% unrealized)
-- **Market Value**: $617.72
-- **Unrealized P&L**: $-0.80 (-0.13%)
+- **Current**: $3.84 (-1.29% unrealized)
+- **Market Value**: $610.56
+- **Unrealized P&L**: $-7.95 (-1.29%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-12 19:10:30 UTC
+- **Last sync**: 2026-08-12 20:15:28 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

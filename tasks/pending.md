@@ -25,6 +25,9 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ## Open
 
+- [ ] 2026-08-12 (nightly-learning): Small-cap earnings beat → sell-off pattern — UPB (Aug 12) is the 3rd instance in 2 days of small-cap earnings beats failing to produce follow-through buying. UPB was the framework's highest-conviction call from last night's nightly-maintenance — earnings beat, 0.71 sentiment, vol ramp — and it collapsed within one session: -4.7% intraday, MACD flipped bearish. Track for more occurrences before considering any entry-refinement change for small-cap earnings catalysts. Currently too young (2 days, 3 instances) to harden.
+- [ ] 2026-08-12 (nightly-learning): Sector edge erosion — Industrials 25% win rate (1W/3L), Healthcare 29% (2W/5L), Consumer_Cyclical 25% (1W/3L). Three sectors well below 30% win rate. The self-stats tool flagged these as tightening candidates. Track for one more session before considering a sector-specific entry filter in decision_heuristics.md (e.g., raise conviction-floor for Industrials/Healthcare entries). Not a strategy.md change — a tree node candidate.
+
 - [ ] 2026-08-11 (tick-replay): prepare_tick_replay.py _snapshot_at filter requires both rsi_14 AND macd_hist non-NaN — on older cached bar dates (e.g. 2026-06-29, practice-chain-1), this silently drops 89% of the universe (6/57 symbols survived). HRB and AMD open positions had zero intraday or EOD coverage. A fallback showing close+volume when technicals are unavailable would make these days usable. Either add a permissive fallback to _snapshot_at or compute indicators more aggressively during bar sync. → Workboard card `67d071d3` (2026-08-12).
 
 
@@ -56,7 +59,10 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ---
 
-## Resolved This Week (Aug 9 weekly review + Aug 10 live session)
+## Resolved This Week (Aug 9 weekly review + Aug 10-12 live sessions)
+
+- [x] 2026-08-12 (nightly-learning): MBBC liquidity trap — position finally exited at 15:15 ET via trailing stop (-7.4% off peak). The Aug 3 catalyst-led entry into a stock that traded 147 shares/day is now fully closed. The liquidity gate (gate_catalyst_liquidity, mechanized Aug 5) prevents recurrence. Cost: -$1.11 realized. The last open wound from before the gate existed is healed.
+- [x] 2026-08-12 (nightly-learning): HPK deployment-pressure gate-override — the position stopped out today (was $0.06 from hard stop at yesterday's close, gapped through). Occurrence #1 of entering against explicit tree rejection is now a closed loss. Tracking for occurrence #2 before hardening continues.
 
 - [x] 2026-08-11 (claude-code-session): Discovery signal-quality pre-filter → NOT BUILDING, premise didn't hold up. The "10,011 signals, ZERO caught" claim (run 7, Aug 9/10 overnight cycle) traced back to `src/overnight_harness.py`'s summary log rounding `catch_rate` with `%.2f` — the actual stored value was `catch_rate=0.001, false_positive_rate=0.0` (every trade taken matched a discovered signal, the opposite of "pure noise"). Fixed the log format (`%.3f%%`, commit `205f064` in paper-trading-rebuild) so future overnight cycles don't misread small-but-nonzero rates as literal zero. No multi-timeframe/directional-agreement pre-filter code exists anywhere (confirmed via grep) — was prose-only. Live discovery's real filters (RSI 45-65, vol≥0.8x) are already tighter than the "ultra-wide" config that produced the misleading number anyway.
 - [x] 2026-08-10 (claude-code-session): MBBC liquidity gate item was stale — `gate_catalyst_liquidity` has actually been fully mechanized (GATES dict + tests) since 2026-08-05, this Aug 3 item just never got removed after. Confirmed no real gap. Note: this gate only blocks *new* illiquid catalyst entries — MBBC itself (already held, 1sh since Aug 5) stays stuck regardless; exiting an already-illiquid position is a different, currently-unsolved problem, not something this gate addresses.

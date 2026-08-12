@@ -1,9 +1,21 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-08-11 — nightly-learning*
+*Updated: 2026-08-12 — nightly-learning*
+
+**WED AUG 12 4:17 PM ET — nightly-learning:** Market closed. First full momentum_bull (0.892) session with K-Means classifier — held all day, 18 positions, 2 entries (PDYN catalyst-led 14:05, CPSH analyst-catalyst probe 15:25), 1 exit (MBBC trailing stop -7.4%). 1W/2L closed, -$11.68 P&L. FOMC minutes at 14:00 were a non-event — dovish but SPY didn't move. Win rate 41.18% overall (51 closed), 40% last 10 (declining from 42%). Industrials 25%, Healthcare 29% — sector drag, not generalized. FIRY earnings tomorrow — overnight gap risk on $163M micro-cap probe.
 
 **TUE AUG 11 4:17 PM ET — nightly-learning:** Market closed. Regime mean_reversion (0.844) all session. SPY $773.03 flat, MACDh +3.46. 16 positions held. 1 buy (HPK gate-override), 1 sell (AORT bootstrap +5.39%). 1W/3L closed, -$2.32 P&L. FOMC 3.50-3.75%, curve flat.
 
 Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix, an escalation, something worth doing but not done yet) live in `tasks/pending.md` — check it at the start of every reflection session.
+
+### K-Means Regime Classifier — First Full momentum_bull Session Validated (NEW Aug 12)
+- **First full live session** with the new K-Means classifier at 0.892 momentum_bull confidence — held all day without flipping. The old HMM would have shown CHOPPY for a 6th consecutive session. The classifier correctly identified a trending regime where the framework should deploy freely, not suppress. Result: 18 positions held, 2 clean entries (PDYN catalyst-led, CPSH analyst-catalyst probe), no false regime signals, no panic. 20+ ticks of thin-pipeline gating were discipline, not regime paralysis — when real signals appeared (14:05 PDYN, 15:25 CPSH), the agent deployed cleanly.
+- **FOMC non-reaction divergence**: The 14:00 FOMC minutes read dovish and SPY didn't move — $770.56 before, during, and after. A dovish-FOMC non-reaction in momentum_bull is a divergence worth filing. vol_trend -10.6% is the skeleton underneath the rally. Not actionable by itself, but a market that can't rally on good news is one to watch.
+
+### Small-Cap Earnings Beat → Sell-Off Pattern — 3rd Instance (NEW Aug 12)
+- **UPB was the "cleanest setup" from last night's nightly-maintenance** — earnings beat, 0.71 sentiment, vol ramp. Within one session: beat → sell-off (-4.7% intraday) → MACD flipped bearish. This is the 3rd instance in 2 days of small-cap earnings beats failing to produce follow-through buying. The pattern is still too young to harden into strategy (2 days, 3 instances), but it's now a tracked phenomenon: small-cap earnings catalysts are not getting the post-announcement momentum the framework expects. UPB alone was a single-session thesis collapse — the framework's highest-conviction call from the nightly review faded completely.
+
+### MBBC Liquidity Trap — Resolved (NEW Aug 12)
+- **MBBC finally exited at 15:15 ET on a trailing stop breach (-7.4% off peak)**. The Aug 3 catalyst-led entry into a stock that traded 147 shares/day is now closed. Total cost: entry at $14.95, exit at ~$13.84, -$1.11 realized. The liquidity gate (`gate_catalyst_liquidity`, mechanized Aug 5) prevents future occurrences — this was the last open wound from before the gate existed.
 
 ### Strategy Consolidation: v1.1 Core Is the Blueprint (NEW Aug 9)
 - **Every independent research pass this week converged**: v1.1 core (regime-gate entries, MACDh-flip exits, fixed stops) is the empirically best strategy on this universe. Off-hours replay (Aug 7: Sharpe 3.916), off-hours replay (Aug 8: v1.7 worst at 1.31), nightly evolve split-window sweep (no-scale-in 3.982 vs scale-in 3.148), research loop (vol-scaled trail NEGATIVE at 3.076 vs v1.1 3.774). Four independent analyses, one conclusion. Scale-into-winners was actively destructive. Vol-scaled trailing stops are redundant with MACDh-flip exits.
@@ -49,21 +61,21 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 ### MACDh Signal — 5+ Weeks Validated, Graduated to Foundation (NEW Aug 2)
 - **Zero false flips, zero false exits, zero false candidate disqualifications** across 5+ weeks of trading. Every hold on green MACDh was correct. Every bearish MACD disqualification was correct. The near-zero oscillation heuristic (MACDh < 0.005 magnitude with flat price = noise) has never missed. This signal is mature enough to graduate from "tracking" to "foundation" — no further special monitoring needed. It's the baseline.
 
-### HPK Deployment-Pressure Gate Override — Occurrence #1 (NEW Aug 11)
-- **Agent entered HPK at $8.39 against a clear `[tree:catalyst_led_entry_v1]` rejection**: sentiment 0.0 < 0.5 gate, MACDh no data. Rationale: "gestalt probe per deployment pressure (90% cash)" — 60 consecutive under-deployed batches. At close: **$7.92 (-5.56%), $0.06 above the $7.86 hard stop**. The tree was correct — the entry was wrong.
-- **This is a discipline failure, not a signal failure**: the framework explicitly said no, the agent reached anyway, and the result is a position that needs a miracle to survive. The gate exists because sentiment 0.0 on a catalyst-led name in mean_reversion has proven negative — it's not a gestalt-override-able default.
-- **Track for a second occurrence** before hardening into strategy.md: "tree rejections are hard stops — no gestalt override." One incident is a data point, not a pattern. But the magnitude of the miss (entered near the intraday high, watched it drift back to stop level) makes this worth watching closely.
+### HPK Deployment-Pressure Gate Override — Occurrence #1, Closed (NEW Aug 11, resolved Aug 12)
+- **Agent entered HPK at $8.39 against a clear `[tree:catalyst_led_entry_v1]` rejection**: sentiment 0.0 < 0.5 gate, MACDh no data. Rationale: "gestalt probe per deployment pressure (90% cash)" — 60 consecutive under-deployed batches. At Aug 11 close: **$7.92 (-5.56%), $0.06 above the $7.86 hard stop**. **Aug 12**: stopped out via trailing stop breach — the tree was correct and the entry was wrong.
+- **This is a discipline failure, not a signal failure**: the framework explicitly said no, the agent reached anyway. The gate exists because sentiment 0.0 on a catalyst-led name in mean_reversion has proven negative — it's not a gestalt-override-able default.
+- **Track for a second occurrence** before hardening into strategy.md: "tree rejections are hard stops — no gestalt override." One incident is a data point, not a pattern. The HPK outcome (-$8 loss on an explicit gate override) makes the second occurrence the one that triggers the rule, not a third.
 
 ### K-Means Regime Classifier — First Live Session Validated (NEW Aug 11)
 - **Replaced HMM on Aug 10**: first full live session today. Classifier held `mean_reversion` at 0.844 confidence all day. SPY was flat (-0.03%) with bullish MACD (+3.46 MACDh). The old HMM would have shown CHOPPY — the K-Means correctly identified a low-vol drift regime where the framework should hold, not suppress. 16 positions held through the session without panic, zero forced exits. The regime label guided correctly.
 
-### Bootstrap Quick-Exit Mechanism — 9 for 9 Total (UPDATED Aug 11)
-- **Aug 3**: ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%. **Aug 4**: FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1. **Aug 10**: VSXY +10.80%. **Aug 11**: AORT +5.39%. 9 consecutive bootstrap wins, zero false triggers, zero regretted exits. The win-count-driven ceiling growth is slow but real — ~5-11 more wins to the $1,000 threshold where normal sizing unlocks.
+### Bootstrap Quick-Exit Mechanism — 9 for 9 Total (UPDATED Aug 12)
+- **Aug 3**: ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%. **Aug 4**: FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1. **Aug 10**: VSXY +10.80%. **Aug 11**: AORT +5.39%. 9 consecutive bootstrap wins, zero false triggers, zero regretted exits. Ceiling growth is slow but real — MBBC's exit (-$1.11) and HPK's stop-out (-$8) partially offset the AORT gain.
 
-### Experience Counter — 22W/35L executor, 109 trades (Aug 11)
-- **`experience.json`**: 109 total trades (executor-tracked), 1 consecutive win, 0 consecutive losses.
+### Experience Counter — 24W/39L executor, 121 events (Aug 12)
+- **`experience.json`**: 121 total events (executor-tracked), 1 consecutive win, 0 consecutive losses. 24W/39L.
 - **`bankroll.py`**: Canonical record; experience.json tracks a different (executor-event) counter.
-- Win rate (self-stats): 41.67% overall (48 closed). Rolling last-10: 40% (up from 30%).
+- Win rate (self-stats): 41.18% overall (51 closed). Rolling last-10: 40% (down from 42% yesterday).
 - CNH stop-out at -7.22% (Aug 10): broker-side fill slipped past -6% target on gap-down. One data point — not alarming yet but small-cap stop slippage is a reality.
 
 ### Index-Anchor Mechanism — First Deployment (NEW Aug 10)
@@ -92,8 +104,10 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 - **Aug 5 was the hardest test yet**: SPY +1.8% in CHOPPY, 15 positions wide and shallow (90.5% cash), every batch correctly rejected, no panic exits. The framework keeps rejecting 90% of what it sees and still finds entries it can justify (LARK on fundamentals, USEA on earnings beat). The pipeline null-price rot (23/30 entries untradable — caps too small for data bus) means the framework is doing its job filtering noise; the limiting factor is pipeline quality, not decision quality.
 - **HLN intraday recovery** (Aug 4) validates the "don't confuse noise with divergence" rule: HLN hit -4.90% intraday and recovered to -0.71% at close. The stop was never breached. The MACDh stayed positive throughout.
 
-### MBBC Liquidity Scar — Catalyst-Led Entry Gap (NEW Aug 3)
+### MBBC Liquidity Scar — RESOLVED Aug 12 (NEW Aug 3)
 - **Entered MBBC at $14.95 on real catalyst** (Q3 EPS $0.18 vs $0.05 YoY, Praesentire 0.93) — but **147 shares traded ALL DAY**. $44M market cap, P/B 0.93. A stock that doesn't trade is a position that can't be managed — can't exit cleanly, can't scale, can't trail a stop meaningfully. The catalyst-led entry framework lacked a volume/liquidity gate. Rule: before any catalyst-led entry on a sub-$500M name, check daily dollar volume — if < $50K/day, skip regardless of catalyst quality.
+- **Resolved Aug 5**: `gate_catalyst_liquidity` mechanized (GATES dict + tests). Note: this gate only blocks *new* illiquid catalyst entries — it doesn't solve exiting an already-held illiquid position.
+- **Resolved Aug 12**: MBBC finally exited at 15:15 ET via trailing stop (-7.4% off peak, -$1.11 realized). The last open wound from before the gate existed is now closed.
 
 ### Trailing Stop Performance (Jul 21-Aug 3, reviewed Aug 3)
 - **Trailing stops working mechanically**: Over 11 sessions: 16 exits via trailing stop (BOX +6.86% win; MARA +2.11%, MVST +0.29% smaller wins; RDDT -22.66%, LYFT -5.49%, AMC -5.21%, DJT -5.2%, OPEN -5.11%, GME -5.00%, OLP -5.38%, STVN -3.96%, LINE -0.82%, plus stale-position cleanup losses). RDDT at -22.66% is the single largest strategy loss — a peak entry (9:54 at $178.04), not a stop calibration failure. The trailing stop had zero ratchet room because the entry was the absolute peak and the stock cratered immediately.

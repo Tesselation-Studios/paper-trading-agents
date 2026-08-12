@@ -1,5 +1,19 @@
 # Heartbeat Log
 
+## WED AUG 12 15:42 ET — Heartbeat
+
+We're 18 minutes from the close and the market hasn't moved since the FOMC minutes dropped two hours ago. SPY $770.56 — the same price it was at 12:52, 13:43, 14:42, and now. A dovish FOMC non-reaction in a momentum_bull 0.892 regime is still the thing I can't stop thinking about. The market priced in the dovishness and then refused to rally on it — that's a divergence I've flagged in three heartbeats now, and it's still sitting there like a data point that means something but nobody can say what yet.
+
+Two notable events since the last heartbeat: MBBC stopped out at 15:15 on a trailing stop breach (-7.4% off peak), and CPSH got a probe entry at 15:25 after Roth Capital reiterated Buy with a $6 PT. The CPSH entry is worth appreciating — it was the 20th tick of thin-pipeline gating since the PDYN entry at 14:05, and the agent only deployed when a real, specific analyst catalyst (not a "12 Stocks Moving" boilerplate) cleared the gate. MACD is bearish (-0.34), which is why it got probe-sized. That's the discipline in action: don't force entries, but don't freeze either when something real shows up. CPSH is holding at $4.42, +1.6% on the day, no drama.
+
+The book is 18 positions, ~75% cash, all stops intact. EOLS at $8.34 (+10.17%, RSI 78.8 extended) and SMR at $9.89 (+7.73%) are the standout gainers — both running on momentum, both governed by trailing stops per v1.23. CVU at $5.49 (+4.57%) is still the silent overachiever I barely mention. On the other side: VSXY at $94.16 (-5.81%) is still pinned to its morning low, UPB's MACD has flipped bearish after the earnings beat → sell-off pattern (the 3rd instance in 2 days — small-cap earnings beats are not producing follow-through), and FIRY sits at $10.22 ahead of tomorrow's earnings with a real but fragile catalyst.
+
+Stats: 3 trades today, 1W/2L, -$11.68 P&L, win rate 40% last 10 — declining from 42%. Industrials at 25% and Healthcare at 29% are the problem sectors. Small sample, but the suggestion is right: tighten entry criteria in those sectors while the edge sorts itself out.
+
+What I'm actually thinking: the biggest risk from here to tomorrow's open isn't the positions inside their stops — those are mechanical. It's FIRY's post-close earnings on a $163M micro-cap probe. A bad print gaps through the stop, and the mechanical exit is slower than the gap. The probe size ($143) makes this survivable regardless of outcome, but I'm bracing for the noise either way. Everything else in the book is within its lane, and the FOMC non-reaction means the regime stays momentum_bull 0.892 until the classifier says otherwise. The vol_trend -10.6% skeleton underneath the rally is still there, and tomorrow's open will tell us whether this afternoon was consolidation or exhaustion.
+
+HEARTBEAT_OK.
+
 ## WED AUG 12 14:42 ET — Heartbeat
 
 The FOMC minutes came and went and the market yawned. SPY $770.56, unchanged — same price it was printing at 13:43, same price it was printing an hour before that. Every position in the book is pinned to its pre-FOMC level: VVX $80.54, VSXY $94.16, UPB $7.09, HLN $9.93, USEA $2.66, FIRY $10.22. I checked all 16 tickers after the minutes — not a single one moved more than a rounding error. The binary event that I've been bracing for in every heartbeat since yesterday afternoon was a non-event.
