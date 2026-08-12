@@ -35,14 +35,24 @@ from typing import Any, Dict, List
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PROPOSALS_DIR = REPO_ROOT / "proposals"
 
-AUTO_TIER_FILES = {"strategy.md", "params.json"}
-# 2026-08-10: decision_heuristics.md is DELIBERATELY not in this set, even
-# though its node content is largely a restatement of strategy.md rules.
-# It's brand-new infrastructure with no track record that now directly
-# controls capital-sizing decisions (via conviction tier) -- a materially
-# higher-stakes edit than a strategy.md prose tweak. Revisit after ~90 days
-# or 5-10 review_required cycles that are pure rubber-stamps with no
-# substantive edits at review time (see skills/decision-tree.md).
+AUTO_TIER_FILES = {"strategy.md", "params.json", "decision_heuristics.md"}
+# 2026-08-12: decision_heuristics.md moved into AUTO_TIER_FILES ahead of
+# the ~90-day/5-10-rubber-stamp-cycle trial period skills/decision-tree.md
+# originally set on 2026-08-10 -- explicit, deliberate call (paper money,
+# git-tracked, twice-daily VM backups: a bad node is cheap to revert, and
+# the 2-day-old caution was blocking exactly the failure this whole review
+# was about -- deployment_pressure_override_v0 sat at 4 losing occurrences
+# with a ready-to-paste node drafted and a Telegram alert sent, never
+# actually committed). Being in this set does NOT mean "no evidence bar" --
+# it means the SAME bar skills/decision-tree.md's Lifecycle already
+# requires (rule-mechanization-audit.md's 2+ quality occurrences for a
+# Watch->Active promotion, tree_scorecard.py's scored+hit_rate for a tier
+# change) is now self-enforced by nightly Evolve at commit time, the same
+# unreviewed-but-evidence-gated posture strategy.md/params.json already
+# have, rather than requiring a human/Claude-Code session to close the
+# loop. See skills/decision-tree.md and skills/rule-mechanization-audit.md
+# for the actual gating process -- this file only does filename-based
+# tier routing, it doesn't and can't verify evidence quality itself.
 FORBIDDEN_FILES = {"openclaw.json"}
 
 

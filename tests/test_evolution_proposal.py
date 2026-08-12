@@ -23,6 +23,31 @@ class TestClassifyTier:
     def test_strategy_and_params_together_is_auto(self):
         assert evolution_proposal.classify_tier(["strategy.md", "params.json"]) == "auto"
 
+    def test_decision_heuristics_only_is_auto(self):
+        """2026-08-12: moved into AUTO_TIER_FILES ahead of the original
+        90-day trial period -- see the comment above AUTO_TIER_FILES for
+        why. Being auto-tier here means self-committable by nightly Evolve
+        without a human/Claude-Code review cycle -- NOT that it's exempt
+        from the evidence bar skills/decision-tree.md's Lifecycle still
+        requires (rule-mechanization-audit.md's occurrence count,
+        tree_scorecard.py's hit rate); this module only routes by
+        filename, it has no way to check evidence quality itself."""
+        assert evolution_proposal.classify_tier(["decision_heuristics.md"]) == "auto"
+
+    def test_decision_heuristics_with_strategy_and_params_is_auto(self):
+        assert evolution_proposal.classify_tier(
+            ["strategy.md", "params.json", "decision_heuristics.md"]
+        ) == "auto"
+
+    def test_decision_heuristics_mixed_with_code_is_review_required(self):
+        """A change that needs both a decision_heuristics.md node AND a
+        scripts/*.py edit (e.g. a brand-new mechanized gate) still needs
+        review for the code half -- auto-tier doesn't launder an otherwise-
+        review_required change just because one of its files qualifies."""
+        assert evolution_proposal.classify_tier(
+            ["decision_heuristics.md", "scripts/executor.py"]
+        ) == "review_required"
+
     def test_touching_executor_is_review_required(self):
         assert evolution_proposal.classify_tier(["scripts/executor.py"]) == "review_required"
 

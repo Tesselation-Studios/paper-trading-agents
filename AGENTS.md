@@ -14,4 +14,4 @@ Operational problems persisting >1 session (sentiment blind, API down, watchlist
 - **Repo**: this local git repo pushes directly to `github.com/Tesselation-Studios/paper-trading-agents`, whatever branch is currently checked out (currently `v4`) — no mirror, no rsync, no subdirectory. This IS the repo. Branch can change if we decide to work on a different one — the push hook follows `git branch --show-current`, never hardcode a branch name in tooling/docs.
 - **Push every commit**: every change to prompt/strategy/journal files must be committed AND pushed to GitHub immediately. No exceptions. Local-only commits are lost — push is the revert safety net.
 - **Size**: max 1100 chars. Overflow → a skill.
-- **Self-edit boundary**: see `skills/evolution-proposals.md` — strategy.md/params.json self-commit as today; code/tooling/doc changes go through a proposal instead.
+- **Self-edit boundary**: see `skills/evolution-proposals.md` — strategy.md/params.json/decision_heuristics.md self-commit (2026-08-12: tree moved to auto-tier, still evidence-gated per `skills/decision-tree.md`); other code/tooling/doc changes go through a proposal instead.
