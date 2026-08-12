@@ -206,7 +206,7 @@ def _combine_signal_group(canonical, members):
 
 def record_decision(trader_id, ticker, action, rationale="", conviction=0.0,
                      regime=None, features=None, db_path: Path = None,
-                     position_entry_time=None):
+                     position_entry_time=None, source=None):
     """Write a decisions row + seed (or enrich) the matching training_examples row.
 
     features should ideally use signals.py's per-signal shape
@@ -242,6 +242,7 @@ def record_decision(trader_id, ticker, action, rationale="", conviction=0.0,
         decision_id = trader_db.insert_decision(
             conn, ticker=ticker, timestamp=ts, decision=action, conviction=conviction,
             rationale=rationale, regime=regime, decision_json=json.dumps({"features": features}),
+            source=source,
         )
     except Exception as e:
         log.error("record_decision(%s/%s): DB write failed, not logged: %s", trader_id, ticker, e)

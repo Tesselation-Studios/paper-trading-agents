@@ -665,10 +665,22 @@ def main():
         # cleaned up the row once a candidate converted). Best-effort, same
         # as the positions-table/training-example writes above -- a failure
         # here should never block or unwind the trade itself.
+        #
+        # The candidate's `source` (discovery_pool/discoveries_md/manual) is
+        # read here, before the row is gone, and carried onto the decisions
+        # row below -- otherwise pipeline attribution is only ever
+        # reconstructable from active.md prose, never queryable after the
+        # fact (see trader_db.most_recent_watchlist_source_touch()'s use in
+        # discovery_daemon.py's health check for the same source-prefix idea).
+        watchlist_source = None
         if filled_status in ("filled", "partially_filled"):
             try:
                 conn = trader_db.get_conn()
                 try:
+                    for c in trader_db.get_watchlist_candidates(conn):
+                        if c["ticker"].upper() == args.ticker.upper():
+                            watchlist_source = c.get("source")
+                            break
                     trader_db.remove_watchlist_candidate(conn, args.ticker.upper())
                 finally:
                     conn.close()
@@ -741,7 +753,8 @@ def main():
         except Exception as e:
             print(json.dumps({"warning": f"training_example write failed: {e}"}), file=sys.stderr)
 
-        _record_decision_row("BUY", args.ticker.upper(), args.conviction, args.thesis, features)
+        _record_decision_row("BUY", args.ticker.upper(), args.conviction, args.thesis, features,
+                              source=watchlist_source)
 
 
 if __name__ == "__main__":

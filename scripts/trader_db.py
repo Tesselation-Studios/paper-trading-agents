@@ -313,6 +313,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _migrate_add_column(conn, "positions", "thesis_entry_signals", "TEXT")
     _migrate_add_column(conn, "positions", "thesis_last_checked_at", "TEXT")
     _migrate_add_column(conn, "positions", "thesis_check_count", "INTEGER NOT NULL DEFAULT 0")
+    # 2026-08-12: pipeline attribution -- which upstream path (discovery
+    # pool, discoveries/*.md, manual/gestalt) sourced the candidate that
+    # became this decision. Previously only inferable after the fact from
+    # active.md prose, not queryable. NULL for every pre-existing row and
+    # for SELLs (a position's original source isn't re-derived at exit).
+    _migrate_add_column(conn, "decisions", "source", "TEXT")
     conn.commit()
 
 
@@ -356,12 +362,12 @@ def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, colty
 
 def insert_decision(conn: sqlite3.Connection, ticker: str, timestamp: str, decision: str,
                      conviction: float = None, rationale: str = "", regime: str = None,
-                     decision_json: str = None) -> int:
+                     decision_json: str = None, source: str = None) -> int:
     with conn:
         cur = conn.execute(
-            """INSERT INTO decisions (ticker, timestamp, decision, conviction, rationale, regime, decision_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (ticker, timestamp, decision, conviction, rationale, regime, decision_json),
+            """INSERT INTO decisions (ticker, timestamp, decision, conviction, rationale, regime, decision_json, source)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (ticker, timestamp, decision, conviction, rationale, regime, decision_json, source),
         )
         return cur.lastrowid
 

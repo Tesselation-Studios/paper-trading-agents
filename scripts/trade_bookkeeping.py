@@ -81,7 +81,8 @@ def close_trade_outcome(account: str, ticker: str, entry_price: float, exit_pric
 
 
 def _record_decision_row(action: str, ticker: str, conviction, rationale: str,
-                          features: Dict[str, Any], regime: Optional[str] = None) -> Optional[Dict[str, Any]]:
+                          features: Dict[str, Any], regime: Optional[str] = None,
+                          source: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Mechanized `decisions` table write, called from the BUY/SELL paths
     below on every real fill. Previously the only writer of this table was
     the standalone `record_decision.py decision` CLI, a second manual step
@@ -102,7 +103,7 @@ def _record_decision_row(action: str, ticker: str, conviction, rationale: str,
         result = decisions.record_decision(
             trader_id="stonks", ticker=ticker, action=action,
             rationale=rationale or "", conviction=conviction if conviction is not None else 0.0,
-            regime=regime, features=features or {},
+            regime=regime, features=features or {}, source=source,
         )
         if result.get("error"):
             print(json.dumps({"warning": f"decision log failed: {result['error']}"}), file=sys.stderr)

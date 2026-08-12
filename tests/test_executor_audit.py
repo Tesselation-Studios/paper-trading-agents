@@ -380,6 +380,69 @@ class TestBuySellPersistsPositions:
         assert "positions table write failed" in err
 
 
+class TestDecisionSourceAttribution:
+    """2026-08-12: the decisions row now carries which upstream pipeline
+    (discovery_pool/discoveries_md/manual) sourced the candidate, read from
+    watchlist_candidates.source right before the row is cleaned up (see
+    TestWatchlistCleanupOnBuy above) -- previously only reconstructable
+    after the fact from active.md prose, never a queryable column."""
+
+    def test_buy_from_discovery_pool_candidate_carries_source(self, monkeypatch, capsys):
+        # _make_fake_urlopen doesn't mock the order-status GET endpoint
+        # wait_for_fill() uses, so filled_status would come back "" (falsy)
+        # and the watchlist-source lookup -- gated on an actual fill,
+        # same as the cleanup it shares code with -- would never run.
+        # Reuse TestWatchlistCleanupOnBuy's fake_urlopen, which does mock it.
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0, source="discovery_pool gen 16")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", TestWatchlistCleanupOnBuy()._fake_urlopen(
+            positions=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+            fill_status="filled",
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+        rows = _read_decisions_rows()
+        assert rows[0]["source"] == "discovery_pool gen 16"
+
+    def test_buy_with_no_watchlist_candidate_leaves_source_null(self, monkeypatch, capsys):
+        """A conviction pick added straight from gestalt reasoning, never
+        tracked as a watchlist candidate -- source stays NULL, not a
+        fabricated guess."""
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-src2"},
+            positions_response=[{"symbol": "ZZZ", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "ZZZ", "--qty", "1",
+            "--price", "10.00", "--skip-guardrails",
+        ])
+        rows = _read_decisions_rows()
+        assert rows[0]["source"] is None
+
+    def test_sell_source_is_null_not_backfilled_from_original_entry(self, monkeypatch, capsys):
+        """A SELL's decisions row doesn't re-derive the position's original
+        entry source -- out of scope for this change, source only ever
+        describes what a BUY was sourced from."""
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=1.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-src3"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "12.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "1",
+            "--price", "12.00", "--close-reason", "profit target", "--skip-guardrails",
+        ])
+        rows = _read_decisions_rows()
+        assert rows[0]["source"] is None
+
+
 class TestDecisionLogging:
     """2026-08-02: decisions-table row is now written directly from
     executor.py's BUY/SELL paths (_record_decision_row), not only via the
