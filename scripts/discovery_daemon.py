@@ -60,7 +60,7 @@ DEFAULTS = {
     "universe_refresh_interval_seconds": 86400,
     "finbert_confirm_interval_seconds": 1800,
     "finbert_confirm_top_n": 6,
-    "daemon_health_stale_multiplier": 3,
+    "daemon_health_stale_multiplier": 10,
 }
 
 

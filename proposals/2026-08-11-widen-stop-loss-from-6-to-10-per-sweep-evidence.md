@@ -1,6 +1,6 @@
 # Proposal: Widen stop-loss from -6% to -10% per sweep evidence
 
-**Status**: open
+**Status**: applied
 **Tier**: auto
 **Created**: 2026-08-11T23:06:48.577573+00:00
 **Files changed**: params.json
@@ -12,3 +12,7 @@ Sweep across 25 stop-loss/profit-target combos (v1.0 base, 200d lookback, 37 tic
 ## Evidence
 
 replay_check.py --sweep: -10/10 first_half Sharpe 0.119, second_half Sharpe 1.670, full Sharpe 1.431, return +11.585%, 135 trades, win_rate 0.519. Current -6/10: first_half 0.696, second_half 0.454, full 1.068, +5.101%, 175 trades, win_rate 0.446. Both robust. -10/10 has materially higher full-window Sharpe.
+
+## Resolution
+
+applied at 2026-08-11T23:32:13.474074+00:00

@@ -1,11 +1,11 @@
 # IWM Position Thesis
 
 - **Entry**: $299.82 avg | 1 shares
-- **Current**: $301.16 (+0.45% unrealized)
-- **Market Value**: $301.16
-- **Unrealized P&L**: $+1.34 (+0.45%)
+- **Current**: $302.33 (+0.84% unrealized)
+- **Market Value**: $302.33
+- **Unrealized P&L**: $+2.51 (+0.84%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-11 20:30:36 UTC
+- **Last sync**: 2026-08-12 13:43:46 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
