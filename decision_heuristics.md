@@ -184,15 +184,16 @@ No in-file changelog — same convention as `strategy.md`: `git log decision_heu
 
 ### NODE deployment_pressure_override_v0
 
-**Status**: watch
-**Type**: risk/structural-reason
-**Trigger (tentative)**: the stated reason for an entry is a structural need (sector diversification, deployment-pressure quota, "I need a candidate for X") rather than the candidate's own signals earning it.
-**Recommended action**: n/a (not a leaf). Treat a quota-pressure rationale as itself a red flag worth naming explicitly in the rationale, not a reason to skip the entry outright.
-**Conviction tier**: probe (forced)
-**Sizing guidance**: n/a
-**Evidence**: OLP (Jul 30) — Stan's own journal: "I entered for sector diversification... the real reason was 'I want to deploy'... the market saw through it in 40 minutes." MBBC (Aug 3) — Stan explicitly self-compared: "the same class of error as OLP." 2 occurrences, self-named by Stan but not yet hardened.
-**Confidence (tracked)**: n/a.
-**Override note**: n/a.
+**Status**: active (promoted 2026-08-12 from watch — see Evidence; this is the first self-mechanized promotion under the 2026-08-12 auto-tier policy, see `skills/decision-tree.md`)
+**Type**: risk/restraint
+**Origin**: named 2026-07-30 (OLP), tracked at `watch` through 3 more occurrences before this promotion.
+**Trigger**: the stated rationale for a BUY centers on cash deployment level, consecutive under-deployed ticks, sector diversification, or "I need a candidate for X" — a structural reason to deploy capital — rather than a specific edge on this ticker (catalyst, MACDh > 0.5 with volume confirmation, index-anchor conviction). Applies whether the underlying signal is merely weak/ambiguous OR was an explicit rejection from another tree node (`catalyst_led_entry_v1` etc.) overridden anyway — HPK (Aug 11) was the latter, the worse case.
+**Recommended action**: HOLD. Do not enter on deployment pressure alone. If genuinely nothing has an independent edge this tick, staying in cash is the correct decision, not a failure to fix.
+**Conviction tier**: high-conviction (restraint sense — strong trust in the HOLD leaf; manifests as blocking the entry outright, not as a downward sizing cap, given 0/4 positive counterexamples)
+**Sizing guidance**: if overridden with a stated reason, cap at `probe` tier regardless of what the underlying setup would otherwise justify.
+**Evidence**: 4 occurrences across 3 weeks, 0W/4L, zero positive counterexamples. OLP (Jul 30): MACDh +0.255, "sector diversification" → -5.38% in 40 min. MBBC (Aug 3): liquidity trap, "best catalyst available" → trapped at 147sh/day. MCFT (Aug 10): MACDh +0.128 near-zero, "9 consecutive under-deployed" → flat. HPK (Aug 11): explicit `[tree:catalyst_led_entry_v1]` rejection overridden anyway, "gestalt probe per deployment pressure (90% cash)" → -5.56%, closed $0.06 above the hard stop. Full detail: `journal/2026-08-11.md`'s "Promotion Candidate" section.
+**Confidence (tracked)**: not yet scored by `tree_scorecard.py` (need `--features '{"tree_node": "deployment_pressure_override_v0", ...}'` tagging on future matches, per `skills/decision-tree.md`'s tagging convention) — the 4 historical occurrences predate this promotion and weren't tagged as tree matches at the time, so they don't count toward the scored sample; treat the 0W/4L above as qualitative promotion evidence, not the scorecard's own n.
+**Override note**: a genuine, independently-confirmed edge (catalyst, strong MACDh+volume, index-anchor eligibility) is not deployment pressure and doesn't trigger this node — the trigger is specifically a rationale that leads with the cash/deployment reason rather than the ticker's own signals. If overriding this node's HOLD, name the specific independent edge in the rationale, not just "conviction" — a restated deployment-pressure reason dressed as conviction is exactly occurrence #5.
 
 ---
 
