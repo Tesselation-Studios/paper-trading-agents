@@ -1,9 +1,9 @@
-# KEX Position Thesis
+# FIRY Position Thesis
 
-- **Entry**: $134.19 avg | 2 shares
-- **Current**: $136.41 (+1.66% unrealized)
-- **Market Value**: $272.82
-- **Unrealized P&L**: $+4.45 (+1.66%)
+- **Entry**: $10.02 avg | 14 shares
+- **Current**: $9.94 (-0.80% unrealized)
+- **Market Value**: $139.16
+- **Unrealized P&L**: $-1.12 (-0.80%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-12 19:10:30 UTC
 

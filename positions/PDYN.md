@@ -1,9 +1,9 @@
-# KEX Position Thesis
+# PDYN Position Thesis
 
-- **Entry**: $134.19 avg | 2 shares
-- **Current**: $136.41 (+1.66% unrealized)
-- **Market Value**: $272.82
-- **Unrealized P&L**: $+4.45 (+1.66%)
+- **Entry**: $6.44 avg | 50 shares
+- **Current**: $6.43 (-0.08% unrealized)
+- **Market Value**: $321.75
+- **Unrealized P&L**: $-0.25 (-0.08%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-12 19:10:30 UTC
 

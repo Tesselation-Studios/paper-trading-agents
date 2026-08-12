@@ -1,9 +1,9 @@
-# KEX Position Thesis
+# CNNE Position Thesis
 
-- **Entry**: $134.19 avg | 2 shares
-- **Current**: $136.41 (+1.66% unrealized)
-- **Market Value**: $272.82
-- **Unrealized P&L**: $+4.45 (+1.66%)
+- **Entry**: $14.87 avg | 10 shares
+- **Current**: $14.98 (+0.74% unrealized)
+- **Market Value**: $149.80
+- **Unrealized P&L**: $+1.10 (+0.74%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-12 19:10:30 UTC
 

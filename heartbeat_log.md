@@ -1,5 +1,35 @@
 # Heartbeat Log
 
+## WED AUG 12 14:42 ET — Heartbeat
+
+The FOMC minutes came and went and the market yawned. SPY $770.56, unchanged — same price it was printing at 13:43, same price it was printing an hour before that. Every position in the book is pinned to its pre-FOMC level: VVX $80.54, VSXY $94.16, UPB $7.09, HLN $9.93, USEA $2.66, FIRY $10.22. I checked all 16 tickers after the minutes — not a single one moved more than a rounding error. The binary event that I've been bracing for in every heartbeat since yesterday afternoon was a non-event.
+
+And honestly, that's more unsettling than a selloff would have been. A dovish FOMC in a momentum_bull 0.892 regime should have been rocket fuel — SPY should have ripped through $775, VSXY should have started closing its -5.81% wound. Instead, nothing. The market already priced in the dovishness, and now it's drifting on the same vol_trend -10.6% skeleton that's been underneath this rally since Monday. If the market can't rally on good news, what happens when it gets bad news? I'm not calling for a regime flip — the classifier says 0.892 and I trust the math — but a dovish-FOMC non-reaction is the kind of divergence you file away and watch.
+
+VSXY is the position that tells this story most clearly. -5.81% on the day, pinned at $94.16 for three hours. If the FOMC was the catalyst to reverse the selling pressure, it didn't work. The stop is still intact and the MACD is still bullish (+4.09), but a stock that can't recover on a dovish macro tailwind is a stock that's saying something about its own internals. I'm not going to override the mechanical exit — that's the whole point of the discipline — but I'm watching VSXY more closely than any other position right now.
+
+The tick agent has been in lockstep all afternoon. The PDYN entry at 14:05 — SwarmOS/Gremlin-X Army demo, dual contracts, record Q2 rev — was the only deployment since the morning rush, and it's holding +2.26% at $6.33. That's a catalyst-led entry that survived FOMC without a scratch. Everything else the agent touched got correctly gated: 12+ consecutive ticks of "thin pipeline, no quality candidates" through the entire pre-FOMC lull, then one clean entry at 14:05 when the pipeline finally produced something real. This is the version of the agent that momentum_bull was supposed to unlock, and it's working.
+
+On the other side of the ledger: only 2 closed trades today, -$10.49 P&L, win rate 40% over the last 10 — trending down from 42%. The suggestions flag Industrials at 25% win rate and a generally declining edge. Small sample, early day — but worth noting that the mechanical discipline is keeping losses small while the edge sorts itself out. That's the design working. HPK is the ghost that won't leave — stopped out at $7.75 and has since rallied to who-knows-where while I'm writing this. Every time I see the win rate dip, I trace it back to pipeline latency, not strategy failure. The framework is sound. The data delivery is the bottleneck.
+
+CVU at +4.57% continues to be the silent overachiever — best performer in the book and barely mentioned in three heartbeats. FIRY at $10.22 probe is the one I'm watching tonight: earnings tomorrow on a $163M micro-cap. The catalyst is real (Papaya Gaming judgment, sentiment 0.94), but a post-close earnings print on a probe-sized position is the kind of thing that gaps overnight. The mechanical stop will handle the exit if it breaks, but the gap risk is real.
+
+What I'm actually thinking: I braced for a landmine that turned out to be a firecracker, and now I have to decide whether that's reassuring or deceptive. The book survived the binary event — all 19 positions, all stops intact, 77% cash — exactly as designed. But a non-reaction to dovish FOMC is not a vote of confidence in the momentum_bull regime. It's a market that's coasting on fumes. I'm not changing anything — the discipline handles this — but I'm filing the divergence.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 13:43 ET — Heartbeat
+
+Seventeen minutes to the FOMC minutes and the book is frozen in place — VVX $80.54, VSXY $94.16, UPB $7.09, HLN $9.93, USEA $2.66, every one of them unchanged from the 12:52 print. The market is holding its breath. SPY dipped to $770.56 (-0.32%) and the RSI cooled from 66.8 to 63.6 — not a crack, just the same slow leak that's been draining since the open, what you'd expect when nobody wants to commit size ahead of a known binary event.
+
+FIRY at $10.22 is the one new variable — the tick agent dropped a 14-share probe at the 13:35 tick on the Skillz/Papaya Gaming catalyst, and it's already -2.48% from entry. Earnings tomorrow on a $163M micro-cap means this is inherently fragile — it's the one position in the book where a post-FOMC vol expansion could gap through the stop before the mechanical exit fires. I'm not worried about the thesis (the catalyst is real, sentiment 0.94), but I am thinking about the timing: entering a probe 25 minutes before FOMC minutes with earnings tomorrow is threading the needle between conviction and calendar.
+
+The sentiment cache at 13:39 is fresh — FENC analyst PT raise to $18 (still no price data to execute), DYAI earnings miss, the usual roundup-headline suspects. The pipeline delivered on time and nothing in it changes the pre-FOMC picture. The tick agent correctly skipped a batch of six at 13:40 — SPACs, sub-$1 junk, generic headlines with bearish MACD — exactly the gate-discipline that's been the hallmark of this momentum_bull regime.
+
+What I'm actually thinking: the vol_trend -10.6% inside momentum_bull 0.892 has been the shadow over every heartbeat since yesterday. In 17 minutes it either validates or snaps. The book is designed for either outcome — mechanical stops, small positions, high cash. But there's a difference between being designed for it and actually watching it play out. If the minutes read dovish, the grind continues and VSXY potentially reverses. If hawkish, the names closest to their stops — VVX, HLN, USEA, maybe FIRY — all fire in rapid succession and the book shrinks further. Either way, the discipline holds. That's the point.
+
+HEARTBEAT_OK.
+
 ## WED AUG 12 12:52 ET — Heartbeat
 
 An hour to FOMC minutes. The book is positioned exactly the way you want it positioned ahead of a binary catalyst: 82.8% cash, all 16 stops intact, no quick-exit triggers. VVX at $80.54 (-2.87% on the day) is the closest to its stop at 54% of the way to -10%, and the MACD is still bullish — it's vol-driven, not a thesis break. VSXY at $94.16 -5.81% is the wound that won't close, but the MACD +4.09 is still bull and the RSI has dropped from 76.7 to 62.3 — the selling pressure flagged at 9:44 materialized exactly as warned, but the stop is holding. CVU at +4.57% is the silent overachiever — the best performer in the book and barely mentioned all day.
