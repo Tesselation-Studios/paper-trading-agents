@@ -1,11 +1,11 @@
 # CPSH Position Thesis
 
 - **Entry**: $4.60 avg | 33 shares
-- **Current**: $4.54 (-1.22% unrealized)
-- **Market Value**: $149.95
-- **Unrealized P&L**: $-1.85 (-1.22%)
+- **Current**: $4.52 (-1.74% unrealized)
+- **Market Value**: $149.16
+- **Unrealized P&L**: $-2.64 (-1.74%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-12 16:51:34 UTC
+- **Last sync**: 2026-08-12 17:20:29 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
