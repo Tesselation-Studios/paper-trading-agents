@@ -32,6 +32,17 @@ def gate_cash(context: Dict[str, Any], action: Dict[str, Any]) -> Tuple[bool, st
     cash = float(context.get("cash", 0))
     if cost > cash:
         return False, f"BUY costs ${cost:,.2f} but only ${cash:,.2f} cash available"
+    # 2026-08-12 (Raf's direction): keep a minimum cash reserve on hand at
+    # all times for opportunistic capacity, same spirit as strategy.md's
+    # "Cash floor" -- a real limit alongside the plain affordability check
+    # above, not just documentation. Defaults to 0 (old behavior, no floor)
+    # when the param is absent, so this stays a no-op until deliberately set.
+    risk = alpaca_client.load_params().get("risk", {})
+    min_cash_reserve = float(risk.get("min_cash_reserve", 0.0))
+    remaining = cash - cost
+    if remaining < min_cash_reserve:
+        return False, (f"BUY costs ${cost:,.2f}, would leave ${remaining:,.2f} cash -- "
+                        f"below the ${min_cash_reserve:,.2f} reserve floor")
     return True, f"BUY costs ${cost:,.2f}, cash ${cash:,.2f} sufficient"
 
 

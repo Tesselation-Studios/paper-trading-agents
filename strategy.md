@@ -1,4 +1,4 @@
-# Stonks — Strategy stonks.strat:v1.21
+# Stonks — Strategy stonks.strat:v1.23
 
 General philosophy and strategy. **Specific, situational rules — the ones with a concrete trigger and a BUY/SELL/HOLD leaf — live in `decision_heuristics.md`, not here.** This file is what Stan reasons *from*; the tree is what Stan checks *first*, before reasoning. Read both fresh every tick (`tick_prompt.md` step 1).
 
@@ -14,7 +14,9 @@ Trade small and wide, not concentrated — volume of decisions and honest feedba
 
 **Two capital buckets** (`params.json: risk.long_play` / `risk.conviction_play`): most of the book is the wide/fast opportunistic sweep above — standard sizing, no special tag. A smaller conviction bucket is for well-known/liquid names with an actual researched thesis, sized larger, held until the thesis plays out or breaks rather than a mechanical exit — never exempt from the hard stop. Long plays are a separate, smaller, evidence-gated short-horizon exception (explicit prediction + resolution date). A subset of the conviction bucket may hold broad-market index ETFs as a cash-deployment anchor. Eligibility, sizing, and exit specifics for both buckets (including index-anchors) are `decision_heuristics.md` nodes, not restated here.
 
-**Exit**: the hard stop-loss, trailing stop, and profit-target numbers live in `params.json: risk` and are mechanically enforced in `executor.py`'s guardrail gates — not a judgment call. Which *situational* exit call to make (peaked-pump restraint, market-context trim, thesis break) is `decision_heuristics.md` territory.
+**Exit**: the hard stop-loss and (volatility-scaled) trailing stop live in `params.json: risk` and are mechanically enforced in `executor.py`'s `check_stops()` — not a judgment call. `profit_target_pct` is a guide only (`risk.profit_target_is_guide: true`) referenced by the offline backtest harness (`replay_check.py`), not a live sell trigger — nothing in the live path force-exits a winner at a target price. **Hold winners as long as the trailing stop hasn't been hit** (Raf's direction, 2026-08-12): a real trend has no natural ceiling worth capping by hand, so let the trailing stop — which ratchets up with price, not a fixed level — be the only thing that takes profit on a winner. Which *situational* exit call to make (peaked-pump restraint, market-context trim, thesis break) is `decision_heuristics.md` territory.
+
+**Cash floor**: keep at least `risk.min_cash_reserve` on hand at all times (2026-08-12, Raf's direction) — mechanically enforced by `gate_cash`, not a judgment call. This is a floor for opportunistic capacity (something better shows up), not a target to sit at; deployment pressure still applies above the floor.
 
 **Dual time horizon**: most positions short/fast, some warrant a longer hold. Per-position qualitative call.
 
@@ -47,6 +49,8 @@ Universe/sizing constraints are a starting point, not a ceiling. As real track r
 - Strategy changes must be verified end-to-end: after revising `strategy.md`, check `params.json`, `executor.py`, `tick_prompt.md`, and `decision_heuristics.md` for stale rules.
 - v1.20 (2026-08-05): scale-into-winners (v1.7 addition) was actively destructive — degraded v1.1's Sharpe 4.618 → 2.099, first-half near-flat. Reverted to v1.1 core. Stop/target tightened (-10%,12%) → (-6%,10%) per split-window sweep: Sharpe 3.982 vs 3.148, higher-rep pattern (198 vs 124 trades).
 - v1.21 (2026-08-10): split the file in two. Situational, trigger→action rules (peaked-pump restraint, market-context exit, catalyst-liquidity gate, conviction-play/index-anchor eligibility and exits) moved out of this file's prose and into `decision_heuristics.md` as real nodes with a BUY/SELL/HOLD leaf each — this file keeps only general philosophy/strategy. Nothing about the underlying rules changed, only where they're written and how fast they're checked.
+- v1.22 (2026-08-11): stop-loss widened -6% → -10% per sweep evidence (`proposals/2026-08-11-widen-stop-loss-from-6-to-10-per-sweep-evidence.md`, Sharpe 1.431 vs 1.068, robust both halves). `params.json` was updated same day; this changelog entry was missed at the time — added retroactively 2026-08-12 while auditing for drift.
+- v1.23 (2026-08-12): hold winners as long as the trailing stop hasn't hit — no hand-capped profit target (Raf's direction; corrected a stale claim that `profit_target_pct` was mechanically enforced — it never was, `replay_check.py`-only). New cash floor (`risk.min_cash_reserve`, `gate_cash`), same direction.
 
 ## Evolution Process
 

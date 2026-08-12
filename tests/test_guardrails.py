@@ -72,39 +72,83 @@ def params(monkeypatch):
 
 
 class TestGateCash:
-    def test_buy_within_cash(self):
+    # 2026-08-12: all of these now take `params` -- gate_cash started
+    # calling alpaca_client.load_params() for the new min_cash_reserve
+    # check below, so a test that doesn't isolate params.json is no longer
+    # independent of the real file's content (it wasn't a problem before
+    # because the old gate_cash never read params at all).
+
+    def test_buy_within_cash(self, params):
         context = {"cash": 50000}
         action = {"action": "BUY", "quantity": 10, "price": 100.0}
         granted, reason = executor.gate_cash(context, action)
         assert granted is True
         assert "sufficient" in reason
 
-    def test_buy_exceeds_cash(self):
+    def test_buy_exceeds_cash(self, params):
         context = {"cash": 100}
         action = {"action": "BUY", "quantity": 10, "price": 100.0}
         granted, reason = executor.gate_cash(context, action)
         assert granted is False
         assert "$1,000.00" in reason and "$100.00" in reason
 
-    def test_buy_exact_cash(self):
+    def test_buy_exact_cash(self, params):
         context = {"cash": 1000}
         action = {"action": "BUY", "quantity": 10, "price": 100.0}
         granted, _ = executor.gate_cash(context, action)
         assert granted is True
 
-    def test_sell_always_allowed(self):
+    def test_sell_always_allowed(self, params):
         context = {"cash": 0}
         action = {"action": "SELL", "quantity": 10, "price": 100.0}
         granted, reason = executor.gate_cash(context, action)
         assert granted is True
         assert "non-BUY" in reason
 
-    def test_no_price_fails_open(self):
+    def test_no_price_fails_open(self, params):
         context = {"cash": 0}
         action = {"action": "BUY", "quantity": 10, "price": None}
         granted, reason = executor.gate_cash(context, action)
         assert granted is True
         assert "fail-open" in reason
+
+    def test_min_cash_reserve_defaults_to_zero_no_op(self, params):
+        """DEFAULT_PARAMS above has no min_cash_reserve key -- confirms the
+        new floor check is a genuine no-op (old behavior) when the param is
+        absent, not silently blocking every test that predates it."""
+        context = {"cash": 1000}
+        action = {"action": "BUY", "quantity": 10, "price": 100.0}
+        granted, _ = executor.gate_cash(context, action)
+        assert granted is True
+
+    def test_buy_that_would_breach_reserve_floor_rejected(self, params):
+        params["risk"]["min_cash_reserve"] = 500.0
+        context = {"cash": 1000}
+        action = {"action": "BUY", "quantity": 10, "price": 60.0}  # leaves $400
+        granted, reason = executor.gate_cash(context, action)
+        assert granted is False
+        assert "reserve floor" in reason
+        assert "$400.00" in reason
+        assert "$500.00" in reason
+
+    def test_buy_leaving_exactly_the_reserve_is_allowed(self, params):
+        params["risk"]["min_cash_reserve"] = 500.0
+        context = {"cash": 1000}
+        action = {"action": "BUY", "quantity": 5, "price": 100.0}  # leaves exactly $500
+        granted, _ = executor.gate_cash(context, action)
+        assert granted is True
+
+    def test_buy_above_affordability_and_reserve_reports_affordability_reason_first(self, params):
+        """Outright unaffordable still short-circuits on the original
+        message -- the reserve floor is an additional, later check, not a
+        replacement for the basic 'can we pay for this at all' one."""
+        params["risk"]["min_cash_reserve"] = 500.0
+        context = {"cash": 100}
+        action = {"action": "BUY", "quantity": 10, "price": 100.0}
+        granted, reason = executor.gate_cash(context, action)
+        assert granted is False
+        assert "cash available" in reason
+        assert "reserve floor" not in reason
 
 
 # ─────────────────────────────────────────────────────────────────────────────
