@@ -17,23 +17,28 @@ Read `strategies/watchlist.md` and `positions/*.md` to get your current
 sectors and tickers. Group by sector/theme — you're briefing `researcher`
 on themes, not a raw ticker list.
 
-For each sector/theme you're actually exposed to (held or actively
-watchlisted, not every sector in existence), run `wiki_search` for it.
-Note which already have a synthesis page (and its `confidence`/`status`/
-`updatedAt`) versus which have none yet. A page updated in the last 1-2
-days probably doesn't need revisiting tonight; one that's a week+ stale,
-or has open `questions`, is a good candidate to send back to `researcher`.
+Do NOT call `wiki_search` yourself here. As of 2026-08-12, `wiki_search`
+has a recurring multi-minute hang (seen across multiple agents/crons, not
+specific to this one) that was force-aborting this entire cron on every
+run — 9 consecutive failures before this was caught. Just pass the raw
+sector/theme list to researcher in Step 2 (limited to what you're
+actually exposed to — held or actively watchlisted, not every sector in
+existence) and let it determine existing-vs-new pages itself as part of
+its own `wiki_apply` workflow — it already needs that lookup to avoid
+duplicating a page, so nothing is lost by not pre-checking here.
 
 ## Step 2: Delegate to researcher (this is the actual work — give it room)
 
 Call `sessions_send` with `agentId: "researcher"` and `timeoutSeconds: 480`.
 Write the message as a real research brief, not a one-liner — include:
-- The sector/theme list from Step 1, split into "revisit" (existing wiki
-  page, needs fresh evidence) vs "new" (no page yet, worth a first look
-  only if you have a real reason — a position or serious watchlist
-  candidate in that sector, not curiosity).
-- For "revisit" items: the existing page's title/lookup and current
-  confidence/status, so researcher extends it rather than starting over.
+- The sector/theme list from Step 1. Ask researcher to check for an
+  existing synthesis page on each theme first (title/lookup,
+  `confidence`/`status`/`updatedAt`) and extend it if one exists rather
+  than starting over — a page updated in the last 1-2 days probably
+  doesn't need fresh evidence tonight; one that's a week+ stale, or has
+  open `questions`, is worth revisiting. Only write a first-look page for
+  a theme with no existing page if you have a real reason (a position or
+  serious watchlist candidate there, not curiosity).
 - Explicit instruction: use `wiki_apply synthesis "<title>"` with the
   **same title** as any existing page on that theme (favor updating over
   duplicating — same discipline as your own wiki-writing in tick_prompt.md
