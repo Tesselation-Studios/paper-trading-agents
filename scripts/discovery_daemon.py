@@ -46,6 +46,7 @@ import discovery_db  # noqa: E402
 import discovery_scan  # noqa: E402
 import discovery_screen  # noqa: E402
 import executor  # noqa: E402 — reuse _is_regular_trading_hours() for dual-rate interval selection
+import trader_db  # noqa: E402 — downstream-flow half of daemon_health(), see its docstring
 import universe_scan  # noqa: E402
 
 WORKSPACE_DIR = Path(__file__).resolve().parent.parent
@@ -61,6 +62,7 @@ DEFAULTS = {
     "finbert_confirm_interval_seconds": 1800,
     "finbert_confirm_top_n": 6,
     "daemon_health_stale_multiplier": 10,
+    "downstream_flow_stale_seconds": 1800,
 }
 
 
@@ -310,32 +312,88 @@ def _sentiment_worker_ok(state: dict) -> Optional[bool]:
     return datetime.fromisoformat(success_at) >= datetime.fromisoformat(failure_at)
 
 
-def daemon_health(max_staleness_seconds: int = None, now: str = None, cursor_state_path: Path = None) -> dict:
+def _downstream_flow_check(now: str, config: dict, pool_db_path: Path = None,
+                            trader_db_path: Path = None) -> dict | None:
+    """2026-08-12: daemon_health() previously only checked that the
+    screening cycle itself was alive -- it had no way to notice the pool
+    filling up with real candidates while promote_candidates.py silently
+    stopped landing any of them in watchlist_candidates (exactly the
+    failure shape of the 2026-08-03 merge_discoveries.py regex bug, which
+    silently rejected 68-81% of the watchlist for a week before anyone
+    caught it by reading the journal). Only meaningful when there's
+    actually something to promote and something scheduled to promote it --
+    returns None (not applicable, folds into healthy=True) outside market
+    hours or when the pool has nothing fresh in-band, rather than flagging
+    a false positive for "nothing happened because there was nothing to
+    do." """
+    if not executor._is_regular_trading_hours():
+        return None
+
+    pool_conn = discovery_db.get_conn(pool_db_path)
+    try:
+        stats = discovery_db.pool_stats(pool_conn, now=now)
+    finally:
+        pool_conn.close()
+    if stats["fresh_in_band_count"] == 0:
+        return None
+
+    conn = trader_db.get_conn(trader_db_path)
+    try:
+        last_touch = trader_db.most_recent_watchlist_source_touch(conn, "discovery_pool")
+    finally:
+        conn.close()
+
+    if last_touch is None:
+        elapsed = None
+        ok = False
+    else:
+        elapsed = (datetime.fromisoformat(now) - datetime.fromisoformat(last_touch)).total_seconds()
+        ok = elapsed <= config["downstream_flow_stale_seconds"]
+
+    return {
+        "ok": ok,
+        "fresh_in_band_count": stats["fresh_in_band_count"],
+        "last_watchlist_touch": last_touch,
+        "elapsed_seconds": elapsed,
+    }
+
+
+def daemon_health(max_staleness_seconds: int = None, now: str = None, cursor_state_path: Path = None,
+                   pool_db_path: Path = None, trader_db_path: Path = None) -> dict:
     """Reads state/discovery_daemon.json. max_staleness_seconds defaults to
     daemon_health_stale_multiplier x whichever interval is currently in
     effect (market/off-hours), so the slower off-hours cadence doesn't
-    spuriously read as unhealthy."""
+    spuriously read as unhealthy.
+
+    Also checks the downstream half of the pipeline (pool -> watchlist),
+    not just whether this daemon's own screening cycle is alive -- see
+    _downstream_flow_check()'s docstring."""
     now = now or _now_iso()
     state = load_cursor_state(cursor_state_path)
     last_completed = state.get("last_cycle_completed_at")
+    config = load_config()
 
     if last_completed is None:
         return {"healthy": False, "last_cycle_completed_at": None, "last_cycle_status": state.get("last_cycle_status"),
-                "sentiment_worker_ok": _sentiment_worker_ok(state)}
+                "sentiment_worker_ok": _sentiment_worker_ok(state), "downstream_flow": None}
 
     if max_staleness_seconds is None:
-        config = load_config()
         interval = (config["market_hours_interval_seconds"] if executor._is_regular_trading_hours()
                     else config["off_hours_interval_seconds"])
         max_staleness_seconds = interval * config["daemon_health_stale_multiplier"]
 
     elapsed = (datetime.fromisoformat(now) - datetime.fromisoformat(last_completed)).total_seconds()
-    healthy = elapsed <= max_staleness_seconds
+    cycle_healthy = elapsed <= max_staleness_seconds
+
+    downstream = _downstream_flow_check(now, config, pool_db_path=pool_db_path, trader_db_path=trader_db_path)
+    downstream_healthy = downstream is None or downstream["ok"]
+
     return {
-        "healthy": healthy,
+        "healthy": cycle_healthy and downstream_healthy,
         "last_cycle_completed_at": last_completed,
         "last_cycle_status": state.get("last_cycle_status"),
         "sentiment_worker_ok": _sentiment_worker_ok(state),
+        "downstream_flow": downstream,
     }
 
 

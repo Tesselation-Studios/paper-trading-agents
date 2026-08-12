@@ -949,6 +949,20 @@ def remove_watchlist_candidate(conn: sqlite3.Connection, ticker: str) -> None:
         conn.execute("DELETE FROM watchlist_candidates WHERE ticker = ?", (ticker,))
 
 
+def most_recent_watchlist_source_touch(conn: sqlite3.Connection, source_prefix: str) -> str | None:
+    """Most recent last_touched_at among watchlist_candidates whose source
+    starts with source_prefix (e.g. "discovery_pool") -- lets a caller
+    outside this DB (discovery_daemon.py's health check) tell whether the
+    pool -> promote_candidates.py -> watchlist path is actually landing
+    rows downstream, not just whether the daemon's own screening cycle is
+    alive. Returns None if no matching row exists yet."""
+    row = conn.execute(
+        "SELECT MAX(last_touched_at) AS ts FROM watchlist_candidates WHERE source LIKE ?",
+        (f"{source_prefix}%",),
+    ).fetchone()
+    return row["ts"] if row else None
+
+
 # ── Bankroll ──────────────────────────────────────────────────────────────
 # Singleton row (id=1). Caller (bankroll.py, once migrated) owns the
 # growth/decay math -- these are plain read/write, no business logic here.

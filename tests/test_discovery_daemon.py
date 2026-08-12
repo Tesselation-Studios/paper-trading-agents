@@ -20,6 +20,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 import discovery_daemon  # noqa: E402
 import discovery_db  # noqa: E402
+import trader_db  # noqa: E402
 
 
 @pytest.fixture
@@ -310,6 +311,15 @@ class TestMaybeConfirmNews:
 
 
 class TestDaemonHealth:
+    # Downstream-flow check (see TestDownstreamFlowCheck) is gated on
+    # executor._is_regular_trading_hours() -- forced False here so these
+    # pre-existing tests stay deterministic and never touch the real
+    # default-path state/discovery_pool.db / state/trader.db regardless of
+    # what time it actually is when the suite runs.
+    @pytest.fixture(autouse=True)
+    def _off_hours(self, monkeypatch):
+        monkeypatch.setattr(discovery_daemon.executor, "_is_regular_trading_hours", lambda: False)
+
     def test_missing_file_unhealthy(self, tmp_path, monkeypatch):
         result = discovery_daemon.daemon_health(cursor_state_path=tmp_path / "missing.json")
         assert result["healthy"] is False
@@ -335,6 +345,21 @@ class TestDaemonHealth:
             max_staleness_seconds=60, now="2026-07-27T12:05:00+00:00", cursor_state_path=path,
         )
         assert result["healthy"] is False
+
+    def test_downstream_flow_not_applicable_off_hours(self, tmp_path):
+        """Off-hours, downstream_flow is None (not applicable) and never
+        drags healthy down -- there's no tick loop running to promote
+        anything regardless of what the pool holds."""
+        path = tmp_path / "state.json"
+        state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        state["last_cycle_completed_at"] = "2026-07-27T12:00:00+00:00"
+        state["last_cycle_status"] = "ok"
+        discovery_daemon.save_cursor_state(state, path=path)
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now="2026-07-27T12:05:00+00:00", cursor_state_path=path,
+        )
+        assert result["downstream_flow"] is None
+        assert result["healthy"] is True
 
     # ── sentiment_worker_ok (2026-08-10) — separate from the loop's own
     # `healthy` flag on purpose: a degraded sentiment worker doesn't mean
@@ -377,6 +402,139 @@ class TestDaemonHealth:
         assert result["sentiment_worker_ok"] is False
 
 
+class TestDownstreamFlowCheck:
+    """2026-08-12: daemon_health() previously only checked the screening
+    cycle itself -- it had no way to notice the pool filling up with real
+    candidates while promote_candidates.py silently stopped landing any of
+    them in watchlist_candidates (the 2026-08-03 merge_discoveries.py
+    regex bug's failure shape exactly: 68-81% of the watchlist silently
+    rejected for a week before anyone caught it by reading the journal).
+    All tests here force market hours True and point both DBs at tmp_path
+    scratch files -- never the real state/discovery_pool.db or
+    state/trader.db."""
+
+    @pytest.fixture(autouse=True)
+    def _market_hours(self, monkeypatch):
+        monkeypatch.setattr(discovery_daemon.executor, "_is_regular_trading_hours", lambda: True)
+
+    def _cursor_path(self, tmp_path, now):
+        path = tmp_path / "state.json"
+        state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        state["last_cycle_completed_at"] = now
+        state["last_cycle_status"] = "ok"
+        discovery_daemon.save_cursor_state(state, path=path)
+        return path
+
+    def test_no_fresh_candidates_is_not_applicable(self, tmp_path):
+        """Pool has nothing fresh in-band right now -- nothing to promote,
+        so a quiet watchlist isn't evidence of a break."""
+        now = "2026-08-12T15:00:00+00:00"
+        pool_db = tmp_path / "pool.db"
+        trader_db_path = tmp_path / "trader.db"
+        discovery_db.get_conn(pool_db).close()  # empty pool, no candidates at all
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now=now, cursor_state_path=self._cursor_path(tmp_path, now),
+            pool_db_path=pool_db, trader_db_path=trader_db_path,
+        )
+        assert result["downstream_flow"] is None
+        assert result["healthy"] is True
+
+    def test_fresh_candidates_but_no_watchlist_touch_ever_is_unhealthy(self, tmp_path, monkeypatch):
+        """The actual regression this closes: pool has real supply, but
+        nothing pool-sourced has ever landed in watchlist_candidates."""
+        now = "2026-08-12T15:00:00+00:00"
+        pool_db = tmp_path / "pool.db"
+        trader_db_path = tmp_path / "trader.db"
+        pool_conn = discovery_db.get_conn(pool_db)
+        discovery_db.upsert_candidates(pool_conn, [
+            {"ticker": "AAA", "price": 10.0, "in_band": True},
+        ], universe_generation=1, screened_at=now)
+        pool_conn.close()
+
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now=now, cursor_state_path=self._cursor_path(tmp_path, now),
+            pool_db_path=pool_db, trader_db_path=trader_db_path,
+        )
+        assert result["downstream_flow"]["ok"] is False
+        assert result["downstream_flow"]["fresh_in_band_count"] == 1
+        assert result["downstream_flow"]["last_watchlist_touch"] is None
+        assert result["healthy"] is False
+
+    def test_fresh_candidates_with_recent_watchlist_touch_is_healthy(self, tmp_path):
+        now = "2026-08-12T15:00:00+00:00"
+        pool_db = tmp_path / "pool.db"
+        trader_db_path = tmp_path / "trader.db"
+        pool_conn = discovery_db.get_conn(pool_db)
+        discovery_db.upsert_candidates(pool_conn, [
+            {"ticker": "AAA", "price": 10.0, "in_band": True},
+        ], universe_generation=1, screened_at=now)
+        pool_conn.close()
+
+        conn = trader_db.get_conn(trader_db_path)
+        trader_db.upsert_watchlist_candidate(
+            conn, ticker="AAA", price=10.0, source="discovery_pool gen 1",
+            now="2026-08-12T14:55:00+00:00",  # 5 min before `now`, well under the 30 min bar
+        )
+        conn.close()
+
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now=now, cursor_state_path=self._cursor_path(tmp_path, now),
+            pool_db_path=pool_db, trader_db_path=trader_db_path,
+        )
+        assert result["downstream_flow"]["ok"] is True
+        assert result["healthy"] is True
+
+    def test_fresh_candidates_with_stale_watchlist_touch_is_unhealthy(self, tmp_path):
+        now = "2026-08-12T15:00:00+00:00"
+        pool_db = tmp_path / "pool.db"
+        trader_db_path = tmp_path / "trader.db"
+        pool_conn = discovery_db.get_conn(pool_db)
+        discovery_db.upsert_candidates(pool_conn, [
+            {"ticker": "AAA", "price": 10.0, "in_band": True},
+        ], universe_generation=1, screened_at=now)
+        pool_conn.close()
+
+        conn = trader_db.get_conn(trader_db_path)
+        trader_db.upsert_watchlist_candidate(
+            conn, ticker="AAA", price=10.0, source="discovery_pool gen 1",
+            now="2026-08-12T14:00:00+00:00",  # 60 min before `now`, past the 30 min default bar
+        )
+        conn.close()
+
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now=now, cursor_state_path=self._cursor_path(tmp_path, now),
+            pool_db_path=pool_db, trader_db_path=trader_db_path,
+        )
+        assert result["downstream_flow"]["ok"] is False
+        assert result["healthy"] is False
+
+    def test_non_pool_sourced_watchlist_touch_does_not_count(self, tmp_path):
+        """A recent manual/RSS-sourced add shouldn't mask the pool
+        specifically failing to reach the watchlist."""
+        now = "2026-08-12T15:00:00+00:00"
+        pool_db = tmp_path / "pool.db"
+        trader_db_path = tmp_path / "trader.db"
+        pool_conn = discovery_db.get_conn(pool_db)
+        discovery_db.upsert_candidates(pool_conn, [
+            {"ticker": "AAA", "price": 10.0, "in_band": True},
+        ], universe_generation=1, screened_at=now)
+        pool_conn.close()
+
+        conn = trader_db.get_conn(trader_db_path)
+        trader_db.upsert_watchlist_candidate(
+            conn, ticker="BBB", price=5.0, source="discoveries_md",
+            now="2026-08-12T14:59:00+00:00",
+        )
+        conn.close()
+
+        result = discovery_daemon.daemon_health(
+            max_staleness_seconds=600, now=now, cursor_state_path=self._cursor_path(tmp_path, now),
+            pool_db_path=pool_db, trader_db_path=trader_db_path,
+        )
+        assert result["downstream_flow"]["ok"] is False
+        assert result["downstream_flow"]["last_watchlist_touch"] is None
+
+
 class TestCheckHealthCLI:
     """Locks in the --check-health exit-code contract a health-check cron
     depends on: exit 0 when healthy, nonzero when not. No daemon loop, no
@@ -385,6 +543,10 @@ class TestCheckHealthCLI:
 
     def _run(self, monkeypatch, cursor_state_path, capsys):
         monkeypatch.setattr(discovery_daemon, "CURSOR_STATE_PATH", cursor_state_path)
+        # Off-hours by default so this class's pre-existing tests don't
+        # depend on the downstream check / real DB paths -- matches
+        # TestDaemonHealth's approach above.
+        monkeypatch.setattr(discovery_daemon.executor, "_is_regular_trading_hours", lambda: False)
         monkeypatch.setattr(sys, "argv", ["discovery_daemon.py", "--check-health"])
         with pytest.raises(SystemExit) as exc_info:
             discovery_daemon.main()
