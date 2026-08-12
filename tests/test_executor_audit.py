@@ -644,13 +644,17 @@ class TestSellExitPriceFallback:
         # entry=10.0, real fill=11.37 -> pnl = 1.37 * 2, NOT $0.00
         assert row["realized_pnl"] == pytest.approx(2.74)
 
-    def test_sell_with_price_still_takes_priority_over_fill_price(self, monkeypatch, capsys):
+    def test_sell_prefers_real_fill_price_over_disagreeing_price_and_warns(self, monkeypatch, capsys):
+        """2026-08-11: --price used to win unconditionally, which is exactly
+        how the ACXP incident happened -- tick_prompt.md step 9 tells the
+        agent to pass --price on every SELL including mechanically-triggered
+        stop exits, and a stale/wrong estimate silently overrode the real
+        fill with no reconciliation. Now the real fill wins and a >1%
+        disagreement is surfaced instead of silently trusted."""
         conn = trader_db.get_conn()
         trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
         conn.close()
 
-        # A different fill price (11.37) is mocked, but an explicit --price
-        # must still win -- preserves every existing caller's behavior.
         monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
             order_response={"id": "order31"},
             positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "24.00"}],
@@ -661,13 +665,63 @@ class TestSellExitPriceFallback:
             "--price", "12.00", "--close-reason", "trailing stop breach", "--skip-guardrails",
         ])
 
+        err = capsys.readouterr().err
+        assert "disagreed with the real fill price" in err
+
         conn = trader_db.get_conn()
         try:
             row = trader_db.get_position(conn, "AAA")
         finally:
             conn.close()
-        # entry=10.0, --price=12.00 wins over the mocked 11.37 fill -> pnl = 2.0 * 2
-        assert row["realized_pnl"] == pytest.approx(4.0)
+        # entry=10.0, real fill=11.37 wins over the stale --price=12.00 -> pnl = 1.37 * 2
+        assert row["realized_pnl"] == pytest.approx(2.74)
+
+    def test_sell_price_matching_entry_does_not_zero_pnl_when_real_fill_differs(self, monkeypatch, capsys):
+        """Reproduces the exact ACXP bug shape: --price happens to equal
+        entry_price (a stale/estimate quote on a trailing-stop breach), but
+        the real fill is a genuine loss. Must NOT silently record $0.00."""
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="ACXP", shares=1.0, entry_price=1.54, entry_time="t1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order35"},
+            positions_response=[{"symbol": "ACXP", "qty": "1", "avg_entry_price": "1.54", "market_value": "1.41"}],
+            fill_response={"id": "order35", "status": "filled", "filled_avg_price": "1.41"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "ACXP", "--qty", "1",
+            "--price", "1.54", "--close-reason", "trailing stop breached: -8.6% off peak",
+            "--skip-guardrails",
+        ])
+
+        assert "ZERO_PNL_ANOMALY" not in capsys.readouterr().err
+
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "ACXP")
+        finally:
+            conn.close()
+        assert row["realized_pnl"] == pytest.approx(-0.13)
+
+    def test_sell_price_matching_fill_within_tolerance_no_warning(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_position(conn, ticker="AAA", shares=2.0, entry_price=10.0, entry_time="t1")
+        conn.close()
+
+        # --price (11.40) is within 1% of the real fill (11.37) -- no
+        # disagreement warning should fire.
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            order_response={"id": "order36"},
+            positions_response=[{"symbol": "AAA", "qty": "2", "avg_entry_price": "10.00", "market_value": "22.74"}],
+            fill_response={"id": "order36", "status": "filled", "filled_avg_price": "11.37"},
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "SELL", "--ticker", "AAA", "--qty", "2",
+            "--price", "11.40", "--close-reason", "trailing stop breach", "--skip-guardrails",
+        ])
+
+        assert "disagreed with the real fill price" not in capsys.readouterr().err
 
     def test_sell_falls_back_to_entry_price_and_warns_when_no_price_and_no_fill(self, monkeypatch, capsys):
         conn = trader_db.get_conn()

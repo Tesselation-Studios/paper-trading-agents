@@ -106,7 +106,9 @@ def main():
     parser.add_argument("--action", choices=["BUY", "SELL", "status", "check-stops", "sync-stops"])
     parser.add_argument("--ticker")
     parser.add_argument("--qty", type=int)
-    parser.add_argument("--price", type=float, help="current/estimated price, used by guardrail checks")
+    parser.add_argument("--price", type=float, help="current/estimated price, used by guardrail checks. "
+                         "On a SELL this is an estimate only -- the real Alpaca fill price is preferred "
+                         "for realized_pnl whenever it can be read (see wait_for_fill in the SELL path)")
     parser.add_argument("--conviction", type=float, help="0-1, used by the conviction gate on BUY")
     parser.add_argument("--sector", help="used by the sector-concentration gate; also persisted to positions on BUY")
     parser.add_argument("--market-cap", type=float, help="BUY only -- used by the catalyst-liquidity gate "
@@ -494,8 +496,22 @@ def main():
         # $0.00/0.00% this way. A few extra seconds here is trivial against
         # a 300s tick interval; use a longer, dedicated timeout instead of
         # the shared BUY-path default.
+        #
+        # 2026-08-11: that fix STILL has a gap -- it only ran wait_for_fill()
+        # when --price was omitted. tick_prompt.md step 9 tells the agent to
+        # pass --price on every SELL including mechanically-triggered stop/
+        # trailing/thesis-break exits, and this branch trusted that value
+        # unconditionally with zero reconciliation against the real fill.
+        # --price is documented above (see the --price argparse help text)
+        # as an *estimate for guardrail checks*, not an authoritative exit
+        # price. Confirmed live: ACXP's real -8.6% trailing-stop breach
+        # recorded $0.00/0.00% because the agent-supplied --price happened
+        # to equal entry_price and wait_for_fill() never ran to catch it.
+        # Now always resolve the real fill when an order id exists, and
+        # prefer it over --price; --price becomes the true last-resort
+        # fallback (only used if the real fill genuinely can't be read).
         sell_fill_price = None
-        if args.price is None and order.get("id"):
+        if order.get("id"):
             filled_sell_order = wait_for_fill(args.account, order.get("id"), timeout=5.0)
             if filled_sell_order and filled_sell_order.get("filled_avg_price"):
                 try:
@@ -503,15 +519,22 @@ def main():
                 except (TypeError, ValueError):
                     sell_fill_price = None
 
-        if args.price is not None:
-            exit_price = args.price
-        elif sell_fill_price is not None:
+        if sell_fill_price is not None:
             exit_price = sell_fill_price
+            if args.price is not None and args.price != 0 and \
+                    abs(sell_fill_price - args.price) / abs(args.price) > 0.01:
+                print(json.dumps({
+                    "warning": f"SELL {args.ticker.upper()} --price ({args.price}) disagreed with the "
+                               f"real fill price ({sell_fill_price}) by more than 1% -- using the real "
+                               f"fill price for realized_pnl, --price was only an estimate",
+                }), file=sys.stderr)
+        elif args.price is not None:
+            exit_price = args.price
         else:
             exit_price = entry_price
             print(json.dumps({
                 "warning": f"exit_price unavailable for SELL {args.ticker.upper()} "
-                           f"(--price not passed and no fill price from wait_for_fill) -- "
+                           f"(no fill price from wait_for_fill and --price not passed) -- "
                            f"falling back to entry_price, realized_pnl for this trade will be $0.00 "
                            f"and does not reflect the real exit",
             }), file=sys.stderr)
