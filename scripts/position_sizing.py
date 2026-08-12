@@ -73,6 +73,65 @@ def suggest_shares(tier: str, price: float, portfolio_value: float, risk: dict =
     }
 
 
+STATE_DIR = SCRIPT_DIR.parent / "state"
+SIGNAL_SCORECARD_PATH = STATE_DIR / "signal_scorecard.json"
+TREE_SCORECARD_PATH = STATE_DIR / "tree_scorecard.json"
+DEFAULT_GRADUATION_HIT_RATE_BAR = 0.70  # same bar as decision_tree.tier_promotion.hit_rate_bar_high_conviction
+
+
+def graduation_readiness(hit_rate_bar: float = None, signal_path: Path = None,
+                          tree_path: Path = None) -> dict:
+    """Whether there's real evidence yet to lean on conviction/long-play
+    sizing for a qualifying trade, rather than defaulting to probe by
+    inertia -- the gap a 2026-08-11 review found (see this module's
+    docstring): trades were landing at 1 share almost universally
+    regardless of tier, and the tiers/gates existed but were simply never
+    invoked. `--tier conviction/long` doesn't require this to be true (a
+    real researched thesis is its own eligibility bar per
+    decision_heuristics.md's conviction_play_anchor_v1) -- this is a
+    second, independent signal: are the *signals themselves* (not just
+    the thesis) proven enough yet to trust more.
+
+    Reads state/signal_scorecard.json and state/tree_scorecard.json
+    (both optional -- neither existing yet is not an error, just means no
+    evidence accumulated). "Ready" means at least one signal or tree node
+    has status "scored" (cleared its min-sample threshold) with a hit_rate
+    at or above hit_rate_bar (default: the same 0.70 bar
+    decision_tree.tier_promotion.hit_rate_bar_high_conviction already
+    uses for tree-node tier promotion, reused here for a parallel
+    "trust this evidence" question rather than inventing a second number).
+
+    Note a "scored" signal is not automatically good evidence -- e.g. as
+    of 2026-08-12, `technical` has n=23 (real sample size) but hit_rate
+    0.3043, well under the bar. Clearing min_samples and clearing the
+    hit_rate bar are two different things; only both together count."""
+    if hit_rate_bar is None:
+        hit_rate_bar = DEFAULT_GRADUATION_HIT_RATE_BAR
+    signal_path = signal_path if signal_path is not None else SIGNAL_SCORECARD_PATH
+    tree_path = tree_path if tree_path is not None else TREE_SCORECARD_PATH
+
+    def _qualifying_entries(path: Path, key: str) -> dict:
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            return {}
+        entries = data.get(key, {})
+        return {
+            name: entry for name, entry in entries.items()
+            if entry.get("status") == "scored" and entry.get("hit_rate", 0.0) >= hit_rate_bar
+        }
+
+    qualifying_signals = _qualifying_entries(signal_path, "signals")
+    qualifying_nodes = _qualifying_entries(tree_path, "nodes")
+
+    return {
+        "ready": bool(qualifying_signals or qualifying_nodes),
+        "hit_rate_bar": hit_rate_bar,
+        "qualifying_signals": qualifying_signals,
+        "qualifying_tree_nodes": qualifying_nodes,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tier", required=True, choices=TIERS)

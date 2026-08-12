@@ -230,6 +230,7 @@ def main():
         gate_toggles = params.get("guardrail_gates", {})
 
         sector_counts: Dict[str, int] = {}
+        play_type_counts: Dict[str, int] = {}
         try:
             conn = trader_db.get_conn()
             try:
@@ -237,10 +238,13 @@ def main():
                     sector = row.get("sector")
                     if sector:
                         sector_counts[sector] = sector_counts.get(sector, 0) + 1
+                    play_type = row.get("play_type") or "standard"
+                    play_type_counts[play_type] = play_type_counts.get(play_type, 0) + 1
             finally:
                 conn.close()
         except Exception:
             sector_counts = {}
+            play_type_counts = {}
 
         max_per_sector = risk_guards.get("max_positions_per_sector")
         daily_count = _load_daily_order_count(_today_et({}))
@@ -270,6 +274,39 @@ def main():
                 "open_count": len(positions),
                 "cap": max_positions,
             },
+        }
+
+        # tier_capacity: 2026-08-12, same "surface it every tick instead of
+        # requiring the agent to remember to check" reasoning as gate_status
+        # above -- a 2026-08-11 review found real trades landing at 1 share
+        # almost universally regardless of tier (position_sizing.py's own
+        # docstring), not because the tiers/gates were broken but because
+        # nothing ever put "you have open conviction/long-play slots" in
+        # front of the agent mechanically. Read-only, changes no behavior by
+        # itself -- a real thesis is still conviction_play_anchor_v1's own
+        # eligibility bar, this doesn't lower it.
+        risk = params.get("risk", {})
+        conviction_cap = risk.get("conviction_play", {}).get("max_concurrent_conviction_plays")
+        long_cap = risk.get("long_play", {}).get("max_concurrent_long_plays")
+        try:
+            import position_sizing
+            graduation = position_sizing.graduation_readiness()
+        except Exception:
+            graduation = None
+        result["gate_status"]["tier_capacity"] = {
+            "conviction_play": {
+                "open_count": play_type_counts.get("conviction", 0),
+                "cap": conviction_cap,
+                "slots_available": (conviction_cap - play_type_counts.get("conviction", 0)
+                                     if conviction_cap is not None else None),
+            },
+            "long_play": {
+                "open_count": play_type_counts.get("long", 0),
+                "cap": long_cap,
+                "slots_available": (long_cap - play_type_counts.get("long", 0)
+                                     if long_cap is not None else None),
+            },
+            "graduation_readiness": graduation,
         }
 
         print(json.dumps(result, indent=2))

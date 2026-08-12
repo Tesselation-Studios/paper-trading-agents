@@ -51,6 +51,14 @@ def isolated_env(monkeypatch, tmp_path):
     monkeypatch.setattr(executor, "PEAK_EQUITY_PATH", state_dir / "peak_equity.json")
     monkeypatch.setattr(alpaca_client, "PEAK_EQUITY_PATH", state_dir / "peak_equity.json")
     monkeypatch.setattr(deployment_pressure, "STATE_FILE", state_dir / "deployment_pressure.json")
+    # position_sizing.py's scorecard paths are module-level constants
+    # (computed once at import from a fixed on-disk location, not from
+    # executor.STATE_DIR) -- without this, status's tier_capacity block
+    # would read the real state/signal_scorecard.json / tree_scorecard.json
+    # in every test that doesn't explicitly monkeypatch graduation_readiness.
+    import position_sizing
+    monkeypatch.setattr(position_sizing, "SIGNAL_SCORECARD_PATH", state_dir / "signal_scorecard.json")
+    monkeypatch.setattr(position_sizing, "TREE_SCORECARD_PATH", state_dir / "tree_scorecard.json")
     yield
 
 
@@ -96,11 +104,12 @@ def _run_status(monkeypatch, capsys, positions_response=None):
     return json.loads(capsys.readouterr().out)
 
 
-def _seed_open_position(ticker, sector):
+def _seed_open_position(ticker, sector, play_type=None):
     conn = trader_db.get_conn()
     try:
+        kwargs = {"play_type": play_type} if play_type else {}
         trader_db.upsert_position(conn, ticker=ticker, shares=1.0, entry_price=10.0,
-                                   entry_time="2026-08-02T10:00:00Z", sector=sector)
+                                   entry_time="2026-08-02T10:00:00Z", sector=sector, **kwargs)
     finally:
         conn.close()
 
@@ -198,6 +207,82 @@ class TestGateStatusMaxPositions:
         assert max_pos["gate_enabled"] is False
         assert max_pos["open_count"] == 1
         assert max_pos["cap"] == 25
+
+
+class TestGateStatusTierCapacity:
+    """2026-08-12: surfaces conviction/long-play slot usage and
+    graduation_readiness every tick, same "mechanical, not remembered"
+    reasoning as the other gate_status blocks -- closes the gap where real
+    trades were landing at 1 share almost universally regardless of tier
+    because nothing put open slots in front of the agent automatically."""
+
+    def _params_with_tier_caps(self, params):
+        params["risk"]["conviction_play"] = {"max_concurrent_conviction_plays": 5}
+        params["risk"]["long_play"] = {"max_concurrent_long_plays": 2}
+        return params
+
+    def test_no_positions_reports_full_capacity(self, monkeypatch, capsys, params):
+        self._params_with_tier_caps(params)
+        result = _run_status(monkeypatch, capsys)
+
+        tier = result["gate_status"]["tier_capacity"]
+        assert tier["conviction_play"] == {"open_count": 0, "cap": 5, "slots_available": 5}
+        assert tier["long_play"] == {"open_count": 0, "cap": 2, "slots_available": 2}
+
+    def test_open_conviction_and_long_positions_reduce_available_slots(self, monkeypatch, capsys, params):
+        self._params_with_tier_caps(params)
+        _seed_open_position("AAA", "Financials", play_type="conviction")
+        _seed_open_position("BBB", "Financials", play_type="conviction")
+        _seed_open_position("CCC", "Healthcare", play_type="long")
+
+        result = _run_status(monkeypatch, capsys)
+
+        tier = result["gate_status"]["tier_capacity"]
+        assert tier["conviction_play"] == {"open_count": 2, "cap": 5, "slots_available": 3}
+        assert tier["long_play"] == {"open_count": 1, "cap": 2, "slots_available": 1}
+
+    def test_standard_positions_do_not_count_against_either_tier(self, monkeypatch, capsys, params):
+        self._params_with_tier_caps(params)
+        _seed_open_position("AAA", "Financials")  # play_type defaults to standard
+
+        result = _run_status(monkeypatch, capsys)
+
+        tier = result["gate_status"]["tier_capacity"]
+        assert tier["conviction_play"]["open_count"] == 0
+        assert tier["long_play"]["open_count"] == 0
+
+    def test_no_cap_configured_reports_none_not_a_crash(self, monkeypatch, capsys, params):
+        # DEFAULT_PARAMS has no conviction_play/long_play block at all.
+        result = _run_status(monkeypatch, capsys)
+
+        tier = result["gate_status"]["tier_capacity"]
+        assert tier["conviction_play"] == {"open_count": 0, "cap": None, "slots_available": None}
+        assert tier["long_play"] == {"open_count": 0, "cap": None, "slots_available": None}
+
+    def test_graduation_readiness_included_from_position_sizing(self, monkeypatch, capsys, params):
+        import position_sizing
+        fake_result = {"ready": True, "hit_rate_bar": 0.70,
+                        "qualifying_signals": {"narrative": {"hit_rate": 0.8}},
+                        "qualifying_tree_nodes": {}}
+        monkeypatch.setattr(position_sizing, "graduation_readiness", lambda: fake_result)
+
+        result = _run_status(monkeypatch, capsys)
+
+        assert result["gate_status"]["tier_capacity"]["graduation_readiness"] == fake_result
+
+    def test_graduation_readiness_failure_degrades_to_none_without_breaking_status(self, monkeypatch, capsys, params):
+        import position_sizing
+
+        def raise_error():
+            raise RuntimeError("simulated scorecard read failure")
+        monkeypatch.setattr(position_sizing, "graduation_readiness", raise_error)
+
+        result = _run_status(monkeypatch, capsys)
+
+        assert result["gate_status"]["tier_capacity"]["graduation_readiness"] is None
+        # status itself still succeeded -- best-effort, same discipline as
+        # the other fail-open blocks in this action.
+        assert "portfolio_value" in result
 
 
 class TestGateStatusMatchesRealGateMath:

@@ -2,6 +2,7 @@
 helper (2026-08-11). Pure-function tests pass an explicit `risk` dict so they
 don't depend on the real params.json; the one CLI/live-fetch test monkeypatches
 get_account."""
+import json
 import sys
 from pathlib import Path
 
@@ -64,6 +65,90 @@ class TestSuggestShares:
     def test_non_positive_portfolio_value_raises(self):
         with pytest.raises(ValueError):
             position_sizing.suggest_shares("standard", 100.0, 0.0, risk=RISK)
+
+
+class TestGraduationReadiness:
+    """2026-08-12: is there real evidence yet to lean on conviction/long-play
+    sizing, or is probe-everywhere still the honest default. Uses tmp_path
+    scratch files, never the real state/*.json."""
+
+    def _write(self, path, data):
+        path.write_text(json.dumps(data))
+
+    def test_no_files_at_all_not_ready(self, tmp_path):
+        result = position_sizing.graduation_readiness(
+            signal_path=tmp_path / "nope_signal.json", tree_path=tmp_path / "nope_tree.json",
+        )
+        assert result["ready"] is False
+        assert result["qualifying_signals"] == {}
+        assert result["qualifying_tree_nodes"] == {}
+
+    def test_scored_signal_below_bar_not_ready(self, tmp_path):
+        """The real 2026-08-12 case: technical has n=23 (scored) but
+        hit_rate 0.3043, well under the 0.70 bar -- clearing min_samples
+        and clearing the hit_rate bar are different things."""
+        signal_path = tmp_path / "signal_scorecard.json"
+        self._write(signal_path, {"signals": {
+            "technical": {"n": 23, "status": "scored", "hit_rate": 0.3043},
+            "regime": {"n": 9, "status": "insufficient_data"},
+        }})
+        result = position_sizing.graduation_readiness(
+            signal_path=signal_path, tree_path=tmp_path / "nope_tree.json",
+        )
+        assert result["ready"] is False
+        assert result["qualifying_signals"] == {}
+
+    def test_scored_signal_above_bar_is_ready(self, tmp_path):
+        signal_path = tmp_path / "signal_scorecard.json"
+        self._write(signal_path, {"signals": {
+            "technical": {"n": 23, "status": "scored", "hit_rate": 0.3043},
+            "narrative": {"n": 15, "status": "scored", "hit_rate": 0.80},
+        }})
+        result = position_sizing.graduation_readiness(
+            signal_path=signal_path, tree_path=tmp_path / "nope_tree.json",
+        )
+        assert result["ready"] is True
+        assert set(result["qualifying_signals"]) == {"narrative"}
+
+    def test_tree_node_above_bar_is_ready_even_with_no_signal_file(self, tmp_path):
+        tree_path = tmp_path / "tree_scorecard.json"
+        self._write(tree_path, {"nodes": {
+            "deployment_pressure_override_v0": {"n": 12, "status": "scored", "hit_rate": 0.9167},
+        }})
+        result = position_sizing.graduation_readiness(
+            signal_path=tmp_path / "nope_signal.json", tree_path=tree_path,
+        )
+        assert result["ready"] is True
+        assert set(result["qualifying_tree_nodes"]) == {"deployment_pressure_override_v0"}
+
+    def test_exactly_at_bar_counts_as_qualifying(self, tmp_path):
+        signal_path = tmp_path / "signal_scorecard.json"
+        self._write(signal_path, {"signals": {
+            "sentiment": {"n": 10, "status": "scored", "hit_rate": 0.70},
+        }})
+        result = position_sizing.graduation_readiness(
+            signal_path=signal_path, tree_path=tmp_path / "nope_tree.json",
+        )
+        assert result["ready"] is True
+
+    def test_custom_hit_rate_bar_overrides_default(self, tmp_path):
+        signal_path = tmp_path / "signal_scorecard.json"
+        self._write(signal_path, {"signals": {
+            "technical": {"n": 23, "status": "scored", "hit_rate": 0.3043},
+        }})
+        result = position_sizing.graduation_readiness(
+            hit_rate_bar=0.30, signal_path=signal_path, tree_path=tmp_path / "nope_tree.json",
+        )
+        assert result["ready"] is True
+        assert result["hit_rate_bar"] == 0.30
+
+    def test_malformed_json_treated_as_no_evidence_not_a_crash(self, tmp_path):
+        signal_path = tmp_path / "signal_scorecard.json"
+        signal_path.write_text("{not valid json")
+        result = position_sizing.graduation_readiness(
+            signal_path=signal_path, tree_path=tmp_path / "nope_tree.json",
+        )
+        assert result["ready"] is False
 
 
 class TestMainLivePortfolioValue:
