@@ -1000,6 +1000,134 @@ class TestRecordAlpacaCallDirect:
         executor._record_alpaca_call("account", "GET", None, 200, time.time())  # must not raise
 
 
+class TestWatchlistCleanupOnBuy:
+    """2026-08-12: a filled BUY left its ticker sitting in
+    watchlist_candidates indefinitely -- e.g. CPSH, bought live, still
+    cycling through batch eval hours later as if still a candidate.
+    remove_watchlist_candidate() already existed (added for exactly this
+    purpose per its own docstring) but nothing ever called it."""
+
+    def _fake_urlopen(self, positions, fill_status="filled", filled_avg_price="10.00"):
+        def fake_urlopen(req):
+            url = req.full_url
+            method = req.get_method()
+            if url.endswith("/v2/orders") and method == "POST":
+                return _FakeResponse({"id": "order-wc1"})
+            if "/v2/orders/" in url and method == "GET":
+                return _FakeResponse({"id": "order-wc1", "status": fill_status,
+                                       "filled_avg_price": filled_avg_price})
+            if url.endswith("/v2/positions"):
+                return _FakeListResponse(positions)
+            if url.endswith("/v2/account"):
+                return _FakeResponse({"equity": "10000", "cash": "5000"})
+            return _FakeResponse({})
+        return fake_urlopen
+
+    def test_filled_buy_removes_ticker_from_watchlist(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0, source="discovery_pool gen 1")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            positions=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+            fill_status="filled",
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+
+        conn = trader_db.get_conn()
+        try:
+            remaining = trader_db.get_watchlist_candidates(conn)
+        finally:
+            conn.close()
+        assert remaining == []
+
+    def test_partially_filled_buy_also_removes_ticker(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0)
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            positions=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+            fill_status="partially_filled",
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--skip-guardrails",
+        ])
+
+        conn = trader_db.get_conn()
+        try:
+            remaining = trader_db.get_watchlist_candidates(conn)
+        finally:
+            conn.close()
+        assert remaining == []
+
+    def test_unfilled_buy_leaves_watchlist_untouched(self, monkeypatch, capsys):
+        """An order that never actually fills (still 'new'/'accepted' when
+        wait_for_fill times out) hasn't converted the candidate into a real
+        position yet -- it should stay eligible for the next batch eval."""
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0)
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            positions=[],
+            fill_status="new",
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--skip-guardrails",
+        ])
+
+        conn = trader_db.get_conn()
+        try:
+            remaining = trader_db.get_watchlist_candidates(conn)
+        finally:
+            conn.close()
+        assert len(remaining) == 1
+        assert remaining[0]["ticker"] == "AAA"
+
+    def test_ticker_not_on_watchlist_does_not_warn_or_fail(self, monkeypatch, capsys):
+        """A BUY on a ticker that was never a tracked candidate (e.g. a
+        conviction pick added straight from gestalt reasoning) must not
+        surface a spurious warning -- DELETE on a missing row is a no-op."""
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            positions=[{"symbol": "ZZZ", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+            fill_status="filled",
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "ZZZ", "--qty", "1",
+            "--price", "10.00", "--skip-guardrails",
+        ])
+        err = capsys.readouterr().err
+        assert "watchlist cleanup failed" not in err
+
+    def test_watchlist_cleanup_failure_does_not_block_trade(self, monkeypatch, capsys):
+        """Best-effort, same fail-open discipline as the positions-table and
+        training-example writes right above it in executor.py."""
+        monkeypatch.setattr(urllib.request, "urlopen", self._fake_urlopen(
+            positions=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+            fill_status="filled",
+        ))
+        monkeypatch.setattr(executor.trader_db, "remove_watchlist_candidate",
+                             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("simulated DB failure")))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--skip-guardrails",
+        ])  # must not raise
+        err = capsys.readouterr().err
+        assert "watchlist cleanup failed" in err
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["status"] == "open"  # trade itself still went through
+
+
 class TestProtectiveStopCliFlow:
     """End-to-end ordering of the 2026-08-01 broker-side protective stop.
 
@@ -1052,8 +1180,9 @@ class TestProtectiveStopCliFlow:
         stop_posts = [c for c in calls if c[0] == "POST" and c[1] == "stop"]
         assert len(stop_posts) == 1
         assert stop_posts[0][2] == "sell"
-        # params.json risk.stop_loss_pct (-6%, v1.20) below the $10.00 entry.
-        assert float(stop_posts[0][3]) == pytest.approx(9.39)
+        # params.json risk.stop_loss_pct (-10%, v1.22, widened from -6% on
+        # 2026-08-11 per sweep evidence) below the $10.00 entry.
+        assert float(stop_posts[0][3]) == pytest.approx(9.00)
 
     def test_sell_cancels_resting_stop_before_submitting(self, monkeypatch, capsys):
         calls = []

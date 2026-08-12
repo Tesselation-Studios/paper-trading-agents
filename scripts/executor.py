@@ -657,6 +657,24 @@ def main():
         filled_order = wait_for_fill(args.account, order.get("id")) if order.get("id") else None
         filled_status = str((filled_order or order).get("status", "")).lower()
 
+        # ── Watchlist cleanup ─────────────────────────────────────────────
+        # A filled BUY means this ticker is now a position, not a candidate
+        # -- leaving it in watchlist_candidates just wastes future batch-eval
+        # slots re-evaluating something already held (dedup on re-add is
+        # already handled by merge_discoveries.py, but nothing previously
+        # cleaned up the row once a candidate converted). Best-effort, same
+        # as the positions-table/training-example writes above -- a failure
+        # here should never block or unwind the trade itself.
+        if filled_status in ("filled", "partially_filled"):
+            try:
+                conn = trader_db.get_conn()
+                try:
+                    trader_db.remove_watchlist_candidate(conn, args.ticker.upper())
+                finally:
+                    conn.close()
+            except Exception as e:
+                print(json.dumps({"warning": f"watchlist cleanup failed: {e}"}), file=sys.stderr)
+
         # ── Broker-side protective stop ──────────────────────────────────
         # The hard floor that survives a tick timeout or a gateway restart
         # (see place_stop_order). Sized against the position Alpaca reports
