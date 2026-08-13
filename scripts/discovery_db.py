@@ -60,6 +60,22 @@ CREATE TABLE IF NOT EXISTS universe_snapshot (
     generation INTEGER NOT NULL,
     fetched_at TEXT NOT NULL
 );
+
+-- sector_performance (2026-08-13): wholesale-replaced snapshot of live
+-- closed-position win rate by sector (trader_db.compute_sector_
+-- performance()), refreshed periodically by discovery_daemon.py's
+-- maybe_refresh_sector_performance(). Feeds get_top_candidates()'s ranking
+-- so discovery naturally favors whatever sector is actually performing
+-- right now -- no hardcoded sector names, purely data-driven, adapts as
+-- more trades close. A sector absent from this table (never enough closed
+-- trades yet) contributes neutrally to ranking, same as today.
+CREATE TABLE IF NOT EXISTS sector_performance (
+    sector         TEXT PRIMARY KEY,
+    trades         INTEGER NOT NULL,
+    win_rate       REAL NOT NULL,
+    avg_return_pct REAL,
+    computed_at    TEXT NOT NULL
+);
 """
 
 
@@ -129,6 +145,24 @@ def upsert_universe_snapshot(conn: sqlite3.Connection, tickers: list, generation
         conn.executemany(
             "INSERT INTO universe_snapshot (position, ticker, generation, fetched_at) VALUES (?, ?, ?, ?)",
             [(i, t, generation, fetched_at) for i, t in enumerate(tickers)],
+        )
+
+
+def upsert_sector_performance(conn: sqlite3.Connection, performance: dict, computed_at: str) -> None:
+    """Transactional replace, same pattern as upsert_universe_snapshot() --
+    performance is trader_db.compute_sector_performance()'s return shape,
+    {sector: {trades, win_rate, avg_return_pct, ...}}. A sector that drops
+    out of the input (e.g. fell below min_trades on this computation) is
+    correctly removed here too, not left stale forever."""
+    with conn:
+        conn.execute("DELETE FROM sector_performance")
+        conn.executemany(
+            """INSERT INTO sector_performance (sector, trades, win_rate, avg_return_pct, computed_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            [
+                (sector, data["trades"], data["win_rate"], data.get("avg_return_pct"), computed_at)
+                for sector, data in performance.items()
+            ],
         )
 
 
@@ -235,6 +269,18 @@ NEWS_RECENCY_WINDOW_HOURS = 24.0  # news decays linearly to 0 over this window
 RANK_WEIGHT_VOLUME = 1.0
 RANK_WEIGHT_SENTIMENT = 0.6      # ABS(sentiment) -- a strong bearish read is signal too
 RANK_WEIGHT_NEWS_RECENCY = 0.4
+# 2026-08-13: modest relative to the above -- this is the newest/least-
+# tested signal, and it should nudge ranking, not dominate it. Zero-
+# centered around a coin-flip win rate (0.5) -- a sector's win_rate is
+# looked up from sector_performance (trader_db.compute_sector_performance(),
+# refreshed by discovery_daemon.py's maybe_refresh_sector_performance()):
+# a sector with no data yet, or exactly 50% win rate, contributes 0
+# (today's unchanged behavior); a strong sector boosts, a weak one
+# suppresses. Clamped to +-SECTOR_PERFORMANCE_CLAMP so one extreme
+# early-sample sector (e.g. 100% win rate on exactly min_trades) can't
+# swamp volume/sentiment/news the way a hardcoded sector filter would.
+RANK_WEIGHT_SECTOR_PERFORMANCE = 0.3
+SECTOR_PERFORMANCE_CLAMP = 0.2
 
 # Each term is clamped to 0..1 before weighting, so no single component
 # can dominate by being out of its expected range (volume_ratio is
@@ -247,6 +293,11 @@ _RANK_SCORE_SQL = """
         ELSE MAX(0.0, MIN(1.0,
             1.0 - ((julianday(:now) - julianday(news_confirmed_at)) * 24.0) / :news_window))
       END
+    + :w_sector * COALESCE(
+        MAX((0 - :sector_clamp), MIN(:sector_clamp,
+            ((SELECT win_rate FROM sector_performance WHERE sector = candidates.sector) - 0.5) * 2
+        )),
+        0.0)
 """
 
 
@@ -277,8 +328,10 @@ def get_top_candidates(conn: sqlite3.Connection, limit: int, max_age_seconds: in
             "w_volume": RANK_WEIGHT_VOLUME,
             "w_sentiment": RANK_WEIGHT_SENTIMENT,
             "w_news": RANK_WEIGHT_NEWS_RECENCY,
+            "w_sector": RANK_WEIGHT_SECTOR_PERFORMANCE,
             "volume_saturation": VOLUME_SATURATION_RATIO,
             "news_window": NEWS_RECENCY_WINDOW_HOURS,
+            "sector_clamp": SECTOR_PERFORMANCE_CLAMP,
         },
     ).fetchall()
     return [dict(r) for r in rows]

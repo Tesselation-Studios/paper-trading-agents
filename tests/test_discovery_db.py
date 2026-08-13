@@ -267,6 +267,125 @@ class TestMaFilingCheck:
         assert row["ma_filing_checked_at"] == "2026-08-13T12:05:00Z"
 
 
+class TestSectorPerformanceRanking:
+    """2026-08-13: sector-performance-weighted ranking term -- discovery
+    naturally favors whatever sector the live data says is actually
+    performing, continuously, with no hardcoded sector names. See
+    trader_db.compute_sector_performance() / discovery_daemon.py's
+    maybe_refresh_sector_performance()."""
+
+    NOW = "2026-08-13T12:05:00+00:00"
+
+    def _seed_candidate(self, conn, ticker, sector, volume_ratio=2.0, screened_at="2026-08-13T12:00:00+00:00"):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": ticker, "price": 10.0, "volume_ratio": volume_ratio, "in_band": True}],
+            universe_generation=1, screened_at=screened_at,
+        )
+        if sector is not None:
+            conn.execute("UPDATE candidates SET sector = ? WHERE ticker = ?", (sector, ticker))
+            conn.commit()
+
+    def test_strong_sector_outranks_identical_weak_sector(self, conn):
+        self._seed_candidate(conn, "GOOD", "Technology")
+        self._seed_candidate(conn, "BAD", "Healthcare")
+        discovery_db.upsert_sector_performance(conn, {
+            "Technology": {"trades": 10, "win_rate": 0.9, "avg_return_pct": 5.0},
+            "Healthcare": {"trades": 10, "win_rate": 0.1, "avg_return_pct": -3.0},
+        }, computed_at=self.NOW)
+        result = discovery_db.get_top_candidates(conn, limit=10, max_age_seconds=86400, now=self.NOW)
+        assert [r["ticker"] for r in result] == ["GOOD", "BAD"]
+
+    def test_unknown_sector_contributes_zero_unchanged_from_today(self, conn):
+        self._seed_candidate(conn, "NOSECTOR", None)
+        result = discovery_db.get_top_candidates(conn, limit=10, max_age_seconds=86400, now=self.NOW)
+        row = result[0]
+        assert row["rank_score"] == pytest.approx(
+            discovery_db.RANK_WEIGHT_VOLUME * min(2.0, discovery_db.VOLUME_SATURATION_RATIO)
+            / discovery_db.VOLUME_SATURATION_RATIO
+        )
+
+    def test_untracked_sector_contributes_zero_even_with_other_sectors_present(self, conn):
+        """A sector below min_trades never made it into sector_performance
+        -- must still rank neutrally, not error or default to a penalty."""
+        self._seed_candidate(conn, "UNTRACKED", "Energy")
+        discovery_db.upsert_sector_performance(conn, {
+            "Technology": {"trades": 10, "win_rate": 0.9, "avg_return_pct": 5.0},
+        }, computed_at=self.NOW)
+        result = discovery_db.get_top_candidates(conn, limit=10, max_age_seconds=86400, now=self.NOW)
+        row = result[0]
+        assert row["rank_score"] == pytest.approx(
+            discovery_db.RANK_WEIGHT_VOLUME * min(2.0, discovery_db.VOLUME_SATURATION_RATIO)
+            / discovery_db.VOLUME_SATURATION_RATIO
+        )
+
+    def test_exactly_coinflip_win_rate_contributes_zero(self, conn):
+        self._seed_candidate(conn, "NEUTRAL", "Materials")
+        discovery_db.upsert_sector_performance(conn, {
+            "Materials": {"trades": 10, "win_rate": 0.5, "avg_return_pct": 0.0},
+        }, computed_at=self.NOW)
+        result = discovery_db.get_top_candidates(conn, limit=10, max_age_seconds=86400, now=self.NOW)
+        row = result[0]
+        assert row["rank_score"] == pytest.approx(
+            discovery_db.RANK_WEIGHT_VOLUME * min(2.0, discovery_db.VOLUME_SATURATION_RATIO)
+            / discovery_db.VOLUME_SATURATION_RATIO
+        )
+
+    def test_extreme_win_rate_is_clamped_not_unbounded(self, conn):
+        """A 100% win rate must not swamp volume/sentiment/news -- the
+        contribution is capped at RANK_WEIGHT_SECTOR_PERFORMANCE *
+        SECTOR_PERFORMANCE_CLAMP, same as a 90% win rate would give."""
+        self._seed_candidate(conn, "PERFECT", "Technology")
+        discovery_db.upsert_sector_performance(conn, {
+            "Technology": {"trades": 10, "win_rate": 1.0, "avg_return_pct": 10.0},
+        }, computed_at=self.NOW)
+        result = discovery_db.get_top_candidates(conn, limit=10, max_age_seconds=86400, now=self.NOW)
+        sector_contribution = result[0]["rank_score"] - (
+            discovery_db.RANK_WEIGHT_VOLUME * min(2.0, discovery_db.VOLUME_SATURATION_RATIO)
+            / discovery_db.VOLUME_SATURATION_RATIO
+        )
+        assert sector_contribution == pytest.approx(
+            discovery_db.RANK_WEIGHT_SECTOR_PERFORMANCE * discovery_db.SECTOR_PERFORMANCE_CLAMP
+        )
+
+    def test_no_sector_performance_data_at_all_matches_pre_feature_ranking(self, conn):
+        """Empty sector_performance table (fresh daemon, nothing computed
+        yet) must not change ranking at all vs. before this feature."""
+        self._seed_candidate(conn, "LOW", "Technology", volume_ratio=1.0)
+        self._seed_candidate(conn, "HIGH", "Technology", volume_ratio=3.0)
+        self._seed_candidate(conn, "MID", "Technology", volume_ratio=2.0)
+        result = discovery_db.get_top_candidates(conn, limit=10, max_age_seconds=86400, now=self.NOW)
+        assert [r["ticker"] for r in result] == ["HIGH", "MID", "LOW"]
+
+
+class TestSectorPerformanceUpsert:
+    def test_replace_is_atomic(self, conn):
+        discovery_db.upsert_sector_performance(conn, {
+            "Technology": {"trades": 10, "win_rate": 0.9, "avg_return_pct": 5.0},
+        }, computed_at="t1")
+        discovery_db.upsert_sector_performance(conn, {
+            "Healthcare": {"trades": 12, "win_rate": 0.3, "avg_return_pct": -1.0},
+        }, computed_at="t2")
+        rows = {r["sector"]: dict(r) for r in conn.execute("SELECT * FROM sector_performance")}
+        assert list(rows.keys()) == ["Healthcare"]
+        assert rows["Healthcare"]["win_rate"] == 0.3
+        assert rows["Healthcare"]["computed_at"] == "t2"
+
+    def test_empty_performance_clears_table(self, conn):
+        discovery_db.upsert_sector_performance(conn, {
+            "Technology": {"trades": 10, "win_rate": 0.9, "avg_return_pct": 5.0},
+        }, computed_at="t1")
+        discovery_db.upsert_sector_performance(conn, {}, computed_at="t2")
+        rows = conn.execute("SELECT * FROM sector_performance").fetchall()
+        assert rows == []
+
+    def test_null_avg_return_pct_allowed(self, conn):
+        discovery_db.upsert_sector_performance(conn, {
+            "Technology": {"trades": 10, "win_rate": 0.9, "avg_return_pct": None},
+        }, computed_at="t1")
+        row = conn.execute("SELECT * FROM sector_performance WHERE sector='Technology'").fetchone()
+        assert row["avg_return_pct"] is None
+
+
 class TestUniverseSnapshot:
     def test_replace_is_atomic(self, conn):
         discovery_db.upsert_universe_snapshot(conn, ["A", "B", "C"], generation=1, fetched_at="t1")
