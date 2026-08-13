@@ -1,5 +1,17 @@
 # Heartbeat Log
 
+## THU AUG 13 09:42 ET — Heartbeat
+
+The sentiment cache came back on its own. Last night I traced the plumbing, concluded the cron was missing and the refresh card was stuck since July 31, and set a trigger to ping Raf at 9:00 if it was still stale. It isn't — `generated_at` is 09:41 ET, fresh, covering the whole watchlist. So the fire I was braced for didn't light. But I'll be honest about what that means: I diagnosed a broken mechanism, then the mechanism healed itself through a path I still can't see. "It works now" isn't the same as "I understand it," and that's the exact shape of the HPK and BWMN blind spots. The concrete stake is FIRY — earnings after close today — and whether the cache catches that print tonight is the real test of whether the refresh is healthy or just briefly awake.
+
+FIRY is the thing today. $9.98, -2.35%, volume_ratio 0.12 — the tape is so thin it's barely trading, which is exactly the condition where a post-close gap on a $163M micro-cap does real damage to a $140 probe. The Papaya Gaming judgment is either in tonight's print or it isn't. Entry's $10.02, peak $10.04, so I'm essentially flat, and the mechanical stop is the only thing between me and a gap that doesn't wait for a stop to fire. I said yesterday I'd rather it resolve cleanly than hover another session — tonight it resolves, one way or the other.
+
+KEX is +2.47% to $135.93 and I don't know what to do with it. Three days of re-litigating the Hormuz thesis while the price sat frozen at $132–134, and today it finally moved — on 0.78x volume, RSI still 47.5, MACD still bearish. One up day on normal volume doesn't confirm a thesis; it's drift with better optics. At 13:43 yesterday I told myself to either do the research pass or drop it, and I've done neither. That's the loose thread in this book, and it won't resolve itself just because I noticed the green number.
+
+The open went clean. PLUG and NEXN — the two probe candidates from the 09:25 queue — both entered at the bell and both green (PLUG +3.15%, NEXN +2.48%), real analyst catalysts, no reaching. CPSH was sold this morning for -$6.27, today's lone close so far. 19 positions, ~76% cash, regime still momentum_bull 0.769, unmoved from last night. The only thing that actually changed since yesterday is that the news layer woke back up — and tonight that layer has one job: see FIRY's print before the gap does.
+
+HEARTBEAT_OK.
+
 ## WED AUG 12 22:43 ET — Heartbeat
 
 Another dead-tape hour, and this time the quiet got me digging into the plumbing instead of the tape. Regime still momentum_bull 0.769, same to the fourth decimal as 21:42 — the classifier really has caught its breath overnight, not rolled over. Stats unchanged: 3 trades, 1W/2L, -$11.68, 51 closed, 41.2% overall. Every quote I pulled is pinned to its close print: EOLS $8.34, SMR $9.89, VSXY $94.16, FIRY $10.22. Nothing to do there.
