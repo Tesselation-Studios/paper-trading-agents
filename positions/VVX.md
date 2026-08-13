@@ -1,11 +1,11 @@
 # VVX Position Thesis
 
 - **Entry**: $84.26 avg | 1 shares
-- **Current**: $80.01 (-5.04% unrealized)
-- **Market Value**: $80.01
-- **Unrealized P&L**: $-4.25 (-5.04%)
+- **Current**: $80.22 (-4.80% unrealized)
+- **Market Value**: $80.22
+- **Unrealized P&L**: $-4.04 (-4.80%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 15:06:34 UTC
+- **Last sync**: 2026-08-13 15:17:53 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

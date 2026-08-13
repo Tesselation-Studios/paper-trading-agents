@@ -1,11 +1,11 @@
 # PDYN Position Thesis
 
 - **Entry**: $6.44 avg | 50 shares
-- **Current**: $6.33 (-1.71% unrealized)
-- **Market Value**: $316.50
-- **Unrealized P&L**: $-5.50 (-1.71%)
+- **Current**: $6.29 (-2.33% unrealized)
+- **Market Value**: $314.50
+- **Unrealized P&L**: $-7.50 (-2.33%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 15:06:34 UTC
+- **Last sync**: 2026-08-13 15:17:53 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
