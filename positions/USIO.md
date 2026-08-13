@@ -1,9 +1,9 @@
-# MNPR Position Thesis
+# USIO Position Thesis
 
-- **Entry**: $112.18 avg | 1 shares
-- **Current**: $111.67 (-0.45% unrealized)
-- **Market Value**: $111.67
-- **Unrealized P&L**: $-0.51 (-0.45%)
+- **Entry**: $2.96 avg | 130 shares
+- **Current**: $2.95 (-0.34% unrealized)
+- **Market Value**: $383.50
+- **Unrealized P&L**: $-1.30 (-0.34%)
 - **Synced from**: Alpaca paper trading
 - **Last sync**: 2026-08-13 14:41:13 UTC
 
