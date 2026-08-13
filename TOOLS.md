@@ -14,4 +14,5 @@ Append to `journal/YYYY-MM-DD.md` during nightly maintenance only — strategy v
 - `scripts/` — executor + supporting tools, `ls scripts/` for the current list
 - `state/` — machine-written local caches, not hand-edited
 - `proposals/` — evolution proposals awaiting review, see `skills/evolution-proposals.md`
-- `skills/` — tool-invocation, auto-commit, off-hours, data-bus, sentiment-cache, workspace-review, evolution-proposals, prompt-iteration, background, fundamentals, self-improving-agent, freeform-discovery, backtest-tools (each loads by its own trigger)
+- `skills/` — tool-invocation, off-hours, data-bus, sentiment-cache, workspace-review, evolution-proposals, prompt-iteration, background, fundamentals, self-improving-agent, freeform-discovery, backtest-tools (each loads by its own trigger)
+- **Never run `git commit`/`git add`** — Claude Code owns commits here now. `auto-commit.md` is historical only.

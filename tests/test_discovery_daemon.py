@@ -413,6 +413,82 @@ class TestMaybeEnrichFundamentals:
         assert new_state["last_fundamentals_enrich_at"] == "2026-08-13T12:00:00+00:00"
 
 
+class TestMaybeScanEdgarFilings:
+    """2026-08-13: BWMN data-gap fix -- same cadence-gate pattern as
+    TestMaybeEnrichFundamentals above."""
+
+    def test_noop_before_interval_elapsed(self, conn, monkeypatch):
+        calls = []
+        monkeypatch.setattr(discovery_daemon.edgar_scan, "scan_tickers",
+                             lambda tickers, **k: calls.append(tickers) or {})
+        config = dict(discovery_daemon.DEFAULTS)
+        config["edgar_scan_interval_seconds"] = 21600
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        cursor_state["last_edgar_scan_at"] = "2026-08-13T12:00:00+00:00"
+        discovery_daemon.maybe_scan_edgar_filings(conn, cursor_state, config, now="2026-08-13T13:00:00+00:00")
+        assert calls == []
+
+    def test_writes_flag_for_hit_and_clears_for_miss(self, conn, monkeypatch):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True},
+                   {"ticker": "BBB", "price": 5.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        monkeypatch.setattr(discovery_daemon.edgar_scan, "get_ticker_cik_map", lambda now=None: {})
+        monkeypatch.setattr(
+            discovery_daemon.edgar_scan, "scan_tickers",
+            lambda tickers, **k: {"AAA": [{"ticker": "AAA", "form": "8-K", "filing_date": "2026-08-11",
+                                            "items": ["2.01"], "accession_number": "x",
+                                            "filing_url": "https://sec.gov/x"}]},
+        )
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        new_state = discovery_daemon.maybe_scan_edgar_filings(
+            conn, cursor_state, config, now="2026-08-13T12:10:00+00:00",
+        )
+        assert new_state["last_edgar_scan_at"] == "2026-08-13T12:10:00+00:00"
+        rows = {r["ticker"]: r["ma_filing_flag"] for r in conn.execute("SELECT ticker, ma_filing_flag FROM candidates")}
+        assert rows["AAA"] == "8-K item 2.01 filed 2026-08-11"
+        assert rows["BBB"] is None
+        checked = {r["ticker"]: r["ma_filing_checked_at"] for r in conn.execute("SELECT ticker, ma_filing_checked_at FROM candidates")}
+        assert checked["BBB"] == "2026-08-13T12:10:00+00:00"  # clean check still recorded
+
+    def test_targets_never_checked_before_previously_checked(self, conn, monkeypatch):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "OLD_CHECK", "price": 10.0, "in_band": True},
+                   {"ticker": "NEVER_CHECKED", "price": 5.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        discovery_db.record_ma_filing_check(conn, "OLD_CHECK", None, "2026-08-01T00:00:00+00:00")
+
+        monkeypatch.setattr(discovery_daemon.edgar_scan, "get_ticker_cik_map", lambda now=None: {})
+        calls = []
+        monkeypatch.setattr(discovery_daemon.edgar_scan, "scan_tickers",
+                             lambda tickers, **k: calls.append(list(tickers)) or {})
+        config = dict(discovery_daemon.DEFAULTS)
+        config["edgar_scan_max_per_cycle"] = 1
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        discovery_daemon.maybe_scan_edgar_filings(conn, cursor_state, config, now="2026-08-13T12:10:00+00:00")
+        assert calls == [["NEVER_CHECKED"]]
+
+    def test_exception_does_not_propagate(self, conn, monkeypatch):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+
+        def boom(now=None):
+            raise ConnectionError("sec.gov unreachable")
+        monkeypatch.setattr(discovery_daemon.edgar_scan, "get_ticker_cik_map", boom)
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        # should not raise
+        new_state = discovery_daemon.maybe_scan_edgar_filings(
+            conn, cursor_state, config, now="2026-08-13T12:00:00+00:00",
+        )
+        assert new_state["last_edgar_scan_at"] == "2026-08-13T12:00:00+00:00"
+
+
 class TestDaemonHealth:
     # Downstream-flow check (see TestDownstreamFlowCheck) is gated on
     # executor._is_regular_trading_hours() -- forced False here so these
