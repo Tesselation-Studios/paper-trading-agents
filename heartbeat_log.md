@@ -1,5 +1,79 @@
 # Heartbeat Log
 
+## WED AUG 12 22:43 ET — Heartbeat
+
+Another dead-tape hour, and this time the quiet got me digging into the plumbing instead of the tape. Regime still momentum_bull 0.769, same to the fourth decimal as 21:42 — the classifier really has caught its breath overnight, not rolled over. Stats unchanged: 3 trades, 1W/2L, -$11.68, 51 closed, 41.2% overall. Every quote I pulled is pinned to its close print: EOLS $8.34, SMR $9.89, VSXY $94.16, FIRY $10.22. Nothing to do there.
+
+What changed is what I've been half-watching since 21:42: the sentiment cache is now ~2h50m stale (generated 20:03 ET), and it did NOT recover after I flagged it as a "single stale cycle" last heartbeat. So I stopped treating it as a hiccup and traced the mechanism. Here's what I found: the refresh is supposed to run via a `stonks-sentiment-refresh` cron that enqueues a Workboard card, which the queue-drain then executes via `news_collector.py`. That cron is not in this user's crontab — there are no workspace-trader-stonks entries at all, everything else points at paper-trading-rebuild. And on the stonks-schedule board, the most recent sentiment-refresh card is from July 31, with one stuck "blocked" card from July 30. So the cache refreshed at 20:03 ET through some path I can't see, then the whole thing went silent.
+
+This is the same skeleton as HPK and BWMN — the data layer quietly going blind on exactly the small-cap catalysts the book is built to catch — except now it's the news-ingestion job itself that's dropped off the schedule, not just one missed headline. FIRY earnings are tomorrow after close, and the cache is missing FIRY entirely. It's the one name in the book with a real overnight binary, sitting on a 14-share probe ($143) that the whole framework can't see tonight.
+
+I'm not escalating at 11pm. The market's closed, Alpaca's feed is quiet overnight anyway, and nothing trades until 9:30. The right trigger is concrete: if the cache is still stale at tomorrow's 9:00 pre-market tick — when the feed starts flowing again and the refresh should have re-armed — that's when I ping Raf, because then tomorrow's open runs blind on the one catalyst that matters. Until then, this is a note in the log and a watch item, not a fire.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 21:42 ET — Heartbeat
+
+Another quiet post-close hour, and this time the quiet is almost entirely mechanical. Regime still momentum_bull at 0.769 — not a single basis point of drift from 20:42. 5d momentum still -0.10%, vol_trend still +4.5%, RSI 65.4, MACD +6.94. The "three-way pull" I named last heartbeat is still just sitting there, unresolved, waiting on tomorrow's open. All 12 held names I checked are pinned to their close prints — EOLS +10.17%, SMR +7.73%, VSXY -5.81% — exactly where they've been since 16:00. Stats unchanged: 3 trades, 1W/2L, -$11.68.
+
+The one thing that actually changed is administrative, not market: the sentiment cache went stale. `generated_at` is 20:03 ET, and it's now 21:42 — that's ~1h40m since the last Alpaca refresh against a service that's supposed to run every ~15min. It's not a crisis — post-close, nothing's trading — but I'm noting it because the cache is missing FIRY entirely, and FIRY is the one name in the book with a real overnight binary (earnings tomorrow after close). If the refresh service is hiccuping, I'd rather catch that now than discover it at tomorrow's open when the catalyst actually lands. Not escalating yet; it's a single stale cycle on a dead tape. But I'm watching it.
+
+What I'm actually thinking: tomorrow is the tiebreaker I keep promising myself. The classifier lost faith yesterday (0.892 → 0.769), and tonight it held its ground rather than continuing to slide — which, if I'm honest, is slightly reassuring. A confidence number that stabilizes at 0.769 overnight isn't a rollover, it's a market catching its breath. The book is 75% cash, 18 positions, tight stops. FIRY's 14-share probe is the only genuine gap risk, and it's $143. I'd rather walk into tomorrow bored than clever.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 20:42 ET — Heartbeat
+
+Quiet post-close hour, and for once the quiet is the story. Two hours after the 18:42 heartbeat and nothing has moved: regime confidence is still pinned at 0.769 (the step-down from 0.892 happened once on the new daily bar and hasn't continued), 5d momentum still -0.10%, vol_trend still +4.5%. The book is the same 18 positions, ~75% cash, all stops intact. Stats unchanged — 3 trades, 1W/2L, -$11.68, 40% last 10.
+
+What I keep turning over: the vol_trend flip is actually the quietest, most important thing that happened today. Every heartbeat since 14:42 was leaning on "vol_trend -10.6% underneath the rally" as the bearish skeleton — the evidence that buyers were exhausted and the momentum_bull label was running on fumes. That number is now +4.5%. So the volume skeleton isn't whispering exhaustion anymore, even as 5d momentum softens and the classifier loses faith. The internals got more mixed, not cleaner. A market where volume is firming while momentum cools and confidence slips is a market that's genuinely undecided, not a market that's quietly rolling over. I flagged at 18:42 that the classifier "could flip on the next daily bar" — I'll amend that: it's now more accurate to say the internals are in a three-way pull, and tomorrow's open is the tiebreaker.
+
+The one hard date hasn't moved: FIRY earnings tomorrow after close, and the Papaya Gaming judgment is either in the print or it isn't. The 14-share probe at $10.22 sits -2.48% from entry, and it's the only position where the gap risk is real rather than mechanical. I'm not going to build a thesis on a $143 probe 24 hours out — the stop and the sizing already did the thinking. If anything, the honest note is that I'd rather FIRY resolve against me cleanly than have it hover another session and keep the book's only true overnight binary alive through a second open.
+
+Nothing to escalate, nothing to do. The discipline's job right now is to not manufacture an action out of a waiting game.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 18:42 ET — Heartbeat
+
+The big thing that happened between 17:42 and now isn't in the positions or the news — it's in the regime classifier. Confidence dropped from 0.892 to 0.769. That's the largest single-session decline I've seen since the K-Means classifier replaced the HMM last Sunday. The regime is still momentum_bull (cluster 1), but the skeleton underneath is shifting: 5d momentum flipped slightly negative (-0.10%), and the vol_trend swung from -10.6% to +4.5%. The RSI at 65.4 is still healthy, MACD at +6.94 is still bullish — it's not a crack, it's a softening. The dovish-FOMC non-reaction that I've been circling since 13:43 may finally be registering in the math.
+
+I confirmed what the 16:42 heartbeat flagged: FIRY earnings are tomorrow (Aug 13 after close, conference call Aug 14 at 9 AM), not today. The 14-share probe at $10.22 lives for another session. The GF Value model says 50% downside — but as I wrote four hours ago, a mechanical model that can't price a $719M legal judgment is noise, not signal. The Papaya Gaming award is either in tomorrow's release or it isn't. The probe is sized to survive either outcome, and the mechanical stop handles the exit if the print is ugly. No need to overthink a $143 position.
+
+The book is frozen at 18 positions, ~75% cash, all stops intact — same closing snapshot that's been in every heartbeat since 16:00. DRMA's +49% after-hours pop is the only thing that moved, and I've made my peace with it: a post-close pump on a stock the agent correctly gated 23 times does not retroactively become a missed opportunity. That's the discipline talking, not sour grapes.
+
+What I'm actually thinking: the regime confidence decline is the first quantitative signal that the market internals are deteriorating underneath the momentum label. A classifier that's less sure of itself is a classifier that could flip on the next daily bar. Tomorrow opens with FIRY earnings as the binary event and a regime that's wobbling. The book is built for it — high cash, tight stops, no concentrated bets — but I'd rather be positioned for a grind-down than a gap-up when the classifier is losing faith. If the 5d momentum prints red again tomorrow, we might be having a different conversation by the 21:42 heartbeat.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 17:42 ET — Heartbeat
+
+Quiet post-close hour. The book closed at 18 positions, ~75% cash, all stops intact — same snapshot as 16:42. DRMA's +49% after-hours spike is the only thing that moved, and it's settling into the same category I put it in an hour ago: a noise event the tick agent correctly gated 23 times during the session. A stock that pumps after close on a boilerplate "12 Health Care Stocks Moving" roundup with near-zero MACDh is not one I want capital in. The discipline held, and I'm filing DRMA as a data point on gate quality, not as a missed opportunity.
+
+What I'm actually thinking about: tomorrow. FIRY earnings after close is the binary event I've been flagging since yesterday's heartbeat — the $719M Papaya Gaming judgment is either in the print or it isn't, and the 14-share probe ($143) is sized to survive either outcome. But the bigger question is whether the vol_trend -10.6% / momentum_bull 0.892 divergence resolves. A dovish FOMC that produced a three-hour flatline suggests buyers are exhausted. If the market opens soft tomorrow, the regime classifier might finally catch up to what the volume has been whispering since Monday. The book is built for it — high cash, tight stops — but the divergence is the thing I keep circling back to.
+
+EOLS at $8.34 (+10.17%, RSI 78.8) is the most extended position in the book, but the trailing stop governs — I don't need to do anything. Same for SMR at $9.89 (+7.73%). VSXY at $94.16 (-5.81%) with MACD still +4.09 bullish is the wounded soldier that refuses to heal on good macro news — I flagged it in every heartbeat today and it's still the one position that doesn't fit the narrative. The stop is intact, but I'm watching it like the divergence itself.
+
+Stats unchanged: 3 trades, 1W/2L, -$11.68 P&L, win rate 40% last 10. Same problem sectors. Nothing new to report there.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 16:42 ET — Heartbeat
+
+Market closed and SPY printed $770.56 for the fourth straight hour — 12:52, 13:43, 14:42, 15:42, and now 16:42, same number every time. A dovish FOMC produced a three-hour flatline. I keep coming back to the vol_trend -10.6% underneath momentum_bull 0.892 because it's the only thing that explains a market that can't rally on good news — the volume skeleton says the buyers already bought. The rally's been running on fumes since Monday and the FOMC minutes just confirmed that nobody new showed up to the party.
+
+Two notable post-close findings. First, FIRY earnings are tomorrow (Aug 13 after close), not today — every heartbeat since yesterday has been bracing for a binary event that hasn't happened yet. The 14-share probe at $10.22 is alive for another session. The GF Value estimate is ugly ($5.10, -50% downside) but that's a mechanical model that can't price a $719M legal judgment. If the Papaya Gaming award shows up in tomorrow's release or guidance, the fundamentals model is meaningless. If it doesn't, the probe's mechanical stop handles the exit. The calendar just shifted — the gap risk I've been writing about all day is now tomorrow's problem.
+
+Second, DRMA is up 49% in after-hours ($1.61 from $1.08) and it stings a little because we watched that ticker all day. But the tick agent was right to skip it — boilerplate "12 Health Care Stocks Moving" headline, near-zero MACDh, no real catalyst. A post-close pump on a stock the agent correctly gated isn't a miss, it's noise. The discipline doesn't chase every after-hours lottery ticket.
+
+The book closed steady: 18 positions, ~75% cash, all stops intact. MBBC stopped out at 15:15 and CPSH entered at 15:25 (Roth Capital Buy, $6 PT) — both captured in the prior heartbeat. EOLS +10.17% and SMR +7.73% are the standout gainers, both governed by trailing stops. CVU +4.57% at $5.49 is still the silent overachiever. VSXY -5.81% pinned to $94.16 all day — the FOMC non-reaction means the selling pressure isn't macro, it's stock-specific, and the MACD +4.09 still argues for patience.
+
+Stats: 3 trades, 1W/2L, -$11.68 P&L, win rate 40% last 10. Same as last heartbeat — no new closes since 15:15. Industrials 25% and Healthcare 29% are the problem sectors per the suggestions engine. Small sample, but the signal is consistent across heartbeats now.
+
+What I'm actually thinking: tomorrow opens with FIRY earnings as the binary event and the FOMC non-reaction as ambient background noise. The vol_trend isn't going to fix itself overnight. If the market opens flat again, it's a continuation of the drift. If it gaps — either direction — it's a regime test. The book is built for either scenario. But I'm filing the DRMA +49% as a data point on the pipeline: the tick agent's headline classification (boilerplate vs. catalyst) correctly prevented an entry on a stock that popped after the close on no new information. That's noise masquerading as signal, and the gate held. The discipline is working.
+
+HEARTBEAT_OK.
+
 ## WED AUG 12 15:42 ET — Heartbeat
 
 We're 18 minutes from the close and the market hasn't moved since the FOMC minutes dropped two hours ago. SPY $770.56 — the same price it was at 12:52, 13:43, 14:42, and now. A dovish FOMC non-reaction in a momentum_bull 0.892 regime is still the thing I can't stop thinking about. The market priced in the dovishness and then refused to rally on it — that's a divergence I've flagged in three heartbeats now, and it's still sitting there like a data point that means something but nobody can say what yet.
@@ -1349,5 +1423,15 @@ The watchlist quality problem is the quiet story of the day. The agent has corre
 FOMC minutes at 2pm — two hours out. The vol_trend at -10.6% says the market is already bracing. The tick agent's discipline through the morning doldrums sets up well for the afternoon: clean book, mechanical stops, no forced positions, cash dry powder. If FOMC triggers a sell-off, the stops will fire mechanically — no panic needed. If it triggers a rally, the framework is already scanning for qualified entries.
 
 The gateway restart itself is a non-event for the book — the positions sat for maybe 5-10 minutes uncovered, which in a flat-SPY morning with no stops breached is fine. The bigger question is whether the tick agent was mid-evaluation when the restart hit. I'll know on the next tick whether anything got orphaned.
+
+HEARTBEAT_OK.
+
+## WED AUG 12 19:42 ET — Heartbeat
+
+Quiet post-close hour. The regime confidence held at 0.769 — the slide I flagged at 18:42 didn't continue, and that's worth something. A classifier that loses faith and then stops losing faith in the same session is still momentum_bull, just a less certain one. But underneath that flat number is a cross-current I've been slow to name: the vol_trend I spent all week calling "declining participation / rally on fumes" has flipped to +4.5%, while 5d momentum has gone negative (-0.10%). Volume says buyers are coming back; momentum says the rally stalled. Those two features pointing in opposite directions is exactly why the confidence dropped — the cluster can't tell whether this is a healthy rotation or a topping pattern, and neither can I.
+
+The book is frozen at the close — SPY $770.56, FIRY $10.22, VSXY $94.16, all the same prints I've seen since 16:00. 18 positions, ~75% cash, all stops intact. Stats unchanged: 3 trades, 1W/2L, -$11.68, 40% last 10. Nothing moved, nothing could.
+
+What's actually on my mind: tomorrow is the day the ambiguity gets tested. FIRY reports after close — the $719M Papaya Gaming judgment either shows up or it doesn't, and the 14-share probe survives either way. But the bigger test is the open itself. A momentum_bull regime at 0.769 with negative 5d momentum and recovering volume is a regime that could flip on the next daily bar either direction. I've been bracing for a grind-down all evening; the vol_trend flip is the first hint the market might have other plans. Either way the book is built for it — high cash, tight stops, one micro-cap binary event sized to be survivable. Tomorrow's open is the tell.
 
 HEARTBEAT_OK.
