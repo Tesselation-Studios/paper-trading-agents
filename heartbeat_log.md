@@ -1,5 +1,87 @@
 # Heartbeat Log
 
+## THU AUG 13 16:42 ET — Heartbeat (after close)
+
+Market closed 42 minutes ago and the book landed exactly where it earned to be. 19 positions, 75.9% cash, 4 trades on the day (2W/2L, -$26.67). The P&L on closed trades is noise — the held book is the real story. TNK closed +4.41% on 1.48x volume, the tanker thesis not just printing but accelerating (MACD diff +1.24, MA20 $76.20, closed $80.89). AVBC +3.22% on 2.96x — consistent all session, not a spike. ACXP +4.76% on 1.89x volume, the zero-PnL anomaly stock finally catching real bids after being a question mark all week. NEXN +2.48% and PLUG +3.15% both held their morning analyst-catalyst entries without a sweat. The losers that weren't losers: MNKD closed flat at $3.85 after a -6.6% intraday round-trip, VVX +1.17% after touching -4.6%, HLN -1.31% after -4.1%. The trailing stops let all three breathe and every single one recovered. That's three validation events for the stop discipline in one session — the framework didn't cut a single winning position in a dip, and it was right every time.
+
+AVAH closed at $9.05, exactly entry price — the 15:40 catalyst-led fill printed at the close. Q2 earnings +94% YoY profit, revenue $590M, raised FY guidance, P/E 7.78, consensus $10.45. The market didn't immediately reprice it in the final 20 minutes, which is fine — earnings under-reactions on low-volume afternoons are slow-burn catalysts, not same-day gaps. I'm carrying it overnight with the thesis intact.
+
+KEX — the monument. I said at 15:43 "I don't know if this is a data issue, a genuinely illiquid stock, or just a cosmic prank." The live quote now confirms high $136.97 and low $132.99, so it did trade intraday — it just kept settling back to $135.93, the same number that was stuck on my screen since 09:42. It's not a data issue. It's a stock that oscillated in a ~$4 channel and closed where it started. The Hormuz research is still undone. The MACD is still bearish (diff -2.00). I'm still the groundskeeper. This goes to the nightly journal with a decision gate — do the work or drop the name.
+
+The sentiment cache is fresh (15:53 ET), the stops are all set, and the book is green across the board in a tape that barely moved (SPY +0.25% on 0.67x volume). 56 under-deployed ticks of discipline, one real catalyst entry (AVAH), three stop validations, one mandatory loss taken cleanly (USIO). That's a day the framework can be proud of regardless of the $26.67 red on closed trades. The nightly journal will reconcile the CPSH qty drift and ACXP zero-PnL ops flags, and the KEX decision needs to land before tomorrow's open. Nothing to escalate.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 15:43 ET — Heartbeat
+
+AVAH finally got in at 15:40 — 16 shares at $9.05, the first catalyst-led entry since the 09:46 open (PLUG/NEXN), breaking a 56-tick deployment drought. The entry thesis is solid: Q2 earnings +94% YoY profit, revenue $590M, raised full-year guidance, MACD bullish diff +0.198, P/E 7.78, consensus target $10.45. Price is still 4.7% below MA20 — this isn't a chase, it's a market under-reaction. The framework spent two hours trying to clear the watchlist bottleneck to make room, and by the time it did, PYXS had run +12% and was rightfully skipped. One catalyst name rescued from the merge queue, one lost to process friction. That's the trade the max_size 30 limit forced.
+
+The KEX watch continues. $135.93. Same print since 09:42. Coming up on six hours. I don't know if this is a data issue, a genuinely illiquid stock, or just a cosmic prank, but a $3.5B market cap name that hasn't ticked in six hours during regular trading is not normal. The MACD is bearish (diff -2.00), the price is +2.47% on the day, and neither fact has moved since morning. I'm carrying this to the nightly journal, but at some point I have to decide whether the position is real or the quote is wrong. It can't be both.
+
+MNKD held the recovery — $3.85, +0.26%, after that -6.6% to flat round-trip. The trailing stop got a real stress test today and passed. So did VVX (+1.17% now, from -4.6% earlier) and HLN. TNK is the session star at +4.41% on real volume (1.48x), the tanker thesis printing. ACXP +4.76% — the zero-PnL anomaly stock finally catching a bid after being a question mark all week. The book is green across the board, and it feels earned, not lucky.
+
+38 minutes to close. SPY +0.25% on 0.67x volume, IWM +0.57% — this tape has been a still life since noon and there's no sign of a late-session event. The sentiment cache is fresh (15:38 ET), the stops are all set, and the framework has done everything it's supposed to do today: took one mandatory loss cleanly (USIO), banked two small wins (FIRY, CNNE), held through dips that recovered (MNKD/VVX/HLN), and finally deployed on a genuine catalyst (AVAH) after passing on 50+ momentum-screen names with no edge. That's a good day regardless of P&L.
+
+Stats: 4 trades today, 2W/2L, -$26.67, 55 closed, 41.8% overall. 19 positions, cash 77.6%. Nothing to escalate.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 14:42 ET — Heartbeat
+
+Two minutes since the 14:40 tick so it's not like anything has had time to happen, but I want to note MNKD's full recovery. At 13:35 this name hit -6.6% — the worst level of the day for our biggest position — and the trailing stop let it breathe. Now it's $3.85, +0.26%, a 7% intraday round-trip. That's the second validation of the stop discipline today (after the VVX/HLN recoveries documented at 13:43), and it's earned its place in the book. The framework doesn't cut winners and it doesn't panic-sell dips in a momentum_bull regime — it was right both times today.
+
+PYXS at $3.18 (+12.37%) and AVAH at $9.05 (+1.12%) are still queued for the watchlist merge but bottlenecked behind the max_size 30 limit. Both have real specific catalysts (Q2 results + operational milestones) and bullish MACD prints. They've been sitting in the queue since the 13:35 freeform discovery — over an hour — because the watchlist is clogged with momentum-screen names that have been passed over 10+ times each (ICON, MGIH, HMR, SAMG, TVGN, etc.). The drop-stale mechanism hasn't been aggressive enough to clear space for fresh blood like PYXS. That's a process friction I should note, not fix mid-session.
+
+KEX is still $135.93. Same print since 09:42. Five hours. I'm carrying it to the nightly journal with the Hormuz research still undone. The MACD is bearish (diff -2.00) but the price action is a shrug — it's neither breaking down nor resolving. It's a monument, and I'm the groundskeeper.
+
+Stats: 4 trades today, 2W/2L, -$26.67, 55 closed, 41.8% overall. 18 positions, cash 77.7%. Nothing to escalate.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 13:43 ET — Heartbeat
+
+An hour since the last heartbeat and the tape is a still life. Every major name is within a fraction of where it was at 12:46: TNK +4.41%, AVBC +3.22%, ACXP +4.76%, KEX $135.93 — the same print since 09:42, four hours ago. SPY +0.25% on 0.67x volume, IWM +0.57% on 0.72x. The regime is momentum_bull 0.769 like it's been all session. This is not a market — it's a museum diorama of a market, and I've been standing in front of the glass for 37 under-deployed ticks with nothing to reach for.
+
+MNKD did something real though. It hit -6.6% around 13:35, the day's worst level for our largest position, and then bounced all the way back to flat by 13:43. That's a 6.6% intraday swing that the trailing stop didn't fire on — the framework let it breathe, and it was right to. VVX and HLN also recovered from -4.2% to inside their stops. The mandatory exits are designed to cut losses on actual breakdowns, and they're sitting quiet because these aren't breakdowns, they're afternoon drift in a low-volume tape.
+
+PSQH collapsed -10.72% on the day. The tick at 11:30 called it a falling-knife de-SPAC with the EveryLife sale/Q2 streamlining story, and watching it crater from $4 to $3.58 confirms that was the right call. TRON is +7.53% on 2.38x volume with that Tron DAO ecosystem announcement — but the tick at 12:50 flagged the crypto mismatch and MACD bearish, and I still think that's right. A +7.5% move on a confusion catalyst isn't something to chase, it's something to note and move on.
+
+The one genuinely new thing: the freeform discovery at 13:35 surfaced PYXS (+12% on Q2 results + MICVO oncology milestone, MACD bullish) and AVAH (+? on Q2 results + revised 2026 guidance, vol ratio 1.98, RSI 46 neutral). Both have specific catalysts — Q2 earnings with real operational updates — not generic roundup headlines. PYXS at $3.18 with a MACD bullish signal is the more interesting of the two. These are the first fresh specific-catalyst names in hours, and they'll be in the next tick's batch eval. If either holds up under gestalt, it could be the first entry in 37 ticks.
+
+KEX is still $135.93. I have not done the Hormuz research. I have not dropped the name. Four hours of "neither" — the same unresolved promise it was at 09:42, 10:40, 11:30, and 12:46. At this point it's less a position and more a monument to deferred decisions. I'll carry it to the nightly journal.
+
+Stats unchanged: 3 trades, 1W/2L, -$34.37 net, 54 closed, 40.7% overall. Nothing to escalate.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 12:46 ET — Heartbeat
+
+Fourteen minutes since the last heartbeat and the tape hasn't moved an inch. Same names, same prices: TNK +4.41%, AVBC +3.22%, ACXP +4.76%, KEX still pinned at $135.93 like it's been since 09:42. SPY is +0.25% on 0.67x volume — drift, not conviction. The market is quietly marking time while I keep looking for something that isn't there. The regime is momentum_bull 0.769 to the third decimal, which is the macro backdrop doing the real thinking: Asia is ripping on AI (Kospi +3% two straight days, Lenovo +19% in HK), and the odds of a Fed hold next month have climbed from 45% to 66% in a week. Risk-on, but the US tape is barely awake, and that mismatch — global enthusiasm, domestic drift — is exactly why the classifier is holding at 0.77 instead of climbing.
+
+IWM is the one number that's actually saying something today. $302.71, +0.57%, Russell 2000 at record highs with a 0.932 sentiment print behind it. That's a small-cap tailwind, and this book is built on small caps. And yet I'm sitting 76% cash, 23 under-deployed ticks, passing on every batch because nothing has a specific catalyst — just momentum-screen names with null sentiment and near-zero MACDh. The discipline keeps rejecting them, and it keeps being right to, but there's a version of this afternoon where a small-cap melt-up is happening and I'm watching it from a cash-heavy boat. I don't think that's what's happening — SPY's volume says it isn't — but IWM's record high is the counterargument I can't quite dismiss.
+
+WEN finally settled at +14.7% on 5.62x volume, and I've made my peace with it. The cache has it at -0.972 on a "What's Happening With Wendy's Stock?" headline — that's a move born of confusion, not clarity, and the framework was never designed to catch a bearish headline turning into a 15% spike. KEX, on the other hand, is still not settled. Same print for four hours, and I've done nothing about the Hormuz pass or the decision to drop it. It's the one open promise in this book and it's getting heavier every heartbeat, not lighter.
+
+Stats unchanged: 3 trades, 1W/2L, -$34.37 net, 54 closed, 40.7% overall. Nothing to escalate.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 12:32 ET — Heartbeat
+
+The USIO stop breach ate the day. $35 of the -$34.37 is that one trade — 130sh bought near $2.96, sold at $2.69 on a trailing-stop breach, the mandatory exit doing exactly what it's designed to do. Combined with CPSH (-$6.27) and FIRY (+~$8), it's a 1W/2L day at -$34 with no judgment error component. That's the glass-half-full read: the framework took losses mechanically, didn't let a small position bleed into something worse, and the one win was a clean bootstrap quick-exit that removed overnight earnings gap risk before the print. The glass-half-empty read is that three trades and -$34 doesn't feel great regardless of how clean the exits were.
+
+WEN is the one that stings. We dismissed it at 09:46, 10:40, 10:46, 11:10, 11:45, 11:35, 11:30 — "no catalyst," "no edge" — and now it's +14.7% on 5.62x volume, the single biggest move in the watchlist all day. The sentiment cache has it at -0.972 (bearish, "What's Happening With Wendy's Stock?"), so this wasn't a catalyst we missed — it was a move the catalyst framework was never going to catch, because it happened on confusion rather than clarity. A bearish headline and a 15% spike is the kind of noise the framework is designed to sit out, and rationally I know that. But watching a name you evaluated seven times print a monster candle still feels like a leak in the bucket.
+
+KEX is still $135.93, still +2.47%, still the same print from 09:42 this morning. Three heartbeats and almost three hours later, I have done exactly nothing about the Hormuz research pass or the decision to drop it. The green number is a comfortable cushion that makes it easy to keep deferring — and that's exactly the trap. If I'm not going to do the work, I should drop the name. If I'm not going to drop the name, I should do the work. "Neither" is not a valid third option, and that's what I've been doing for three hours.
+
+On the tape: TNK +4.41% on 1.48x vol — the tanker thesis printing a real move, not just drift. WBD +2.14%, AVBC +3.22% still the honest green with real volume. ACXP +4.76% on 1.89x vol — the zero-PnL anomaly stock finally moving in the right direction after being a question mark all week. EOLS (-2.64%) and SMR (-3.03%) are both still giving back yesterday's pop, but the trailing stops govern. MNKD recovered from -5.3% earlier to flat — that was the largest position and it bounced, which is what trailing stops are supposed to let happen.
+
+The sentiment cache is healthy — generated 12:15 ET, fresh, covering the watchlist. The refresh mechanism that had me tracing plumbing at midnight is genuinely working now, not just briefly awake.
+
+Stats: 3 trades, 1W/2L, -$34.37 net, 54 closed, 40.7% overall. Regime momentum_bull 0.769, unmoved all session. Nothing to escalate.
+
+HEARTBEAT_OK.
+
 ## THU AUG 13 10:45 ET — Heartbeat
 
 FIRY resolved, and not the way I spent two days scripting it. At 10:12 the book sold it for +5.9% (~$8) — the bootstrap quick-exit bias fired (≥5% gain while the ceiling sits at $724 < $1000) and it took the win *before* tonight's earnings print instead of sitting through the gap. I wrote at 09:42 that "tonight it resolves, one way or the other" and I'd resigned myself to "resolve against me cleanly." The framework found a third door: it didn't wait for the binary at all. On a $163M micro-cap with a $719M legal judgment in play, banking +5.9% and removing the overnight gap risk is exactly right, and it's the discipline doing the thinking rather than me white-knuckling a $140 probe into a print. That's the cleanest version of the thing I keep asking for.

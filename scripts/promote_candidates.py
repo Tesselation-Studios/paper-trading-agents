@@ -87,20 +87,39 @@ def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_
     max_age_seconds = max_age_seconds if max_age_seconds is not None else config["promote_max_age_seconds"]
     min_market_cap = min_market_cap if min_market_cap is not None else config["min_market_cap"]
 
-    conn = discovery_db.get_conn(db_path)
-    generation = discovery_db.get_universe_generation(conn)
-    # 2026-08-13: Exclude tickers already in the watchlist so the same
-    # top-ranked candidates don't get dedup-skipped every tick while 200+
-    # lower-ranked fresh candidates never get a look.
-    existing = set()
+    # 2026-08-13: Drop stale watchlist candidates unconditionally before
+    # promoting new ones from the pool. Without this, the watchlist fills
+    # up at max_size and nothing new can land -- the tick prompt listed
+    # watchlist-drop-stale as an optional 'light touch' that Stan skipped,
+    # so stale candidates accumulated until the downstream flow stalled.
+    trader_conn = None
     try:
         import trader_db
         trader_conn = trader_db.get_conn(db_path)
-        for r in trader_conn.execute("SELECT ticker FROM watchlist_candidates").fetchall():
-            existing.add(r["ticker"])
-        trader_conn.close()
+        dropped = trader_db.drop_stale_watchlist_candidates(
+            trader_conn,
+            max_evaluations=12,
+            max_age_hours=48,
+        )
     except Exception:
-        pass  # best-effort -- without exclude, falls back to dedup in insert_into_watchlist
+        dropped = []
+
+    # Exclude tickers already in the watchlist so the same top-ranked
+    # candidates don't get dedup-skipped every tick while 200+ lower-ranked
+    # fresh candidates never get a look.
+    existing = set()
+    try:
+        if trader_conn is not None:
+            for r in trader_conn.execute("SELECT ticker FROM watchlist_candidates").fetchall():
+                existing.add(r["ticker"])
+    except Exception:
+        pass  # best-effort -- without exclude, falls back to dedup
+    finally:
+        if trader_conn is not None:
+            trader_conn.close()
+
+    conn = discovery_db.get_conn(db_path)
+    generation = discovery_db.get_universe_generation(conn)
     candidates = select_promotable(conn, top_n=top_n, max_age_seconds=max_age_seconds, now=now,
                                     min_market_cap=min_market_cap, exclude=existing)
     conn.close()

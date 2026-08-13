@@ -1,11 +1,11 @@
 # PLUG Position Thesis
 
 - **Entry**: $2.33 avg | 65 shares
-- **Current**: $2.27 (-2.58% unrealized)
-- **Market Value**: $147.55
-- **Unrealized P&L**: $-3.90 (-2.57%)
+- **Current**: $2.30 (-1.35% unrealized)
+- **Market Value**: $149.40
+- **Unrealized P&L**: $-2.05 (-1.35%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 15:52:06 UTC
+- **Last sync**: 2026-08-13 21:00:58 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

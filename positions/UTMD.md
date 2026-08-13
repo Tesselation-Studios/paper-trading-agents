@@ -1,11 +1,11 @@
 # UTMD Position Thesis
 
 - **Entry**: $71.50 avg | 1 shares
-- **Current**: $71.62 (+0.17% unrealized)
-- **Market Value**: $71.62
-- **Unrealized P&L**: $+0.12 (+0.17%)
+- **Current**: $72.10 (+0.84% unrealized)
+- **Market Value**: $72.10
+- **Unrealized P&L**: $+0.60 (+0.84%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 15:52:06 UTC
+- **Last sync**: 2026-08-13 21:00:58 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

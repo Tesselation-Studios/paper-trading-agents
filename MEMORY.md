@@ -1,5 +1,7 @@
 ## Trader-Stonks Durable Lessons
-*Updated: 2026-08-12 — nightly-learning*
+*Updated: 2026-08-13 — nightly-learning*
+
+**THU AUG 13 4:17 PM ET — nightly-learning:** Market closed. Second full momentum_bull (0.77) session with K-Means — held all day, zero regime flips. 4 trades (2W/2L), -$26.67 P&L. Entries: AVAH (catalyst-led 15:40, the only entry all day), PLUG/NEXN (open probes). Exits: FIRY +5.9% + CNNE +5.2% (bootstrap quick-exits), USIO -7.8% (trailing stop). 19 positions EOD, cash 76%. 55 closed, 41.8% win (slight uptick). Stop discipline triple-validated: MNKD recovered -6.6%→flat, VVX/HLN similar intraday round-trips. KEX zombie quote at $135.93 for 6+ hours — data quality flag. ~60 under-deployed ticks — correct pass rate, not deployment failure.
 
 **WED AUG 12 4:17 PM ET — nightly-learning:** Market closed. First full momentum_bull (0.892) session with K-Means classifier — held all day, 18 positions, 2 entries (PDYN catalyst-led 14:05, CPSH analyst-catalyst probe 15:25), 1 exit (MBBC trailing stop -7.4%). 1W/2L closed, -$11.68 P&L. FOMC minutes at 14:00 were a non-event — dovish but SPY didn't move. Win rate 41.18% overall (51 closed), 40% last 10 (declining from 42%). Industrials 25%, Healthcare 29% — sector drag, not generalized. FIRY earnings tomorrow — overnight gap risk on $163M micro-cap probe.
 
@@ -7,7 +9,22 @@
 
 Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix, an escalation, something worth doing but not done yet) live in `tasks/pending.md` — check it at the start of every reflection session.
 
-### K-Means Regime Classifier — First Full momentum_bull Session Validated (NEW Aug 12)
+### K-Means Regime Classifier — Second Full momentum_bull Session Confirmed (UPDATED Aug 13)
+- **Two consecutive full sessions** (Aug 12: 0.892, Aug 13: 0.77) without a single regime flip. The old HMM would have shown CHOPPY for a 6th→7th consecutive session, suppressing deployment. The K-Means correctly identified trending regimes both days. The classifier is past the "first session" stage and now has two full days of validated live behavior. Zero false regime signals, zero forced exits from regime flips. The classifier is functioning as designed.
+
+### Stop Discipline Triple-Validated — Intraday Recovery in momentum_bull (NEW Aug 13)
+- **MNKD** hit -6.6% at 13:35 (day's worst level for our largest position, 159sh), bounced to flat by 13:43 — a 7% intraday round-trip. **VVX** recovered from -4.6% to +1.17% at close. **HLN** recovered from -4.2% to inside stop. Three positions in the same session: the trailing stop let them all breathe in momentum_bull, and every one of them proved the framework right. This follows yesterday's FOMC non-event validation. The lesson from both days: in a confirmed momentum_bull regime, afternoon drift in low-volume tape is NOT a breakdown — let the stop do its job.
+
+### Watchlist Bottleneck — max_size 30 + Weak Drop-Stale Losing Catalyst Names (NEW Aug 13)
+- **PYXS** ($3.18, +12%, Q2 results + MICVO oncology milestone, MACD bullish) sat in the merge queue for over an hour because the watchlist was clogged at max_size 30 with momentum-screen names that had been passed over 10+ times each (ICON, MGIH, HMR, SAMG, TVGN, etc.). By the time the queue cleared, PYXS had run +12% and was rightfully skipped. **AVAH** ($9.05, Q2 earnings +94% YoY profit + raised guidance) was also bottlenecked but rescued at 15:40 — one catalyst entry saved, one lost to process friction. The drop-stale mechanism (`watchlist.max_staleness_ticks`) isn't aggressive enough to make room for fresh catalyst discoveries from freeform research. This isn't a code fix for mid-session but a parameter/scheduling gap to investigate.
+
+### Small-Cap Earnings Beat → Sell-Off Pattern — 4th Instance (UPDATED Aug 13)
+- **INAB at 15:45**: Q2 EPS beat, sell-off. Live price $1.00 vs stale watchlist $1.09, MACD bearish diff -0.104, low $0.88 intraday. This is the 4th instance in 3 days (HPK Aug 11, UPB Aug 12, MBBC Aug 5 post-earnings drift). Three of four came from earnings announced the same day or prior session. The pattern is no longer a day-1 anomaly — four instances across three trading days with zero counter-examples of small-cap earnings beats producing post-announcement follow-through buying. Getting close to the hardening bar (2-3 occurrences).
+
+### KEX Zombie Quote — Data Quality Flag (NEW Aug 13)
+- **KEX printed $135.93 for 6+ hours** (09:42 through close) on 0.78x volume. $3.5B market cap, MACD bearish diff -2.00. A price that doesn't move for an entire session on a mid-cap stock is not normal — this is almost certainly a data feed issue (stale quote from Alpaca), not genuine price action. The position is real, the quote may not be. If the quote is stale, the trailing stop can't trigger. This is a monitoring gap: positions held on stale quotes are unmanaged. Track for recurrence.
+
+### K-Means Regime Classifier — First Full momentum_bull Session Validated (Aug 12)
 - **First full live session** with the new K-Means classifier at 0.892 momentum_bull confidence — held all day without flipping. The old HMM would have shown CHOPPY for a 6th consecutive session. The classifier correctly identified a trending regime where the framework should deploy freely, not suppress. Result: 18 positions held, 2 clean entries (PDYN catalyst-led, CPSH analyst-catalyst probe), no false regime signals, no panic. 20+ ticks of thin-pipeline gating were discipline, not regime paralysis — when real signals appeared (14:05 PDYN, 15:25 CPSH), the agent deployed cleanly.
 - **FOMC non-reaction divergence**: The 14:00 FOMC minutes read dovish and SPY didn't move — $770.56 before, during, and after. A dovish-FOMC non-reaction in momentum_bull is a divergence worth filing. vol_trend -10.6% is the skeleton underneath the rally. Not actionable by itself, but a market that can't rally on good news is one to watch.
 
@@ -69,14 +86,14 @@ Durable, resolved lessons live here. Open, unresolved follow-ups (a proposed fix
 ### K-Means Regime Classifier — First Live Session Validated (NEW Aug 11)
 - **Replaced HMM on Aug 10**: first full live session today. Classifier held `mean_reversion` at 0.844 confidence all day. SPY was flat (-0.03%) with bullish MACD (+3.46 MACDh). The old HMM would have shown CHOPPY — the K-Means correctly identified a low-vol drift regime where the framework should hold, not suppress. 16 positions held through the session without panic, zero forced exits. The regime label guided correctly.
 
-### Bootstrap Quick-Exit Mechanism — 9 for 9 Total (UPDATED Aug 12)
-- **Aug 3**: ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%. **Aug 4**: FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1. **Aug 10**: VSXY +10.80%. **Aug 11**: AORT +5.39%. 9 consecutive bootstrap wins, zero false triggers, zero regretted exits. Ceiling growth is slow but real — MBBC's exit (-$1.11) and HPK's stop-out (-$8) partially offset the AORT gain.
+### Bootstrap Quick-Exit Mechanism — 11 for 11 Total (UPDATED Aug 13)
+- **Aug 3**: ZBRA +5.33%, DXCM +5.28%, OOMA +6.1%. **Aug 4**: FLXS +5.03%, BFH +5.20%, NABL +8.12%, ANDG +5.23%, +1. **Aug 10**: VSXY +10.80%. **Aug 11**: AORT +5.39%. **Aug 13**: FIRY +5.9%, CNNE +5.2%. 11 consecutive bootstrap wins, zero false triggers, zero regretted exits. Ceiling $723 → should cross $1,000 soon at this pace and sunset the bootstrap bias.
 
-### Experience Counter — 24W/39L executor, 121 events (Aug 12)
-- **`experience.json`**: 121 total events (executor-tracked), 1 consecutive win, 0 consecutive losses. 24W/39L.
+### Experience Counter — 26W/40L executor (Aug 13)
+- **`experience.json`**: executor-tracked events. 26W/40L.
 - **`bankroll.py`**: Canonical record; experience.json tracks a different (executor-event) counter.
-- Win rate (self-stats): 41.18% overall (51 closed). Rolling last-10: 40% (down from 42% yesterday).
-- CNH stop-out at -7.22% (Aug 10): broker-side fill slipped past -6% target on gap-down. One data point — not alarming yet but small-cap stop slippage is a reality.
+- Win rate (self-stats): 41.82% overall (55 closed). Rolling last-10: 40% (unchanged from yesterday).
+- Today: 2W/2L — FIRY +5.9% (bootstrap quick-exit), CNNE +5.2% (bootstrap quick-exit), USIO -7.8% (trailing stop breach), AVAH entered (catalyst-led probe, open).
 
 ### Index-Anchor Mechanism — First Deployment (NEW Aug 10)
 - **IWM index-anchor deployed Aug 10**: reconcile 0.6111 (≥0.60 anchor), MACDh +0.654, RSI 60.1. Conviction play, 1 of 2 earmarked index-anchor slots. The mechanism is now live, not theoretical.

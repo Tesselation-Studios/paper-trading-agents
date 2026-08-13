@@ -1,11 +1,11 @@
-# CNNE Position Thesis
+# AVAH Position Thesis
 
-- **Entry**: $14.87 avg | 10 shares
-- **Current**: $15.39 (+3.50% unrealized)
-- **Market Value**: $153.90
-- **Unrealized P&L**: $+5.20 (+3.50%)
+- **Entry**: $11.50 avg | 16 shares
+- **Current**: $11.49 (-0.09% unrealized)
+- **Market Value**: $183.83
+- **Unrealized P&L**: $-0.17 (-0.10%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 15:52:05 UTC
+- **Last sync**: 2026-08-13 21:00:58 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
