@@ -542,6 +542,25 @@ class TestWatchlistCandidates:
         trader_db.upsert_watchlist_candidate(conn, ticker="NEW", now="2026-08-01T10:00:00+00:00")
         assert [c["ticker"] for c in trader_db.get_watchlist_batch(conn, 2)] == ["OLD", "NEW"]
 
+    def test_upsert_writes_sector_industry_market_cap(self, conn):
+        trader_db.upsert_watchlist_candidate(
+            conn, ticker="AAA", sector="Technology", industry="Software", market_cap=5_000_000_000.0,
+        )
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["sector"] == "Technology"
+        assert row["industry"] == "Software"
+        assert row["market_cap"] == 5_000_000_000.0
+
+    def test_sector_coalesces_on_touch_not_blanked(self, conn):
+        """A plain technical re-touch (no sector passed) shouldn't blank a
+        sector the candidate already had -- same COALESCE contract as
+        sentiment/news_headline."""
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", sector="Technology")
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=12.0)
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["sector"] == "Technology"
+        assert row["price"] == 12.0
+
     def test_get_watchlist_batch_respects_limit(self, conn):
         for t in ["AAA", "BBB", "CCC"]:
             trader_db.upsert_watchlist_candidate(conn, ticker=t)

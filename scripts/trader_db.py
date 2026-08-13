@@ -173,6 +173,9 @@ CREATE TABLE IF NOT EXISTS watchlist_candidates (
     macd_hist         REAL,
     sentiment         REAL,
     news_headline     TEXT,
+    sector            TEXT,
+    industry          TEXT,
+    market_cap        REAL,
     idle_ticks        INTEGER NOT NULL DEFAULT 0,
     last_evaluated_at TEXT,
     eval_count        INTEGER NOT NULL DEFAULT 0,
@@ -319,6 +322,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
     # active.md prose, not queryable. NULL for every pre-existing row and
     # for SELLs (a position's original source isn't re-derived at exit).
     _migrate_add_column(conn, "decisions", "source", "TEXT")
+    # 2026-08-13: sector/industry/market_cap carried from discovery_pool.db's
+    # candidates table (see discovery_db.py's record_fundamentals()) through
+    # promote_candidates.py -> merge_discoveries.py onto the watchlist row,
+    # so a BUY can auto-populate positions.sector without an explicit
+    # --sector flag. NULL for every pre-existing row and for any candidate
+    # whose enrichment fetch failed/was skipped.
+    _migrate_add_column(conn, "watchlist_candidates", "sector", "TEXT")
+    _migrate_add_column(conn, "watchlist_candidates", "industry", "TEXT")
+    _migrate_add_column(conn, "watchlist_candidates", "market_cap", "REAL")
     conn.commit()
 
 
@@ -797,14 +809,17 @@ def export_closed_trade(conn: sqlite3.Connection, session_id: str, ticker: str, 
 def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: float = None,
                                 rsi: float = None, volume_ratio: float = None, macd_hist: float = None,
                                 sentiment: float = None, news_headline: str = None,
+                                sector: str = None, industry: str = None, market_cap: float = None,
                                 source: str = None, note: str = None, now: str = None) -> None:
     """Adds a new candidate or touches an existing one -- idle_ticks resets
     to 0 on touch, matching watchlist.md's existing convention.
 
-    sentiment/news_headline COALESCE on update (like source/note) rather
-    than overwriting like the technicals do: they're descriptive context
-    with their own cadence, so a plain technical refresh shouldn't blank
-    the news read that got the candidate promoted in the first place.
+    sentiment/news_headline/sector/industry/market_cap COALESCE on update
+    (like source/note) rather than overwriting like the technicals do:
+    they're descriptive context with their own cadence (fetched once at
+    discovery time, see discovery_db.record_fundamentals()), so a plain
+    technical refresh shouldn't blank the enrichment read that got the
+    candidate promoted in the first place.
 
     Deliberately does not touch last_evaluated_at/eval_count: being
     re-discovered or re-priced is not the same as being evaluated, and
@@ -818,8 +833,9 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
         conn.execute(
             """INSERT INTO watchlist_candidates
                    (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline,
+                    sector, industry, market_cap,
                     idle_ticks, source, note, added_at, last_touched_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
                ON CONFLICT(ticker) DO UPDATE SET
                    price = excluded.price,
                    rsi = excluded.rsi,
@@ -827,11 +843,15 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
                    macd_hist = excluded.macd_hist,
                    sentiment = COALESCE(excluded.sentiment, watchlist_candidates.sentiment),
                    news_headline = COALESCE(excluded.news_headline, watchlist_candidates.news_headline),
+                   sector = COALESCE(excluded.sector, watchlist_candidates.sector),
+                   industry = COALESCE(excluded.industry, watchlist_candidates.industry),
+                   market_cap = COALESCE(excluded.market_cap, watchlist_candidates.market_cap),
                    idle_ticks = 0,
                    source = COALESCE(excluded.source, watchlist_candidates.source),
                    note = COALESCE(excluded.note, watchlist_candidates.note),
                    last_touched_at = excluded.last_touched_at""",
-            (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline, source, note, now, now),
+            (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline,
+             sector, industry, market_cap, source, note, now, now),
         )
 
 

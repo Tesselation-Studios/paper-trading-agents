@@ -22,6 +22,7 @@ news_cache off docker.klo Postgres onto local SQLite too (see that module's
 docstring), so docker.klo Postgres is no longer live for this repo at all --
 noted here so this file doesn't read as the odd one out.
 """
+import re
 import sqlite3
 from pathlib import Path
 
@@ -39,6 +40,9 @@ CREATE TABLE IF NOT EXISTS candidates (
     sentiment           REAL,
     news_headline       TEXT,
     news_confirmed_at   TEXT,
+    sector              TEXT,
+    industry            TEXT,
+    market_cap          REAL,
     first_seen_at       TEXT NOT NULL,
     last_screened_at    TEXT NOT NULL,
     last_in_band_at     TEXT,
@@ -72,8 +76,37 @@ def get_conn(db_path: Path = None) -> sqlite3.Connection:
     return conn
 
 
+_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_SQL_COLTYPE_RE = re.compile(r"^[A-Za-z0-9_ ().+'-]+$")
+
+
+def _migrate_add_column(conn: sqlite3.Connection, table: str, column: str, coltype_and_default: str) -> None:
+    """Same pattern/rationale as trader_db.py's helper of the same name --
+    CREATE TABLE IF NOT EXISTS only creates a column on a fresh DB, so an
+    already-existing live discovery_pool.db needs this to actually gain a
+    new column. Idempotent (checks PRAGMA table_info first). Identifiers
+    are validated against a strict allowlist before being interpolated,
+    same defense-in-depth rationale as the trader_db.py original."""
+    for label, value in (("table", table), ("column", column)):
+        if not _SQL_IDENTIFIER_RE.match(value):
+            raise ValueError(f"_migrate_add_column: unsafe {label} name {value!r}")
+    if not _SQL_COLTYPE_RE.match(coltype_and_default):
+        raise ValueError(f"_migrate_add_column: unsafe coltype_and_default {coltype_and_default!r}")
+
+    existing_columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in existing_columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype_and_default}")
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    # 2026-08-13: sector/industry/market_cap enrichment (yfinance, best-effort,
+    # fetched once per candidate on first in-band transition) -- see
+    # discovery_daemon.py's enrich_candidate_fundamentals(). NULL on every
+    # pre-existing row and on any row where the fetch failed/was skipped.
+    _migrate_add_column(conn, "candidates", "sector", "TEXT")
+    _migrate_add_column(conn, "candidates", "industry", "TEXT")
+    _migrate_add_column(conn, "candidates", "market_cap", "REAL")
     conn.commit()
 
 
@@ -146,6 +179,20 @@ def record_news_confirmation(conn: sqlite3.Connection, ticker: str, sentiment, h
         conn.execute(
             "UPDATE candidates SET sentiment = ?, news_headline = ?, news_confirmed_at = ? WHERE ticker = ?",
             (sentiment, headline, confirmed_at, ticker),
+        )
+
+
+def record_fundamentals(conn: sqlite3.Connection, ticker: str, sector, industry, market_cap) -> None:
+    """Best-effort enrichment write -- see discovery_daemon.py's
+    enrich_candidate_fundamentals(). Any of the three fields may be None
+    (fetch failed/partial); this overwrites unconditionally rather than
+    COALESCE-on-update, since a re-fetch (e.g. after a ticker re-enters
+    in_band following a long absence) should reflect the current read, not
+    freeze the first one forever."""
+    with conn:
+        conn.execute(
+            "UPDATE candidates SET sector = ?, industry = ?, market_cap = ? WHERE ticker = ?",
+            (sector, industry, market_cap, ticker),
         )
 
 

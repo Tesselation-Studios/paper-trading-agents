@@ -4,6 +4,7 @@ Unit tests for scripts/discovery_db.py -- the SQLite candidate-pool store
 for discovery_daemon.py's continuous scanner. Real sqlite3 files under
 tmp_path, no mocking needed (this module has no network dependency).
 """
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -165,6 +166,68 @@ class TestCompositeRanking:
             discovery_db.RANK_WEIGHT_VOLUME + discovery_db.RANK_WEIGHT_SENTIMENT
             + discovery_db.RANK_WEIGHT_NEWS_RECENCY
         )
+
+
+class TestFundamentalsEnrichment:
+    """2026-08-13: sector/industry/market_cap columns, best-effort
+    yfinance enrichment written by discovery_daemon.py."""
+
+    def test_new_columns_null_by_default(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00Z",
+        )
+        row = conn.execute("SELECT * FROM candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["sector"] is None
+        assert row["industry"] is None
+        assert row["market_cap"] is None
+
+    def test_record_fundamentals_writes_all_three(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00Z",
+        )
+        discovery_db.record_fundamentals(conn, "AAA", "Technology", "Software", 5_000_000_000.0)
+        row = conn.execute("SELECT * FROM candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["sector"] == "Technology"
+        assert row["industry"] == "Software"
+        assert row["market_cap"] == 5_000_000_000.0
+
+    def test_record_fundamentals_overwrites_not_coalesces(self, conn):
+        """Unlike sentiment/news_headline elsewhere, a re-fetch should
+        reflect the current read, not freeze the first one forever."""
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00Z",
+        )
+        discovery_db.record_fundamentals(conn, "AAA", "Technology", "Software", 5_000_000_000.0)
+        discovery_db.record_fundamentals(conn, "AAA", None, None, None)
+        row = conn.execute("SELECT * FROM candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["sector"] is None
+        assert row["market_cap"] is None
+
+    def test_migration_adds_columns_to_pre_existing_db(self, tmp_path):
+        """A DB created before this column existed must gain it via
+        _migrate_add_column, not silently keep the old schema."""
+        db_path = tmp_path / "old_pool.db"
+        old_conn = sqlite3.connect(str(db_path))
+        old_conn.executescript("""
+            CREATE TABLE candidates (
+                ticker TEXT PRIMARY KEY, price REAL NOT NULL, rsi REAL,
+                volume_ratio REAL, macd_hist REAL, in_band INTEGER NOT NULL DEFAULT 0,
+                sentiment REAL, news_headline TEXT, news_confirmed_at TEXT,
+                first_seen_at TEXT NOT NULL, last_screened_at TEXT NOT NULL,
+                last_in_band_at TEXT, screen_count INTEGER NOT NULL DEFAULT 0,
+                universe_generation INTEGER NOT NULL
+            );
+        """)
+        old_conn.commit()
+        old_conn.close()
+
+        migrated_conn = discovery_db.get_conn(db_path)
+        columns = {row[1] for row in migrated_conn.execute("PRAGMA table_info(candidates)")}
+        assert {"sector", "industry", "market_cap"} <= columns
+        migrated_conn.close()
 
 
 class TestUniverseSnapshot:
