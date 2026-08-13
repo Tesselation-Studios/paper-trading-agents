@@ -756,6 +756,58 @@ def get_open_positions(conn: sqlite3.Connection) -> list:
     return [dict(r) for r in rows]
 
 
+def compute_sector_performance(conn: sqlite3.Connection, lookback_days: int = 30, min_trades: int = 8,
+                                now: str = None) -> dict:
+    """2026-08-13: aggregates live closed positions by sector into
+    {sector: {trades, wins, win_rate, avg_return_pct}} -- feeds
+    discovery_db.py's sector-performance-weighted ranking term, so
+    discovery naturally favors whatever sector is actually performing
+    right now, continuously, with no hardcoded sector/ticker names
+    anywhere. See discovery_daemon.py's maybe_refresh_sector_performance().
+
+    Sectors with fewer than min_trades closed positions in the lookback
+    window are omitted entirely, not included with a noisy win_rate --
+    the exact problem with reacting to a 1-2 trade sample (see the
+    2026-08-13 diagnosis this was built from: two Technology losses in one
+    session isn't evidence of anything on its own). Uses realized_pnl > 0
+    for win/loss (matches how tasks/pending.md's own sector-erosion
+    tracking already frames "win rate"), and avg_return_pct as a secondary
+    magnitude signal, stored but not yet used in ranking (future
+    refinement -- win_rate alone is what's actually being tracked/
+    discussed today, keeping this consistent with that)."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    cutoff = (datetime.datetime.fromisoformat(now) - datetime.timedelta(days=lookback_days)).isoformat()
+
+    rows = conn.execute(
+        """SELECT sector, realized_pnl, realized_return_pct FROM positions
+           WHERE status = 'closed' AND sector IS NOT NULL AND closed_at >= ?""",
+        (cutoff,),
+    ).fetchall()
+
+    by_sector: dict = {}
+    for r in rows:
+        bucket = by_sector.setdefault(r["sector"], {"trades": 0, "wins": 0, "return_sum": 0.0, "return_count": 0})
+        bucket["trades"] += 1
+        if r["realized_pnl"] is not None and r["realized_pnl"] > 0:
+            bucket["wins"] += 1
+        if r["realized_return_pct"] is not None:
+            bucket["return_sum"] += r["realized_return_pct"]
+            bucket["return_count"] += 1
+
+    result = {}
+    for sector, bucket in by_sector.items():
+        if bucket["trades"] < min_trades:
+            continue
+        result[sector] = {
+            "trades": bucket["trades"],
+            "wins": bucket["wins"],
+            "win_rate": bucket["wins"] / bucket["trades"],
+            "avg_return_pct": (bucket["return_sum"] / bucket["return_count"]) if bucket["return_count"] else None,
+        }
+    return result
+
+
 def get_all_positions(conn: sqlite3.Connection) -> list:
     """Open + closed, no status filter -- used by merge_discoveries.py's
     dedup (a closed ticker shouldn't be re-added as a fresh candidate

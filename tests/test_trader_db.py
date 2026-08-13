@@ -310,6 +310,66 @@ class TestPositions:
         assert row["prediction_reason"] == "earnings beat expected"
 
 
+class TestSectorPerformance:
+    """2026-08-13: compute_sector_performance() -- feeds discovery_db.py's
+    sector-performance-weighted ranking term. See discovery_daemon.py's
+    maybe_refresh_sector_performance()."""
+
+    NOW = "2026-08-13T18:00:00+00:00"
+
+    def _close(self, conn, ticker, sector, pnl, return_pct, closed_at, entry_time="2026-08-01T10:00:00+00:00"):
+        trader_db.upsert_position(conn, ticker=ticker, shares=1.0, entry_price=10.0,
+                                   entry_time=entry_time, sector=sector)
+        trader_db.close_position(conn, ticker=ticker, closed_at=closed_at, close_reason="exit",
+                                  realized_pnl=pnl, realized_return_pct=return_pct)
+
+    def test_below_min_trades_omitted_entirely(self, conn):
+        for i in range(3):
+            self._close(conn, f"T{i}", "Technology", 5.0, 5.0, "2026-08-12T10:00:00+00:00")
+        result = trader_db.compute_sector_performance(conn, min_trades=8, now=self.NOW)
+        assert result == {}
+
+    def test_meets_min_trades_computes_win_rate(self, conn):
+        for i in range(6):
+            self._close(conn, f"WIN{i}", "Technology", 5.0, 5.0, "2026-08-12T10:00:00+00:00")
+        for i in range(2):
+            self._close(conn, f"LOSS{i}", "Technology", -3.0, -3.0, "2026-08-12T10:00:00+00:00")
+        result = trader_db.compute_sector_performance(conn, min_trades=8, now=self.NOW)
+        assert result["Technology"]["trades"] == 8
+        assert result["Technology"]["wins"] == 6
+        assert result["Technology"]["win_rate"] == 0.75
+        assert result["Technology"]["avg_return_pct"] == pytest.approx((5.0 * 6 + -3.0 * 2) / 8)
+
+    def test_excludes_trades_outside_lookback_window(self, conn):
+        for i in range(8):
+            self._close(conn, f"OLD{i}", "Technology", 5.0, 5.0, "2026-01-01T10:00:00+00:00")
+        result = trader_db.compute_sector_performance(conn, lookback_days=30, min_trades=8, now=self.NOW)
+        assert result == {}
+
+    def test_excludes_open_positions(self, conn):
+        for i in range(8):
+            self._close(conn, f"T{i}", "Technology", 5.0, 5.0, "2026-08-12T10:00:00+00:00")
+        trader_db.upsert_position(conn, ticker="OPEN1", shares=1.0, entry_price=10.0,
+                                   entry_time="2026-08-12T10:00:00+00:00", sector="Technology")
+        result = trader_db.compute_sector_performance(conn, min_trades=8, now=self.NOW)
+        assert result["Technology"]["trades"] == 8  # OPEN1 not counted
+
+    def test_excludes_null_sector(self, conn):
+        for i in range(8):
+            self._close(conn, f"T{i}", None, 5.0, 5.0, "2026-08-12T10:00:00+00:00")
+        result = trader_db.compute_sector_performance(conn, min_trades=8, now=self.NOW)
+        assert result == {}
+
+    def test_multiple_sectors_independent(self, conn):
+        for i in range(8):
+            self._close(conn, f"TECH{i}", "Technology", 5.0, 5.0, "2026-08-12T10:00:00+00:00")
+        for i in range(8):
+            self._close(conn, f"HC{i}", "Healthcare", -5.0, -5.0, "2026-08-12T10:00:00+00:00")
+        result = trader_db.compute_sector_performance(conn, min_trades=8, now=self.NOW)
+        assert result["Technology"]["win_rate"] == 1.0
+        assert result["Healthcare"]["win_rate"] == 0.0
+
+
 class TestThesisPersistence:
     """2026-08-03: thesis_claim/thesis_invalidation/thesis_entry_signals +
     position_thesis_log -- extends the existing thesis/prediction_reason
