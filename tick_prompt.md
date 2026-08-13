@@ -89,6 +89,8 @@
 
    **Writing durable knowledge to the wiki**: `positions.thesis`/`active.md` are this tick's working state, not durable knowledge other sessions or agents can find later. When you reach a real, evidence-backed conclusion worth persisting beyond this tick — a sector thesis, a pattern you've now seen confirmed a few times, something worth not re-deriving from scratch next time — write it with `wiki_apply synthesis "<title>" --body "..." --source-id <id>`, citing the specific evidence it's based on (same discipline as the `--rationale`/`--features` citations above, not just prose). This is occasional, not every tick or every trade. Run `wiki_lint` after writing to catch structural gaps.
 
+   **Per-ticker entity pages (2026-08-13)**: for a conviction/long-play `--thesis-claim` this tick, also write (or refresh) that ticker's own `entities/<TICKER>.md` page (`pageType: entity`) alongside — sector synthesis pages capture the sector-level narrative, this is the durable per-stock record (what Stan concluded and why, over time) that `skills/research-escalation.md`'s researcher exchanges also write to. Same occasional, evidence-cited discipline as above — not every trade, just the ones with a real researched thesis behind them.
+
 10. **Update active.md** → append your current tick entry. Keep it **trim**:
    - 3-5 lines if no trade and no trigger event
    - Include: regime, decisions made, positions near triggers (name + how close, not prices), batch evaluations, scale-in blocks, any operational flags
