@@ -1,11 +1,11 @@
-# FIRY Position Thesis
+# MNPR Position Thesis
 
-- **Entry**: $10.02 avg | 14 shares
-- **Current**: $10.25 (+2.30% unrealized)
-- **Market Value**: $143.50
-- **Unrealized P&L**: $+3.22 (+2.30%)
+- **Entry**: $112.18 avg | 1 shares
+- **Current**: $111.26 (-0.82% unrealized)
+- **Market Value**: $111.26
+- **Unrealized P&L**: $-0.92 (-0.82%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 13:45:08 UTC
+- **Last sync**: 2026-08-13 14:15:36 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
