@@ -46,26 +46,43 @@ def _load_config():
     return {
         "promote_top_n": block.get("promote_top_n", DEFAULT_TOP_N),
         "promote_max_age_seconds": block.get("promote_max_age_seconds", DEFAULT_MAX_AGE_SECONDS),
+        "min_market_cap": params.get("universe", {}).get("min_market_cap"),
     }
 
 
 def select_promotable(conn, top_n: int = DEFAULT_TOP_N, max_age_seconds: int = DEFAULT_MAX_AGE_SECONDS,
-                       now: str = None) -> list:
+                       now: str = None, min_market_cap: float = None) -> list:
     """Thin wrapper over discovery_db.get_top_candidates() -- pure query,
-    testable against a seeded tmp_path db."""
+    testable against a seeded tmp_path db.
+
+    min_market_cap (2026-08-13, params.json universe.min_market_cap) drops
+    any candidate whose yfinance-enriched market_cap is below the floor --
+    a candidate with market_cap still NULL (enrichment hasn't run/
+    succeeded yet) passes through unfiltered, since this is a best-effort
+    risk trim on top of the technical screen, not a hard data-completeness
+    gate. Filtered post-query rather than in SQL: LIMIT already applied
+    upstream, so a promotion cycle with sub-floor names in the top N can
+    come back with fewer than top_n results -- acceptable since
+    promote_candidates.py runs every tick, so it self-corrects next cycle
+    rather than needing a backfill query here."""
     now = now or datetime.now(timezone.utc).isoformat()
-    return discovery_db.get_top_candidates(conn, limit=top_n, max_age_seconds=max_age_seconds, now=now)
+    candidates = discovery_db.get_top_candidates(conn, limit=top_n, max_age_seconds=max_age_seconds, now=now)
+    if min_market_cap is not None:
+        candidates = [c for c in candidates if c.get("market_cap") is None or c["market_cap"] >= min_market_cap]
+    return candidates
 
 
 def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_age_seconds: int = None,
-            now: str = None) -> dict:
+            now: str = None, min_market_cap: float = None) -> dict:
     config = _load_config()
     top_n = top_n if top_n is not None else config["promote_top_n"]
     max_age_seconds = max_age_seconds if max_age_seconds is not None else config["promote_max_age_seconds"]
+    min_market_cap = min_market_cap if min_market_cap is not None else config["min_market_cap"]
 
     conn = discovery_db.get_conn(db_path)
     generation = discovery_db.get_universe_generation(conn)
-    candidates = select_promotable(conn, top_n=top_n, max_age_seconds=max_age_seconds, now=now)
+    candidates = select_promotable(conn, top_n=top_n, max_age_seconds=max_age_seconds, now=now,
+                                    min_market_cap=min_market_cap)
     conn.close()
 
     if not candidates:
@@ -90,10 +107,12 @@ def main():
     parser.add_argument("--db-path", default=None, help="Override state/discovery_pool.db (dry-run/tests)")
     parser.add_argument("--top-n", type=int, default=None)
     parser.add_argument("--max-age-seconds", type=int, default=None)
+    parser.add_argument("--min-market-cap", type=float, default=None)
     args = parser.parse_args()
 
     db_path = Path(args.db_path) if args.db_path else None
-    result = promote(dry_run=args.dry_run, db_path=db_path, top_n=args.top_n, max_age_seconds=args.max_age_seconds)
+    result = promote(dry_run=args.dry_run, db_path=db_path, top_n=args.top_n, max_age_seconds=args.max_age_seconds,
+                      min_market_cap=args.min_market_cap)
     print(json.dumps(result, indent=2))
 
 

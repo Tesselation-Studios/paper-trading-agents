@@ -74,6 +74,40 @@ class TestSelectPromotable:
         conn.close()
         assert [c["ticker"] for c in result] == ["BBB", "AAA"]
 
+    def test_min_market_cap_excludes_sub_floor(self, env):
+        _seed(env["db_path"], [("SMALL", 1.0), ("BIG", 2.0)])
+        conn = discovery_db.get_conn(env["db_path"])
+        discovery_db.record_fundamentals(conn, "SMALL", "Technology", "Software", 50_000_000.0)
+        discovery_db.record_fundamentals(conn, "BIG", "Technology", "Software", 5_000_000_000.0)
+        result = promote_candidates.select_promotable(
+            conn, top_n=5, max_age_seconds=86400, now="2026-07-27T12:05:00+00:00",
+            min_market_cap=300_000_000,
+        )
+        conn.close()
+        assert [c["ticker"] for c in result] == ["BIG"]
+
+    def test_min_market_cap_passes_through_unknown_market_cap(self, env):
+        """Not yet enriched -- best-effort trim, not a hard data-
+        completeness gate, so an unknown market_cap isn't excluded."""
+        _seed(env["db_path"], [("UNENRICHED", 1.0)])
+        conn = discovery_db.get_conn(env["db_path"])
+        result = promote_candidates.select_promotable(
+            conn, top_n=5, max_age_seconds=86400, now="2026-07-27T12:05:00+00:00",
+            min_market_cap=300_000_000,
+        )
+        conn.close()
+        assert [c["ticker"] for c in result] == ["UNENRICHED"]
+
+    def test_min_market_cap_none_disables_filter(self, env):
+        _seed(env["db_path"], [("SMALL", 1.0)])
+        conn = discovery_db.get_conn(env["db_path"])
+        discovery_db.record_fundamentals(conn, "SMALL", "Technology", "Software", 50_000_000.0)
+        result = promote_candidates.select_promotable(
+            conn, top_n=5, max_age_seconds=86400, now="2026-07-27T12:05:00+00:00", min_market_cap=None,
+        )
+        conn.close()
+        assert [c["ticker"] for c in result] == ["SMALL"]
+
 
 FIXED_NOW = "2026-07-27T12:05:00+00:00"  # just after _seed's default screened_at -- keeps
 # these tests deterministic regardless of real wall-clock date (promote() defaults to
@@ -152,3 +186,42 @@ class TestPromote:
         result = promote_candidates.promote(db_path=env["db_path"], top_n=2, max_age_seconds=86400, now=FIXED_NOW)
         assert result["pool_candidates_considered"] == 2
         assert set(result["merged"]) == {"B", "C"}
+
+    def test_min_market_cap_read_from_params_json(self, env):
+        env["params_path"].write_text(json.dumps({
+            "watchlist": {"max_size": 30},
+            "discovery_daemon": {"promote_top_n": 5, "promote_max_age_seconds": 10800},
+            "universe": {"min_market_cap": 300_000_000},
+        }))
+        _seed(env["db_path"], [("SMALL", 1.0), ("BIG", 2.0)])
+        conn = discovery_db.get_conn(env["db_path"])
+        discovery_db.record_fundamentals(conn, "SMALL", "Technology", "Software", 50_000_000.0)
+        discovery_db.record_fundamentals(conn, "BIG", "Technology", "Software", 5_000_000_000.0)
+        conn.close()
+
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
+        assert result["merged"] == ["BIG"]
+
+    def test_min_market_cap_cli_override_wins_over_params_json(self, env):
+        env["params_path"].write_text(json.dumps({
+            "watchlist": {"max_size": 30},
+            "discovery_daemon": {"promote_top_n": 5, "promote_max_age_seconds": 10800},
+            "universe": {"min_market_cap": 300_000_000},
+        }))
+        _seed(env["db_path"], [("SMALL", 1.0)])
+        conn = discovery_db.get_conn(env["db_path"])
+        discovery_db.record_fundamentals(conn, "SMALL", "Technology", "Software", 50_000_000.0)
+        conn.close()
+
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW,
+                                             min_market_cap=0)
+        assert result["merged"] == ["SMALL"]
+
+    def test_no_min_market_cap_configured_defaults_to_no_filter(self, env):
+        _seed(env["db_path"], [("SMALL", 1.0)])
+        conn = discovery_db.get_conn(env["db_path"])
+        discovery_db.record_fundamentals(conn, "SMALL", "Technology", "Software", 50_000_000.0)
+        conn.close()
+
+        result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
+        assert result["merged"] == ["SMALL"]

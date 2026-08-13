@@ -11,7 +11,9 @@
   "universe": {
     "min_price": 1.0,
     "max_price": 500.0,
-    "_cap_class": "small-mid, widened 2026-07-24 per real backtest evidence (see bankroll.py UNIVERSE_MAX_PRICE_TIERS). min_price here is what actually filters live discovery; max_price here only drives scripts/universe_scan.py's manual CLI tool \u2014 live discovery (discovery_scan.py/discovery_urgency_check.py) uses bankroll.universe_max_price_for_ceiling() instead, which is the real source of truth for max_price"
+    "min_market_cap": 300000000,
+    "_cap_class": "small-mid, widened 2026-07-24 per real backtest evidence (see bankroll.py UNIVERSE_MAX_PRICE_TIERS). min_price here is what actually filters live discovery; max_price here only drives scripts/universe_scan.py's manual CLI tool \u2014 live discovery (discovery_scan.py/discovery_urgency_check.py) uses bankroll.universe_max_price_for_ceiling() instead, which is the real source of truth for max_price",
+    "_min_market_cap": "2026-08-13: read by promote_candidates.py's select_promotable() -- drops any pool-to-watchlist candidate whose yfinance-enriched market_cap (discovery_daemon.py) is below this floor. A candidate with market_cap still NULL (not enriched yet) passes through unfiltered -- best-effort risk trim, not a hard data-completeness gate. $300M is a starting point (roughly the small-cap/micro-cap boundary), not backtested -- tune after seeing what it actually excludes."
   },
   "risk": {
     "stop_loss_pct": -10.0,
