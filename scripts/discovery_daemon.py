@@ -41,6 +41,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+import yfinance
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import discovery_db  # noqa: E402
 import discovery_scan  # noqa: E402
@@ -63,6 +65,8 @@ DEFAULTS = {
     "finbert_confirm_top_n": 6,
     "daemon_health_stale_multiplier": 10,
     "downstream_flow_stale_seconds": 1800,
+    "fundamentals_enrich_interval_seconds": 900,
+    "fundamentals_enrich_max_per_cycle": 15,
 }
 
 
@@ -117,6 +121,7 @@ DEFAULT_CURSOR_STATE = {
     "last_finbert_success_at": None,
     "last_finbert_failure_at": None,
     "cycles_completed_lifetime": 0,
+    "last_fundamentals_enrich_at": None,
 }
 
 
@@ -294,6 +299,75 @@ def maybe_confirm_news(conn, cursor_state: dict, config: dict, now: str = None) 
     return cursor_state
 
 
+def _fetch_fundamentals(ticker: str) -> dict:
+    """Thin wrapper over yfinance.Ticker(ticker).info -- free, no key,
+    deliberately standalone (not routed through data_bus.py, same "zero
+    dependency" reliability principle as the rest of this daemon, see
+    module docstring). Isolated in its own function so tests can
+    monkeypatch just the network boundary, matching
+    discovery_scan.confirm_with_news()'s role for the FinBERT leg. Raises
+    on failure -- callers catch."""
+    info = yfinance.Ticker(ticker).info
+    return {"sector": info.get("sector"), "industry": info.get("industry"), "market_cap": info.get("marketCap")}
+
+
+def enrich_candidate_fundamentals(conn, tickers: list, fetch_fn=_fetch_fundamentals) -> int:
+    """Best-effort sector/industry/market_cap lookup for `tickers` (already
+    filtered by the caller to in-band + sector IS NULL). Each ticker's
+    fetch is independently try/excepted -- one bad symbol must never skip
+    or block the rest of the batch. A ticker that comes back with nothing
+    usable is left NULL, which makes it eligible for retry on a later
+    cycle rather than permanently stuck. Returns the count actually
+    written (for logging/tests)."""
+    enriched = 0
+    for ticker in tickers:
+        try:
+            data = fetch_fn(ticker)
+        except Exception:
+            continue
+        sector, industry, market_cap = data.get("sector"), data.get("industry"), data.get("market_cap")
+        if sector is None and industry is None and market_cap is None:
+            continue
+        discovery_db.record_fundamentals(conn, ticker, sector, industry, market_cap)
+        enriched += 1
+    return enriched
+
+
+def maybe_enrich_fundamentals(conn, cursor_state: dict, config: dict, now: str = None) -> dict:
+    """Separate, slower cadence than the screening loop -- same pattern as
+    maybe_confirm_news() above. yfinance is an unauthenticated, occasionally
+    slow/flaky free API; this must never block or kill the cheap screening
+    loop, so the whole lookup batch is wrapped in one try/except in addition
+    to enrich_candidate_fundamentals()'s own per-ticker handling.
+
+    Only targets in-band candidates whose sector is still NULL (never
+    successfully enriched) -- capped at fundamentals_enrich_max_per_cycle
+    per run to bound latency, ordered by last_in_band_at DESC so the most
+    currently-relevant candidates get priority over long-stale ones."""
+    now = now or _now_iso()
+    cursor_state = dict(cursor_state)
+    last = cursor_state.get("last_fundamentals_enrich_at")
+    if last is not None:
+        elapsed = (datetime.fromisoformat(now) - datetime.fromisoformat(last)).total_seconds()
+        if elapsed < config["fundamentals_enrich_interval_seconds"]:
+            return cursor_state
+
+    try:
+        rows = conn.execute(
+            """SELECT ticker FROM candidates WHERE in_band = 1 AND sector IS NULL
+               ORDER BY last_in_band_at DESC LIMIT ?""",
+            (config["fundamentals_enrich_max_per_cycle"],),
+        ).fetchall()
+        tickers = [r["ticker"] for r in rows]
+        if tickers:
+            enrich_candidate_fundamentals(conn, tickers)
+    except Exception:
+        pass  # best-effort -- never block/kill the cheap screening loop
+
+    cursor_state["last_fundamentals_enrich_at"] = now
+    return cursor_state
+
+
 def _sentiment_worker_ok(state: dict) -> Optional[bool]:
     """2026-08-10: separate from the loop's own `healthy` flag on purpose --
     a degraded sentiment worker doesn't mean the discovery loop itself is
@@ -427,6 +501,7 @@ def main():
         now = _now_iso()
         cursor_state = run_cycle(conn, cursor_state, config, now=now)
         cursor_state = maybe_confirm_news(conn, cursor_state, config, now=now)
+        cursor_state = maybe_enrich_fundamentals(conn, cursor_state, config, now=now)
         save_cursor_state(cursor_state)
 
         if args.once:

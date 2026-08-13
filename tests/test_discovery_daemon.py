@@ -310,6 +310,109 @@ class TestMaybeConfirmNews:
         assert new_state["last_finbert_success_at"] is None
 
 
+class TestEnrichCandidateFundamentals:
+    def test_writes_sector_industry_market_cap(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        count = discovery_daemon.enrich_candidate_fundamentals(
+            conn, ["AAA"],
+            fetch_fn=lambda t: {"sector": "Technology", "industry": "Software", "market_cap": 5e9},
+        )
+        assert count == 1
+        row = conn.execute("SELECT sector, market_cap FROM candidates WHERE ticker='AAA'").fetchone()
+        assert row["sector"] == "Technology"
+        assert row["market_cap"] == 5e9
+
+    def test_one_bad_ticker_does_not_block_the_rest(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "GOOD", "price": 10.0, "in_band": True},
+                   {"ticker": "BAD", "price": 5.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+
+        def fetch(t):
+            if t == "BAD":
+                raise ConnectionError("yfinance unreachable")
+            return {"sector": "Technology", "industry": "Software", "market_cap": 1e9}
+
+        count = discovery_daemon.enrich_candidate_fundamentals(conn, ["BAD", "GOOD"], fetch_fn=fetch)
+        assert count == 1
+        assert conn.execute("SELECT sector FROM candidates WHERE ticker='GOOD'").fetchone()["sector"] == "Technology"
+        assert conn.execute("SELECT sector FROM candidates WHERE ticker='BAD'").fetchone()["sector"] is None
+
+    def test_empty_fetch_result_leaves_row_null_not_written(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        count = discovery_daemon.enrich_candidate_fundamentals(
+            conn, ["AAA"], fetch_fn=lambda t: {"sector": None, "industry": None, "market_cap": None},
+        )
+        assert count == 0
+
+
+class TestMaybeEnrichFundamentals:
+    def test_noop_before_interval_elapsed(self, conn, monkeypatch):
+        calls = []
+        monkeypatch.setattr(discovery_daemon, "enrich_candidate_fundamentals",
+                             lambda conn, tickers, **k: calls.append(tickers) or 0)
+        config = dict(discovery_daemon.DEFAULTS)
+        config["fundamentals_enrich_interval_seconds"] = 900
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        cursor_state["last_fundamentals_enrich_at"] = "2026-08-13T12:00:00+00:00"
+        discovery_daemon.maybe_enrich_fundamentals(conn, cursor_state, config, now="2026-08-13T12:05:00+00:00")
+        assert calls == []
+
+    def test_only_targets_in_band_null_sector_candidates(self, conn, monkeypatch):
+        discovery_db.upsert_candidates(
+            conn, [
+                {"ticker": "NEEDS_IT", "price": 10.0, "in_band": True},
+                {"ticker": "OUT_OF_BAND", "price": 5.0, "in_band": False},
+            ],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "ALREADY_TAGGED", "price": 8.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        discovery_db.record_fundamentals(conn, "ALREADY_TAGGED", "Healthcare", "Biotech", 2e9)
+
+        calls = []
+        monkeypatch.setattr(discovery_daemon, "enrich_candidate_fundamentals",
+                             lambda conn, tickers, **k: calls.append(list(tickers)) or len(tickers))
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        discovery_daemon.maybe_enrich_fundamentals(conn, cursor_state, config, now="2026-08-13T12:10:00+00:00")
+        assert calls == [["NEEDS_IT"]]
+
+    def test_records_timestamp_after_run(self, conn, monkeypatch):
+        monkeypatch.setattr(discovery_daemon, "enrich_candidate_fundamentals", lambda conn, tickers, **k: 0)
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        new_state = discovery_daemon.maybe_enrich_fundamentals(
+            conn, cursor_state, config, now="2026-08-13T12:00:00+00:00",
+        )
+        assert new_state["last_fundamentals_enrich_at"] == "2026-08-13T12:00:00+00:00"
+
+    def test_exception_does_not_propagate(self, conn, monkeypatch):
+        def boom(conn, tickers, **k):
+            raise ConnectionError("yfinance unreachable")
+        monkeypatch.setattr(discovery_daemon, "enrich_candidate_fundamentals", boom)
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00+00:00",
+        )
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        # should not raise
+        new_state = discovery_daemon.maybe_enrich_fundamentals(
+            conn, cursor_state, config, now="2026-08-13T12:00:00+00:00",
+        )
+        assert new_state["last_fundamentals_enrich_at"] == "2026-08-13T12:00:00+00:00"
+
+
 class TestDaemonHealth:
     # Downstream-flow check (see TestDownstreamFlowCheck) is gated on
     # executor._is_regular_trading_hours() -- forced False here so these
