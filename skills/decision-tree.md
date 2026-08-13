@@ -2,6 +2,8 @@
 
 A fast-path cache of already-proven judgment, consulted before full reasoning in `tick_prompt.md` steps 6 and 8. Not a second source of truth (numbers live in `strategy.md`/`params.json`, this file points at them) and not a gate — a clean match is a strong prior Stan can still override with a stated reason. Full artifact/node-schema documentation lives in `decision_heuristics.md`'s own header; this skill covers the process around it — how a node comes to exist, gets sized, and gets retired.
 
+When a candidate does NOT get a clean `Active` match (a `Watch`-tier match, an `insufficient_data` node, or nothing at all) and it's worth spending money to find out more, see `skills/research-escalation.md` — the companion piece for what happens next. `tick_prompt.md` step 8 persists the match outcome either way (`trader_write.py watchlist-mark-evaluated --tree-match`); that's the only link between the two, nothing here changes.
+
 ## A node can only restate proven judgment, never originate it
 
 A candidate pattern can only be proposed as a tree node once it has *already separately* cleared `strategy.md`'s own promotion bar (real backtest evidence, Sharpe-positive split-window) or is already a mechanized `executor.py` gate. The tree never invents new judgment — see `v4-spec.md`'s original "no per-condition micro-branches or switchboards" design decision, which this respects by construction.
