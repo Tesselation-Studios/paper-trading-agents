@@ -16,6 +16,8 @@ Usage:
     python3 scripts/trader_write.py watchlist-remove --ticker AAA
     python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB,CCC
     python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB --entry-signal-tickers AAA
+    python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB --tree-match "AAA:active,BBB:watch"
+    python3 scripts/trader_write.py watchlist-record-research --ticker AAA --confidence 0.7 --note "..."
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --thesis "..."
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --verdict weakening --note "RSI rolled over"
 """
@@ -131,17 +133,43 @@ def cmd_watchlist_mark_evaluated(args, conn) -> None:
     --entry-signal-tickers (2026-08-13, subset of --tickers) marks which
     ones matched a decision_heuristics.md Active node this eval -- feeds
     interest_score's entry_signal_triggered weight, recomputed for every
-    evaluated ticker as part of this same call."""
+    evaluated ticker as part of this same call.
+
+    --tree-match (2026-08-13, 'TICKER:state,TICKER:state', state one of
+    trader_db.TREE_MATCH_STATES) records the tree-match OUTCOME per
+    ticker -- what scripts/research_escalation.py's selection query reads.
+    Distinct from --entry-signal-tickers (only flags entry matches)."""
     tickers = [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
     entry_signal_tickers = (
         [t.strip().upper() for t in args.entry_signal_tickers.split(",") if t.strip()]
         if args.entry_signal_tickers else []
     )
+    tree_match_state = {}
+    if args.tree_match:
+        for pair in args.tree_match.split(","):
+            pair = pair.strip()
+            if not pair:
+                continue
+            ticker, _, state = pair.partition(":")
+            tree_match_state[ticker.strip().upper()] = state.strip()
     trader_db.mark_candidates_evaluated(
         conn, tickers, entry_signal_tickers=entry_signal_tickers,
-        interest_weights=_load_interest_weights(),
+        interest_weights=_load_interest_weights(), tree_match_state=tree_match_state,
     )
-    _print({"evaluated_this_tick": tickers, "entry_signal_tickers": entry_signal_tickers})
+    _print({
+        "evaluated_this_tick": tickers, "entry_signal_tickers": entry_signal_tickers,
+        "tree_match_state": tree_match_state,
+    })
+
+
+def cmd_watchlist_record_research(args, conn) -> None:
+    """Stamps the outcome of a research-escalation sessions_send exchange
+    with the researcher agent (2026-08-13) -- see
+    trader_db.record_watchlist_research()."""
+    ticker = args.ticker.upper()
+    trader_db.record_watchlist_research(conn, ticker, confidence=args.confidence, note=args.note)
+    row = next((c for c in trader_db.get_watchlist_candidates(conn) if c["ticker"] == ticker), None)
+    _print({"ticker": ticker, "candidate": row})
 
 
 def cmd_position_update_thesis(args, conn) -> None:
@@ -209,6 +237,15 @@ def main() -> int:
     p.add_argument("--entry-signal-tickers", default=None,
                     help="Comma-separated subset of --tickers that matched a decision_heuristics.md "
                          "Active node this eval (feeds interest_score)")
+    p.add_argument("--tree-match", default=None,
+                    help="'TICKER:state,TICKER:state' -- tree-match outcome per ticker "
+                         "(active|watch|insufficient_data|no_match), read by research_escalation.py")
+
+    p = sub.add_parser("watchlist-record-research",
+                        help="Stamp a research-escalation outcome (confidence/note) on a watchlist candidate")
+    p.add_argument("--ticker", required=True)
+    p.add_argument("--confidence", type=float, default=None)
+    p.add_argument("--note", default=None)
 
     p = sub.add_parser("position-update-thesis", help="Update an open position's thesis (not tied to a trade), "
                                                         "or record a daily thesis recheck verdict")
@@ -228,6 +265,7 @@ def main() -> int:
             "watchlist-drop-stale": cmd_watchlist_drop_stale,
             "watchlist-remove": cmd_watchlist_remove,
             "watchlist-mark-evaluated": cmd_watchlist_mark_evaluated,
+            "watchlist-record-research": cmd_watchlist_record_research,
             "position-update-thesis": cmd_position_update_thesis,
         }[args.command](args, conn)
     finally:

@@ -219,6 +219,43 @@ class TestWatchlistMarkEvaluated:
             conn.close()
         assert batch[0]["ticker"] == "BBB"
 
+    def test_tree_match_sets_state_per_ticker(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        for t in ["AAA", "BBB"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, [
+            "watchlist-mark-evaluated", "--tickers", "AAA,BBB",
+            "--tree-match", "AAA:active,BBB:watch",
+        ])
+
+        assert result["tree_match_state"] == {"AAA": "active", "BBB": "watch"}
+        conn = trader_db.get_conn(db_path)
+        try:
+            rows = {r["ticker"]: r for r in trader_db.get_watchlist_candidates(conn)}
+        finally:
+            conn.close()
+        assert rows["AAA"]["tree_match_state"] == "active"
+        assert rows["BBB"]["tree_match_state"] == "watch"
+
+
+class TestWatchlistRecordResearch:
+    def test_stamps_confidence_and_note(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, [
+            "watchlist-record-research", "--ticker", "aaa", "--confidence", "0.8",
+            "--note", "recent contract win, no red flags",
+        ])
+
+        assert result["ticker"] == "AAA"
+        assert result["candidate"]["research_confidence"] == 0.8
+        assert result["candidate"]["research_note"] == "recent contract win, no red flags"
+        assert result["candidate"]["last_researched_at"] is not None
+
 
 class TestPositionUpdateThesis:
     def test_updates_thesis_preserves_other_fields(self, monkeypatch, capsys, db_path):

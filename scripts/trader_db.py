@@ -184,6 +184,7 @@ CREATE TABLE IF NOT EXISTS watchlist_candidates (
     last_researched_at    TEXT,
     research_confidence   REAL,
     research_note         TEXT,
+    tree_match_state      TEXT,
     source            TEXT,
     note              TEXT,
     added_at          TEXT NOT NULL,
@@ -353,6 +354,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _migrate_add_column(conn, "watchlist_candidates", "last_researched_at", "TEXT")
     _migrate_add_column(conn, "watchlist_candidates", "research_confidence", "REAL")
     _migrate_add_column(conn, "watchlist_candidates", "research_note", "TEXT")
+    # 2026-08-13: decision_heuristics.md tree-match outcome for this
+    # candidate's most recent evaluation -- only an LLM turn (Stan's tick,
+    # not a bare script) can actually judge a tree match against prose
+    # trigger conditions, so this is set from tick_prompt.md step 8 via
+    # mark_candidates_evaluated()'s tree_match_state param, not computed
+    # here. scripts/research_escalation.py's selection query reads it.
+    # One of 'active', 'watch', 'insufficient_data', 'no_match', or NULL
+    # (never evaluated against the tree).
+    _migrate_add_column(conn, "watchlist_candidates", "tree_match_state", "TEXT")
     conn.commit()
 
 
@@ -949,8 +959,12 @@ def increment_idle_ticks(conn: sqlite3.Connection, except_tickers: list = None) 
             conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
 
 
+TREE_MATCH_STATES = {"active", "watch", "insufficient_data", "no_match"}
+
+
 def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str = None,
-                               entry_signal_tickers: list = None, interest_weights: dict = None) -> None:
+                               entry_signal_tickers: list = None, interest_weights: dict = None,
+                               tree_match_state: dict = None) -> None:
     """Records that `tickers` were evaluated this tick: stamps
     last_evaluated_at (what get_watchlist_batch orders on), bumps
     eval_count (what drop_stale_watchlist_candidates retires on), and
@@ -963,11 +977,24 @@ def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str 
     decision_heuristics.md Active node this eval -- the one interest
     signal compute_interest_score() can't derive from the row itself.
 
+    tree_match_state (2026-08-13, {ticker: state}, state in
+    TREE_MATCH_STATES) records the tree-match OUTCOME for
+    scripts/research_escalation.py's selection query -- distinct from
+    entry_signal_tickers, which only flags Active-node ENTRY matches (an
+    interest_score signal). A ticker not present in tree_match_state keeps
+    its prior value (most candidates aren't evaluated every tick, same as
+    every other column here) -- pass an explicit state to update it, don't
+    rely on a default.
+
     One transaction so a crash between the two halves can't leave a batch
     stamped-but-not-counted."""
     import datetime
     tickers = [t.upper() for t in (tickers or [])]
     entry_signal_tickers = {t.upper() for t in (entry_signal_tickers or [])}
+    tree_match_state = {t.upper(): s for t, s in (tree_match_state or {}).items()}
+    for state in tree_match_state.values():
+        if state not in TREE_MATCH_STATES:
+            raise ValueError(f"invalid tree_match_state {state!r}, must be one of {TREE_MATCH_STATES}")
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
         if tickers:
@@ -996,6 +1023,11 @@ def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str 
                     "UPDATE watchlist_candidates SET interest_score = ? WHERE ticker = ?",
                     (score, ticker),
                 )
+                if ticker in tree_match_state:
+                    conn.execute(
+                        "UPDATE watchlist_candidates SET tree_match_state = ? WHERE ticker = ?",
+                        (tree_match_state[ticker], ticker),
+                    )
         else:
             conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
 
@@ -1140,6 +1172,65 @@ def remove_watchlist_candidate(conn: sqlite3.Connection, ticker: str) -> None:
     """Used when a candidate is promoted into an actual position."""
     with conn:
         conn.execute("DELETE FROM watchlist_candidates WHERE ticker = ?", (ticker,))
+
+
+def record_watchlist_research(conn: sqlite3.Connection, ticker: str, confidence: float = None,
+                               note: str = None, now: str = None) -> None:
+    """Stamps the outcome of a research-escalation sessions_send exchange
+    (2026-08-13, scripts/research_escalation.py) -- last_researched_at is
+    what the escalation cooldown reads (get_research_escalation_candidates),
+    confidence/note are the durable takeaway a live tick can weigh without
+    re-running the exchange. No-ops on an unknown ticker (candidate may
+    have already been dropped/promoted between selection and research)."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with conn:
+        conn.execute(
+            """UPDATE watchlist_candidates
+                  SET last_researched_at = ?, research_confidence = ?, research_note = ?
+                WHERE ticker = ?""",
+            (now, confidence, note, ticker.upper()),
+        )
+
+
+def get_research_escalation_candidates(conn: sqlite3.Connection, interest_min_score: int,
+                                        cooldown_hours: float = None, cap: int = None,
+                                        now: str = None) -> list:
+    """Selection query for scripts/research_escalation.py -- pure SQL, no
+    LLM judgment needed here (that already happened when Stan set
+    tree_match_state during tick_prompt.md step 8's evaluation, via
+    mark_candidates_evaluated).
+
+    Trigger: tree_match_state indicates the decision tree did NOT cleanly
+    resolve this candidate ('watch', 'insufficient_data', or 'no_match' --
+    NOT 'active', which is exactly the case that doesn't need research)
+    AND interest_score >= interest_min_score (not worth the cost on a
+    candidate nobody's interested in) AND not researched within
+    cooldown_hours (default: never researched, or long enough ago).
+
+    Ordered highest-interest-first, capped at `cap` -- this is the
+    expensive step (a real sessions_send LLM conversation per candidate),
+    so bounding it matters more than for the cheaper enrichment cadences
+    elsewhere in this pipeline."""
+    import datetime
+    now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
+    clauses = ["tree_match_state IN ('watch', 'insufficient_data', 'no_match')",
+               "interest_score >= ?"]
+    params = [interest_min_score]
+    if cooldown_hours is not None:
+        clauses.append(
+            "(last_researched_at IS NULL OR (julianday(?) - julianday(last_researched_at)) * 24.0 >= ?)"
+        )
+        params.extend([now, cooldown_hours])
+    where = " AND ".join(clauses)
+    sql = f"""SELECT * FROM watchlist_candidates
+               WHERE {where}
+               ORDER BY interest_score DESC, added_at ASC"""
+    if cap is not None:
+        sql += " LIMIT ?"
+        params.append(cap)
+    rows = conn.execute(sql, params).fetchall()
+    return [dict(r) for r in rows]
 
 
 def most_recent_watchlist_source_touch(conn: sqlite3.Connection, source_prefix: str) -> str | None:

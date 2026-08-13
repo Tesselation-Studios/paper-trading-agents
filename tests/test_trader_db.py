@@ -843,6 +843,110 @@ class TestWatchlistCandidates:
         trader_db.remove_watchlist_candidate(conn, "AAA")
         assert trader_db.get_watchlist_candidates(conn) == []
 
+    def test_mark_evaluated_sets_tree_match_state(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.mark_candidates_evaluated(
+            conn, ["AAA"], now="2026-08-13T10:00:00+00:00", tree_match_state={"AAA": "watch"},
+        )
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["tree_match_state"] == "watch"
+
+    def test_mark_evaluated_leaves_tree_match_state_untouched_when_not_reported(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.mark_candidates_evaluated(
+            conn, ["AAA"], now="2026-08-13T10:00:00+00:00", tree_match_state={"AAA": "watch"},
+        )
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-13T10:05:00+00:00")
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["tree_match_state"] == "watch"
+
+    def test_mark_evaluated_rejects_invalid_tree_match_state(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        with pytest.raises(ValueError):
+            trader_db.mark_candidates_evaluated(
+                conn, ["AAA"], tree_match_state={"AAA": "definitely_not_a_real_state"},
+            )
+
+
+class TestRecordWatchlistResearch:
+    def test_stamps_confidence_and_note(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.record_watchlist_research(
+            conn, "AAA", confidence=0.75, note="strong catalyst, no red flags",
+            now="2026-08-13T11:00:00+00:00",
+        )
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["last_researched_at"] == "2026-08-13T11:00:00+00:00"
+        assert row["research_confidence"] == 0.75
+        assert row["research_note"] == "strong catalyst, no red flags"
+
+    def test_unknown_ticker_is_a_noop(self, conn):
+        trader_db.record_watchlist_research(conn, "GHOST", confidence=0.5)
+        assert trader_db.get_watchlist_candidates(conn) == []
+
+
+class TestGetResearchEscalationCandidates:
+    def _seed(self, conn, ticker, tree_match_state, interest_score_signals=None, now="2026-08-13T10:00:00+00:00"):
+        trader_db.upsert_watchlist_candidate(conn, ticker=ticker, **(interest_score_signals or {}))
+        trader_db.mark_candidates_evaluated(
+            conn, [ticker], now=now, tree_match_state={ticker: tree_match_state},
+        )
+
+    def test_active_match_is_excluded(self, conn):
+        self._seed(conn, "AAA", "active", {"sentiment": 0.6, "volume_ratio": 2.5})
+        assert trader_db.get_research_escalation_candidates(conn, interest_min_score=1) == []
+
+    def test_watch_match_above_floor_is_selected(self, conn):
+        self._seed(conn, "AAA", "watch", {"sentiment": 0.6})
+        candidates = trader_db.get_research_escalation_candidates(conn, interest_min_score=1)
+        assert [c["ticker"] for c in candidates] == ["AAA"]
+
+    def test_no_match_above_floor_is_selected(self, conn):
+        self._seed(conn, "AAA", "no_match", {"volume_ratio": 2.5})
+        candidates = trader_db.get_research_escalation_candidates(conn, interest_min_score=1)
+        assert [c["ticker"] for c in candidates] == ["AAA"]
+
+    def test_insufficient_data_match_above_floor_is_selected(self, conn):
+        self._seed(conn, "AAA", "insufficient_data", {"sentiment": 0.6})
+        candidates = trader_db.get_research_escalation_candidates(conn, interest_min_score=1)
+        assert [c["ticker"] for c in candidates] == ["AAA"]
+
+    def test_never_evaluated_candidate_is_excluded(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        assert trader_db.get_research_escalation_candidates(conn, interest_min_score=0) == []
+
+    def test_below_interest_floor_is_excluded(self, conn):
+        self._seed(conn, "AAA", "watch")  # no signals -> interest_score 0
+        assert trader_db.get_research_escalation_candidates(conn, interest_min_score=1) == []
+
+    def test_within_cooldown_is_excluded(self, conn):
+        self._seed(conn, "AAA", "watch", {"sentiment": 0.6}, now="2026-08-13T10:00:00+00:00")
+        trader_db.record_watchlist_research(conn, "AAA", confidence=0.5, now="2026-08-13T10:30:00+00:00")
+        candidates = trader_db.get_research_escalation_candidates(
+            conn, interest_min_score=1, cooldown_hours=6, now="2026-08-13T11:00:00+00:00",
+        )
+        assert candidates == []
+
+    def test_past_cooldown_is_reselected(self, conn):
+        self._seed(conn, "AAA", "watch", {"sentiment": 0.6}, now="2026-08-13T10:00:00+00:00")
+        trader_db.record_watchlist_research(conn, "AAA", confidence=0.5, now="2026-08-13T04:00:00+00:00")
+        candidates = trader_db.get_research_escalation_candidates(
+            conn, interest_min_score=1, cooldown_hours=6, now="2026-08-13T11:00:00+00:00",
+        )
+        assert [c["ticker"] for c in candidates] == ["AAA"]
+
+    def test_ordered_by_interest_score_descending(self, conn):
+        self._seed(conn, "LOW", "watch", {"sentiment": 0.6})
+        self._seed(conn, "HIGH", "watch", {"sentiment": 0.6, "volume_ratio": 2.5, "rsi": 38.0})
+        candidates = trader_db.get_research_escalation_candidates(conn, interest_min_score=1)
+        assert [c["ticker"] for c in candidates] == ["HIGH", "LOW"]
+
+    def test_cap_limits_results(self, conn):
+        self._seed(conn, "AAA", "watch", {"sentiment": 0.6})
+        self._seed(conn, "BBB", "watch", {"sentiment": 0.6})
+        candidates = trader_db.get_research_escalation_candidates(conn, interest_min_score=1, cap=1)
+        assert len(candidates) == 1
+
 
 class TestBankrollState:
     def test_get_missing_state_returns_none(self, conn):
