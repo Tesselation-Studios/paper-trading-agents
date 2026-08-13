@@ -91,7 +91,17 @@
       "min_candidates": 3,
       "empty_floor": 0,
       "_source": "scripts/discovery_urgency_check.py \u2014 cash_threshold_pct+min_candidates gate the cash-thin/thin-pipeline AND trigger (checked by the 45-min stonks-discovery-urgent cron); empty_floor is the cash-independent OR trigger, checked every tick via tick_prompt.md step 7 when the Candidates section looks empty"
-    }
+    },
+    "interest_score_weights": {
+      "entry_signal_triggered": 2,
+      "sentiment_positive": 2,
+      "unusual_options_flow": 1,
+      "volume_gt_2x_avg": 1,
+      "rsi_near_entry_zone": 1,
+      "idle_decay_per_12_ticks": -1
+    },
+    "interest_min_score": 2,
+    "_interest_score_source": "2026-08-13: resurrects wiki syntheses/watchlist-interest-scoring-system.md's design (documented 2026-07-29, never actually wired in) -- see trader_db.compute_interest_score(). unusual_options_flow currently never fires live (get_flow is disabled in tick_prompt.md step 8, not real options data) -- weight kept for when/if a real flow source lands. idle_decay_per_12_ticks is applied per eval_count//12 (evaluations without conversion), not idle_ticks -- idle_ticks is diagnostic-only by the 2026-08-01 rotation-deadlock fix (see trader_db.py's watchlist_candidates schema comment) and resets on every technical touch, so it wouldn't actually accumulate meaningfully as an idle signal."
   },
   "synthesis": {
     "lookback_n_entries": 10,

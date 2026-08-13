@@ -125,13 +125,23 @@ class TestPromote:
         assert candidates["ZZZ"]["source"] == "discovery_pool gen 1"
 
     def test_dedup_against_existing_watchlist(self, env):
+        """AAA is pre-filtered by the exclude-set (select_promotable) before
+        it ever reaches insert_into_watchlist(), so it lands in neither
+        'merged' nor 'skipped' -- it's simply never considered this cycle.
+        (2026-08-13: this exclude-set mechanism was silently broken by a
+        trader_db.get_conn(db_path) bug in promote() -- see promote_candidates.py's
+        comment above the trader_conn setup -- which always saw an empty
+        watchlist and let AAA reach insert_into_watchlist()'s own dedup
+        instead, landing it in 'skipped'. Fixed; this test now asserts the
+        actually-intended behavior.)"""
         conn = trader_db.get_conn()
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA", source="prior")
         conn.close()
         _seed(env["db_path"], [("AAA", 1.0), ("BBB", 2.0)])
         result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
         assert result["merged"] == ["BBB"]
-        assert "AAA" in result["skipped"]
+        assert "AAA" not in result["merged"]
+        assert "AAA" not in result.get("skipped", [])
 
     def test_respects_max_size(self, env):
         env["params_path"].write_text(json.dumps({"watchlist": {"max_size": 1}}))
@@ -216,6 +226,22 @@ class TestPromote:
         result = promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW,
                                              min_market_cap=0)
         assert result["merged"] == ["SMALL"]
+
+    def test_interest_min_score_read_from_params_json_drops_low_scorers(self, env):
+        env["params_path"].write_text(json.dumps({
+            "watchlist": {"max_size": 30, "interest_min_score": 2},
+            "discovery_daemon": {"promote_top_n": 5, "promote_max_age_seconds": 10800},
+        }))
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="BORING")
+        for i in range(3):
+            trader_db.mark_candidates_evaluated(conn, ["BORING"], now=f"2026-08-13T10:0{i}:00+00:00")
+        conn.close()
+
+        _seed(env["db_path"], [("FRESH", 1.0)])
+        promote_candidates.promote(db_path=env["db_path"], max_age_seconds=86400, now=FIXED_NOW)
+
+        assert "BORING" not in _candidates()
 
     def test_no_min_market_cap_configured_defaults_to_no_filter(self, env):
         _seed(env["db_path"], [("SMALL", 1.0)])

@@ -567,6 +567,59 @@ class TestBacktestExport:
         assert count == 2
 
 
+class TestComputeInterestScore:
+    def test_no_signals_scores_zero(self):
+        assert trader_db.compute_interest_score({"sentiment": None, "volume_ratio": None,
+                                                   "rsi": None, "eval_count": 0}) == 0
+
+    def test_entry_signal_triggered(self):
+        row = {"sentiment": None, "volume_ratio": None, "rsi": None, "eval_count": 0}
+        assert trader_db.compute_interest_score(row, entry_signal_triggered=True) == 2
+
+    def test_sentiment_positive(self):
+        row = {"sentiment": 0.6, "volume_ratio": None, "rsi": None, "eval_count": 0}
+        assert trader_db.compute_interest_score(row) == 2
+
+    def test_sentiment_negative_does_not_score(self):
+        row = {"sentiment": -0.6, "volume_ratio": None, "rsi": None, "eval_count": 0}
+        assert trader_db.compute_interest_score(row) == 0
+
+    def test_volume_gt_2x_avg(self):
+        row = {"sentiment": None, "volume_ratio": 2.5, "rsi": None, "eval_count": 0}
+        assert trader_db.compute_interest_score(row) == 1
+
+    def test_volume_below_threshold_does_not_score(self):
+        row = {"sentiment": None, "volume_ratio": 1.9, "rsi": None, "eval_count": 0}
+        assert trader_db.compute_interest_score(row) == 0
+
+    def test_rsi_near_entry_zone(self):
+        row = {"sentiment": None, "volume_ratio": None, "rsi": 38.0, "eval_count": 0}
+        assert trader_db.compute_interest_score(row) == 1
+
+    def test_rsi_outside_entry_zone_does_not_score(self):
+        row = {"sentiment": None, "volume_ratio": None, "rsi": 70.0, "eval_count": 0}
+        assert trader_db.compute_interest_score(row) == 0
+
+    def test_all_signals_combine(self):
+        row = {"sentiment": 0.7, "volume_ratio": 3.0, "rsi": 40.0, "eval_count": 0}
+        assert trader_db.compute_interest_score(row, entry_signal_triggered=True) == 2 + 2 + 1 + 1
+
+    def test_idle_decay_applies_per_12_evaluations(self):
+        row = {"sentiment": None, "volume_ratio": None, "rsi": None, "eval_count": 24}
+        assert trader_db.compute_interest_score(row) == -2
+
+    def test_idle_decay_offsets_positive_signals(self):
+        row = {"sentiment": 0.5, "volume_ratio": None, "rsi": None, "eval_count": 12}
+        assert trader_db.compute_interest_score(row) == 2 - 1
+
+    def test_custom_weights_override_defaults(self):
+        row = {"sentiment": 0.5, "volume_ratio": None, "rsi": None, "eval_count": 0}
+        assert trader_db.compute_interest_score(row, weights={"sentiment_positive": 5}) == 5
+
+    def test_missing_row_keys_treated_as_no_signal(self):
+        assert trader_db.compute_interest_score({}) == 0
+
+
 class TestWatchlistCandidates:
     def test_upsert_new_candidate_idle_ticks_zero(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="LDRX", source="discovery_pool gen 2")
@@ -685,6 +738,30 @@ class TestWatchlistCandidates:
         assert rows["BBB"]["eval_count"] == 0
         assert rows["BBB"]["idle_ticks"] == 2  # diagnostic only, nothing decides on it
 
+    def test_mark_evaluated_persists_interest_score(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", sentiment=0.6, volume_ratio=2.5)
+        trader_db.mark_candidates_evaluated(conn, ["AAA"], now="2026-08-13T10:00:00+00:00")
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["interest_score"] == 2 + 1  # sentiment_positive + volume_gt_2x_avg
+
+    def test_mark_evaluated_scores_entry_signal_subset_only(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
+        trader_db.upsert_watchlist_candidate(conn, ticker="BBB")
+        trader_db.mark_candidates_evaluated(
+            conn, ["AAA", "BBB"], entry_signal_tickers=["AAA"], now="2026-08-13T10:00:00+00:00")
+        rows = {r["ticker"]: r["interest_score"] for r in trader_db.get_watchlist_candidates(conn)}
+        assert rows["AAA"] == 2
+        assert rows["BBB"] == 0
+
+    def test_mark_evaluated_respects_custom_weights(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", sentiment=0.6)
+        trader_db.mark_candidates_evaluated(
+            conn, ["AAA"], now="2026-08-13T10:00:00+00:00",
+            interest_weights={"sentiment_positive": 9},
+        )
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["interest_score"] == 9
+
     def test_touch_does_not_count_as_an_evaluation(self, conn):
         """Being re-discovered by the discovery pool isn't being evaluated
         -- if a touch reset the ordering signal, a frequently-rediscovered
@@ -738,6 +815,28 @@ class TestWatchlistCandidates:
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")
         assert trader_db.drop_stale_watchlist_candidates(conn) == []
         assert len(trader_db.get_watchlist_candidates(conn)) == 1
+
+    def test_drop_stale_by_low_interest_score(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="BORING")
+        for i in range(3):
+            trader_db.mark_candidates_evaluated(conn, ["BORING"], now=f"2026-08-13T10:0{i}:00+00:00")
+        dropped = trader_db.drop_stale_watchlist_candidates(conn, interest_min_score=2)
+        assert dropped == ["BORING"]
+
+    def test_low_interest_score_alone_does_not_drop_before_min_evaluations(self, conn):
+        """A candidate that scores low on its very first touch shouldn't be
+        dropped before it's had a fair look (MIN_EVALUATIONS_FOR_INTEREST_DROP)."""
+        trader_db.upsert_watchlist_candidate(conn, ticker="FRESH")
+        trader_db.mark_candidates_evaluated(conn, ["FRESH"], now="2026-08-13T10:00:00+00:00")
+        dropped = trader_db.drop_stale_watchlist_candidates(conn, interest_min_score=2)
+        assert dropped == []
+
+    def test_high_interest_score_survives_interest_drop_clause(self, conn):
+        trader_db.upsert_watchlist_candidate(conn, ticker="HOT", sentiment=0.8, volume_ratio=3.0)
+        for i in range(3):
+            trader_db.mark_candidates_evaluated(conn, ["HOT"], now=f"2026-08-13T10:0{i}:00+00:00")
+        dropped = trader_db.drop_stale_watchlist_candidates(conn, interest_min_score=2)
+        assert dropped == []
 
     def test_remove_watchlist_candidate(self, conn):
         trader_db.upsert_watchlist_candidate(conn, ticker="AAA")

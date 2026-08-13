@@ -47,6 +47,7 @@ def _load_config():
         "promote_top_n": block.get("promote_top_n", DEFAULT_TOP_N),
         "promote_max_age_seconds": block.get("promote_max_age_seconds", DEFAULT_MAX_AGE_SECONDS),
         "min_market_cap": params.get("universe", {}).get("min_market_cap"),
+        "interest_min_score": params.get("watchlist", {}).get("interest_min_score"),
     }
 
 
@@ -81,25 +82,43 @@ def select_promotable(conn, top_n: int = DEFAULT_TOP_N, max_age_seconds: int = D
 
 
 def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_age_seconds: int = None,
-            now: str = None, min_market_cap: float = None) -> dict:
+            now: str = None, min_market_cap: float = None, interest_min_score: int = None) -> dict:
     config = _load_config()
     top_n = top_n if top_n is not None else config["promote_top_n"]
     max_age_seconds = max_age_seconds if max_age_seconds is not None else config["promote_max_age_seconds"]
     min_market_cap = min_market_cap if min_market_cap is not None else config["min_market_cap"]
+    interest_min_score = (
+        interest_min_score if interest_min_score is not None else config["interest_min_score"]
+    )
 
     # 2026-08-13: Drop stale watchlist candidates unconditionally before
     # promoting new ones from the pool. Without this, the watchlist fills
     # up at max_size and nothing new can land -- the tick prompt listed
     # watchlist-drop-stale as an optional 'light touch' that Stan skipped,
     # so stale candidates accumulated until the downstream flow stalled.
+    # interest_min_score (2026-08-13) additionally fast-drops candidates
+    # that have been evaluated a few times and are demonstrably
+    # uninteresting -- see trader_db.drop_stale_watchlist_candidates().
+    #
+    # trader_db.get_conn() deliberately takes no db_path here (2026-08-13
+    # fix) -- this function's own db_path param is the discovery POOL db
+    # (see module docstring/test file comment), a different database from
+    # trader.db. Passing it through opened/wrote to a trader-schema table
+    # inside the pool db file instead of the real watchlist whenever a
+    # caller passed an explicit db_path (every test, any dry-run against a
+    # scratch pool) -- drop-stale silently no-op'd on the real watchlist in
+    # exactly those cases. trader_db.DB_PATH is the only override point
+    # (monkeypatched directly in tests), matching insert_into_watchlist()'s
+    # existing convention below.
     trader_conn = None
     try:
         import trader_db
-        trader_conn = trader_db.get_conn(db_path)
+        trader_conn = trader_db.get_conn()
         dropped = trader_db.drop_stale_watchlist_candidates(
             trader_conn,
             max_evaluations=12,
             max_age_hours=48,
+            interest_min_score=interest_min_score,
         )
     except Exception:
         dropped = []
@@ -147,11 +166,12 @@ def main():
     parser.add_argument("--top-n", type=int, default=None)
     parser.add_argument("--max-age-seconds", type=int, default=None)
     parser.add_argument("--min-market-cap", type=float, default=None)
+    parser.add_argument("--interest-min-score", type=int, default=None)
     args = parser.parse_args()
 
     db_path = Path(args.db_path) if args.db_path else None
     result = promote(dry_run=args.dry_run, db_path=db_path, top_n=args.top_n, max_age_seconds=args.max_age_seconds,
-                      min_market_cap=args.min_market_cap)
+                      min_market_cap=args.min_market_cap, interest_min_score=args.interest_min_score)
     print(json.dumps(result, indent=2))
 
 

@@ -15,6 +15,7 @@ Usage:
     python3 scripts/trader_write.py watchlist-drop-stale --max-evaluations 12 --max-age-hours 48
     python3 scripts/trader_write.py watchlist-remove --ticker AAA
     python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB,CCC
+    python3 scripts/trader_write.py watchlist-mark-evaluated --tickers AAA,BBB --entry-signal-tickers AAA
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --thesis "..."
     python3 scripts/trader_write.py position-update-thesis --ticker AAA --verdict weakening --note "RSI rolled over"
 """
@@ -38,24 +39,34 @@ def _now_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
-def _load_drop_thresholds() -> tuple[int, float]:
+def _load_watchlist_params() -> dict:
+    try:
+        params = json.loads(PARAMS_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        params = {}
+    return params.get("watchlist", {})
+
+
+def _load_drop_thresholds() -> tuple[int, float, int]:
     """params.json watchlist.max_evaluations_before_drop /
-    max_age_hours_before_drop, falling back to trader_db's defaults.
+    max_age_hours_before_drop / interest_min_score, falling back to
+    trader_db's defaults.
 
     Replaces watchlist.idle_ticks_before_drop (2026-08-01): dropping on
     the same counter the evaluation rotation ordered by meant a candidate
     could only reach the front of the queue by first reaching the drop
     threshold, so unevaluated names were deleted before they were ever
     looked at. See trader_db.drop_stale_watchlist_candidates()."""
-    try:
-        params = json.loads(PARAMS_PATH.read_text())
-    except (OSError, json.JSONDecodeError):
-        params = {}
-    block = params.get("watchlist", {})
+    block = _load_watchlist_params()
     return (
         block.get("max_evaluations_before_drop", trader_db.DEFAULT_MAX_EVALUATIONS_BEFORE_DROP),
         block.get("max_age_hours_before_drop", trader_db.DEFAULT_MAX_AGE_HOURS_BEFORE_DROP),
+        block.get("interest_min_score"),
     )
+
+
+def _load_interest_weights() -> dict:
+    return _load_watchlist_params().get("interest_score_weights", trader_db.DEFAULT_INTEREST_SCORE_WEIGHTS)
 
 
 def cmd_watchlist_add(args, conn) -> None:
@@ -86,13 +97,20 @@ def cmd_watchlist_add(args, conn) -> None:
 
 
 def cmd_watchlist_drop_stale(args, conn) -> None:
-    default_evals, default_hours = _load_drop_thresholds()
+    default_evals, default_hours, default_interest_min = _load_drop_thresholds()
     max_evaluations = args.max_evaluations if args.max_evaluations is not None else default_evals
     max_age_hours = args.max_age_hours if args.max_age_hours is not None else default_hours
+    interest_min_score = (
+        args.interest_min_score if args.interest_min_score is not None else default_interest_min
+    )
     dropped = trader_db.drop_stale_watchlist_candidates(
         conn, max_evaluations=max_evaluations, max_age_hours=max_age_hours,
+        interest_min_score=interest_min_score,
     )
-    _print({"max_evaluations": max_evaluations, "max_age_hours": max_age_hours, "dropped": dropped})
+    _print({
+        "max_evaluations": max_evaluations, "max_age_hours": max_age_hours,
+        "interest_min_score": interest_min_score, "dropped": dropped,
+    })
 
 
 def cmd_watchlist_remove(args, conn) -> None:
@@ -108,10 +126,22 @@ def cmd_watchlist_mark_evaluated(args, conn) -> None:
 
     Used to only bump idle_ticks for everyone else and leave the evaluated
     names flat, which deadlocked the rotation -- see
-    trader_db.get_watchlist_batch()."""
+    trader_db.get_watchlist_batch().
+
+    --entry-signal-tickers (2026-08-13, subset of --tickers) marks which
+    ones matched a decision_heuristics.md Active node this eval -- feeds
+    interest_score's entry_signal_triggered weight, recomputed for every
+    evaluated ticker as part of this same call."""
     tickers = [t.strip().upper() for t in args.tickers.split(",") if t.strip()]
-    trader_db.mark_candidates_evaluated(conn, tickers)
-    _print({"evaluated_this_tick": tickers})
+    entry_signal_tickers = (
+        [t.strip().upper() for t in args.entry_signal_tickers.split(",") if t.strip()]
+        if args.entry_signal_tickers else []
+    )
+    trader_db.mark_candidates_evaluated(
+        conn, tickers, entry_signal_tickers=entry_signal_tickers,
+        interest_weights=_load_interest_weights(),
+    )
+    _print({"evaluated_this_tick": tickers, "entry_signal_tickers": entry_signal_tickers})
 
 
 def cmd_position_update_thesis(args, conn) -> None:
@@ -166,6 +196,8 @@ def main() -> int:
                     help="Default: params.json watchlist.max_evaluations_before_drop")
     p.add_argument("--max-age-hours", type=float, default=None,
                     help="Default: params.json watchlist.max_age_hours_before_drop")
+    p.add_argument("--interest-min-score", type=int, default=None,
+                    help="Default: params.json watchlist.interest_min_score")
 
     p = sub.add_parser("watchlist-remove", help="Remove a candidate (e.g. promoted to a position)")
     p.add_argument("--ticker", required=True)
@@ -174,6 +206,9 @@ def main() -> int:
                         help="Stamp --tickers as evaluated, sending them to the back of the rotation "
                              "(call after a batch eval)")
     p.add_argument("--tickers", required=True, help="Comma-separated tickers evaluated this tick")
+    p.add_argument("--entry-signal-tickers", default=None,
+                    help="Comma-separated subset of --tickers that matched a decision_heuristics.md "
+                         "Active node this eval (feeds interest_score)")
 
     p = sub.add_parser("position-update-thesis", help="Update an open position's thesis (not tied to a trade), "
                                                         "or record a daily thesis recheck verdict")

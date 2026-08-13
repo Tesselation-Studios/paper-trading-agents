@@ -133,6 +133,18 @@ class TestWatchlistDropStale:
 
         assert result["dropped"] == []
 
+    def test_explicit_interest_min_score_drops_low_scorers(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        trader_db.upsert_watchlist_candidate(conn, ticker="BORING")
+        for i in range(3):
+            trader_db.mark_candidates_evaluated(conn, ["BORING"], now=f"2026-08-13T10:0{i}:00+00:00")
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, ["watchlist-drop-stale", "--interest-min-score", "2"])
+
+        assert result["interest_min_score"] == 2
+        assert result["dropped"] == ["BORING"]
+
 
 class TestWatchlistRemove:
     def test_removes_candidate(self, monkeypatch, capsys, db_path):
@@ -171,6 +183,25 @@ class TestWatchlistMarkEvaluated:
         assert rows["CCC"]["eval_count"] == 0
         assert rows["CCC"]["last_evaluated_at"] is None
         assert {t: r["idle_ticks"] for t, r in rows.items()} == {"AAA": 0, "BBB": 0, "CCC": 1}
+
+    def test_entry_signal_tickers_scores_interest(self, monkeypatch, capsys, db_path):
+        conn = trader_db.get_conn(db_path)
+        for t in ["AAA", "BBB"]:
+            trader_db.upsert_watchlist_candidate(conn, ticker=t)
+        conn.close()
+
+        result = _run(monkeypatch, capsys, db_path, [
+            "watchlist-mark-evaluated", "--tickers", "AAA,BBB", "--entry-signal-tickers", "AAA",
+        ])
+
+        assert result["entry_signal_tickers"] == ["AAA"]
+        conn = trader_db.get_conn(db_path)
+        try:
+            rows = {r["ticker"]: r for r in trader_db.get_watchlist_candidates(conn)}
+        finally:
+            conn.close()
+        assert rows["AAA"]["interest_score"] == 2
+        assert rows["BBB"]["interest_score"] == 0
 
     def test_repeated_calls_produce_rotation(self, monkeypatch, capsys, db_path):
         conn = trader_db.get_conn(db_path)

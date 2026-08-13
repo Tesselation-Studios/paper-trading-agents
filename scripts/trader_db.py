@@ -180,6 +180,10 @@ CREATE TABLE IF NOT EXISTS watchlist_candidates (
     idle_ticks        INTEGER NOT NULL DEFAULT 0,
     last_evaluated_at TEXT,
     eval_count        INTEGER NOT NULL DEFAULT 0,
+    interest_score        INTEGER NOT NULL DEFAULT 0,
+    last_researched_at    TEXT,
+    research_confidence   REAL,
+    research_note         TEXT,
     source            TEXT,
     note              TEXT,
     added_at          TEXT NOT NULL,
@@ -339,6 +343,16 @@ def init_schema(conn: sqlite3.Connection) -> None:
     # here -- that cadence state only needs to live in the pool
     # (discovery_pool.db), not duplicated onto every downstream copy.
     _migrate_add_column(conn, "watchlist_candidates", "ma_filing_flag", "TEXT")
+    # 2026-08-13: resurrects wiki syntheses/watchlist-interest-scoring-system.md's
+    # design (documented 2026-07-29, never wired in) -- see
+    # compute_interest_score(). last_researched_at/research_confidence/
+    # research_note are the research-escalation pipeline's output slots
+    # (scripts/research_escalation.py) -- NULL until a candidate actually
+    # gets a sessions_send exchange with the researcher agent.
+    _migrate_add_column(conn, "watchlist_candidates", "interest_score", "INTEGER NOT NULL DEFAULT 0")
+    _migrate_add_column(conn, "watchlist_candidates", "last_researched_at", "TEXT")
+    _migrate_add_column(conn, "watchlist_candidates", "research_confidence", "REAL")
+    _migrate_add_column(conn, "watchlist_candidates", "research_note", "TEXT")
     conn.commit()
 
 
@@ -935,16 +949,25 @@ def increment_idle_ticks(conn: sqlite3.Connection, except_tickers: list = None) 
             conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
 
 
-def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str = None) -> None:
+def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str = None,
+                               entry_signal_tickers: list = None, interest_weights: dict = None) -> None:
     """Records that `tickers` were evaluated this tick: stamps
     last_evaluated_at (what get_watchlist_batch orders on), bumps
     eval_count (what drop_stale_watchlist_candidates retires on), and
     zeroes their idle_ticks while everyone else's climbs.
 
+    Also recomputes and persists interest_score for each evaluated ticker
+    (2026-08-13) -- this is the natural per-tick touch point, since it's
+    already "this candidate was just looked at with current signals".
+    entry_signal_tickers (subset of tickers) marks which ones matched a
+    decision_heuristics.md Active node this eval -- the one interest
+    signal compute_interest_score() can't derive from the row itself.
+
     One transaction so a crash between the two halves can't leave a batch
     stamped-but-not-counted."""
     import datetime
     tickers = [t.upper() for t in (tickers or [])]
+    entry_signal_tickers = {t.upper() for t in (entry_signal_tickers or [])}
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     with conn:
         if tickers:
@@ -959,17 +982,88 @@ def mark_candidates_evaluated(conn: sqlite3.Connection, tickers: list, now: str 
                 f"UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1 WHERE ticker NOT IN ({placeholders})",
                 tickers,
             )
+            for ticker in tickers:
+                row = conn.execute(
+                    "SELECT * FROM watchlist_candidates WHERE ticker = ?", (ticker,)
+                ).fetchone()
+                if row is None:
+                    continue
+                score = compute_interest_score(
+                    dict(row), entry_signal_triggered=ticker in entry_signal_tickers,
+                    weights=interest_weights,
+                )
+                conn.execute(
+                    "UPDATE watchlist_candidates SET interest_score = ? WHERE ticker = ?",
+                    (score, ticker),
+                )
         else:
             conn.execute("UPDATE watchlist_candidates SET idle_ticks = idle_ticks + 1")
+
+
+DEFAULT_INTEREST_SCORE_WEIGHTS = {
+    "entry_signal_triggered": 2,
+    "sentiment_positive": 2,
+    "unusual_options_flow": 1,
+    "volume_gt_2x_avg": 1,
+    "rsi_near_entry_zone": 1,
+    "idle_decay_per_12_ticks": -1,
+}
+RSI_ENTRY_ZONE = (30.0, 45.0)  # matches wiki syntheses/watchlist-interest-scoring-system.md's stated band
+VOLUME_RATIO_THRESHOLD = 2.0
+
+
+def compute_interest_score(candidate_row: dict, entry_signal_triggered: bool = False,
+                            weights: dict = None) -> int:
+    """Pure function -- no DB access, no side effects. Resurrects (and
+    slightly revises) wiki syntheses/watchlist-interest-scoring-system.md's
+    design, documented 2026-07-29 but never actually wired in.
+
+    Signals derived from the row itself: sentiment_positive (sentiment >
+    0), volume_gt_2x_avg (volume_ratio >= 2.0), rsi_near_entry_zone (rsi in
+    RSI_ENTRY_ZONE). entry_signal_triggered can only come from the caller
+    -- it means a decision_heuristics.md Active node matched this
+    evaluation, which trader_db.py has no way to know on its own.
+    unusual_options_flow is accepted for forward-compatibility but has no
+    live data source yet (tick_prompt.md step 8: get_flow is disabled, not
+    real options data) -- always contributes 0 today.
+
+    idle_decay applies per eval_count // 12, NOT idle_ticks -- idle_ticks
+    resets on every technical touch (see upsert_watchlist_candidate) and
+    is diagnostic-only since the 2026-08-01 rotation-deadlock fix (see the
+    watchlist_candidates schema comment), so it wouldn't accumulate
+    meaningfully as an "idle" signal. eval_count -- "looked at this many
+    times" -- is the schema's own designated staleness column, a better
+    fit for what the original design meant by decay."""
+    w = weights or DEFAULT_INTEREST_SCORE_WEIGHTS
+    sentiment = candidate_row.get("sentiment")
+    volume_ratio = candidate_row.get("volume_ratio")
+    rsi = candidate_row.get("rsi")
+    eval_count = candidate_row.get("eval_count") or 0
+
+    score = 0
+    if entry_signal_triggered:
+        score += w.get("entry_signal_triggered", 0)
+    if sentiment is not None and sentiment > 0:
+        score += w.get("sentiment_positive", 0)
+    if volume_ratio is not None and volume_ratio >= VOLUME_RATIO_THRESHOLD:
+        score += w.get("volume_gt_2x_avg", 0)
+    if rsi is not None and RSI_ENTRY_ZONE[0] <= rsi <= RSI_ENTRY_ZONE[1]:
+        score += w.get("rsi_near_entry_zone", 0)
+    score += w.get("idle_decay_per_12_ticks", 0) * (eval_count // 12)
+    return score
 
 
 DEFAULT_MAX_EVALUATIONS_BEFORE_DROP = 12
 DEFAULT_MAX_AGE_HOURS_BEFORE_DROP = 48
 
 
+MIN_EVALUATIONS_FOR_INTEREST_DROP = 3
+
+
 def drop_stale_watchlist_candidates(conn: sqlite3.Connection, max_evaluations: int = None,
-                                     max_age_hours: float = None, now: str = None) -> list:
-    """Retires candidates on two signals, neither of which is the one
+                                     max_age_hours: float = None, interest_min_score: int = None,
+                                     now: str = None) -> list:
+    """Retires candidates on up to three signals, none of which is the one
     get_watchlist_batch() orders by (2026-08-01 -- sharing that signal is
     what deadlocked the rotation, see the schema comment):
 
@@ -977,9 +1071,17 @@ def drop_stale_watchlist_candidates(conn: sqlite3.Connection, max_evaluations: i
         never worth a position. Exhausted, not neglected.
       added_at older than max_age_hours -- backstop for anything that
         somehow still isn't converting or being seen.
+      interest_score < interest_min_score AND eval_count >=
+        MIN_EVALUATIONS_FOR_INTEREST_DROP (2026-08-13) -- a faster exit for
+        candidates that are demonstrably uninteresting (low score) rather
+        than waiting out the full max_evaluations/max_age_hours backstop.
+        The MIN_EVALUATIONS_FOR_INTEREST_DROP floor guards a brand-new
+        candidate from being dropped on its first low-signal touch, before
+        it's had a fair look -- same "exhausted, not neglected" posture as
+        max_evaluations above, just a lower bar.
 
-    Returns dropped tickers. Both thresholds are independently optional;
-    passing neither drops nothing rather than everything."""
+    Returns dropped tickers. All three thresholds are independently
+    optional; passing none drops nothing rather than everything."""
     import datetime
     now = now or datetime.datetime.now(datetime.timezone.utc).isoformat()
     clauses, params = [], []
@@ -989,6 +1091,9 @@ def drop_stale_watchlist_candidates(conn: sqlite3.Connection, max_evaluations: i
     if max_age_hours is not None:
         clauses.append("(julianday(?) - julianday(added_at)) * 24.0 >= ?")
         params.extend([now, max_age_hours])
+    if interest_min_score is not None:
+        clauses.append(f"(interest_score < ? AND eval_count >= {MIN_EVALUATIONS_FOR_INTEREST_DROP})")
+        params.append(interest_min_score)
     if not clauses:
         return []
 
