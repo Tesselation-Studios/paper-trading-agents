@@ -1042,6 +1042,7 @@ DEFAULT_INTEREST_SCORE_WEIGHTS = {
 }
 RSI_ENTRY_ZONE = (30.0, 45.0)  # matches wiki syntheses/watchlist-interest-scoring-system.md's stated band
 VOLUME_RATIO_THRESHOLD = 2.0
+DEFAULT_INTEREST_MIN_SCORE = 2
 
 
 def compute_interest_score(candidate_row: dict, entry_signal_triggered: bool = False,

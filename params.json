@@ -101,7 +101,13 @@
       "idle_decay_per_12_ticks": -1
     },
     "interest_min_score": 2,
-    "_interest_score_source": "2026-08-13: resurrects wiki syntheses/watchlist-interest-scoring-system.md's design (documented 2026-07-29, never actually wired in) -- see trader_db.compute_interest_score(). unusual_options_flow currently never fires live (get_flow is disabled in tick_prompt.md step 8, not real options data) -- weight kept for when/if a real flow source lands. idle_decay_per_12_ticks is applied per eval_count//12 (evaluations without conversion), not idle_ticks -- idle_ticks is diagnostic-only by the 2026-08-01 rotation-deadlock fix (see trader_db.py's watchlist_candidates schema comment) and resets on every technical touch, so it wouldn't actually accumulate meaningfully as an idle signal."
+    "_interest_score_source": "2026-08-13: resurrects wiki syntheses/watchlist-interest-scoring-system.md's design (documented 2026-07-29, never actually wired in) -- see trader_db.compute_interest_score(). unusual_options_flow currently never fires live (get_flow is disabled in tick_prompt.md step 8, not real options data) -- weight kept for when/if a real flow source lands. idle_decay_per_12_ticks is applied per eval_count//12 (evaluations without conversion), not idle_ticks -- idle_ticks is diagnostic-only by the 2026-08-01 rotation-deadlock fix (see trader_db.py's watchlist_candidates schema comment) and resets on every technical touch, so it wouldn't actually accumulate meaningfully as an idle signal.",
+    "research_escalation": {
+      "cooldown_hours": 6,
+      "cap": 3,
+      "max_rounds": 2,
+      "_source": "2026-08-13: scripts/research_escalation.py -- candidates whose decision_heuristics.md tree match wasn't clean (watch/insufficient_data/no_match) and whose interest_score clears interest_min_score get dispatched to the researcher agent via sessions_send (skills/research-escalation.md), run from a separate stonks-research-escalation cron since a sessions_send round-trip can run minutes and can't fit the live tick's 290s budget. cooldown_hours stops re-researching the same candidate every cycle; cap bounds cost per run (this is the most expensive new signal in the pipeline -- a real LLM-to-LLM conversation, not just a websearch); max_rounds caps back-and-forth per candidate so a conversation can't loop indefinitely. Start conservative -- revisit cadence/cap once there's real interest_score data showing how many candidates actually qualify per run."
+    }
   },
   "synthesis": {
     "lookback_n_entries": 10,
