@@ -71,6 +71,9 @@ DEFAULTS = {
     "edgar_scan_interval_seconds": 21600,  # 6h -- 8-K M&A filings aren't intraday-urgent, and this is a courtesy to SEC's rate limits
     "edgar_scan_max_per_cycle": 10,
     "edgar_scan_lookback_days": 7,
+    "sector_performance_refresh_interval_seconds": 21600,  # 6h -- slow-moving signal, no need for tighter
+    "sector_performance_lookback_days": 30,
+    "sector_performance_min_trades": 8,
 }
 
 
@@ -127,6 +130,7 @@ DEFAULT_CURSOR_STATE = {
     "cycles_completed_lifetime": 0,
     "last_fundamentals_enrich_at": None,
     "last_edgar_scan_at": None,
+    "last_sector_performance_refresh_at": None,
 }
 
 
@@ -422,6 +426,47 @@ def maybe_scan_edgar_filings(conn, cursor_state: dict, config: dict, now: str = 
     return cursor_state
 
 
+def maybe_refresh_sector_performance(conn, cursor_state: dict, config: dict, now: str = None,
+                                      trader_db_path: Path = None) -> dict:
+    """Separate, slow cadence (default 6h) -- same pattern as the other
+    maybe_* functions above. Recomputes trader_db.compute_sector_
+    performance() against the LIVE trader.db (positions, not the pool) and
+    writes it into discovery_db.py's sector_performance table, which
+    get_top_candidates()'s ranking reads. This is the mechanism that lets
+    discovery naturally favor whatever sector is actually performing right
+    now, continuously, with no hardcoded sector names -- purely a function
+    of live closed-trade data, adapting as more trades close.
+
+    trader_db_path is a test-only override (mirrors _downstream_flow_check's
+    pool_db_path/trader_db_path pattern below) -- production always uses
+    trader_db.py's own default path."""
+    now = now or _now_iso()
+    cursor_state = dict(cursor_state)
+    last = cursor_state.get("last_sector_performance_refresh_at")
+    if last is not None:
+        elapsed = (datetime.fromisoformat(now) - datetime.fromisoformat(last)).total_seconds()
+        if elapsed < config["sector_performance_refresh_interval_seconds"]:
+            return cursor_state
+
+    try:
+        trader_conn = trader_db.get_conn(trader_db_path)
+        try:
+            performance = trader_db.compute_sector_performance(
+                trader_conn,
+                lookback_days=config["sector_performance_lookback_days"],
+                min_trades=config["sector_performance_min_trades"],
+                now=now,
+            )
+        finally:
+            trader_conn.close()
+        discovery_db.upsert_sector_performance(conn, performance, computed_at=now)
+    except Exception:
+        pass  # best-effort -- never block/kill the cheap screening loop
+
+    cursor_state["last_sector_performance_refresh_at"] = now
+    return cursor_state
+
+
 def _sentiment_worker_ok(state: dict) -> Optional[bool]:
     """2026-08-10: separate from the loop's own `healthy` flag on purpose --
     a degraded sentiment worker doesn't mean the discovery loop itself is
@@ -557,6 +602,7 @@ def main():
         cursor_state = maybe_confirm_news(conn, cursor_state, config, now=now)
         cursor_state = maybe_enrich_fundamentals(conn, cursor_state, config, now=now)
         cursor_state = maybe_scan_edgar_filings(conn, cursor_state, config, now=now)
+        cursor_state = maybe_refresh_sector_performance(conn, cursor_state, config, now=now)
         save_cursor_state(cursor_state)
 
         if args.once:

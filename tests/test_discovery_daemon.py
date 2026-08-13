@@ -489,6 +489,73 @@ class TestMaybeScanEdgarFilings:
         assert new_state["last_edgar_scan_at"] == "2026-08-13T12:00:00+00:00"
 
 
+class TestMaybeRefreshSectorPerformance:
+    """2026-08-13: sector-performance-weighted ranking refresh -- same
+    cadence-gate pattern as the other maybe_* tests above."""
+
+    def _seed_closed(self, trader_conn, ticker, sector, pnl, closed_at):
+        trader_db.upsert_position(trader_conn, ticker=ticker, shares=1.0, entry_price=10.0,
+                                   entry_time="2026-08-01T10:00:00+00:00", sector=sector)
+        trader_db.close_position(trader_conn, ticker=ticker, closed_at=closed_at, close_reason="exit",
+                                  realized_pnl=pnl, realized_return_pct=pnl)
+
+    def test_noop_before_interval_elapsed(self, conn, tmp_path, monkeypatch):
+        calls = []
+        monkeypatch.setattr(discovery_daemon.trader_db, "compute_sector_performance",
+                             lambda *a, **k: calls.append(1) or {})
+        config = dict(discovery_daemon.DEFAULTS)
+        config["sector_performance_refresh_interval_seconds"] = 21600
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        cursor_state["last_sector_performance_refresh_at"] = "2026-08-13T12:00:00+00:00"
+        discovery_daemon.maybe_refresh_sector_performance(
+            conn, cursor_state, config, now="2026-08-13T13:00:00+00:00", trader_db_path=tmp_path / "trader.db",
+        )
+        assert calls == []
+
+    def test_writes_sector_performance_from_live_trader_db(self, conn, tmp_path):
+        trader_db_path = tmp_path / "trader.db"
+        trader_conn = trader_db.get_conn(trader_db_path)
+        for i in range(8):
+            self._seed_closed(trader_conn, f"T{i}", "Technology", 5.0, "2026-08-12T10:00:00+00:00")
+        trader_conn.close()
+
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        new_state = discovery_daemon.maybe_refresh_sector_performance(
+            conn, cursor_state, config, now="2026-08-13T12:00:00+00:00", trader_db_path=trader_db_path,
+        )
+        assert new_state["last_sector_performance_refresh_at"] == "2026-08-13T12:00:00+00:00"
+        row = conn.execute("SELECT * FROM sector_performance WHERE sector='Technology'").fetchone()
+        assert row["trades"] == 8
+        assert row["win_rate"] == 1.0
+
+    def test_below_min_trades_writes_nothing(self, conn, tmp_path):
+        trader_db_path = tmp_path / "trader.db"
+        trader_conn = trader_db.get_conn(trader_db_path)
+        self._seed_closed(trader_conn, "T0", "Technology", 5.0, "2026-08-12T10:00:00+00:00")
+        trader_conn.close()
+
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        discovery_daemon.maybe_refresh_sector_performance(
+            conn, cursor_state, config, now="2026-08-13T12:00:00+00:00", trader_db_path=trader_db_path,
+        )
+        rows = conn.execute("SELECT * FROM sector_performance").fetchall()
+        assert rows == []
+
+    def test_exception_does_not_propagate(self, conn, tmp_path, monkeypatch):
+        def boom(*a, **k):
+            raise RuntimeError("db is locked")
+        monkeypatch.setattr(discovery_daemon.trader_db, "compute_sector_performance", boom)
+        config = dict(discovery_daemon.DEFAULTS)
+        cursor_state = dict(discovery_daemon.DEFAULT_CURSOR_STATE)
+        # should not raise
+        new_state = discovery_daemon.maybe_refresh_sector_performance(
+            conn, cursor_state, config, now="2026-08-13T12:00:00+00:00", trader_db_path=tmp_path / "trader.db",
+        )
+        assert new_state["last_sector_performance_refresh_at"] == "2026-08-13T12:00:00+00:00"
+
+
 class TestDaemonHealth:
     # Downstream-flow check (see TestDownstreamFlowCheck) is gated on
     # executor._is_regular_trading_hours() -- forced False here so these
