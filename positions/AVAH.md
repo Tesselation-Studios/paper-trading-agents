@@ -1,11 +1,11 @@
 # AVAH Position Thesis
 
 - **Entry**: $11.50 avg | 16 shares
-- **Current**: $11.49 (-0.09% unrealized)
-- **Market Value**: $183.83
-- **Unrealized P&L**: $-0.17 (-0.10%)
+- **Current**: $11.40 (-0.87% unrealized)
+- **Market Value**: $182.40
+- **Unrealized P&L**: $-1.60 (-0.87%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 21:00:58 UTC
+- **Last sync**: 2026-08-13 21:30:17 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.
