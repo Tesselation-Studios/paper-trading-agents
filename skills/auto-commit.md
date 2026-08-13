@@ -1,4 +1,14 @@
-# Skill: Git Auto-Commit
+# Skill: Git Auto-Commit (INACTIVE for the tick loop — 2026-08-13)
+
+**No longer triggered from `tick_prompt.md`** — Raf moved tick-level commit ownership (active.md changes, etc.) to Claude Code, after a confirmed 2026-07-28 incident where a concurrent git op on this same shared working tree wiped Claude Code's uncommitted edits (see `[[git-reset-concurrency-hazard-live-tick-loop]]` memory). Claude Code now commits its own work immediately per logical unit, and is responsible for periodically committing any outstanding tick-loop file changes (active.md, positions, journal) it finds when working in this repo — there is no longer a mechanized per-tick commit.
+
+This skill's mechanics/hooks are otherwise still live and unrelated to the above: the `post-commit` hook still auto-pushes directly to GitHub (`Tesselation-Studios/paper-trading-agents`, whatever branch is currently checked out — currently `v4`) whenever ANY commit lands, and `pre-commit` still strips `strategies/active.md` from the index either way. This file is kept for reference/history, not as an active tick instruction.
+
+The separate nightly-Evolve self-commit path (`strategy.md`/`params.json`/`decision_heuristics.md`, see `skills/evolution-proposals.md`) is untouched by this change — that's a different, deliberately evidence-gated mechanism, not the tick-level commit this skill described.
+
+---
+
+Below is the original mechanism, preserved for reference:
 
 Commit every file change immediately, locally — no approval needed. A `post-commit` hook auto-pushes directly to GitHub (`Tesselation-Studios/paper-trading-agents`, whatever branch is currently checked out — currently `v4`) — no mirror repo, no rsync, this workspace repo IS the source of truth. Push is the revert safety net (see `AGENTS.md` immutable section) — don't rely on local-only history.
 

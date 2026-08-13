@@ -94,9 +94,7 @@
    - **Do NOT snapshot position data** — no portfolio value, no P&L%, no share counts, no price levels. Those are stale the moment they're written. Query `get_self_stats`/`get_quotes` live when you need them (steps 4, 6).
    - **Rotate on a new trading day**: active.md is read in full every tick, so it must never hold more than one day's entries. Before writing the first `# Current Playbook` title of a new day, move everything currently in active.md into `strategies/active-archive/YYYY-MM-DD.md` (the date of the entries being archived, not today's), then start active.md fresh with just the new title. Never let active.md cross a day boundary un-rotated.
 
-11. **Git commit** → if you modified active.md, commit locally. See `skills/auto-commit.md`.
-
-12. **HEARTBEAT_OK**
+11. **HEARTBEAT_OK**
 
 ## Trim Rules
 
