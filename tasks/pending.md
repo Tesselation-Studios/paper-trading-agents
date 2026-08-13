@@ -25,6 +25,8 @@ Format: `- [ ] YYYY-MM-DD (source): description`
 
 ## Open
 
+- [ ] 2026-08-13 (overnight-optimization): Universe question — momentum/high-beta basket (NVDA/TSLA/COIN/PLTR/MSTR/GME/RIOT/MARA/HOOD/DJT) beat core small-cap for the 2nd time in 3 nights (Aug 12/13 run: stonks 0.2753 vs core 0.2356; Aug 10/11 flagged 7-period-RSI-on-volatile + loose-conviction 0% FP on stonks). One night (Aug 9/10) pointed core. Split-window validation says configs don't generalize between halves, so treat as open thread, not action. Worth a deliberate separate investigation (backtest momentum basket vs small-cap mean-reversion on a stable window) before any universe shift — not a same-day flip off 1h-sampled small-n data.
+
 - [ ] 2026-08-12 (nightly-learning): Small-cap earnings beat → sell-off pattern — UPB (Aug 12) is the 3rd instance in 2 days of small-cap earnings beats failing to produce follow-through buying. UPB was the framework's highest-conviction call from last night's nightly-maintenance — earnings beat, 0.71 sentiment, vol ramp — and it collapsed within one session: -4.7% intraday, MACD flipped bearish. Track for more occurrences before considering any entry-refinement change for small-cap earnings catalysts. Currently too young (2 days, 3 instances) to harden.
 - [ ] 2026-08-12 (nightly-learning): Sector edge erosion — Industrials 25% win rate (1W/3L), Healthcare 29% (2W/5L), Consumer_Cyclical 25% (1W/3L). Three sectors well below 30% win rate. The self-stats tool flagged these as tightening candidates. Track for one more session before considering a sector-specific entry filter in decision_heuristics.md (e.g., raise conviction-floor for Industrials/Healthcare entries). Not a strategy.md change — a tree node candidate.
 
