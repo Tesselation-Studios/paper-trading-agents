@@ -662,9 +662,26 @@ def main():
             try:
                 existing = trader_db.get_position(conn, args.ticker.upper())
                 is_scale_in = bool(existing and existing.get("status") == "open")
+                # 2026-08-13: fall back to the watchlist candidate's
+                # discovery-tagged sector (see discovery_daemon.py's
+                # yfinance enrichment) when --sector wasn't explicitly
+                # passed -- an explicit --sector always wins, this only
+                # fills the gap for the common case where the agent didn't
+                # bother typing one. Best-effort: any lookup failure just
+                # leaves sector as args.sector (None), same as before this
+                # existed.
+                sector = args.sector
+                if not sector:
+                    try:
+                        for c in trader_db.get_watchlist_candidates(conn):
+                            if c["ticker"].upper() == args.ticker.upper():
+                                sector = c.get("sector")
+                                break
+                    except Exception:
+                        pass
                 trader_db.upsert_position(
                     conn, ticker=args.ticker, shares=total_shares, entry_price=args.price,
-                    entry_time=now_iso, sector=args.sector, thesis=args.thesis,
+                    entry_time=now_iso, sector=sector, thesis=args.thesis,
                     play_type=args.play_type, predicted_by_date=args.predicted_by_date,
                     prediction_reason=args.prediction_reason,
                     thesis_claim=args.thesis_claim, thesis_invalidation=args.thesis_invalidation,

@@ -37,7 +37,15 @@ NEWS_LINE_RE = re.compile(r'^- News: "(.+?)" \(sentiment ([+-]?[0-9.]+|n/a)\)', 
 # dict onto the watchlist row. Keys are identical on both sides (the pool's
 # candidates table and watchlist_candidates use the same column names), so
 # this is a plain passthrough, not a mapping.
-SIGNAL_FIELDS = ("price", "rsi", "volume_ratio", "macd_hist", "sentiment", "news_headline")
+#
+# sector/industry/market_cap (2026-08-13): discovery_daemon.py's yfinance
+# enrichment writes these onto the pool row (see discovery_db.record_
+# fundamentals()); carrying them through here is what lets executor.py
+# auto-populate positions.sector at BUY time without an explicit --sector
+# flag. Same passthrough contract -- absent/None on the source dict just
+# means "not enriched yet", handled the same as any other missing signal.
+SIGNAL_FIELDS = ("price", "rsi", "volume_ratio", "macd_hist", "sentiment", "news_headline",
+                  "sector", "industry", "market_cap")
 
 
 def latest_discoveries_file(date: str = None) -> Path | None:

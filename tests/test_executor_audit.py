@@ -380,6 +380,92 @@ class TestBuySellPersistsPositions:
         assert "positions table write failed" in err
 
 
+class TestBuyAutoSectorFromWatchlist:
+    """2026-08-13: a BUY with no explicit --sector falls back to the
+    watchlist candidate's discovery-tagged sector (discovery_daemon.py's
+    yfinance enrichment, carried through merge_discoveries.py). An explicit
+    --sector always wins -- this only fills the gap for the common case
+    where the agent didn't type one."""
+
+    def test_falls_back_to_watchlist_sector_when_not_passed(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0, sector="Technology")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-sec1"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["sector"] == "Technology"
+
+    def test_explicit_sector_wins_over_watchlist(self, monkeypatch, capsys):
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0, sector="Technology")
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-sec2"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--sector", "Financials", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["sector"] == "Financials"
+
+    def test_no_watchlist_candidate_and_no_sector_leaves_null(self, monkeypatch, capsys):
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-sec3"},
+            positions_response=[{"symbol": "ZZZ", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "ZZZ", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "ZZZ")
+        finally:
+            conn.close()
+        assert row["sector"] is None
+
+    def test_watchlist_candidate_with_null_sector_leaves_null(self, monkeypatch, capsys):
+        """Not yet enriched (yfinance fetch hasn't run/succeeded) -- no
+        fabricated sector."""
+        conn = trader_db.get_conn()
+        trader_db.upsert_watchlist_candidate(conn, ticker="AAA", price=10.0)
+        conn.close()
+
+        monkeypatch.setattr(urllib.request, "urlopen", _make_fake_urlopen(
+            order_response={"id": "order-sec4"},
+            positions_response=[{"symbol": "AAA", "qty": "1", "avg_entry_price": "10.00", "market_value": "10.00"}],
+        ))
+        _run_executor(monkeypatch, [
+            "--account", "stonks", "--action", "BUY", "--ticker", "AAA", "--qty", "1",
+            "--price", "10.00", "--thesis", "momentum entry", "--skip-guardrails",
+        ])
+        conn = trader_db.get_conn()
+        try:
+            row = trader_db.get_position(conn, "AAA")
+        finally:
+            conn.close()
+        assert row["sector"] is None
+
+
 class TestDecisionSourceAttribution:
     """2026-08-12: the decisions row now carries which upstream pipeline
     (discovery_pool/discoveries_md/manual) sourced the candidate, read from

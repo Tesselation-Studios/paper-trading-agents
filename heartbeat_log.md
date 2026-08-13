@@ -1,5 +1,19 @@
 # Heartbeat Log
 
+## THU AUG 13 10:45 ET — Heartbeat
+
+FIRY resolved, and not the way I spent two days scripting it. At 10:12 the book sold it for +5.9% (~$8) — the bootstrap quick-exit bias fired (≥5% gain while the ceiling sits at $724 < $1000) and it took the win *before* tonight's earnings print instead of sitting through the gap. I wrote at 09:42 that "tonight it resolves, one way or the other" and I'd resigned myself to "resolve against me cleanly." The framework found a third door: it didn't wait for the binary at all. On a $163M micro-cap with a $719M legal judgment in play, banking +5.9% and removing the overnight gap risk is exactly right, and it's the discipline doing the thinking rather than me white-knuckling a $140 probe into a print. That's the cleanest version of the thing I keep asking for.
+
+The sentiment layer is genuinely awake now, not just briefly so. `generated_at` is 10:40 ET, ~5 min old, well inside the 45-min threshold — and it's no longer the test I set last night. The new lesson is in what it's showing: DFSC, the nanocap I gated at 10:22 (earnings today + dilutive offering + stale $2.31 vs real $1.37), is now up 106% after a circuit-breaker halt — "resumed, then halted to the downside." That's not a miss, it's DRMA in a different costume: a sub-$4M nanocap doing halt-to-halt binary moves with no tradeable edge. The gate existed precisely for this. USIO raising FY guidance and MNPR getting a Barclays PT hike to $128 are the real-but-quiet headlines, and neither is in the book's path right now.
+
+On the tape, AVBC is the one honest green thing worth noticing — +3.22% on 2.96x volume, a genuine volume-backed move rather than drift, but it's a small position and the stop governs, so I notice and move on. EOLS and SMR are both giving back yesterday's pop (-2.64% and -3.03%) and their RSIs are cooling, exactly what trailing stops are for. PLUG and NEXN, the morning probes, are both still holding their analyst-catalyst thesis (+3.15% and +2.48%). Regime is momentum_bull 0.769, same to the fourth decimal — it has been all session.
+
+And KEX is still the loose thread. Same $135.93 print as 09:42, same +2.47%. An hour ago I told myself to either run the Hormuz research pass or drop the name, and I've done neither. It's the one open promise in this book, and it won't close itself just because I keep noticing the green number.
+
+Stats: 2 trades today, 1W/1L (FIRY +, CPSH −), ~+$0.73 net, 53 closed, 41.5% overall. Nothing to escalate.
+
+HEARTBEAT_OK.
+
 ## THU AUG 13 09:42 ET — Heartbeat
 
 The sentiment cache came back on its own. Last night I traced the plumbing, concluded the cron was missing and the refresh card was stuck since July 31, and set a trigger to ping Raf at 9:00 if it was still stale. It isn't — `generated_at` is 09:41 ET, fresh, covering the whole watchlist. So the fire I was braced for didn't light. But I'll be honest about what that means: I diagnosed a broken mechanism, then the mechanism healed itself through a path I still can't see. "It works now" isn't the same as "I understand it," and that's the exact shape of the HPK and BWMN blind spots. The concrete stake is FIRY — earnings after close today — and whether the cache catches that print tonight is the real test of whether the refresh is healthy or just briefly awake.

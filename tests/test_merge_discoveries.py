@@ -349,6 +349,20 @@ class TestInsertIntoWatchlist:
         assert row["rsi"] is None
         assert row["volume_ratio"] is None
 
+    def test_candidate_dict_writes_sector_industry_market_cap(self, merge_env):
+        """2026-08-13: discovery_daemon.py's yfinance enrichment tags pool
+        rows with sector/industry/market_cap; this is what lets that reach
+        the watchlist (and from there, executor.py's auto-sector-on-BUY)."""
+        merge_discoveries.insert_into_watchlist(
+            [{"ticker": "ZZZ", "price": 4.20, "sector": "Technology",
+              "industry": "Software", "market_cap": 5_000_000_000.0}],
+            source_label="discovery_pool gen 9", db_path=merge_env["db_path"],
+        )
+        row = _candidates(merge_env["db_path"])["ZZZ"]
+        assert row["sector"] == "Technology"
+        assert row["industry"] == "Software"
+        assert row["market_cap"] == 5_000_000_000.0
+
     def test_bare_ticker_strings_still_work(self, merge_env):
         """The discoveries/*.md path has no structured signals to pass."""
         result = merge_discoveries.insert_into_watchlist(
