@@ -51,7 +51,8 @@ def _load_config():
 
 
 def select_promotable(conn, top_n: int = DEFAULT_TOP_N, max_age_seconds: int = DEFAULT_MAX_AGE_SECONDS,
-                       now: str = None, min_market_cap: float = None) -> list:
+                       now: str = None, min_market_cap: float = None,
+                       exclude: set = None) -> list:
     """Thin wrapper over discovery_db.get_top_candidates() -- pure query,
     testable against a seeded tmp_path db.
 
@@ -64,12 +65,19 @@ def select_promotable(conn, top_n: int = DEFAULT_TOP_N, max_age_seconds: int = D
     upstream, so a promotion cycle with sub-floor names in the top N can
     come back with fewer than top_n results -- acceptable since
     promote_candidates.py runs every tick, so it self-corrects next cycle
-    rather than needing a backfill query here."""
+    rather than needing a backfill query here.
+
+    exclude (2026-08-13): set of tickers already promoted to the watchlist.
+    To compensate for skips, the query fetches up to top_n * 3 candidates
+    and filters after the fact."""
     now = now or datetime.now(timezone.utc).isoformat()
-    candidates = discovery_db.get_top_candidates(conn, limit=top_n, max_age_seconds=max_age_seconds, now=now)
+    fetch_limit = top_n * 3 if exclude else top_n
+    candidates = discovery_db.get_top_candidates(conn, limit=fetch_limit, max_age_seconds=max_age_seconds, now=now)
+    if exclude:
+        candidates = [c for c in candidates if c["ticker"] not in exclude]
     if min_market_cap is not None:
         candidates = [c for c in candidates if c.get("market_cap") is None or c["market_cap"] >= min_market_cap]
-    return candidates
+    return candidates[:top_n]
 
 
 def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_age_seconds: int = None,
@@ -81,8 +89,20 @@ def promote(dry_run: bool = False, db_path: Path = None, top_n: int = None, max_
 
     conn = discovery_db.get_conn(db_path)
     generation = discovery_db.get_universe_generation(conn)
+    # 2026-08-13: Exclude tickers already in the watchlist so the same
+    # top-ranked candidates don't get dedup-skipped every tick while 200+
+    # lower-ranked fresh candidates never get a look.
+    existing = set()
+    try:
+        import trader_db
+        trader_conn = trader_db.get_conn(db_path)
+        for r in trader_conn.execute("SELECT ticker FROM watchlist_candidates").fetchall():
+            existing.add(r["ticker"])
+        trader_conn.close()
+    except Exception:
+        pass  # best-effort -- without exclude, falls back to dedup in insert_into_watchlist
     candidates = select_promotable(conn, top_n=top_n, max_age_seconds=max_age_seconds, now=now,
-                                    min_market_cap=min_market_cap)
+                                    min_market_cap=min_market_cap, exclude=existing)
     conn.close()
 
     if not candidates:
