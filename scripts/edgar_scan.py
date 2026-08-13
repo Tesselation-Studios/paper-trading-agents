@@ -181,18 +181,25 @@ def check_ticker_for_ma_filing(ticker: str, cik_map: dict, lookback_days: int = 
 
 def scan_tickers(tickers: list, lookback_days: int = 7, now: str = None,
                   cik_map: dict = None, sleep_between_seconds: float = 0.15) -> dict:
-    """Batch wrapper -- one ticker's failure never blocks the rest (each
-    call is independently caught inside check_ticker_for_ma_filing). A
-    small sleep between requests is polite/conservative against SEC's
-    published fair-access rate limits (10 req/sec) -- this scan is a slow,
-    off-critical-path signal, not latency-sensitive. Returns only tickers
-    with at least one flagged filing."""
+    """Batch wrapper -- one ticker's failure never blocks the rest.
+    check_ticker_for_ma_filing() already catches everything internally, but
+    this loop wraps it too (defense-in-depth, matches this codebase's
+    belt-and-suspenders posture elsewhere, e.g. discovery_daemon.py's
+    maybe_confirm_news() around confirm_with_news()) so a future change to
+    that function's error handling can't turn one bad ticker into a dead
+    batch. A small sleep between requests is polite/conservative against
+    SEC's published fair-access rate limits (10 req/sec) -- this scan is a
+    slow, off-critical-path signal, not latency-sensitive. Returns only
+    tickers with at least one flagged filing."""
     cik_map = cik_map if cik_map is not None else get_ticker_cik_map(now=now)
     results = {}
     for i, ticker in enumerate(tickers):
         if i > 0 and sleep_between_seconds:
             time.sleep(sleep_between_seconds)
-        flagged = check_ticker_for_ma_filing(ticker, cik_map, lookback_days=lookback_days, now=now)
+        try:
+            flagged = check_ticker_for_ma_filing(ticker, cik_map, lookback_days=lookback_days, now=now)
+        except Exception:
+            continue
         if flagged:
             results[ticker.upper()] = flagged
     return results

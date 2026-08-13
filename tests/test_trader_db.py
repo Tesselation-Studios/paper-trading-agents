@@ -551,6 +551,13 @@ class TestWatchlistCandidates:
         assert row["industry"] == "Software"
         assert row["market_cap"] == 5_000_000_000.0
 
+    def test_upsert_writes_ma_filing_flag(self, conn):
+        trader_db.upsert_watchlist_candidate(
+            conn, ticker="AAA", ma_filing_flag="8-K item 2.01 filed 2026-08-11",
+        )
+        row = conn.execute("SELECT * FROM watchlist_candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["ma_filing_flag"] == "8-K item 2.01 filed 2026-08-11"
+
     def test_sector_coalesces_on_touch_not_blanked(self, conn):
         """A plain technical re-touch (no sector passed) shouldn't blank a
         sector the candidate already had -- same COALESCE contract as

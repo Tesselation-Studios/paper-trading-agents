@@ -230,6 +230,43 @@ class TestFundamentalsEnrichment:
         migrated_conn.close()
 
 
+class TestMaFilingCheck:
+    """2026-08-13: BWMN data-gap fix, see scripts/edgar_scan.py."""
+
+    def test_new_columns_null_by_default(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00Z",
+        )
+        row = conn.execute("SELECT * FROM candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["ma_filing_flag"] is None
+        assert row["ma_filing_checked_at"] is None
+
+    def test_record_ma_filing_check_writes_flag_and_timestamp(self, conn):
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00Z",
+        )
+        discovery_db.record_ma_filing_check(
+            conn, "AAA", "8-K item 2.01 filed 2026-08-11", "2026-08-13T12:05:00Z",
+        )
+        row = conn.execute("SELECT * FROM candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["ma_filing_flag"] == "8-K item 2.01 filed 2026-08-11"
+        assert row["ma_filing_checked_at"] == "2026-08-13T12:05:00Z"
+
+    def test_clean_check_still_updates_checked_at(self, conn):
+        """A ticker with nothing found must not look perpetually
+        never-checked -- checked_at is the ordering signal, not the flag."""
+        discovery_db.upsert_candidates(
+            conn, [{"ticker": "AAA", "price": 10.0, "in_band": True}],
+            universe_generation=1, screened_at="2026-08-13T12:00:00Z",
+        )
+        discovery_db.record_ma_filing_check(conn, "AAA", None, "2026-08-13T12:05:00Z")
+        row = conn.execute("SELECT * FROM candidates WHERE ticker = 'AAA'").fetchone()
+        assert row["ma_filing_flag"] is None
+        assert row["ma_filing_checked_at"] == "2026-08-13T12:05:00Z"
+
+
 class TestUniverseSnapshot:
     def test_replace_is_atomic(self, conn):
         discovery_db.upsert_universe_snapshot(conn, ["A", "B", "C"], generation=1, fetched_at="t1")

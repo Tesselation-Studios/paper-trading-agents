@@ -9,8 +9,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
@@ -140,20 +138,21 @@ class TestCheckTickerForMaFiling:
 
 class TestScanTickers:
     def test_one_bad_ticker_does_not_block_the_rest(self, monkeypatch):
+        """Defense-in-depth: even if check_ticker_for_ma_filing somehow
+        raised (it shouldn't -- see TestCheckTickerForMaFiling -- but a
+        future change could break that), scan_tickers' own try/except
+        keeps the batch alive."""
         cik_map = {"GOOD": "111", "BAD": "222"}
 
         def fake_check(ticker, cik_map, lookback_days=7, now=None, fetch_fn=None):
             if ticker == "BAD":
-                raise ConnectionError("should not propagate here, but simulate anyway")
+                raise ConnectionError("simulated internal-isolation regression")
             return [{"ticker": "GOOD", "form": "8-K", "filing_date": "2026-08-11",
                       "items": ["2.01"], "accession_number": "x", "filing_url": "https://sec.gov/x"}]
         monkeypatch.setattr(edgar_scan, "check_ticker_for_ma_filing", fake_check)
 
-        with pytest.raises(ConnectionError):
-            # Confirms the isolation contract lives in check_ticker_for_ma_filing
-            # itself (tested above), not duplicated in scan_tickers -- scan_tickers
-            # trusts that contract rather than re-wrapping it.
-            edgar_scan.scan_tickers(["BAD", "GOOD"], cik_map=cik_map, sleep_between_seconds=0)
+        result = edgar_scan.scan_tickers(["BAD", "GOOD"], cik_map=cik_map, sleep_between_seconds=0)
+        assert list(result.keys()) == ["GOOD"]
 
     def test_only_returns_tickers_with_flags(self, monkeypatch):
         def fake_check(ticker, cik_map, lookback_days=7, now=None, fetch_fn=None):

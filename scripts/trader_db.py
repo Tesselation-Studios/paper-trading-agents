@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS watchlist_candidates (
     sector            TEXT,
     industry          TEXT,
     market_cap        REAL,
+    ma_filing_flag    TEXT,
     idle_ticks        INTEGER NOT NULL DEFAULT 0,
     last_evaluated_at TEXT,
     eval_count        INTEGER NOT NULL DEFAULT 0,
@@ -331,6 +332,13 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _migrate_add_column(conn, "watchlist_candidates", "sector", "TEXT")
     _migrate_add_column(conn, "watchlist_candidates", "industry", "TEXT")
     _migrate_add_column(conn, "watchlist_candidates", "market_cap", "REAL")
+    # 2026-08-13: BWMN data-gap fix -- carries discovery_db.py's
+    # ma_filing_flag (free SEC EDGAR check, scripts/edgar_scan.py) through
+    # to the watchlist as informational context, same non-load-bearing
+    # posture as sentiment/news_headline. No separate checked_at column
+    # here -- that cadence state only needs to live in the pool
+    # (discovery_pool.db), not duplicated onto every downstream copy.
+    _migrate_add_column(conn, "watchlist_candidates", "ma_filing_flag", "TEXT")
     conn.commit()
 
 
@@ -810,6 +818,7 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
                                 rsi: float = None, volume_ratio: float = None, macd_hist: float = None,
                                 sentiment: float = None, news_headline: str = None,
                                 sector: str = None, industry: str = None, market_cap: float = None,
+                                ma_filing_flag: str = None,
                                 source: str = None, note: str = None, now: str = None) -> None:
     """Adds a new candidate or touches an existing one -- idle_ticks resets
     to 0 on touch, matching watchlist.md's existing convention.
@@ -833,9 +842,9 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
         conn.execute(
             """INSERT INTO watchlist_candidates
                    (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline,
-                    sector, industry, market_cap,
+                    sector, industry, market_cap, ma_filing_flag,
                     idle_ticks, source, note, added_at, last_touched_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
                ON CONFLICT(ticker) DO UPDATE SET
                    price = excluded.price,
                    rsi = excluded.rsi,
@@ -846,12 +855,13 @@ def upsert_watchlist_candidate(conn: sqlite3.Connection, ticker: str, price: flo
                    sector = COALESCE(excluded.sector, watchlist_candidates.sector),
                    industry = COALESCE(excluded.industry, watchlist_candidates.industry),
                    market_cap = COALESCE(excluded.market_cap, watchlist_candidates.market_cap),
+                   ma_filing_flag = COALESCE(excluded.ma_filing_flag, watchlist_candidates.ma_filing_flag),
                    idle_ticks = 0,
                    source = COALESCE(excluded.source, watchlist_candidates.source),
                    note = COALESCE(excluded.note, watchlist_candidates.note),
                    last_touched_at = excluded.last_touched_at""",
             (ticker, price, rsi, volume_ratio, macd_hist, sentiment, news_headline,
-             sector, industry, market_cap, source, note, now, now),
+             sector, industry, market_cap, ma_filing_flag, source, note, now, now),
         )
 
 

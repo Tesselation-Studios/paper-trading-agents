@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS candidates (
     sector              TEXT,
     industry            TEXT,
     market_cap          REAL,
+    ma_filing_flag      TEXT,
+    ma_filing_checked_at TEXT,
     first_seen_at       TEXT NOT NULL,
     last_screened_at    TEXT NOT NULL,
     last_in_band_at     TEXT,
@@ -107,6 +109,14 @@ def init_schema(conn: sqlite3.Connection) -> None:
     _migrate_add_column(conn, "candidates", "sector", "TEXT")
     _migrate_add_column(conn, "candidates", "industry", "TEXT")
     _migrate_add_column(conn, "candidates", "market_cap", "REAL")
+    # 2026-08-13: BWMN data-gap fix -- free SEC EDGAR M&A filing check (see
+    # scripts/edgar_scan.py), same best-effort/slow-cadence pattern as the
+    # fundamentals columns above. ma_filing_checked_at (not just a NULL/non-
+    # NULL flag) is what lets discovery_daemon.py's maybe_scan_edgar_filings()
+    # re-check periodically instead of only ever checking once -- a ticker
+    # with no filing today may have one next week.
+    _migrate_add_column(conn, "candidates", "ma_filing_flag", "TEXT")
+    _migrate_add_column(conn, "candidates", "ma_filing_checked_at", "TEXT")
     conn.commit()
 
 
@@ -179,6 +189,22 @@ def record_news_confirmation(conn: sqlite3.Connection, ticker: str, sentiment, h
         conn.execute(
             "UPDATE candidates SET sentiment = ?, news_headline = ?, news_confirmed_at = ? WHERE ticker = ?",
             (sentiment, headline, confirmed_at, ticker),
+        )
+
+
+def record_ma_filing_check(conn: sqlite3.Connection, ticker: str, flag, checked_at: str) -> None:
+    """Records the result of an edgar_scan.py check -- flag is a short
+    human-readable summary string (e.g. "8-K item 2.01 filed 2026-08-11")
+    or None if nothing was found this check. checked_at always gets
+    written regardless of outcome (it's the cadence-ordering signal
+    maybe_scan_edgar_filings() reads, same role as watchlist_candidates'
+    last_evaluated_at) -- a clean check must still update it, or a
+    permanently-quiet ticker would look perpetually "never checked" and
+    monopolize the front of the queue forever."""
+    with conn:
+        conn.execute(
+            "UPDATE candidates SET ma_filing_flag = ?, ma_filing_checked_at = ? WHERE ticker = ?",
+            (flag, checked_at, ticker),
         )
 
 

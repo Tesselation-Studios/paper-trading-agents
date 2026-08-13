@@ -45,7 +45,7 @@ NEWS_LINE_RE = re.compile(r'^- News: "(.+?)" \(sentiment ([+-]?[0-9.]+|n/a)\)', 
 # flag. Same passthrough contract -- absent/None on the source dict just
 # means "not enriched yet", handled the same as any other missing signal.
 SIGNAL_FIELDS = ("price", "rsi", "volume_ratio", "macd_hist", "sentiment", "news_headline",
-                  "sector", "industry", "market_cap")
+                  "sector", "industry", "market_cap", "ma_filing_flag")
 
 
 def latest_discoveries_file(date: str = None) -> Path | None:

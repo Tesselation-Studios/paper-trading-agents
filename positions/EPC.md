@@ -1,11 +1,11 @@
 # EPC Position Thesis
 
 - **Entry**: $27.93 avg | 1 shares
-- **Current**: $29.07 (+4.10% unrealized)
-- **Market Value**: $29.07
-- **Unrealized P&L**: $+1.15 (+4.10%)
+- **Current**: $29.03 (+3.94% unrealized)
+- **Market Value**: $29.03
+- **Unrealized P&L**: $+1.10 (+3.94%)
 - **Synced from**: Alpaca paper trading
-- **Last sync**: 2026-08-13 15:02:35 UTC
+- **Last sync**: 2026-08-13 15:06:34 UTC
 
 This position is managed through the Alpaca paper trading API.
 Entry, exit, and sizing are handled by the trader agent via executor.py.

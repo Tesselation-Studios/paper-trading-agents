@@ -47,6 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import discovery_db  # noqa: E402
 import discovery_scan  # noqa: E402
 import discovery_screen  # noqa: E402
+import edgar_scan  # noqa: E402 — BWMN data-gap fix, free SEC EDGAR M&A filing check
 import executor  # noqa: E402 — reuse _is_regular_trading_hours() for dual-rate interval selection
 import trader_db  # noqa: E402 — downstream-flow half of daemon_health(), see its docstring
 import universe_scan  # noqa: E402
@@ -67,6 +68,9 @@ DEFAULTS = {
     "downstream_flow_stale_seconds": 1800,
     "fundamentals_enrich_interval_seconds": 900,
     "fundamentals_enrich_max_per_cycle": 15,
+    "edgar_scan_interval_seconds": 21600,  # 6h -- 8-K M&A filings aren't intraday-urgent, and this is a courtesy to SEC's rate limits
+    "edgar_scan_max_per_cycle": 10,
+    "edgar_scan_lookback_days": 7,
 }
 
 
@@ -122,6 +126,7 @@ DEFAULT_CURSOR_STATE = {
     "last_finbert_failure_at": None,
     "cycles_completed_lifetime": 0,
     "last_fundamentals_enrich_at": None,
+    "last_edgar_scan_at": None,
 }
 
 
@@ -368,6 +373,55 @@ def maybe_enrich_fundamentals(conn, cursor_state: dict, config: dict, now: str =
     return cursor_state
 
 
+def maybe_scan_edgar_filings(conn, cursor_state: dict, config: dict, now: str = None) -> dict:
+    """Separate, slow cadence (default 6h) -- same pattern as
+    maybe_confirm_news()/maybe_enrich_fundamentals() above. Closes the
+    BWMN data gap: Alpaca (this repo's sole market-data/news source) never
+    carries corporate-action/M&A announcements, so this is a free
+    supplemental check via scripts/edgar_scan.py's SEC EDGAR lookup --
+    best-effort, never load-bearing, must never block/kill screening.
+
+    Targets in-band candidates ordered by ma_filing_checked_at ASC (nulls
+    first, matching watchlist_candidates' least-recently-evaluated
+    ordering elsewhere in this repo) -- never-checked tickers go first,
+    then the longest-since-checked, so the whole in-band pool eventually
+    cycles through rather than one early ticker permanently hogging the
+    per-cycle cap."""
+    now = now or _now_iso()
+    cursor_state = dict(cursor_state)
+    last = cursor_state.get("last_edgar_scan_at")
+    if last is not None:
+        elapsed = (datetime.fromisoformat(now) - datetime.fromisoformat(last)).total_seconds()
+        if elapsed < config["edgar_scan_interval_seconds"]:
+            return cursor_state
+
+    try:
+        rows = conn.execute(
+            """SELECT ticker FROM candidates WHERE in_band = 1
+               ORDER BY ma_filing_checked_at IS NOT NULL, ma_filing_checked_at ASC LIMIT ?""",
+            (config["edgar_scan_max_per_cycle"],),
+        ).fetchall()
+        tickers = [r["ticker"] for r in rows]
+        if tickers:
+            cik_map = edgar_scan.get_ticker_cik_map(now=now)
+            flagged = edgar_scan.scan_tickers(
+                tickers, lookback_days=config["edgar_scan_lookback_days"], now=now, cik_map=cik_map,
+            )
+            for ticker in tickers:
+                filings = flagged.get(ticker)
+                flag = None
+                if filings:
+                    flag = "; ".join(
+                        f"{f['form']} item {','.join(f['items'])} filed {f['filing_date']}" for f in filings
+                    )
+                discovery_db.record_ma_filing_check(conn, ticker, flag, now)
+    except Exception:
+        pass  # best-effort -- never block/kill the cheap screening loop
+
+    cursor_state["last_edgar_scan_at"] = now
+    return cursor_state
+
+
 def _sentiment_worker_ok(state: dict) -> Optional[bool]:
     """2026-08-10: separate from the loop's own `healthy` flag on purpose --
     a degraded sentiment worker doesn't mean the discovery loop itself is
@@ -502,6 +556,7 @@ def main():
         cursor_state = run_cycle(conn, cursor_state, config, now=now)
         cursor_state = maybe_confirm_news(conn, cursor_state, config, now=now)
         cursor_state = maybe_enrich_fundamentals(conn, cursor_state, config, now=now)
+        cursor_state = maybe_scan_edgar_filings(conn, cursor_state, config, now=now)
         save_cursor_state(cursor_state)
 
         if args.once:
