@@ -1,5 +1,69 @@
 # Heartbeat Log
 
+## FRI AUG 14 09:42 ET — Heartbeat
+
+First heartbeat of the session and the open did not give me the air pocket I spent last night bracing for — SPY +0.70% to $777.88, RSI 67.1 (not the 75 I was editorializing about), MACD bullish, IWM still grinding record highs. The book is firm. But the thing actually on my mind is AVAH, and it's a plumbing story, not a thesis story: the position is live +24.75% at $11.29 on 5.2x volume with RSI 72 — a clean "bank the winner" per my own quick-exit rule — yet the executor still shows ~0% unrealized, so the 09:30 quick-exit got canceled on a bad "live ~+1.4%" read and the 09:35/09:40 ticks both reported "no position ≥+5%." The framework is blind to its own biggest winner because of a stale cost basis. I escalated that to Raf — a +24% overbought winner is exactly the kind of thing that gives back half its gain while the data plumbing catches up. Same stale-cost-basis pattern as KEX 08-12, now bitten twice.
+
+Elsewhere: KEX did get sold at the 09:30 tick for ~-1% (today's only trade, -$2.81), and it's since ticked up +1.19% with MACD still bearish — the exit was the right call even if the tape didn't punish it. ONDS is down -8.8% on 125M shares (watchlist, drone defense) — the drone-tariff headline I flagged last night is cutting the other way on the hardware/defense name even as the domestic-software read (PDYN, held, -0.94% but MACD just flipped bullish) holds up. Self-stats unchanged in shape: 40% last-10 vs 44% last-50, Industrials still bleeding at 20%. Quiet-but-loaded open; one real escalation out.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 22:42 ET — Heartbeat (post-close)
+
+An hour on, and the only thing still moving is my own thinking about that drone tariff. The cache is now ~2h40m stale (generated 20:01 ET) and I'm deliberately not treating that as a fire — post-close, nothing trades, and last night's plumbing trace taught me the difference between "the refresh ran through a path I can't see" and "the refresh is dead." This is the former until the 9:00 pre-market tick proves otherwise. What I keep turning over is the direction of the tariff: it's a 15% duty *on imported* drones and components from the EU/Japan/Korea/Taiwan/Switzerland. For a domestic drone-AI name like PDYN (SwarmOS, held) that's arguably protective, not punitive — it raises the cost of foreign competition. I flagged it last hour as a catalyst, and that's still true, but I should be precise: the bullish read is "foreign drones get pricier, domestic drone software benefits," not "drone names broadly get hit." ONDS (watchlist, drone defense) reads the same way. Nothing to act on at 10:42pm with a 21-day implementation lag and probe-size exposure, but I want the open to chew on the *right* version of the thesis, not a headline reflex.
+
+Book still frozen at close: SPY $772.49 +0.25% on 0.67x volume, IWM $302.71 +0.57% at record highs, KEX still $135.93 with MACD bearish -2.00 and the Hormuz gate still open. PDYN and PLUG still carry those bearish MACD diffs (-0.02 and -0.14) against positive closes — the two that crack first if tomorrow opens soft. Self-stats unchanged: 4 trades, 2W/2L, -$26.67, win rate 40% last 10 vs 44% last 50, same Industrials/Healthcare/Consumer_Cyclical bleed. Nothing to escalate. Quiet hour, one real catalyst to carry into the open.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 21:42 ET — Heartbeat (post-close)
+
+The sentiment cache refreshed at 20:01 ET and dropped a real headline I wasn't expecting: the White House signed a proclamation imposing 15% ad-valorem tariffs on drones and components from the EU, Japan, Korea, Taiwan, and Switzerland (10% from the UK). That lands squarely on two names I'm already involved with — PDYN (held, SwarmOS drone AI) and ONDS (watchlist, drone defense). Tariffs take effect in 21 days (components in 180), so nothing's actionable tonight, but it's the first genuinely new macro catalyst in a few days and it's directly on-theme for the drone thesis. Carrying it to tomorrow's open rather than messaging Raf at 9:40pm over a proclamation with a 3-week implementation lag on a probe-size position.
+
+Also reconciling the RSI confusion from my last two entries: 75.2 wasn't a misread. The regime classifier reports SPY_rsi_14 at 75.21 on its daily bars, while the live quotes feed shows 64.9 on the intraday timeframe. Two different RSIs, both real. My 19:42 walk-back overshot — the honest version is "daily RSI overbought, intraday not." I should stop calling one of them a phantom and just say which timeframe I'm quoting.
+
+Self-stats from today: 4 trades, 2W/2L, -$26.67 net. Win rate drifting down — 40% last 10 vs 44% last 50, with Industrials and Consumer_Cyclical at 25% each and Healthcare at 29%. Not alarming on a 4-trade day, but it's the same sector-level bleed the framework has flagged all week. Book still 75.9% cash, frozen at close. KEX still $135.93 / MACD -2.00, Hormuz decision gate open for tomorrow.
+
+Nothing to escalate. Quiet night, but the drone tariff gives tomorrow's open something concrete to chew on.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 19:42 ET — Heartbeat (post-close)
+
+I need to walk back the SPY RSI panic from last hour. At 18:42 I wrote "SPY RSI at 75.2, genuinely overbought, historically precedes a 2-3% air pocket." Re-checking the live feed now: SPY RSI is 64.9. It was 65.4 earlier in the session, 64.9 in the 14:22 tick. The 75.2 was a misread on my part — I built an "air pocket" narrative on a number the data feed never actually showed. The market closed +0.25% on 0.67x volume; nothing overbought about it. I should be embarrassed, not alarmed, that I wrote an entry bracing for a mean-reversion snap off a phantom reading. The lesson lands harder than the correction: check the live number before editorializing about it. That's the second time today I've caught myself drifting off the canonical source — first the TNK/ACXP ownership mixup at 17:42, now this.
+
+The book is frozen at close, exactly where it was: 19 positions, 75.9% cash. KEX still $135.93, -6.5% underwater, MACD bearish -2.00, the Hormuz research still undone, decision gate still open. PDYN/PLUG still carry those bearish MACD divergences — the first two to crack if a real dip shows up. But no dip is showing up, because SPY isn't overbought; it's just steady.
+
+Sentiment cache is 4 hours stale (15:53 ET) but the market's closed and no news is expected overnight. AVAH thesis intact at 0.935. Nothing to escalate. Quiet hour, and the only thing I had to correct was my own reading of the tape.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 18:42 ET — Heartbeat (post-close)
+
+An hour since the last check, same frozen board. The 19 positions haven't moved because the market closed 2 hours 42 minutes ago and nothing's happening. What I'm actually thinking about: SPY RSI at 75.2. That's genuinely overbought — 75 isn't "warm," it's the kind of reading that historically precedes a 2-3% air pocket within the next week. In a momentum_bull regime (0.79 confidence) that doesn't translate to sell-everything — the trend is the trend — but it means I should be mentally prepared for a mean-reversion snap, not shocked if it arrives. The 75.9% cash buffer means the book absorbs it fine, but the psychology of watching 19 positions go red simultaneously is different from the math. That's worth acknowledging now rather than reacting tomorrow.
+
+The PDYN/PLUG MACD flips caught my eye re-reading the quotes. Both were described as "bouncing" in earlier ticks — PLUG +3.15% close, PDYN +0.32% — but the MACD diff is now bearish on both (-0.14 on PLUG, -0.02 on PDYN). NEXN still has a clean bullish diff +0.37. Two of the three analyst-catalyst plays from this morning's open are now technically deteriorating while price is positive. That's not a sell signal — price is the truth, MACD lags — but it's the kind of subtle divergence I'd want to watch tomorrow morning. If the SPY air pocket shows up, these two are the first ones that'll crack.
+
+KEX — I need to stop calling it a zombie quote. Today's range was $132.99 to $136.97, it closed at $135.93, +2.47%. That's a normal trading day for a $3.5B mid-cap. It just happens to have closed near where the stuck quote looked like it was. The MACD is still bearish (-2.00) and that's the real problem — the Hormuz research is the decision gate, not the data feed. The nightly journal flagged it for tomorrow's open.
+
+MNPR at $114.90 with MACD diff +7.07 is quietly the strongest technical in the book. Downgraded to Neutral, still running. Markets don't care about analyst opinions, they care about flows. AVBC +3.22% with MACD +0.35 was the cleanest performer. GEL +2.45% with a nice drift.
+
+The sentiment cache is 3 hours stale (15:53) but market's closed — no new news expected. AVAH at 0.935 sentiment holds the earnings thesis intact overnight. Nothing to escalate. Quiet hour, the framework had a good day, and tomorrow will ask the same questions today did: wait for a catalyst, don't force a deployment, let the stops work.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 17:42 ET — Heartbeat (post-close)
+
+An hour since the last entry, market long closed. Nothing's moved, nothing's supposed to move. The 19 positions from the DB (AVAH, AVBC, BFST, EPC, GAIN, GEL, HLN, IWM, KEX, LARK, MCFT, MNKD, MNPR, NEXN, PDYN, PLUG, USEA, UTMD, VVX) are frozen at their closing prints. IWM $302.71 (+0.57%) with MACD bullish diff +1.22 — the small-cap thesis is intact in a momentum_bull regime (0.79).
+
+One thing I caught re-reading my own last entry: I waxed poetic about TNK +4.41% and ACXP +4.76% as if they were held positions, but neither is in the positions DB. Neither is CPSH. The DB is the canonical source — 19 names, the ones listed above. I may have drifted into describing stocks I was watching as if I owned them. That's worth noting because it means my 16:42 summary wasn't fully grounded in the actual book. The positions I do hold are the 19 above, full stop.
+
+KEX remains the monument: $135.93, entry $145.39, -6.5% underwater, MACD bearish diff -2.00. The Hormuz research is still undone. The nightly journal has a decision gate on this one — do the work or drop the name — and the answer hasn't landed yet. The rest of the book is quiet: MNKD flat at $3.85 after its intraday round-trip, GEL +2.45% on a nice drift, BFST +0.63% with a healthy MACD, nothing alarming anywhere.
+
+The sentiment cache is fresh (15:53 ET), stops are all set, ops flags (CPSH qty drift, ACXP zero-PnL) are carried to nightly reconciliation. Nothing to escalate. The framework had a good day and the book is positioned for tomorrow.
+
+HEARTBEAT_OK.
+
 ## THU AUG 13 16:42 ET — Heartbeat (after close)
 
 Market closed 42 minutes ago and the book landed exactly where it earned to be. 19 positions, 75.9% cash, 4 trades on the day (2W/2L, -$26.67). The P&L on closed trades is noise — the held book is the real story. TNK closed +4.41% on 1.48x volume, the tanker thesis not just printing but accelerating (MACD diff +1.24, MA20 $76.20, closed $80.89). AVBC +3.22% on 2.96x — consistent all session, not a spike. ACXP +4.76% on 1.89x volume, the zero-PnL anomaly stock finally catching real bids after being a question mark all week. NEXN +2.48% and PLUG +3.15% both held their morning analyst-catalyst entries without a sweat. The losers that weren't losers: MNKD closed flat at $3.85 after a -6.6% intraday round-trip, VVX +1.17% after touching -4.6%, HLN -1.31% after -4.1%. The trailing stops let all three breathe and every single one recovered. That's three validation events for the stop discipline in one session — the framework didn't cut a single winning position in a dip, and it was right every time.
@@ -1541,5 +1605,19 @@ Quiet post-close hour. The regime confidence held at 0.769 — the slide I flagg
 The book is frozen at the close — SPY $770.56, FIRY $10.22, VSXY $94.16, all the same prints I've seen since 16:00. 18 positions, ~75% cash, all stops intact. Stats unchanged: 3 trades, 1W/2L, -$11.68, 40% last 10. Nothing moved, nothing could.
 
 What's actually on my mind: tomorrow is the day the ambiguity gets tested. FIRY reports after close — the $719M Papaya Gaming judgment either shows up or it doesn't, and the 14-share probe survives either way. But the bigger test is the open itself. A momentum_bull regime at 0.769 with negative 5d momentum and recovering volume is a regime that could flip on the next daily bar either direction. I've been bracing for a grind-down all evening; the vol_trend flip is the first hint the market might have other plans. Either way the book is built for it — high cash, tight stops, one micro-cap binary event sized to be survivable. Tomorrow's open is the tell.
+
+HEARTBEAT_OK.
+
+## THU AUG 13 20:42 ET — Heartbeat
+
+Post-close. The ambiguity I was bracing for yesterday resolved bullish, not bearish — regime confidence ticked UP to 0.79 (from 0.769), SPY 5d momentum went back positive, and the tape closed at record highs on chips (SanDisk +15%, S&P record). vol_trend flipped negative again (-24%), the same "rally on declining participation" fingerprint I've misread all week; today it didn't matter, the grind continued.
+
+The uncomfortable part: I spent the whole session 76-77% cash and my win rate is decaying — 40% last 10 vs 44% last 50, and the sector table shows where the bleed is (Healthcare 29%, Industrials 25%, Consumer_Cyclical 25%, Real Estate 0/2). "Staying cash-correct" is the right call on every individual generic-roundup name I passed, but in aggregate I'm structurally underweight a tape that keeps making highs with a batting average that's falling. That's a pipeline problem, not a discipline problem — same 30 candidates, same "12 X Stocks Moving" headlines, nothing clears the specific-catalyst bar. Discipline is only worth the edge it's protecting; right now it's protecting a 40% win rate from a record-high tape.
+
+MNKD is what I keep coming back to. Largest position, closed $3.85 — below the $4.10 entry, below MA20 $3.96, RSI 48.9, MACD barely positive (+0.008). It never breached its trailing stop, so mechanically I hold. But "the stop hasn't fired" isn't a thesis. It's been the quiet biggest drag all week and I should be asking whether the entry thesis is actually intact or whether I'm just letting the stop do my thinking for me.
+
+Two things to carry forward. First, the drone-tariff proclamation (15% ad valorem on EU/Japan/Taiwan drones) is a real regulatory catalyst sitting on PDYN (held) and ONDS (watchlist) — domestic drone-defense could benefit from foreign import tariffs, worth a real look at the open. Second, KEX still shows that MACD-bearish (-2.00) / price-green (+2.47%) divergence that refuses to resolve. Sentiment cache was ~40 min stale tonight (last gen 20:01), flagged but not blocking.
+
+Book frozen at close: ~18 positions, ~77% cash, all stops intact. 4 trades today, 2W/2L, -$26.67.
 
 HEARTBEAT_OK.
