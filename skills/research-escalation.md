@@ -12,12 +12,18 @@ A watchlist candidate qualifies when `scripts/research_escalation.py select` ret
 
 1. `python3 scripts/research_escalation.py select` — returns the candidate list plus `cap` (max candidates this run, default 3 — this is the most expensive signal in the pipeline, a real LLM-to-LLM conversation, not a websearch) and `max_rounds` (max back-and-forth per candidate, default 2).
 
-2. For each candidate, up to `cap`: dispatch a **narrow, specific** first question via `sessions_send` to `researcher` — not "research this stock," but something like "what's the latest news/catalyst on `<ticker>` in the last 1-2 weeks, and does anything stand out as a reason to buy or avoid it right now?" Include the candidate's own signals (price, sentiment, `news_headline`, sector, `tree_match_state`) as context so researcher isn't starting cold.
+2. For each candidate, up to `cap`: dispatch a **narrow, specific** first question to `researcher` — not "research this stock," but something like "what's the latest news/catalyst on `<ticker>` in the last 1-2 weeks, and does anything stand out as a reason to buy or avoid it right now?" Include the candidate's own signals (price, sentiment, `news_headline`, sector, `tree_match_state`) as context so researcher isn't starting cold.
 
-3. Read the reply. Decide, per the exchange (not a fixed script):
+   **Dispatch async, don't block on `sessions_send`.** `timeoutSeconds > 0` has a live dispatch bug (confirmed 2026-08-14 via `stonks-worldview-sync`, which hit it 4 runs straight): if the dispatch or researcher's own downstream work stalls, the wait doesn't honor its own timeout — the platform's generic ~500s "stuck session" watchdog is the only thing that eventually kills it, taking researcher's in-progress work down with it as collateral. Fire-and-forget instead:
+   - Baseline: `sessions_history(sessionKey: "agent:researcher:main", limit: 1)` before dispatching, so you can tell a fresh reply apart from stale history.
+   - Dispatch: `sessions_send(agentId: "researcher", message: <your question>, timeoutSeconds: 0)` — returns immediately with `status: "accepted"`; researcher keeps working regardless of what you do next.
+   - Poll: `sessions_history` on the same session, up to 5 times, ~30s apart, until a new assistant message past your baseline shows up.
+
+3. Read the reply (or its absence). Decide, per the exchange (not a fixed script):
    - **Enough to act** — a clear catalyst/red-flag emerged, confidence is high enough to note a direction. Stop here.
-   - **One specific follow-up worth asking** — the reply raised a concrete, narrower question ("you mentioned a pending FDA decision — what's the timeline?"). Ask it. Capped at `max_rounds` total exchanges per candidate — after that, conclude with whatever you have, don't keep digging.
+   - **One specific follow-up worth asking** — the reply raised a concrete, narrower question ("you mentioned a pending FDA decision — what's the timeline?"). Ask it, same dispatch-then-poll pattern. Capped at `max_rounds` total exchanges per candidate — after that, conclude with whatever you have, don't keep digging.
    - **Not worth it** — nothing came back that changes the picture, or the name genuinely isn't interesting on closer look. Stop here too; a firm "pass" is a real, useful conclusion, not a failure.
+   - **No reply within the poll window** — treat like "not worth it" for *this run*: move to the next candidate without recording anything you don't actually have. Nothing is lost — researcher keeps working independently, and the cooldown keeps this candidate off the next selection until `cooldown_hours` passes, so it isn't stuck either.
 
 4. Record the outcome: `python3 scripts/trader_write.py watchlist-record-research --ticker X --confidence <0.0-1.0, your read of how strong the case is either direction> --note '<2-3 sentence takeaway>'`. This is what the next live tick sees as an additional signal (via `trader_query.py watchlist`) without waiting on researcher itself — `research_confidence`/`research_note` are just columns on the watchlist row now.
 
